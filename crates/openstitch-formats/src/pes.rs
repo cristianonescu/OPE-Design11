@@ -1,0 +1,595 @@
+//! Brother PES: `#PESvvvv` signature, u32 offset of the embedded PEC section, an object section
+//! (version dependent), then the PEC section machines sew from.
+//!
+//! Reading: the stitches always come from the PEC section. The object section is parsed as far
+//! as public descriptions go (pyembroidery 1.5.1's `PesReader` and `PesWriter`, MIT): the
+//! v4+ metadata strings, the v5+ thread table (exact RGB, names, catalogue numbers), and
+//! `CEmbOne` / `CSewSeg` stitch-group objects. Parsing stops at the first object class with no
+//! public description (`CSewFigSeg`, `CEmbRect`, text and so on) and records its name in
+//! [`ObjectSection::unparsed`]. A malformed object section never fails the read.
+//!
+//! Writing: version 1 or 6, either "truncated" (no objects) or with one `CEmbOne` / `CSewSeg`
+//! pair holding the whole stitch stream, byte-identical to pyembroidery's writer. Version 6
+//! stores the RGB thread table, so colours and thread names survive a round trip; the PEC
+//! section still carries the nearest Brother chart colours for the machine.
+
+use crate::io::{ByteReader, ByteWriter};
+use crate::{FormatError, Result, pec};
+use openstitch_core::{Command, PEC_CHART, StitchPattern, Thread, nearest_index, round_coordinate};
+use std::borrow::Cow;
+use std::collections::BTreeMap;
+
+/// Metadata keys read from and written to the v4+ header, in file order.
+pub const METADATA_KEYS: [&str; 5] = ["name", "category", "author", "keywords", "comments"];
+
+const EMB_ONE: &str = "CEmbOne";
+const SEW_SEG: &str = "CSewSeg";
+const SECTION_END: u16 = 0x8003;
+
+// MARK: Object section model
+
+/// One stitch run of a `CSewSeg`: `flag` 0 = stitches, 1 = a jump (two points).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SewSegment {
+    pub flag: u16,
+    /// Thread table index (v5+) or PEC chart index (v1).
+    pub color: u16,
+    /// Points in 0.1 mm relative to the object's bottom-left corner (y down, so y ≤ 0).
+    pub points: Vec<(i16, i16)>,
+}
+
+/// A `CEmbOne` stitch group and its `CSewSeg` stitch data.
+#[derive(Clone, Debug, PartialEq)]
+pub struct EmbOne {
+    /// Affine transform `[a, b, c, d, tx, ty]` placing the group on the design page.
+    pub transform: [f32; 6],
+    pub width: u16,
+    pub height: u16,
+    pub segments: Vec<SewSegment>,
+    /// `(first segment, colour)` at every colour change.
+    pub color_log: Vec<(u16, u16)>,
+}
+
+/// What OpenStitch understands of a PES object section.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ObjectSection {
+    /// The four characters after `#PES`, e.g. `0060`.
+    pub version: String,
+    /// `name`, `category`, `author`, `keywords`, `comments`, `pes.imageFile`, `pes.hoopName`.
+    pub metadata: BTreeMap<String, String>,
+    /// The v5+ thread table (empty for older versions).
+    pub threads: Vec<Thread>,
+    pub objects: Vec<EmbOne>,
+    /// The first object class that was not parsed, if any.
+    pub unparsed: Option<String>,
+}
+
+// MARK: Reading
+
+pub fn read(data: &[u8]) -> Result<StitchPattern> {
+    let mut reader = ByteReader::new(data);
+    let magic = reader.read(8)?;
+    if !magic.starts_with(b"#PES") {
+        return Err(FormatError::BadSignature(
+            String::from_utf8_lossy(magic).into_owned(),
+        ));
+    }
+    let pec_offset = reader.u32le()? as usize;
+    if pec_offset == 0 || pec_offset >= data.len() {
+        return Err(FormatError::Truncated(format!(
+            "PEC offset {pec_offset} outside file"
+        )));
+    }
+    reader.offset = pec_offset;
+    let mut pattern = pec::read_section(&mut reader)?;
+    pattern.metadata.insert(
+        "pes.version".into(),
+        String::from_utf8_lossy(&magic[4..]).into_owned(),
+    );
+    if let Ok(section) = read_objects(data) {
+        apply_thread_table(&mut pattern, &section.threads);
+        pattern.metadata.extend(section.metadata);
+    }
+    Ok(pattern)
+}
+
+/// Replaces the PEC chart colours with the v5+ thread table, as pyembroidery does: one to one
+/// when the table covers every colour block, otherwise table entries are handed out to distinct
+/// PEC indexes in order of first use.
+fn apply_thread_table(pattern: &mut StitchPattern, table: &[Thread]) {
+    if table.is_empty() {
+        return;
+    }
+    if table.len() >= pattern.threads.len() {
+        pattern.threads = table.to_vec();
+        return;
+    }
+    let mut assigned: Vec<(u32, Thread)> = Vec::new();
+    let mut remaining = table.iter();
+    for t in &mut pattern.threads {
+        let key = t.rgb_value();
+        if let Some((_, mapped)) = assigned.iter().find(|(k, _)| *k == key) {
+            *t = mapped.clone();
+        } else {
+            let mapped = remaining.next().cloned().unwrap_or_else(|| t.clone());
+            assigned.push((key, mapped.clone()));
+            *t = mapped;
+        }
+    }
+}
+
+fn read_string8(r: &mut ByteReader) -> Result<Option<String>> {
+    let len = usize::from(r.u8()?);
+    let bytes = r.read(len)?;
+    Ok(std::str::from_utf8(bytes)
+        .ok()
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned))
+}
+
+fn read_string16(r: &mut ByteReader) -> Result<String> {
+    let len = r.u16le()? as usize;
+    Ok(String::from_utf8_lossy(r.read(len)?).into_owned())
+}
+
+/// Parses the object section. Errors only for truncated or inconsistent data inside the parts
+/// it understands; [`read`] ignores them.
+pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
+    let mut r = ByteReader::new(data);
+    let magic = r.read(8)?;
+    if !magic.starts_with(b"#PES") {
+        return Err(FormatError::BadSignature(
+            String::from_utf8_lossy(magic).into_owned(),
+        ));
+    }
+    let version = String::from_utf8_lossy(&magic[4..]).into_owned();
+    let pec_offset = r.u32le()? as usize;
+    let mut section = ObjectSection {
+        version: version.clone(),
+        ..ObjectSection::default()
+    };
+    // Bytes skipped after the metadata, after the hoop name (v9+) and before the pattern counts
+    // (pyembroidery's per-version offsets).
+    let layout: Option<(usize, Option<usize>, usize)> = match version.as_str() {
+        "0001" => {
+            r.skip(4)?; // scale to fit, hoop
+            read_blocks(&mut r, pec_offset, &mut section)?;
+            return Ok(section);
+        }
+        "0040" => {
+            r.skip(4)?;
+            read_metadata(&mut r, &mut section)?;
+            return Ok(section);
+        }
+        "0050" | "0055" | "0056" => Some((24, None, 24)),
+        "0060" | "0070" => Some((36, None, 24)),
+        "0080" => Some((38, None, 26)),
+        "0090" => Some((14, Some(30), 34)),
+        "0100" => Some((14, Some(38), 34)),
+        _ => None,
+    };
+    let Some((first, hoop_then, before_counts)) = layout else {
+        return Ok(section);
+    };
+    r.skip(4)?;
+    read_metadata(&mut r, &mut section)?;
+    r.skip(first)?;
+    if let Some(after_hoop) = hoop_then {
+        if let Some(hoop) = read_string8(&mut r)? {
+            section.metadata.insert("pes.hoopName".into(), hoop);
+        }
+        r.skip(after_hoop)?;
+    }
+    if let Some(image) = read_string8(&mut r)? {
+        section.metadata.insert("pes.imageFile".into(), image);
+    }
+    r.skip(before_counts)?;
+    for what in ["programmable fill", "motif", "feather"] {
+        if r.u16le()? != 0 {
+            section.unparsed = Some(format!("{what} patterns"));
+            return Ok(section);
+        }
+    }
+    let threads = r.u16le()?;
+    for _ in 0..threads {
+        let catalog = read_string8(&mut r)?;
+        let rgb = r.read(3)?;
+        r.skip(5)?;
+        let name = read_string8(&mut r)?;
+        let brand = read_string8(&mut r)?;
+        let _chart = read_string8(&mut r)?;
+        let mut t =
+            Thread::rgb(u32::from(rgb[0]) << 16 | u32::from(rgb[1]) << 8 | u32::from(rgb[2]));
+        t.name = name.map(Cow::Owned);
+        t.catalog_number = catalog.map(Cow::Owned);
+        t.brand = brand.map(Cow::Owned);
+        section.threads.push(t);
+    }
+    read_blocks(&mut r, pec_offset, &mut section)?;
+    Ok(section)
+}
+
+fn read_metadata(r: &mut ByteReader, section: &mut ObjectSection) -> Result<()> {
+    for key in METADATA_KEYS {
+        if let Some(v) = read_string8(r)? {
+            section.metadata.insert(key.into(), v);
+        }
+    }
+    Ok(())
+}
+
+/// Object count, then `FFFF 0000`, then class-named objects separated by `FFFF 0000` and ended
+/// by `0000 0000`.
+fn read_blocks(r: &mut ByteReader, end: usize, section: &mut ObjectSection) -> Result<()> {
+    let count = r.u16le()?;
+    if count == 0 || r.offset >= end {
+        return Ok(());
+    }
+    if r.u32le()? != 0x0000_FFFF {
+        return Ok(());
+    }
+    loop {
+        if r.offset >= end {
+            return Ok(());
+        }
+        let class = read_string16(r)?;
+        if class != EMB_ONE {
+            section.unparsed = Some(class);
+            return Ok(());
+        }
+        r.skip(16)?;
+        let mut transform = [0_f32; 6];
+        for v in &mut transform {
+            *v = r.f32le()?;
+        }
+        r.skip(6)?;
+        let width = r.u16le()? as u16;
+        let height = r.u16le()? as u16;
+        r.skip(8)?;
+        let sections = r.u16le()?;
+        if r.u32le()? != 0x0000_FFFF {
+            return Err(FormatError::ValueOutOfRange(
+                "PES: CEmbOne not followed by its CSewSeg".into(),
+            ));
+        }
+        let class = read_string16(r)?;
+        if class != SEW_SEG {
+            section.unparsed = Some(class);
+            return Ok(());
+        }
+        let mut segments = Vec::new();
+        for i in 0..sections {
+            if i > 0 && r.u16le()? != u32::from(SECTION_END) {
+                return Err(FormatError::ValueOutOfRange(
+                    "PES: CSewSeg section separator".into(),
+                ));
+            }
+            let flag = r.u16le()? as u16;
+            let color = r.u16le()? as u16;
+            let n = r.u16le()? as usize;
+            let raw = r.read(n * 4)?;
+            let points = raw
+                .chunks_exact(4)
+                .map(|c| {
+                    (
+                        i16::from_le_bytes([c[0], c[1]]),
+                        i16::from_le_bytes([c[2], c[3]]),
+                    )
+                })
+                .collect();
+            segments.push(SewSegment {
+                flag,
+                color,
+                points,
+            });
+        }
+        let log_len = r.u16le()?;
+        let mut color_log = Vec::new();
+        for _ in 0..log_len {
+            color_log.push((r.u16le()? as u16, r.u16le()? as u16));
+        }
+        section.objects.push(EmbOne {
+            transform,
+            width,
+            height,
+            segments,
+            color_log,
+        });
+        if r.u32le()? != 0x0000_FFFF {
+            return Ok(()); // 0000 0000: no more objects
+        }
+    }
+}
+
+// MARK: Writing
+
+/// PES versions OpenStitch writes.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Version {
+    #[default]
+    V1,
+    V6,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct WriteOptions {
+    pub version: Version,
+    /// No objects: just the header and the PEC section.
+    pub truncated: bool,
+}
+
+impl Default for WriteOptions {
+    /// Version 1, truncated: the form OpenStitch has always written.
+    fn default() -> Self {
+        Self {
+            version: Version::V1,
+            truncated: true,
+        }
+    }
+}
+
+impl WriteOptions {
+    /// Parses pyembroidery's version strings: `1`, `1t`, `6`, `6t`.
+    pub fn parse(s: &str) -> Option<Self> {
+        let (v, truncated) = match s.strip_suffix('t') {
+            Some(v) => (v, true),
+            None => (s, false),
+        };
+        let version = match v {
+            "1" => Version::V1,
+            "6" => Version::V6,
+            _ => return None,
+        };
+        Some(Self { version, truncated })
+    }
+}
+
+pub fn write(pattern: &StitchPattern) -> Result<Vec<u8>> {
+    write_with(pattern, &WriteOptions::default())
+}
+
+pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u8>> {
+    let mut w = ByteWriter::default();
+    if options.version == Version::V1 && options.truncated {
+        w.ascii("#PES0001");
+        w.u32le(0x16);
+        w.fill(0, 10);
+        pec::write_section(input, &mut w)?;
+        return Ok(w.bytes);
+    }
+    let pattern = pec::prepare(input);
+    w.ascii(match options.version {
+        Version::V1 => "#PES0001",
+        Version::V6 => "#PES0060",
+    });
+    let pec_placeholder = w.len();
+    w.u32le(0);
+    let has_blocks = !options.truncated && !pattern.stitches.is_empty();
+    match options.version {
+        Version::V1 => {
+            w.u16le(1); // scale to fit
+            w.u16le(1); // hoop
+        }
+        Version::V6 => write_header_v6(&mut w, &pattern)?,
+    }
+    if options.truncated {
+        w.u16le(0);
+        w.fill(0, 5);
+        w.u16le(0);
+        w.u16le(0);
+    } else if has_blocks {
+        w.u16le(1);
+        w.u16le(0xFFFF);
+        w.u16le(0);
+        let color_log = write_blocks(&mut w, &pattern, options.version);
+        if options.version == Version::V6 {
+            w.u32le(0);
+            w.u32le(0);
+            for i in 0..color_log.len() {
+                w.u32le(i as i64);
+                w.u32le(0);
+            }
+        }
+    } else {
+        w.u16le(0);
+        w.u16le(0);
+        w.u16le(0);
+    }
+    w.patch32le(pec_placeholder, w.len() as i64);
+    let list = pec::write_section(&pattern, &mut w)?;
+    if options.version == Version::V6 {
+        if options.truncated {
+            write_addendum(&mut w, &[0xFF], &[]);
+        } else {
+            write_addendum(&mut w, &list, &pattern.threads);
+        }
+        w.u16le(0);
+    }
+    Ok(w.bytes)
+}
+
+fn write_string8(w: &mut ByteWriter, s: Option<&str>) {
+    let Some(s) = s else {
+        w.u8(0);
+        return;
+    };
+    let mut end = s.len().min(255);
+    while !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    w.u8(end as i64);
+    w.append(&s.as_bytes()[..end]);
+}
+
+fn write_string16(w: &mut ByteWriter, s: &str) {
+    w.u16le(s.len() as i64);
+    w.ascii(s);
+}
+
+fn write_header_v6(w: &mut ByteWriter, pattern: &StitchPattern) -> Result<()> {
+    w.u16le(1); // hoop
+    w.ascii("02");
+    for key in METADATA_KEYS {
+        write_string8(w, pattern.metadata.get(key).map(String::as_str));
+    }
+    for v in [
+        0, 0, 0x64, 0x64, 0, 0xC8, 0xC8, 0x64, 0x64, 0x64, 0x07, 0x13, 1, 1, 0, 100, 1, 0,
+    ] {
+        w.u16le(v);
+    }
+    w.u8(0); // image file name
+    for v in [1.0, 0.0, 0.0, 1.0, 0.0, 0.0] {
+        w.f32le(v);
+    }
+    w.u16le(0); // programmable fills
+    w.u16le(0); // motifs
+    w.u16le(0); // feather patterns
+    if pattern.threads.len() > usize::from(u16::MAX) {
+        return Err(FormatError::ValueOutOfRange("PES: too many threads".into()));
+    }
+    w.u16le(pattern.threads.len() as i64);
+    for t in &pattern.threads {
+        write_string8(w, t.catalog_number.as_deref());
+        w.append(&[t.red, t.green, t.blue, 0]);
+        w.u32le(0x0A); // custom colour
+        write_string8(w, t.name.as_deref());
+        write_string8(w, t.brand.as_deref());
+        write_string8(w, None); // chart
+    }
+    Ok(())
+}
+
+/// After a v6 PEC section: the PEC colour list padded to 128 bytes with spaces, 0x90 zero bytes
+/// per thread, then each thread's RGB as u24 little-endian.
+fn write_addendum(w: &mut ByteWriter, list: &[u8], threads: &[Thread]) {
+    w.append(list);
+    w.fill(0x20, 128_usize.saturating_sub(list.len()));
+    for _ in threads {
+        w.fill(0, 0x90);
+    }
+    for t in threads {
+        w.u24le(i64::from(t.rgb_value()));
+    }
+}
+
+/// One `CEmbOne` + `CSewSeg` pair for the whole pattern; returns the colour log.
+fn write_blocks(w: &mut ByteWriter, pattern: &StitchPattern, version: Version) -> Vec<(u16, u16)> {
+    // Bounds over every record, as pyembroidery computes them.
+    let (mut min_x, mut min_y, mut max_x, mut max_y) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+    for s in &pattern.stitches {
+        let (x, y) = (round_coordinate(s.x) as f64, round_coordinate(s.y) as f64);
+        min_x = min_x.min(x);
+        max_x = max_x.max(x);
+        min_y = min_y.min(y);
+        max_y = max_y.max(y);
+    }
+    let (width, height) = (max_x - min_x, max_y - min_y);
+
+    write_string16(w, EMB_ONE);
+    w.fill(0, 16);
+    let trans_x = 350.0 + 1300.0 / 2.0 - width / 2.0;
+    let trans_y = 100.0 + height + 1800.0 / 2.0 - height / 2.0;
+    for v in [1.0, 0.0, 0.0, 1.0, trans_x, trans_y] {
+        w.f32le(v);
+    }
+    w.u16le(1);
+    w.u16le(0);
+    w.u16le(0);
+    w.u16le(width as i64);
+    w.u16le(height as i64);
+    w.fill(0, 8);
+    let sections_at = w.len();
+    w.u16le(0);
+    w.u16le(0xFFFF);
+    w.u16le(0);
+
+    write_string16(w, SEW_SEG);
+    let segments = segments(pattern, version, min_x, max_y);
+    let mut log: Vec<(u16, u16)> = Vec::new();
+    for (i, seg) in segments.iter().enumerate() {
+        if i > 0 {
+            w.u16le(i64::from(SECTION_END));
+        }
+        if log.last().is_none_or(|&(_, c)| c != seg.color) {
+            log.push((i as u16, seg.color));
+        }
+        w.u16le(i64::from(seg.flag));
+        w.u16le(i64::from(seg.color));
+        w.u16le(seg.points.len() as i64);
+        for &(x, y) in &seg.points {
+            w.u16le(i64::from(x));
+            w.u16le(i64::from(y));
+        }
+    }
+    w.u16le(log.len() as i64);
+    for &(section, color) in &log {
+        w.u16le(i64::from(section));
+        w.u16le(i64::from(color));
+    }
+    w.patch16le(sections_at, segments.len() as i64);
+    w.u16le(0);
+    w.u16le(0);
+    log
+}
+
+/// The stitch stream as `CSewSeg` runs: consecutive stitches form one run, a run of jumps
+/// becomes a two-point jump from the last stitch, colour changes switch the thread.
+fn segments(pattern: &StitchPattern, version: Version, min_x: f64, max_y: f64) -> Vec<SewSegment> {
+    let chart: Vec<Option<Thread>> = match version {
+        Version::V1 => PEC_CHART.to_vec(),
+        Version::V6 => pattern.threads.iter().cloned().map(Some).collect(),
+    };
+    let code = |i: usize| {
+        pattern
+            .threads
+            .get(i)
+            .and_then(|t| nearest_index(t, &chart))
+            .unwrap_or(0) as u16
+    };
+    let point = |x: f64, y: f64| {
+        (
+            (round_coordinate(x) as f64 - min_x) as i16,
+            (round_coordinate(y) as f64 - max_y) as i16,
+        )
+    };
+    let mut thread = 0;
+    let mut color = code(0);
+    let (mut sx, mut sy) = (0.0, 0.0);
+    let mut out = Vec::new();
+    let stitches = &pattern.stitches;
+    let mut start = 0;
+    while start < stitches.len() {
+        let command = stitches[start].command;
+        let end = stitches[start..]
+            .iter()
+            .position(|s| s.command != command)
+            .map_or(stitches.len(), |n| start + n);
+        let run = &stitches[start..end];
+        start = end;
+        match command {
+            Command::Jump => {
+                let last = run[run.len() - 1];
+                out.push(SewSegment {
+                    flag: 1,
+                    color,
+                    points: vec![point(sx, sy), point(last.x, last.y)],
+                });
+            }
+            Command::ColorChange => {
+                thread += 1;
+                color = code(thread);
+            }
+            Command::Stitch => {
+                let last = run[run.len() - 1];
+                (sx, sy) = (last.x, last.y);
+                out.push(SewSegment {
+                    flag: 0,
+                    color,
+                    points: run.iter().map(|s| point(s.x, s.y)).collect(),
+                });
+            }
+            _ => {}
+        }
+    }
+    out
+}

@@ -1,0 +1,32 @@
+[package]
+name = "openstitch-engine"
+description = "OpenStitch command engine: session, undo history, command registry, project files"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["formats", "digitize", "library"]
+# File import/export commands (stitches.import, design.export, import.svg).
+formats = ["dep:openstitch-formats", "dep:usvg"]
+# Image conversions (digitize.autoPunch, digitize.crossStitch, digitize.photoStitch, Design Center).
+digitize = ["dep:openstitch-digitize"]
+# Design Database commands (library.*): browse, search, organise, convert, catalogue.
+library = ["formats", "dep:openstitch-library"]
+
+[dependencies]
+openstitch-core.workspace = true
+openstitch-design = { path = "../openstitch-design" }
+openstitch-formats = { path = "../openstitch-formats", optional = true }
+openstitch-digitize = { path = "../openstitch-digitize", optional = true }
+openstitch-print = { path = "../openstitch-print" }
+# Without its system-trash feature: deleting stays in the app (OS trash after confirmation).
+openstitch-library = { path = "../openstitch-library", default-features = false, optional = true }
+# SVG import: parsing, CSS, units and transforms; no text, fonts or compressed SVG.
+usvg = { version = "0.48.1", default-features = false, optional = true }
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

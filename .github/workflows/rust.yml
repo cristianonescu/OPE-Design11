@@ -1,0 +1,56 @@
+name: Rust workspace
+
+# Pull requests: fmt, build, test and clippy on macOS, Windows and Linux.
+# Push to main (a merged PR): the same checks, then executables for all three OSes as
+# workflow artifacts (see build-executables.yml).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-test:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      # eframe loads X11/Wayland libraries at run time (dlopen), so Linux needs no -dev packages
+      # to build; the editor's tests do not open a window.
+      - run: cargo fmt --all -- --check
+      - run: cargo build --workspace --all-targets --locked
+      - run: cargo test --workspace --locked
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+  version-label:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-test
+    runs-on: ubuntu-latest
+    outputs:
+      label: ${{ steps.label.outputs.label }}
+    steps:
+      - id: label
+        run: echo "label=main-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+  executables:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: version-label
+    uses: ./.github/workflows/build-executables.yml
+    with:
+      version: ${{ needs.version-label.outputs.label }}
+      retention-days: 30

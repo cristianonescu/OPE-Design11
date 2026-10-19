@@ -1,0 +1,17 @@
+[
+  {"command": "design.new", "params": {"name": "name drop", "width": 70, "height": 80}},
+  {"command": "decoration.add", "params": {"frame": "shield", "x": 10, "y": 15, "width": 50, "height": 40,
+    "maintainAspect": false, "color": "Blue"}},
+  {"command": "text.add", "params": {"text": "Fernand", "font": "pacifico", "size": 12, "x": 35, "y": 36,
+    "fill": "Red", "name": "name"}},
+  {"command": "text.add", "params": {"text": "TEAM", "size": 5, "x": 35, "y": 48, "fill": "Black",
+    "name": "team"}},
+  {"command": "text.setNameDrop", "params": {"ids": [2, 3], "label": "Name"}},
+  {"command": "text.setNameDrop", "params": {"id": 3, "label": "Team"}},
+  {"command": "nameDrop.list"},
+  {"command": "nameDrop.export", "params": {
+    "rows": [["Ann", "RED TEAM"], ["Bartholomew", "BLUE"], ["Zoë", "GREEN SQUAD"]],
+    "name": "badge"}},
+  {"command": "nameDrop.apply", "params": {"values": ["Bartholomew", "BLUE"]}},
+  {"command": "design.info"}
+]

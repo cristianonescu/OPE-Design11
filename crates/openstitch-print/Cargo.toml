@@ -1,0 +1,16 @@
+[package]
+name = "openstitch-print"
+description = "Printable output for OpenStitch designs: actual-size and reduced prints, positioning sheets, Print and Stitch, as PDF"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Deflate for PDF streams (already in the tree through png/image); pure Rust.
+miniz_oxide = "0.8"
+openstitch-core.workspace = true
+openstitch-design = { path = "../openstitch-design" }
+
+[lints]
+workspace = true

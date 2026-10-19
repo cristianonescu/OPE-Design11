@@ -1,0 +1,110 @@
+[package]
+name = "openstitch-formats-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+openstitch-formats = { path = ".." }
+
+# Kept out of the root workspace (see its `exclude`): cargo-fuzz needs nightly and sanitizers.
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "read_pes"
+path = "fuzz_targets/read_pes.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_pec"
+path = "fuzz_targets/read_pec.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_dst"
+path = "fuzz_targets/read_dst.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_exp"
+path = "fuzz_targets/read_exp.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_jef"
+path = "fuzz_targets/read_jef.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_pcs"
+path = "fuzz_targets/read_pcs.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_sew"
+path = "fuzz_targets/read_sew.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_xxx"
+path = "fuzz_targets/read_xxx.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_hus"
+path = "fuzz_targets/read_hus.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_vip"
+path = "fuzz_targets/read_vip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_shv"
+path = "fuzz_targets/read_shv.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_phc"
+path = "fuzz_targets/read_phc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "read_csd"
+path = "fuzz_targets/read_csd.rs"
+test = false
+doc = false
+bench = false

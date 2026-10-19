@@ -1,0 +1,7 @@
+[
+  {"command": "design.new", "params": {"name": "Initials in a ring", "width": 80, "height": 80}},
+  {"command": "decoration.add", "params": {"frame": "double-ring", "x": 18, "y": 26, "width": 44, "height": 28, "color": "#d4a017"}},
+  {"command": "text.add", "params": {"text": "ABC", "size": 16, "x": 40, "y": 48, "fill": "Blue", "name": "Initials"}},
+  {"command": "text.setNameDrop", "params": {"id": 4, "label": "Initials"}},
+  {"command": "template.save", "params": {"path": "../../crates/openstitch-engine/templates/initials-ring.ostemplate", "category": "Monograms", "description": "Initials inside a double ring"}}
+]

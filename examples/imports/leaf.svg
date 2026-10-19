@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="60mm" height="60mm" viewBox="0 0 60 60">
+  <!-- OpenStitch example artwork (MIT OR Apache-2.0, like the project). -->
+  <path d="M 30 4 C 50 12 54 36 30 56 C 6 36 10 12 30 4 Z" fill="#3c9a3c" stroke="#1d4d1d"/>
+  <path d="M 30 8 L 30 54" fill="none" stroke="#1d4d1d"/>
+  <circle cx="47" cy="12" r="6" fill="#f0c020"/>
+  <rect x="4" y="44" width="14" height="10" rx="3" fill="#c04020"/>
+</svg>

@@ -1,0 +1,20 @@
+[
+  {"command": "design.new", "params": {"name": "font creator", "width": 100, "height": 60}},
+  {"command": "fonts.create", "params": {"id": "my-block", "family": "My Block", "height": 10}},
+  {"command": "fonts.convertTrueType", "params": {"font": "my-block", "from": "lato-bold", "chars": "OPENSTICH "}},
+  {"command": "shape.preset", "params": {"kind": "heart", "cx": 25, "cy": 55, "width": 9, "height": 10}},
+  {"command": "fonts.setGlyph", "params": {"font": "my-block", "char": "♥", "id": 1, "x": 20, "y": 60, "advance": 11}},
+  {"command": "object.delete", "params": {"id": 1}},
+  {"command": "fonts.editGlyph", "params": {"font": "my-block", "char": "I", "x": 20, "y": 60}},
+  {"command": "object.setPoint", "params": {"id": 2, "index": 2, "x": 22.6, "y": 50}},
+  {"command": "object.setPoint", "params": {"id": 2, "index": 3, "x": 24.5, "y": 50}},
+  {"command": "fonts.setGlyph", "params": {"font": "my-block", "char": "I", "id": 2, "x": 20, "y": 60}},
+  {"command": "object.delete", "params": {"id": 2}},
+  {"command": "fonts.setMetrics", "params": {"font": "my-block", "lineGap": 2}},
+  {"command": "fonts.list"},
+  {"command": "fonts.save", "params": {"font": "my-block", "path": "my-block.osfont"}},
+  {"command": "text.add", "params": {"text": "OPEN ♥\nSTITCH", "font": "my-block", "size": 12,
+    "x": 50, "y": 25, "fill": "Red"}},
+  {"command": "object.setRegion", "params": {"id": 3, "type": "satin", "angle": 90}},
+  {"command": "design.info"}
+]

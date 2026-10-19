@@ -1,0 +1,4 @@
+[Thumbnailer Entry]
+TryExec=openstitch-thumbnailer
+Exec=openstitch-thumbnailer -s %s %i %o
+MimeType=application/x-openstitch-design;application/x-pes-embroidery;

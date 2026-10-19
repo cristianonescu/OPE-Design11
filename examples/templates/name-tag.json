@@ -1,0 +1,9 @@
+[
+  {"command": "design.new", "params": {"name": "Name tag", "width": 100, "height": 40}},
+  {"command": "shape.preset", "params": {"kind": "polygon", "sides": 6, "cx": 50, "cy": 20, "width": 92, "height": 34, "outline": "Black", "name": "Border"}},
+  {"command": "text.add", "params": {"text": "Alexandra", "size": 9, "x": 50, "y": 21, "fill": "Blue", "name": "Name"}},
+  {"command": "text.add", "params": {"text": "Head Chef", "size": 4, "x": 50, "y": 29, "fill": "Black", "name": "Role"}},
+  {"command": "text.setNameDrop", "params": {"id": 2, "label": "Name"}},
+  {"command": "text.setNameDrop", "params": {"id": 3, "label": "Role"}},
+  {"command": "template.save", "params": {"path": "../../crates/openstitch-engine/templates/name-tag.ostemplate", "category": "Labels", "description": "Name and role in a hexagon border"}}
+]

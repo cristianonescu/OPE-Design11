@@ -1,0 +1,54 @@
+[
+ {
+  "command": "design.new",
+  "params": {
+   "name": "programmable fill",
+   "width": 90,
+   "height": 40
+  }
+ },
+ {
+  "command": "shape.rectangle",
+  "params": {
+   "x": 2,
+   "y": 2,
+   "width": 40,
+   "height": 36,
+   "fill": "Blue"
+  }
+ },
+ {
+  "command": "object.setRegion",
+  "params": {
+   "id": 1,
+   "type": "programmableFill",
+   "pattern": "diamonds",
+   "patternWidth": 12,
+   "patternHeight": 12,
+   "density": 2.2,
+   "stitchLength": 4
+  }
+ },
+ {
+  "command": "shape.rectangle",
+  "params": {
+   "x": 48,
+   "y": 2,
+   "width": 40,
+   "height": 36,
+   "fill": "Red"
+  }
+ },
+ {
+  "command": "object.setRegion",
+  "params": {
+   "id": 2,
+   "type": "programmableFill",
+   "pattern": "circles",
+   "patternWidth": 12,
+   "patternHeight": 12,
+   "density": 2.2,
+   "stitchLength": 4
+  }
+ }
+]

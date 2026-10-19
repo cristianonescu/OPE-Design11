@@ -1,0 +1,31 @@
+[package]
+name = "openstitch-library"
+description = "OpenStitch Design Database: folder scan, design index, thumbnails, search, file organisation, batch conversion and catalogues (PDF, PNG, HTML, CSV)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+# openstitch-design (shape operations) needs Rust 1.88.
+rust-version = "1.88"
+
+[features]
+default = ["system-trash"]
+# Deleting to the operating system's trash / Recycle Bin (the `trash` crate).
+system-trash = ["dep:trash"]
+
+[dependencies]
+openstitch-core.workspace = true
+openstitch-design = { path = "../openstitch-design" }
+openstitch-formats = { path = "../openstitch-formats" }
+tiny-skia = { version = "0.12.0", default-features = false, features = ["std", "simd"] }
+png = "0.18.1"
+miniz_oxide = "0.8.9"
+trash = { version = "5.2.9", default-features = false, features = ["coinit_apartmentthreaded"], optional = true }
+
+[dev-dependencies]
+# Tests build designs through commands. Without default features the engine does not
+# depend on this crate, so there is no cycle.
+openstitch-engine = { path = "../openstitch-engine", default-features = false }
+serde_json.workspace = true
+
+[lints]
+workspace = true

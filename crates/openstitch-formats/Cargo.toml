@@ -1,0 +1,17 @@
+[package]
+name = "openstitch-formats"
+description = "Embroidery machine file codecs: PES, PEC, DST, EXP, JEF, PCS, SEW, XXX, HUS, VIP; SHV, PHC, CSD (read)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+openstitch-core.workspace = true
+
+[dev-dependencies]
+serde = { workspace = true }
+serde_json.workspace = true
+
+[lints]
+workspace = true

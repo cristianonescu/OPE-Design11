@@ -1,0 +1,14 @@
+[
+  {"command": "design.new", "params": {"name": "stamps", "width": 100, "height": 60}},
+  {"command": "shape.rectangle", "params": {"x": 5, "y": 5, "width": 42, "height": 50, "fill": "Red"}},
+  {"command": "object.setRegion", "params": {"id": 1, "angle": 45, "density": 4}},
+  {"command": "shape.preset", "params": {"kind": "heart", "cx": 26, "cy": 30, "width": 28}},
+  {"command": "shape.emboss", "params": {"id": 1, "tool": 2, "effect": "embossedRegion"}},
+  {"command": "shape.rectangle", "params": {"x": 53, "y": 5, "width": 42, "height": 50, "fill": "Blue"}},
+  {"command": "object.setRegion", "params": {"id": 3, "angle": 0, "density": 4}},
+  {"command": "object.addStamp", "params": {"id": 3, "pattern": "star", "effect": "engravedRegion", "x": 64, "y": 18, "size": 14}},
+  {"command": "object.addStamp", "params": {"id": 3, "pattern": "circle", "effect": "engravedLine", "x": 84, "y": 18, "size": 14}},
+  {"command": "object.addStamp", "params": {"id": 3, "pattern": "diamond", "effect": "embossedRegion", "x": 74, "y": 40, "size": 18, "rotation": 15}},
+  {"command": "design.info"},
+  {"command": "project.save", "params": {"path": "stamps.osd"}}
+]

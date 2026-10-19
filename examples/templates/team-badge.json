@@ -1,0 +1,9 @@
+[
+  {"command": "design.new", "params": {"name": "Team badge", "width": 70, "height": 80}},
+  {"command": "decoration.add", "params": {"frame": "shield", "x": 10, "y": 15, "width": 50, "height": 40, "maintainAspect": false, "color": "Blue"}},
+  {"command": "text.add", "params": {"text": "Player", "font": "pacifico", "size": 12, "x": 35, "y": 36, "fill": "Red", "name": "Name"}},
+  {"command": "text.add", "params": {"text": "TEAM", "size": 5, "x": 35, "y": 48, "fill": "Black", "name": "Team"}},
+  {"command": "text.setNameDrop", "params": {"id": 2, "label": "Name"}},
+  {"command": "text.setNameDrop", "params": {"id": 3, "label": "Team"}},
+  {"command": "template.save", "params": {"path": "../../crates/openstitch-engine/templates/team-badge.ostemplate", "category": "Badges", "description": "Shield with a script name and a team line"}}
+]

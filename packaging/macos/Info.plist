@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key>
+  <string>OpenStitch</string>
+  <key>CFBundleDisplayName</key>
+  <string>OpenStitch</string>
+  <key>CFBundleIdentifier</key>
+  <string>io.github.cristianonescu.openstitch</string>
+  <key>CFBundleExecutable</key>
+  <string>openstitch</string>
+  <key>CFBundleIconFile</key>
+  <string>openstitch</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>@VERSION@</string>
+  <key>CFBundleVersion</key>
+  <string>@VERSION@</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>11.0</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.graphics-design</string>
+
+  <!-- File associations: OpenStitch projects are owned; PES embroidery files are opened as an
+       alternate editor so an installed PE-DESIGN or other handler keeps priority. -->
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>OpenStitch Design</string>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+      <key>LSHandlerRank</key>
+      <string>Owner</string>
+      <key>CFBundleTypeIconFile</key>
+      <string>openstitch</string>
+      <key>LSItemContentTypes</key>
+      <array>
+        <string>io.github.cristianonescu.openstitch.design</string>
+      </array>
+    </dict>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>PES Embroidery File</string>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+      <key>LSHandlerRank</key>
+      <string>Alternate</string>
+      <key>LSItemContentTypes</key>
+      <array>
+        <string>io.github.cristianonescu.openstitch.pes</string>
+      </array>
+    </dict>
+  </array>
+
+  <key>UTExportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key>
+      <string>io.github.cristianonescu.openstitch.design</string>
+      <key>UTTypeDescription</key>
+      <string>OpenStitch Design</string>
+      <key>UTTypeConformsTo</key>
+      <array>
+        <string>public.json</string>
+      </array>
+      <key>UTTypeIconFile</key>
+      <string>openstitch</string>
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key>
+        <array>
+          <string>osd</string>
+        </array>
+      </dict>
+    </dict>
+  </array>
+  <key>UTImportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key>
+      <string>io.github.cristianonescu.openstitch.pes</string>
+      <key>UTTypeDescription</key>
+      <string>PES Embroidery File</string>
+      <key>UTTypeConformsTo</key>
+      <array>
+        <string>public.data</string>
+      </array>
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key>
+        <array>
+          <string>pes</string>
+        </array>
+      </dict>
+    </dict>
+  </array>
+</dict>
+</plist>

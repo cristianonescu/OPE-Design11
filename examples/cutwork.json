@@ -1,0 +1,119 @@
+[
+ {
+  "command": "design.new",
+  "params": {
+   "name": "cutwork",
+   "width": 250,
+   "height": 120
+  }
+ },
+ {
+  "command": "shape.preset",
+  "params": {
+   "kind": "teardrop",
+   "cx": 60.0,
+   "cy": 38.0,
+   "width": 24,
+   "height": 36,
+   "rotation": 180,
+   "fill": "Blue"
+  }
+ },
+ {
+  "command": "shape.preset",
+  "params": {
+   "kind": "teardrop",
+   "cx": 82.0,
+   "cy": 60.0,
+   "width": 24,
+   "height": 36,
+   "rotation": 270,
+   "fill": "Blue"
+  }
+ },
+ {
+  "command": "shape.preset",
+  "params": {
+   "kind": "teardrop",
+   "cx": 60.0,
+   "cy": 82.0,
+   "width": 24,
+   "height": 36,
+   "rotation": 360,
+   "fill": "Blue"
+  }
+ },
+ {
+  "command": "shape.preset",
+  "params": {
+   "kind": "teardrop",
+   "cx": 38.0,
+   "cy": 60.0,
+   "width": 24,
+   "height": 36,
+   "rotation": 450,
+   "fill": "Blue"
+  }
+ },
+ {
+  "command": "wizard.cutwork",
+  "params": {
+   "ids": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "netPattern": 2,
+   "netSpacing": 3,
+   "netDirection": 0,
+   "coverWidth": 4,
+   "coverDensity": 6.5,
+   "color": "Blue"
+  }
+ },
+ {
+  "command": "shape.ellipse",
+  "params": {
+   "cx": 145,
+   "cy": 60,
+   "rx": 28,
+   "fill": "Deep Rose"
+  }
+ },
+ {
+  "command": "wizard.cutwork",
+  "params": {
+   "ids": [
+    12
+   ],
+   "netPattern": 4,
+   "netSpacing": 5,
+   "netDirection": 30,
+   "coverWidth": 5,
+   "coverDensity": 6
+  }
+ },
+ {
+  "command": "shape.preset",
+  "params": {
+   "kind": "star",
+   "cx": 215,
+   "cy": 60,
+   "width": 50,
+   "fill": "Black"
+  }
+ },
+ {
+  "command": "wizard.cutwork",
+  "params": {
+   "ids": [
+    20
+   ],
+   "stabilize": false,
+   "secureStabilizer": false,
+   "netFill": false,
+   "cover": false
+  }
+ }
+]

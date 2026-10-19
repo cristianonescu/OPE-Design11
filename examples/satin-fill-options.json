@@ -1,0 +1,161 @@
+[
+ {
+  "command": "design.new",
+  "params": {
+   "name": "satin and fill options",
+   "width": 130,
+   "height": 100
+  }
+ },
+ {
+  "command": "shape.polygon",
+  "params": {
+   "points": [
+    [
+     8,
+     30
+    ],
+    [
+     30,
+     8
+    ],
+    [
+     38,
+     14
+    ],
+    [
+     16,
+     38
+    ]
+   ],
+   "fill": "Red"
+  }
+ },
+ {
+  "command": "object.setRegion",
+  "params": {
+   "type": "satin",
+   "autoDirection": true,
+   "id": 1
+  }
+ },
+ {
+  "command": "shape.rectangle",
+  "params": {
+   "x": 48,
+   "y": 8,
+   "width": 30,
+   "height": 30,
+   "fill": "Blue"
+  }
+ },
+ {
+  "command": "object.setRegion",
+  "params": {
+   "type": "satin",
+   "angle": 0,
+   "gradation": 20,
+   "id": 2
+  }
+ },
+ {
+  "command": "shape.rectangle",
+  "params": {
+   "x": 88,
+   "y": 8,
+   "width": 34,
+   "height": 30,
+   "fill": "Emerald Green"
+  }
+ },
+ {
+  "command": "object.setRegion",
+  "params": {
+   "type": "satin",
+   "angle": 90,
+   "featherSide": "both",
+   "featherWidth": 4,
+   "id": 3
+  }
+ },
+ {
+  "command": "shape.rectangle",
+  "params": {
+   "x": 8,
+   "y": 52,
+   "width": 34,
+   "height": 30,
+   "fill": "Purple"
+  }
+ },
+ {
+  "command": "object.setRegion",
+  "params": {
+   "type": "satin",
+   "angle": 0,
+   "splitLength": 5,
+   "density": 2,
+   "id": 4
+  }
+ },
+ {
+  "command": "shape.ellipse",
+  "params": {
+   "cx": 65,
+   "cy": 67,
+   "rx": 16,
+   "ry": 15,
+   "fill": "Orange"
+  }
+ },
+ {
+  "command": "object.setRegion",
+  "params": {
+   "type": "fill",
+   "angle": 30,
+   "underlay": true,
+   "underlayStyle": "double",
+   "underlaySpacing": 3,
+   "density": 1.2,
+   "id": 5
+  }
+ },
+ {
+  "command": "shape.ellipse",
+  "params": {
+   "cx": 106,
+   "cy": 67,
+   "rx": 17,
+   "ry": 17,
+   "fill": "Deep Rose"
+  }
+ },
+ {
+  "command": "shape.ellipse",
+  "params": {
+   "cx": 106,
+   "cy": 67,
+   "rx": 8,
+   "ry": 8
+  }
+ },
+ {
+  "command": "shape.combine",
+  "params": {
+   "ids": [
+    6,
+    7
+   ],
+   "op": "difference"
+  }
+ },
+ {
+  "command": "object.setRegion",
+  "params": {
+   "id": 6,
+   "type": "fill",
+   "angle": 0,
+   "travel": true
+  }
+ }
+]

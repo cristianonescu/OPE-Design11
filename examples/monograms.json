@@ -1,0 +1,12 @@
+[
+  {"command": "design.new", "params": {"name": "monograms", "width": 200, "height": 130}},
+  {"command": "text.add", "params": {"text": "Stitch", "font": "pacifico", "size": 10, "x": 160, "y": 102, "fill": "Red"}},
+  {"command": "monogram.list"},
+  {"command": "monogram.add", "params": {"letters": "JDM", "style": "block", "size": 22, "x": 40, "y": 35, "frame": "ring", "fill": "Red", "frameColor": "Blue"}},
+  {"command": "monogram.add", "params": {"letters": "ae", "style": "script", "size": 22, "x": 100, "y": 35, "frame": "laurel", "fill": "Blue", "frameColor": "#3c8d2f"}},
+  {"command": "monogram.add", "params": {"letters": "KLM", "style": "diamond", "size": 26, "x": 160, "y": 35, "frame": "diamond", "fill": "Black", "frameColor": "Red"}},
+  {"command": "monogram.add", "params": {"letters": "OSE", "style": "circle", "size": 26, "x": 40, "y": 98, "frame": "scallop", "fill": "#7b2d8e", "frameColor": "#d4a017"}},
+  {"command": "monogram.add", "params": {"letters": "R", "style": "block", "size": 24, "x": 100, "y": 98, "frame": "shield", "fill": "Black", "frameColor": "Blue", "margin": 3}},
+  {"command": "decoration.add", "params": {"frame": "stars", "ids": [1], "color": "#d4a017", "margin": 3}},
+  {"command": "design.info"}
+]

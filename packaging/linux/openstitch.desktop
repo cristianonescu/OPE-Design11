@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=OpenStitch
+GenericName=Embroidery Design Editor
+Comment=Create and edit machine embroidery designs
+Exec=openstitch %f
+Icon=openstitch
+Terminal=false
+Categories=Graphics;VectorGraphics;
+MimeType=application/x-openstitch-design;application/x-pes-embroidery;
+Keywords=embroidery;stitch;pes;dst;

@@ -1,0 +1,9 @@
+[
+  {"command": "design.new", "params": {"name": "Baby bib", "width": 90, "height": 70}},
+  {"command": "shape.preset", "params": {"kind": "heart", "cx": 45, "cy": 22, "width": 18, "fill": "Red", "name": "Heart"}},
+  {"command": "text.add", "params": {"text": "Little One", "font": "pacifico", "size": 10, "x": 45, "y": 48, "fill": "Pink", "name": "Name"}},
+  {"command": "text.add", "params": {"text": "2026", "size": 5, "x": 45, "y": 60, "fill": "Black", "name": "Date"}},
+  {"command": "text.setNameDrop", "params": {"id": 2, "label": "Name"}},
+  {"command": "text.setNameDrop", "params": {"id": 3, "label": "Date"}},
+  {"command": "template.save", "params": {"path": "../../crates/openstitch-engine/templates/baby-bib.ostemplate", "category": "Babies", "description": "Heart over a name and a date"}}
+]

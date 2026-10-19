@@ -1,0 +1,18 @@
+[package]
+name = "stitchtool"
+description = "OpenStitch command-line tool: scripted commands and a JSON-lines control channel"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["formats"]
+formats = ["openstitch-engine/formats"]
+
+[dependencies]
+openstitch-engine = { path = "../openstitch-engine" }
+serde_json.workspace = true
+
+[lints]
+workspace = true

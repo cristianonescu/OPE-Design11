@@ -1,0 +1,6 @@
+[
+  {"command": "template.list"},
+  {"command": "template.open", "params": {"template": "builtin:team-badge"}},
+  {"command": "template.fill", "params": {"values": {"Name": "Yuki", "Team": "HARRIERS"}}},
+  {"command": "design.info"}
+]

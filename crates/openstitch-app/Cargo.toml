@@ -1,0 +1,30 @@
+[package]
+name = "openstitch-app"
+description = "OpenStitch desktop editor (egui on wgpu) for macOS, Windows and Linux"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+# eframe 0.37 needs Rust 1.95.
+rust-version = "1.95"
+
+[[bin]]
+name = "openstitch"
+path = "src/main.rs"
+
+[dependencies]
+openstitch-core.workspace = true
+openstitch-design = { path = "../openstitch-design" }
+openstitch-engine = { path = "../openstitch-engine" }
+openstitch-formats = { path = "../openstitch-formats" }
+openstitch-library = { path = "../openstitch-library" }
+# Size-limited PNG/JPEG/BMP decoding for the background reference image.
+openstitch-digitize = { path = "../openstitch-digitize" }
+# Images on the clipboard (already used by eframe for text).
+arboard = "3.7"
+serde_json.workspace = true
+# Defaults: wgpu renderer, winit with X11 + Wayland (dlopen, so no system -dev packages), accesskit, clipboard, system font fallback.
+eframe = "0.37"
+rfd = "0.17"
+
+[lints]
+workspace = true

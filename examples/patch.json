@@ -1,0 +1,68 @@
+[
+ {
+  "command": "design.new",
+  "params": {
+   "name": "patch",
+   "width": 200,
+   "height": 100
+  }
+ },
+ {
+  "command": "shape.preset",
+  "params": {
+   "kind": "star",
+   "cx": 50,
+   "cy": 42,
+   "width": 40,
+   "fill": "Yellow"
+  }
+ },
+ {
+  "command": "text.add",
+  "params": {
+   "text": "OS",
+   "x": 50,
+   "y": 78,
+   "size": 12,
+   "fill": "Blue"
+  }
+ },
+ {
+  "command": "wizard.patch",
+  "params": {
+   "ids": [
+    1,
+    2
+   ],
+   "width": 3,
+   "density": 4.5,
+   "distance": 5,
+   "cutDistance": 3,
+   "color": "Red"
+  }
+ },
+ {
+  "command": "shape.preset",
+  "params": {
+   "kind": "heart",
+   "cx": 150,
+   "cy": 50,
+   "width": 45,
+   "fill": "Deep Rose"
+  }
+ },
+ {
+  "command": "wizard.patch",
+  "params": {
+   "ids": [
+    6
+   ],
+   "width": 4,
+   "density": 5,
+   "distance": 3,
+   "cutting": "cutting",
+   "cutDistance": 2,
+   "color": "Black"
+  }
+ }
+]

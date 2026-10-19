@@ -1,0 +1,211 @@
+name: Build executables
+
+# Builds and packages OpenStitch for macOS (universal), Linux and Windows:
+#   - the desktop app as an installable package (OpenStitch.app zip, MSI + zip, tarball with
+#     install.sh), using the scripts in packaging/;
+#   - the command-line tools (stitchtool, openstitch-mcp) as an archive.
+# One workflow artifact per OS. Called by rust.yml after every push to main and by release.yml
+# for a version tag; it also runs on pull requests that change packaging, so packaging changes
+# are tested before they merge. Nothing here publishes a release.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Label used in archive names (e.g. main-<sha> or v0.2.0)"
+        required: true
+        type: string
+      retention-days:
+        required: false
+        type: number
+        default: 30
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Label used in archive names"
+        required: true
+        type: string
+  pull_request:
+    paths:
+      - ".github/workflows/build-executables.yml"
+      - "packaging/**"
+      - "assets/icons/**"
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macos-universal
+            os: macos-latest
+          - name: linux-x86_64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - name: windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    env:
+      LABEL: ${{ inputs.version || format('pr{0}-{1}', github.event.pull_request.number, github.run_number) }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.name }}
+
+      - name: Cargo version
+        shell: bash
+        run: echo "CARGO_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)" >> "$GITHUB_ENV"
+
+      # ---- build ---------------------------------------------------------------------------
+
+      - name: Build (macOS, arm64 + x86_64 → universal)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for t in aarch64-apple-darwin x86_64-apple-darwin; do
+            cargo build --release --locked --target "$t" -p openstitch-app -p stitchtool -p openstitch-mcp
+          done
+          mkdir -p bin
+          for b in openstitch stitchtool openstitch-mcp; do
+            lipo -create -output "bin/$b" \
+              "target/aarch64-apple-darwin/release/$b" "target/x86_64-apple-darwin/release/$b"
+            lipo -info "bin/$b"
+          done
+
+      - name: Build (Linux / Windows)
+        if: runner.os != 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --target "${{ matrix.target }}" -p openstitch-app -p stitchtool -p openstitch-mcp
+          mkdir -p bin
+          ext=""; [ "$RUNNER_OS" = "Windows" ] && ext=".exe"
+          for b in openstitch stitchtool openstitch-mcp; do
+            cp "target/${{ matrix.target }}/release/$b$ext" bin/
+          done
+          # Linux: the freedesktop thumbnailer ships next to the editor (packaging/linux).
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            cargo build --release --locked --target "${{ matrix.target }}" -p openstitch-render
+            cp "target/${{ matrix.target }}/release/openstitch-thumbnailer" bin/
+          fi
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          ext=""; [ "$RUNNER_OS" = "Windows" ] && ext=".exe"
+          work="$RUNNER_TEMP/smoke"; mkdir -p "$work"; cp -R examples "$work/"
+          "bin/stitchtool$ext" commands > /dev/null
+          "bin/stitchtool$ext" exec "$work/examples/badge.json" > /dev/null
+          test -s "$work/examples/badge.pes"
+          "bin/openstitch-mcp$ext" --help > /dev/null
+
+      # ---- package ---------------------------------------------------------------------------
+
+      - name: CLI archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="openstitch-cli-$LABEL-${{ matrix.name }}"
+          mkdir -p "stage/$name" dist
+          ext=""; [ "$RUNNER_OS" = "Windows" ] && ext=".exe"
+          cp "bin/stitchtool$ext" "bin/openstitch-mcp$ext" README.md THIRD_PARTY_NOTICES.md "stage/$name/"
+          cp -R examples "stage/$name/examples"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            (cd stage && 7z a -tzip "../dist/$name.zip" "$name" > /dev/null)
+          else
+            tar -C stage -czf "dist/$name.tar.gz" "$name"
+          fi
+
+      - name: macOS app bundle
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          packaging/macos/bundle.sh bin/openstitch "$CARGO_VERSION" app-out
+          codesign --verify --deep --strict app-out/OpenStitch.app
+          plist=app-out/OpenStitch.app/Contents/Info.plist
+          # .osd is declared as an exported UTI; the document types refer to that UTI.
+          plutil -extract UTExportedTypeDeclarations xml1 -o - "$plist" | grep -q '<string>osd</string>'
+          plutil -extract CFBundleDocumentTypes xml1 -o - "$plist" | grep -q 'io.github.cristianonescu.openstitch.design'
+          lipo -info app-out/OpenStitch.app/Contents/MacOS/openstitch | grep -q arm64
+          mv app-out/OpenStitch-*.zip "dist/OpenStitch-$LABEL-macos-universal.zip"
+
+      - name: Linux tarball
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          packaging/linux/package.sh bin/openstitch "$CARGO_VERSION" app-out
+          sudo apt-get install -y --no-install-recommends desktop-file-utils shared-mime-info libxml2-utils
+          desktop-file-validate packaging/linux/openstitch.desktop
+          xmllint --noout packaging/linux/openstitch-mime.xml
+          dir=$(ls -d app-out/openstitch-*-linux-*/)
+          PREFIX="$RUNNER_TEMP/prefix" sh "$dir/install.sh"
+          test -x "$RUNNER_TEMP/prefix/bin/openstitch"
+          grep -q 'application/x-openstitch-design:\*.osd' "$RUNNER_TEMP/prefix/share/mime/globs2"
+          grep -q 'application/x-pes-embroidery:\*.pes' "$RUNNER_TEMP/prefix/share/mime/globs2"
+          # The thumbnailer is installed with its entry and renders the smoke-test file.
+          test -f "$RUNNER_TEMP/prefix/share/thumbnailers/openstitch.thumbnailer"
+          "$RUNNER_TEMP/prefix/bin/openstitch-thumbnailer" -s 128 "$RUNNER_TEMP/smoke/examples/badge.pes" "$RUNNER_TEMP/thumb.png"
+          test -s "$RUNNER_TEMP/thumb.png"
+          mv app-out/openstitch-*-linux-*.tar.gz "dist/OpenStitch-$LABEL-linux-x86_64.tar.gz"
+
+      - name: Windows zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $name = "OpenStitch-$env:LABEL-windows-x86_64"
+          New-Item -ItemType Directory -Force "stage-win\$name" | Out-Null
+          Copy-Item bin\openstitch.exe, README.md, THIRD_PARTY_NOTICES.md, assets\icons\openstitch.ico "stage-win\$name\"
+          Compress-Archive -Path "stage-win\$name" -DestinationPath "dist\$name.zip"
+
+      - name: WiX Toolset 3
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) {
+            $bin = Get-ChildItem "${env:ProgramFiles(x86)}\WiX Toolset v3*\bin" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $bin) {
+              choco install wixtoolset --no-progress -y
+              $bin = Get-ChildItem "${env:ProgramFiles(x86)}\WiX Toolset v3*\bin" | Select-Object -First 1
+            }
+            $bin.FullName | Out-File -FilePath $env:GITHUB_PATH -Append
+          }
+
+      - name: Windows MSI
+        if: runner.os == 'Windows'
+        shell: pwsh
+        # PowerShell splits an unquoted argument starting with '-' at its first '.', so every
+        # -d define is quoted. ICE50 (shortcut icon extension must match the .exe) is suppressed
+        # because openstitch.exe has no embedded icon resource yet, so the advertised shortcut
+        # uses openstitch.ico; drop -sice:ICE50 once the exe embeds its icon.
+        run: |
+          candle.exe -nologo -arch x64 "-dVersion=$env:CARGO_VERSION" "-dBinary=bin\openstitch.exe" "-dIcon=assets\icons\openstitch.ico" "-dNotices=THIRD_PARTY_NOTICES.md" -out openstitch.wixobj packaging\windows\openstitch.wxs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          light.exe -nologo -sice:ICE50 -out "dist\OpenStitch-$env:LABEL-windows-x86_64.msi" openstitch.wixobj
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: List
+        shell: bash
+        run: ls -l dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openstitch-${{ env.LABEL }}-${{ matrix.name }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention-days || 7 }}

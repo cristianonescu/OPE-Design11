@@ -1,0 +1,164 @@
+//! Artwork imports: SVG paths as shapes, raster background images.
+#![cfg(all(feature = "formats", feature = "digitize"))]
+
+use openstitch_design::ObjectKind;
+use openstitch_digitize::Raster;
+use openstitch_engine::Session;
+use serde_json::{Value, json};
+use std::path::PathBuf;
+
+fn temp_dir() -> PathBuf {
+    let n = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let dir = std::env::temp_dir().join(format!(
+        "openstitch-imports-{n}-{:?}",
+        std::thread::current().id()
+    ));
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    dir
+}
+
+fn run(s: &mut Session, id: &str, params: Value) -> Value {
+    s.execute(id, Some(&params))
+        .unwrap_or_else(|e| panic!("{id}: {e}"))
+}
+
+const ARTWORK: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="40mm" height="20mm" viewBox="0 0 40 20">
+  <rect x="0" y="0" width="20" height="20" fill="#e01010"/>
+  <circle cx="30" cy="10" r="8" fill="#1040c0" stroke="#000000"/>
+  <path d="M 2 18 C 10 10 30 30 38 18" fill="none" stroke="#00a000"/>
+</svg>"##;
+
+#[test]
+fn svg_paths_become_grouped_editable_shapes_in_one_undo_step() {
+    let dir = temp_dir();
+    std::fs::write(dir.join("art.svg"), ARTWORK).expect("svg");
+    let mut s = Session::new(&dir);
+    let out = run(
+        &mut s,
+        "import.svg",
+        json!({"path": "art.svg", "x": 10, "y": 15}),
+    );
+    let ids = out["ids"].as_array().expect("ids");
+    assert_eq!(ids.len(), 3);
+    let d = s.design();
+    assert!(d.objects.iter().all(|o| o.kind == ObjectKind::Shape));
+    let group = d.objects[0].group.expect("grouped");
+    assert!(d.objects.iter().all(|o| o.group == Some(group)));
+    // Fill → fill region in the SVG colour; stroke → running line; open path → line only.
+    assert_eq!(
+        d.objects[0]
+            .region
+            .as_ref()
+            .map(|r| r.thread.hex())
+            .as_deref(),
+        Some("#e01010")
+    );
+    assert!(d.objects[0].line.is_none());
+    assert!(d.objects[1].region.is_some() && d.objects[1].line.is_some());
+    assert!(d.objects[2].region.is_none() && d.objects[2].line.is_some());
+    assert!(d.objects[1].contours[0].has_curves());
+    // Physical size kept (40 × 20 mm) and placed at (10, 15) mm.
+    let xs = d
+        .objects
+        .iter()
+        .flat_map(|o| o.contours.iter())
+        .flat_map(|c| c.points.iter());
+    let (min_x, max_x) = xs.fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.x), b.max(p.x)));
+    assert!((min_x - 100.0).abs() < 1e-3, "{min_x}");
+    assert!((max_x - 480.0).abs() < 1e-3, "{max_x}"); // circle edge at 38 mm; usvg works in f32
+    let stats = run(&mut s, "design.generate", json!({}));
+    assert!(stats["stitches"].as_u64().unwrap_or(0) > 0, "{stats}");
+
+    run(&mut s, "history.undo", json!({}));
+    assert!(s.design().objects.is_empty());
+
+    // Scaled to a width.
+    run(
+        &mut s,
+        "import.svg",
+        json!({"path": "art.svg", "width": 80}),
+    );
+    let b = s
+        .design()
+        .objects
+        .iter()
+        .flat_map(|o| o.contours.iter())
+        .flat_map(|c| c.points.iter());
+    let (lo, hi) = b.fold((f64::MAX, f64::MIN), |(a, z), p| (a.min(p.x), z.max(p.x)));
+    assert!((hi - lo - 800.0).abs() < 1e-3, "{}", hi - lo);
+}
+
+#[test]
+fn svg_import_rejects_bad_files_and_never_reads_linked_images() {
+    let dir = temp_dir();
+    std::fs::write(dir.join("junk.svg"), "<svg").expect("junk");
+    std::fs::write(
+        dir.join("empty.svg"),
+        r#"<svg xmlns="http://www.w3.org/2000/svg"><image href="/etc/hosts" width="9" height="9"/></svg>"#,
+    )
+    .expect("empty");
+    let mut s = Session::new(&dir);
+    for (params, why) in [
+        (json!({"path": "junk.svg"}), "parse"),
+        (json!({"path": "empty.svg"}), "nothing to import"),
+        (json!({"path": "missing.svg"}), "missing"),
+        (json!({"path": "../outside.svg"}), "sandbox"),
+        (json!({"path": "art.svg", "width": -3}), "width"),
+    ] {
+        assert!(s.execute("import.svg", Some(&params)).is_err(), "{why}");
+    }
+    assert!(s.design().objects.is_empty());
+}
+
+#[test]
+fn background_image_is_placed_shown_saved_and_undone() {
+    let dir = temp_dir();
+    let img = Raster::from_fn(200, 100, |x, _| [x as u8, 0, 0, 255]).expect("raster");
+    std::fs::write(dir.join("ref.png"), img.encode_png().expect("png")).expect("write");
+    let mut s = Session::new(&dir);
+    let out = run(
+        &mut s,
+        "background.set",
+        json!({"path": "ref.png", "width": 50}),
+    );
+    assert_eq!(out["pixels"], json!([200, 100]));
+    let b = s.design().background.clone().expect("background");
+    assert_eq!((b.width, b.height), (500.0, 250.0));
+    assert_eq!(b.opacity, 0.5);
+    assert!(b.path.ends_with("ref.png"));
+
+    run(
+        &mut s,
+        "background.show",
+        json!({"visible": false, "opacity": 0.8}),
+    );
+    let b = s.design().background.clone().expect("background");
+    assert!(!b.visible && b.opacity == 0.8);
+
+    // Saved with the project, and never sewn.
+    run(&mut s, "project.save", json!({"path": "p.osd"}));
+    let mut t = Session::new(&dir);
+    run(&mut t, "project.open", json!({"path": "p.osd"}));
+    assert_eq!(t.design().background, s.design().background);
+
+    run(&mut s, "background.clear", json!({}));
+    assert!(s.design().background.is_none());
+    run(&mut s, "history.undo", json!({}));
+    assert!(s.design().background.is_some());
+
+    std::fs::write(dir.join("bad.png"), b"\x89PNG\r\n\x1a\nnope").expect("bad");
+    for (id, params) in [
+        ("background.set", json!({"path": "bad.png"})),
+        ("background.set", json!({"path": "ref.png", "opacity": 2})),
+        ("background.set", json!({"path": "ref.png", "width": 0})),
+        ("background.show", json!({"opacity": -1})),
+    ] {
+        assert!(s.execute(id, Some(&params)).is_err(), "{id} {params}");
+    }
+    run(&mut s, "background.clear", json!({}));
+    assert!(s.execute("background.clear", Some(&json!({}))).is_err());
+    assert!(s.execute("background.show", Some(&json!({}))).is_err());
+}

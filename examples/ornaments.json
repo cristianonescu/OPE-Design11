@@ -1,0 +1,14 @@
+[
+  {"command": "design.new", "params": {"name": "ornaments", "width": 100, "height": 100}},
+  {"command": "shape.ellipse", "params": {"cx": 27, "cy": 27, "rx": 20, "outline": "Black"}},
+  {"command": "shape.floral", "params": {"id": 1, "density": 4, "pattern": 2, "color": "Red"}},
+  {"command": "shape.preset", "params": {"kind": "heart", "cx": 74, "cy": 27, "width": 40, "outline": "Deep Rose"}},
+  {"command": "shape.floral", "params": {"id": 3, "density": 3, "pattern": 46, "color": "Deep Rose"}},
+  {"command": "shape.preset", "params": {"kind": "star", "cx": 27, "cy": 74, "width": 34, "fill": "Blue"}},
+  {"command": "shape.decorative", "params": {"kind": "scallopOval", "id": 5, "margin": 3, "color": "Blue"}},
+  {"command": "shape.rectangle", "params": {"x": 60, "y": 65, "width": 28, "height": 18, "fill": "Orange"}},
+  {"command": "shape.decorative", "params": {"kind": "scallop", "id": 7, "keepAspect": false, "margin": 3, "size": 4}},
+  {"command": "shape.decorative", "params": {"kind": "corners", "id": 7, "keepAspect": false, "margin": 7, "size": 4}},
+  {"command": "design.info"},
+  {"command": "project.save", "params": {"path": "ornaments.osd"}}
+]

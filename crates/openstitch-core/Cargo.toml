@@ -1,0 +1,16 @@
+[package]
+name = "openstitch-core"
+description = "Machine-level embroidery model: stitch streams, threads, thread charts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

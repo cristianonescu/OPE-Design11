@@ -1,0 +1,387 @@
+[
+ {
+  "command": "design.new",
+  "params": {
+   "name": "line types",
+   "width": 100,
+   "height": 125
+  }
+ },
+ {
+  "command": "shape.path",
+  "params": {
+   "points": [
+    [
+     8,
+     10
+    ],
+    [
+     92,
+     10
+    ]
+   ],
+   "closed": false,
+   "curves": [
+    [
+     [
+      35,
+      1
+     ],
+     [
+      65,
+      19
+     ]
+    ]
+   ],
+   "outline": "Black"
+  }
+ },
+ {
+  "command": "object.setLine",
+  "params": {
+   "id": 1,
+   "type": "running"
+  }
+ },
+ {
+  "command": "shape.path",
+  "params": {
+   "points": [
+    [
+     8,
+     22
+    ],
+    [
+     92,
+     22
+    ]
+   ],
+   "closed": false,
+   "curves": [
+    [
+     [
+      35,
+      13
+     ],
+     [
+      65,
+      31
+     ]
+    ]
+   ],
+   "outline": "Red"
+  }
+ },
+ {
+  "command": "object.setLine",
+  "params": {
+   "id": 2,
+   "type": "triple"
+  }
+ },
+ {
+  "command": "shape.path",
+  "params": {
+   "points": [
+    [
+     8,
+     34
+    ],
+    [
+     92,
+     34
+    ]
+   ],
+   "closed": false,
+   "curves": [
+    [
+     [
+      35,
+      25
+     ],
+     [
+      65,
+      43
+     ]
+    ]
+   ],
+   "outline": "Blue"
+  }
+ },
+ {
+  "command": "object.setLine",
+  "params": {
+   "id": 3,
+   "type": "zigzag",
+   "width": 3,
+   "halfStitch": true
+  }
+ },
+ {
+  "command": "shape.path",
+  "params": {
+   "points": [
+    [
+     8,
+     46
+    ],
+    [
+     92,
+     46
+    ]
+   ],
+   "closed": false,
+   "curves": [
+    [
+     [
+      35,
+      37
+     ],
+     [
+      65,
+      55
+     ]
+    ]
+   ],
+   "outline": "Deep Rose"
+  }
+ },
+ {
+  "command": "object.setLine",
+  "params": {
+   "id": 4,
+   "type": "motif",
+   "motif": "heart",
+   "width": 6,
+   "height": 5,
+   "spacing": 1
+  }
+ },
+ {
+  "command": "shape.path",
+  "params": {
+   "points": [
+    [
+     8,
+     58
+    ],
+    [
+     92,
+     58
+    ]
+   ],
+   "closed": false,
+   "curves": [
+    [
+     [
+      35,
+      49
+     ],
+     [
+      65,
+      67
+     ]
+    ]
+   ],
+   "outline": "Emerald Green"
+  }
+ },
+ {
+  "command": "object.setLine",
+  "params": {
+   "id": 5,
+   "type": "stem",
+   "width": 2.5,
+   "spacing": 1.5
+  }
+ },
+ {
+  "command": "shape.path",
+  "params": {
+   "points": [
+    [
+     8,
+     70
+    ],
+    [
+     92,
+     70
+    ]
+   ],
+   "closed": false,
+   "curves": [
+    [
+     [
+      35,
+      61
+     ],
+     [
+      65,
+      79
+     ]
+    ]
+   ],
+   "outline": "Purple"
+  }
+ },
+ {
+  "command": "object.setLine",
+  "params": {
+   "id": 6,
+   "type": "candlewick",
+   "width": 3,
+   "spacing": 6
+  }
+ },
+ {
+  "command": "shape.path",
+  "params": {
+   "points": [
+    [
+     8,
+     82
+    ],
+    [
+     92,
+     82
+    ]
+   ],
+   "closed": false,
+   "curves": [
+    [
+     [
+      35,
+      73
+     ],
+     [
+      65,
+      91
+     ]
+    ]
+   ],
+   "outline": "Orange"
+  }
+ },
+ {
+  "command": "object.setLine",
+  "params": {
+   "id": 7,
+   "type": "eStitch",
+   "width": 3,
+   "spacing": 3
+  }
+ },
+ {
+  "command": "shape.path",
+  "params": {
+   "points": [
+    [
+     8,
+     94
+    ],
+    [
+     92,
+     94
+    ]
+   ],
+   "closed": false,
+   "curves": [
+    [
+     [
+      35,
+      85
+     ],
+     [
+      65,
+      103
+     ]
+    ]
+   ],
+   "outline": "Dark Brown"
+  }
+ },
+ {
+  "command": "object.setLine",
+  "params": {
+   "id": 8,
+   "type": "vStitch",
+   "width": 3,
+   "spacing": 4
+  }
+ },
+ {
+  "command": "shape.path",
+  "params": {
+   "points": [
+    [
+     8,
+     106
+    ],
+    [
+     92,
+     106
+    ]
+   ],
+   "closed": false,
+   "curves": [
+    [
+     [
+      35,
+      97
+     ],
+     [
+      65,
+      115
+     ]
+    ]
+   ],
+   "outline": "Teal Green"
+  }
+ },
+ {
+  "command": "object.setLine",
+  "params": {
+   "id": 9,
+   "type": "chain",
+   "width": 3,
+   "chainShape": "diamond"
+  }
+ },
+ {
+  "command": "shape.path",
+  "params": {
+   "points": [
+    [
+     8,
+     118
+    ],
+    [
+     92,
+     118
+    ]
+   ],
+   "closed": false,
+   "curves": [
+    [
+     [
+      35,
+      109
+     ],
+     [
+      65,
+      127
+     ]
+    ]
+   ],
+   "outline": "Gray"
+  }
+ },
+ {
+  "command": "object.setLine",
+  "params": {
+   "id": 10,
+   "type": "cutting",
+   "leaveUncut": true
+  }
+ }
+]

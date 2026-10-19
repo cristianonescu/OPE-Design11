@@ -1,0 +1,16 @@
+[package]
+name = "openstitch-digitize"
+description = "OpenStitch image-to-embroidery conversions: Auto Punch, Cross Stitch, Photo Stitch and Design Center approximations"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Decoding only, PNG / JPEG / BMP; every decode is bounded (see raster.rs).
+image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "bmp"] }
+openstitch-core.workspace = true
+openstitch-design = { path = "../openstitch-design" }
+
+[lints]
+workspace = true

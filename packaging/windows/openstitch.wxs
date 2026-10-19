@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OpenStitch MSI (WiX Toolset 3). Built in CI by .github/workflows/build-executables.yml:
+    candle -arch x64 -dVersion=0.1.0 -dBinary=target\release\openstitch.exe -dIcon=assets\icons\openstitch.ico -dNotices=THIRD_PARTY_NOTICES.md packaging\windows\openstitch.wxs
+    light -out OpenStitch.msi openstitch.wixobj
+  Installs per machine into Program Files\OpenStitch, adds a Start-menu shortcut and registers
+  .osd (OpenStitch Design) and .pes (Open with OpenStitch) file associations.
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="OpenStitch" Language="1033" Version="$(var.Version)"
+           Manufacturer="OpenStitch contributors" UpgradeCode="0627e96f-d149-412d-b450-f64869cf1438">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="x64"
+             Description="OpenStitch embroidery design editor" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of OpenStitch is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="OpenStitchIcon" SourceFile="$(var.Icon)" />
+    <Property Id="ARPPRODUCTICON" Value="OpenStitchIcon" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="OpenStitch" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder" />
+    </Directory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="MainExecutable" Guid="dc762be0-0c4f-46f5-9612-3c54e83dd4bd" Win64="yes">
+        <File Id="OpenStitchExe" Source="$(var.Binary)" Name="openstitch.exe" KeyPath="yes">
+          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="OpenStitch"
+                    WorkingDirectory="INSTALLFOLDER" Icon="OpenStitchIcon" Advertise="yes" />
+        </File>
+
+        <!-- .osd: OpenStitch's own project format, opened by default. -->
+        <ProgId Id="OpenStitch.Design" Description="OpenStitch Design" Icon="OpenStitchIcon" Advertise="yes">
+          <Extension Id="osd" ContentType="application/x-openstitch-design">
+            <Verb Id="open" Command="Open" Argument="&quot;%1&quot;" />
+          </Extension>
+        </ProgId>
+        <RegistryValue Root="HKLM" Key="Software\Classes\Applications\openstitch.exe\SupportedTypes"
+                       Name=".osd" Value="" Type="string" />
+      </Component>
+      <!-- .pes: offered under "Open with" only; the existing default handler is kept. -->
+      <Component Id="PesAssociation" Guid="8d52fea5-942d-48b9-94ac-db3d29321752" Win64="yes">
+        <File Id="OpenStitchIco" Source="$(var.Icon)" Name="openstitch.ico" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\OpenStitch.PES" Value="PES Embroidery File" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\OpenStitch.PES\DefaultIcon" Value="[#OpenStitchIco]" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\OpenStitch.PES\shell\open\command"
+                       Value="&quot;[#OpenStitchExe]&quot; &quot;%1&quot;" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.pes\OpenWithProgids" Name="OpenStitch.PES"
+                       Value="" Type="string" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\Applications\openstitch.exe\SupportedTypes"
+                       Name=".pes" Value="" Type="string" />
+      </Component>
+      <Component Id="Notices" Guid="99db175f-5b51-42ff-a4cc-4a9eb2d9f0ba" Win64="yes">
+        <File Id="ThirdPartyNotices" Source="$(var.Notices)" Name="THIRD_PARTY_NOTICES.md" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="Main" Title="OpenStitch" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="PesAssociation" />
+      <ComponentRef Id="Notices" />
+    </Feature>
+  </Product>
+</Wix>

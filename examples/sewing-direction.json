@@ -1,0 +1,17 @@
+[
+  {"command": "design.new", "params": {"name": "sewing-direction", "width": 100, "height": 100}},
+  {"command": "shape.preset", "params": {"kind": "heart", "cx": 27, "cy": 27, "width": 40, "fill": "Red"}},
+  {"command": "object.setDirectionCurve", "params": {"id": 1, "points": [[2, 30], [52, 30]], "curves": [[[15, 5], [40, 5]]]}},
+  {"command": "shape.rectangle", "params": {"x": 55, "y": 8, "width": 40, "height": 40, "cornerRadius": 6, "fill": "Blue"}},
+  {"command": "object.setRegion", "params": {"id": 2, "type": "radial"}},
+  {"command": "object.setCenterPoint", "params": {"id": 2, "point": [65, 18]}},
+  {"command": "shape.ellipse", "params": {"cx": 27, "cy": 74, "rx": 20, "fill": "Emerald Green"}},
+  {"command": "object.setRegion", "params": {"id": 3, "type": "concentricCircle"}},
+  {"command": "object.setCenterPoint", "params": {"id": 3, "point": [35, 68]}},
+  {"command": "shape.rectangle", "params": {"x": 55, "y": 55, "width": 40, "height": 38, "fill": "Orange"}},
+  {"command": "object.setRegion", "params": {"id": 4, "type": "programmableFill"}},
+  {"command": "object.setReferencePoint", "params": {"id": 4, "point": [59, 59]}},
+  {"command": "object.setDirectionCurve", "params": {"id": 4, "points": [[52, 60], [98, 90]], "curves": [[[70, 50], [80, 100]]]}},
+  {"command": "design.info"},
+  {"command": "project.save", "params": {"path": "sewing-direction.osd"}}
+]

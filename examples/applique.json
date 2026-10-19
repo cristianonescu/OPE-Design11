@@ -1,0 +1,142 @@
+[
+ {
+  "command": "design.new",
+  "params": {
+   "name": "applique",
+   "width": 240,
+   "height": 130
+  }
+ },
+ {
+  "command": "shape.preset",
+  "params": {
+   "kind": "heart",
+   "cx": 30,
+   "cy": 33,
+   "width": 40,
+   "fill": "Deep Rose"
+  }
+ },
+ {
+  "command": "wizard.applique",
+  "params": {
+   "ids": [
+    1
+   ],
+   "output": "replace",
+   "tackDown": "zigzag",
+   "cover": "zigzag",
+   "coverWidth": 3,
+   "coverDensity": 5
+  }
+ },
+ {
+  "command": "object.duplicate",
+  "params": {
+   "ids": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "dx": 60,
+   "dy": 0
+  }
+ },
+ {
+  "command": "object.duplicate",
+  "params": {
+   "ids": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "dx": 120,
+   "dy": 0
+  }
+ },
+ {
+  "command": "object.setVisible",
+  "params": {
+   "ids": [
+    5,
+    6,
+    11
+   ],
+   "visible": false
+  }
+ },
+ {
+  "command": "shape.preset",
+  "params": {
+   "kind": "star",
+   "cx": 210,
+   "cy": 33,
+   "width": 40,
+   "fill": "Yellow"
+  }
+ },
+ {
+  "command": "wizard.applique",
+  "params": {
+   "ids": [
+    17
+   ],
+   "distance": 3,
+   "material": "none",
+   "tackDown": "vStitch",
+   "cover": "eStitch",
+   "coverWidth": 2.5,
+   "coverInterval": 2,
+   "color": "Blue"
+  }
+ },
+ {
+  "command": "text.add",
+  "params": {
+   "text": "A",
+   "x": 45,
+   "y": 118,
+   "size": 40,
+   "fill": "Emerald Green"
+  }
+ },
+ {
+  "command": "wizard.applique",
+  "params": {
+   "ids": [
+    22
+   ],
+   "output": "replace",
+   "material": "cutting",
+   "tackDown": "eStitch",
+   "cover": "chain",
+   "coverWidth": 2,
+   "coverTimes": 2
+  }
+ },
+ {
+  "command": "shape.ellipse",
+  "params": {
+   "cx": 150,
+   "cy": 95,
+   "rx": 28,
+   "ry": 20,
+   "fill": "Orange"
+  }
+ },
+ {
+  "command": "wizard.applique",
+  "params": {
+   "ids": [
+    28
+   ],
+   "distance": 5,
+   "cover": "vStitch",
+   "coverWidth": 3,
+   "coverInterval": 2.5,
+   "color": "Black"
+  }
+ }
+]

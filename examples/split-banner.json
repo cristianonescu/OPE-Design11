@@ -1,0 +1,9 @@
+[
+ {"command":"design.new","params":{"name":"banner","width":230,"height":160}},
+ {"command":"shape.ellipse","params":{"cx":115,"cy":80,"rx":100,"ry":60,"fill":"Deep Rose","outline":"Black"}},
+ {"command":"text.add","params":{"text":"SPLIT","x":115,"y":95,"size":40,"align":"center","fill":"White"}},
+ {"command":"sections.set","params":{"hoop":"130x180"}},
+ {"command":"sections.list"},
+ {"command":"sections.export","params":{"path":"banner.pes"}},
+ {"command":"project.save","params":{"path":"banner.osd"}}
+]

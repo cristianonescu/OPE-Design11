@@ -1,0 +1,20 @@
+[package]
+name = "openstitch-design"
+description = "Editable embroidery designs: geometry, objects, stitch generation, compilation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+# i_overlay needs 1.88; the rest of the workspace keeps 1.85.
+rust-version = "1.88"
+
+[dependencies]
+base64 = "0.23.1"
+openstitch-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ttf-parser = { version = "0.25", default-features = false, features = ["std"] }
+i_overlay = { version = "9.1", default-features = false }
+
+
+[lints]
+workspace = true
