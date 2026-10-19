@@ -206,7 +206,8 @@ Releases are made only when a version is declared stable:
 - [Roadmap](docs/ROADMAP.md)
 - [Distribution and packaging](docs/DISTRIBUTION.md)
 - [Reference VM plan](docs/VM_PLAN.md)
-- [Handoff 2026-10-18: what is left](docs/HANDOFF-2026-10-18.md)
+- [Handoff 2026-10-19: state and next steps](docs/HANDOFF-2026-10-19.md)
+- [Handoff 2026-10-18](docs/HANDOFF-2026-10-18.md)
 
 `tools/` holds the Python scripts that generate fixtures and data tables
 (`pip install pyembroidery`, run with `python -I`).
