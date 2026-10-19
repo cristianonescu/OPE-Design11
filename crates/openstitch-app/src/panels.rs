@@ -1,4 +1,5 @@
-//! Toolbar, inspector, object list and sewing simulator panels.
+//! Sewing order list, sewing attribute sections and the stitch simulator, hosted by the panes
+//! in `panes.rs`.
 
 use crate::app::EditorApp;
 use eframe::egui::{self, Color32, RichText, Sense};
@@ -26,46 +27,26 @@ pub fn swatch(ui: &mut egui::Ui, c: [u8; 3], size: f32) -> egui::Response {
     resp
 }
 
-pub fn toolbar(app: &mut EditorApp, ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
-        for t in Tool::ALL {
-            let label = format!("{} ({})", t.label(), t.shortcut().to_ascii_uppercase());
-            if ui.selectable_label(app.tools.tool() == t, label).clicked() {
-                app.tools.set_tool(t);
-            }
-        }
-        ui.separator();
-        if ui.add_enabled(app.session.can_undo(), egui::Button::new("Undo")).clicked() {
-            app.undo();
-        }
-        if ui.add_enabled(app.session.can_redo(), egui::Button::new("Redo")).clicked() {
-            app.redo();
-        }
-        ui.separator();
-        if ui.button("−").on_hover_text("Zoom out").clicked() {
-            zoom_center(app, 1.0 / 1.25);
-        }
-        if ui.button("+").on_hover_text("Zoom in").clicked() {
-            zoom_center(app, 1.25);
-        }
-        if ui.button("Fit").on_hover_text(format!("Fit Design Page ({}0)", crate::app::CMD)).clicked() {
-            app.fit_requested = true;
-        }
-        let hint = match app.tools.tool() {
-            Tool::Polygon => Some("Click to add points · click the first point, double-click or Return to close · Esc cancels"),
-            Tool::Point => Some("Drag points or handles · double-click an edge to add a point · Delete removes it · C curve / S straight under the pointer"),
-            Tool::Pen => Some("Click for a corner, drag for a smooth point · click the first point to close · Return finishes open · Esc cancels"),
-            Tool::Punch => Some("Click both ends of each sewing-direction line in turn (one side first) · double-click or Return finishes · Esc cancels"),
-            _ => None,
-        };
-        if let Some(hint) = hint {
-            ui.separator();
-            ui.label(RichText::new(hint).weak());
-        }
-    });
+/// What the active tool expects, shown in the status bar.
+pub fn tool_hint(tool: Tool) -> Option<&'static str> {
+    match tool {
+        Tool::Polygon => Some(
+            "Click to add points · click the first point, double-click or Return to close · Esc cancels",
+        ),
+        Tool::Point => Some(
+            "Drag points or handles · double-click an edge to add a point · Delete removes it · C curve / S straight under the pointer",
+        ),
+        Tool::Pen => Some(
+            "Click for a corner, drag for a smooth point · click the first point to close · Return finishes open · Esc cancels",
+        ),
+        Tool::Punch => Some(
+            "Click both ends of each sewing-direction line in turn (one side first) · double-click or Return finishes · Esc cancels",
+        ),
+        _ => None,
+    }
 }
 
-fn zoom_center(app: &mut EditorApp, factor: f64) {
+pub fn zoom_center(app: &mut EditorApp, factor: f64) {
     if let Some(vp) = &mut app.viewport {
         // Anchor at the model point currently in the middle of the page.
         let page = app.session.design().page.center();
@@ -77,11 +58,12 @@ fn zoom_center(app: &mut EditorApp, factor: f64) {
 // MARK: object list
 
 pub fn object_list(app: &mut EditorApp, ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
-        ui.heading("Sewing order");
-        ui.checkbox(&mut app.edit.by_colour, "By colour")
-            .on_hover_text("One frame per run of objects in the same colour");
-    });
+    if let Some(r) = crate::edit_ui::order_controls(app, ui) {
+        app.execute(&r);
+    }
+    ui.checkbox(&mut app.edit.by_colour, "Frames by thread colour")
+        .on_hover_text("One frame per run of objects in the same colour");
+    ui.separator();
     if app.edit.by_colour {
         crate::edit_ui::colour_frames(app, ui);
         return;
@@ -99,7 +81,6 @@ pub fn object_list(app: &mut EditorApp, ui: &mut egui::Ui) {
     let modifiers = ui.input(|i| i.modifiers);
     egui::ScrollArea::vertical()
         .auto_shrink([false, false])
-        .max_height(ui.available_height() - 80.0)
         .show(ui, |ui| {
             for row in &rows {
                 let drop = ui
@@ -123,9 +104,16 @@ pub fn object_list(app: &mut EditorApp, ui: &mut egui::Ui) {
                             handle
                                 .response
                                 .on_hover_text("Drag to change the sewing order");
-                            for &c in row.swatches.iter().take(4) {
-                                swatch(ui, c, 12.0);
+                            let d = app.session.design();
+                            if let Some(i) = d.index_of(row.id) {
+                                crate::panes::thumbnail(ui, &d.objects[i], 30.0);
                             }
+                            ui.vertical(|ui| {
+                                ui.spacing_mut().item_spacing.y = 1.0;
+                                for &c in row.swatches.iter().take(3) {
+                                    swatch(ui, c, 9.0);
+                                }
+                            });
                             let text = format!("{}. {}", row.index + 1, row.label);
                             let resp = ui
                                 .selectable_label(row.selected, text)
@@ -144,9 +132,6 @@ pub fn object_list(app: &mut EditorApp, ui: &mut egui::Ui) {
                 }
             }
         });
-    if let Some(r) = crate::edit_ui::order_controls(app, ui) {
-        pending = Some(r);
-    }
     if let Some((id, toggle)) = select {
         if toggle {
             if !app.selection.remove(&id) {
@@ -196,6 +181,37 @@ fn number(
     None
 }
 
+/// The PEC thread chart as a grid of swatches; returns the chart number clicked.
+pub fn pec_grid(ui: &mut egui::Ui, id: &str, current: Option<&Thread>) -> Option<usize> {
+    let mut chosen = None;
+    let index = current.and_then(inspector::pec_index);
+    ui.label(RichText::new("Brother PEC thread chart").strong());
+    egui::Grid::new(("pec", id))
+        .spacing(egui::vec2(3.0, 3.0))
+        .show(ui, |ui| {
+            for (n, (i, t)) in inspector::pec_palette().into_iter().enumerate() {
+                let tip = format!("{i} {} ({})", t.name.as_deref().unwrap_or(""), t.hex());
+                let r = swatch(ui, [t.red, t.green, t.blue], 20.0).on_hover_text(tip);
+                if Some(i) == index && current.is_some_and(|c| c.name.is_some()) {
+                    ui.painter().rect_stroke(
+                        r.rect.expand(1.5),
+                        egui::CornerRadius::same(3),
+                        egui::Stroke::new(2.0, ui.visuals().strong_text_color()),
+                        egui::StrokeKind::Outside,
+                    );
+                }
+                if r.clicked() {
+                    chosen = Some(i);
+                    ui.close();
+                }
+                if n % 8 == 7 {
+                    ui.end_row();
+                }
+            }
+        });
+    chosen
+}
+
 /// PEC chart picker: returns the chart number chosen.
 fn thread_picker(ui: &mut egui::Ui, id: &str, current: Option<&Thread>) -> Option<usize> {
     let mut chosen = None;
@@ -217,47 +233,41 @@ fn thread_picker(ui: &mut egui::Ui, id: &str, current: Option<&Thread>) -> Optio
             .open_memory(open.then_some(egui::SetOpenCommand::Toggle))
             .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
             .show(|ui| {
-                ui.label(RichText::new("Brother PEC thread chart").strong());
-                egui::Grid::new(("pec", id))
-                    .spacing(egui::vec2(3.0, 3.0))
-                    .show(ui, |ui| {
-                        for (n, (i, t)) in inspector::pec_palette().into_iter().enumerate() {
-                            let tip =
-                                format!("{i} {} ({})", t.name.as_deref().unwrap_or(""), t.hex());
-                            let r = swatch(ui, [t.red, t.green, t.blue], 20.0).on_hover_text(tip);
-                            if Some(i) == index && current.is_some_and(|c| c.name.is_some()) {
-                                ui.painter().rect_stroke(
-                                    r.rect.expand(1.5),
-                                    egui::CornerRadius::same(3),
-                                    egui::Stroke::new(2.0, Color32::WHITE),
-                                    egui::StrokeKind::Outside,
-                                );
-                            }
-                            if r.clicked() {
-                                chosen = Some(i);
-                                ui.close();
-                            }
-                            if n % 8 == 7 {
-                                ui.end_row();
-                            }
-                        }
-                    });
+                chosen = pec_grid(ui, id, current);
             });
     });
     chosen
 }
 
-pub fn inspector(app: &mut EditorApp, ui: &mut egui::Ui) {
+/// The Sewing Attributes pane: transform, region and line sewing of the selection.
+pub fn sewing_attributes(app: &mut EditorApp, ui: &mut egui::Ui) {
     egui::ScrollArea::vertical()
         .auto_shrink([false, false])
         .show(ui, |ui| {
-            ui.heading("Inspector");
             if app.selection.is_empty() {
                 design_info(app, ui);
                 return;
             }
             let m = InspectorModel::new(app.session.design(), &app.selection);
-            ui.label(format!("{} selected", app.selection.len()));
+            ui.horizontal_wrapped(|ui| {
+                ui.label(format!("{} selected", app.selection.len()));
+                for a in [
+                    openstitch_app::editor::ribbon::Action::CopyAttributes,
+                    openstitch_app::editor::ribbon::Action::PasteAttributes,
+                ] {
+                    let info = a.info();
+                    if ui
+                        .add_enabled(
+                            crate::ribbon::enabled(app, a),
+                            egui::Button::new(info.label),
+                        )
+                        .on_hover_text(info.tip)
+                        .clicked()
+                    {
+                        crate::ribbon::run(app, a, ui.ctx());
+                    }
+                }
+            });
             transform_section(app, ui);
             if m.shapes.is_empty() {
                 ui.separator();
@@ -278,7 +288,7 @@ pub fn inspector(app: &mut EditorApp, ui: &mut egui::Ui) {
         });
 }
 
-fn design_info(app: &mut EditorApp, ui: &mut egui::Ui) {
+pub fn design_info(app: &mut EditorApp, ui: &mut egui::Ui) {
     let d = app.session.design();
     let (name, w, h, n) = (
         d.name.clone(),
@@ -325,7 +335,7 @@ fn design_info(app: &mut EditorApp, ui: &mut egui::Ui) {
     ui.label(RichText::new("Select an object to edit its sewing attributes.").weak());
 }
 
-fn transform_section(app: &mut EditorApp, ui: &mut egui::Ui) {
+pub fn transform_section(app: &mut EditorApp, ui: &mut egui::Ui) {
     ui.separator();
     ui.label(RichText::new("Transform").strong());
     ui.horizontal_wrapped(|ui| {
@@ -409,7 +419,7 @@ fn kind_combo<K: Copy + PartialEq>(
     chosen.filter(|k| current.same() != Some(k))
 }
 
-fn region_section(
+pub fn region_section(
     app: &mut EditorApp,
     ui: &mut egui::Ui,
     m: &InspectorModel,
@@ -469,7 +479,7 @@ fn region_section(
         });
 }
 
-fn all_same_region_thread(app: &EditorApp, m: &InspectorModel) -> bool {
+pub fn all_same_region_thread(app: &EditorApp, m: &InspectorModel) -> bool {
     let d = app.session.design();
     let threads = d
         .objects
@@ -479,7 +489,7 @@ fn all_same_region_thread(app: &EditorApp, m: &InspectorModel) -> bool {
     matches!(Common::of(threads), Common::Same(_))
 }
 
-fn all_same_line_thread(app: &EditorApp, m: &InspectorModel) -> bool {
+pub fn all_same_line_thread(app: &EditorApp, m: &InspectorModel) -> bool {
     let d = app.session.design();
     let threads = d
         .objects
@@ -489,7 +499,7 @@ fn all_same_line_thread(app: &EditorApp, m: &InspectorModel) -> bool {
     matches!(Common::of(threads), Common::Same(_))
 }
 
-fn line_section(
+pub fn line_section(
     app: &mut EditorApp,
     ui: &mut egui::Ui,
     m: &InspectorModel,
@@ -587,7 +597,6 @@ pub fn simulator(app: &mut EditorApp, ui: &mut egui::Ui) {
     let total = app.stats.stitches;
     ui.add_space(4.0);
     ui.horizontal(|ui| {
-        ui.label(RichText::new("Sewing simulator").strong());
         let play = if app.playing { "Pause" } else { "Play" };
         if ui.add_enabled(total > 0, egui::Button::new(play)).clicked() {
             app.playing = !app.playing;
