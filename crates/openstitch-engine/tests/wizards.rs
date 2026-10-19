@@ -281,7 +281,7 @@ fn decorative_fill_and_hoop_area() {
         (region.pattern_width, region.pattern_height),
         (Some(8.0), Some(6.0))
     );
-    assert!(!region.travel);
+    assert!(region.running_stitch_path.is_none());
     let b = o.bounds().expect("bounds");
     assert!((b.width() - 1000.0).abs() < 1.0 && (b.height() - 1000.0).abs() < 1.0);
 }

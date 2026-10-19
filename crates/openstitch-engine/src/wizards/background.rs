@@ -14,7 +14,7 @@ use openstitch_design::paths;
 use openstitch_design::patterns::{self, PatternKind};
 use openstitch_design::{
     ChainShape, Contour, Design, DesignObject, LineSewing, LineType, ObjectKind, Rect,
-    RegionSewing, RegionType, Vec2, v2,
+    RegionSewing, RegionType, RunningStitchPath, Vec2, v2,
 };
 use serde_json::json;
 
@@ -213,7 +213,9 @@ fn background_fill(s: &mut EngineState, p: &Params) -> crate::params::CommandRes
                 if p.has("patternHeight") {
                     r.pattern_height = Some(p.req("patternHeight", 2.0, 50.0)?);
                 }
-                r.travel = p.bool("connectEdges", Some(true))?;
+                r.running_stitch_path = p
+                    .bool("connectEdges", Some(true))?
+                    .then_some(RunningStitchPath::Inside);
                 r
             };
             let n = region.len();

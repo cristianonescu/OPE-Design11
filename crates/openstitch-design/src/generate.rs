@@ -138,9 +138,28 @@ pub struct RegionParams {
 /// Tatami fill: rows at `angle`, needle points on a `stitch_length` grid shifted a third of a
 /// stitch per row so penetrations do not line up.
 pub fn fill(contours: &[Contour], p: &RegionParams, holes: &[Contour]) -> Vec<Run> {
+    fill_shifted(contours, p, holes, None)
+}
+
+/// Offset of row `row`'s needle grid, fraction of a stitch: `shift` per row (Fill Frequency),
+/// or a third of a stitch when unset.
+pub fn row_phase(row: usize, shift: Option<f64>) -> f64 {
+    match shift {
+        None => (row % 3) as f64 / 3.0,
+        Some(s) => (row as f64 * s).fract(),
+    }
+}
+
+/// [`fill`] whose needle grid moves `shift` of a stitch from row to row (see [`row_phase`]).
+pub fn fill_shifted(
+    contours: &[Contour],
+    p: &RegionParams,
+    holes: &[Contour],
+    shift: Option<f64>,
+) -> Vec<Run> {
     let l = p.stitch_length;
     sew_rows(contours, p, holes, |span, row, forward| {
-        let phase = (row % 3) as f64 / 3.0 * l;
+        let phase = row_phase(row, shift) * l;
         let mut xs = vec![*span.start()];
         let mut k = ((span.start() - phase) / l).floor() + 1.0;
         while phase + k * l < *span.end() {

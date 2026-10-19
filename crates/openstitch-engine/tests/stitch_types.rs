@@ -165,7 +165,7 @@ fn satin_and_fill_options_are_set_and_undone() {
     );
     let r = s.design().objects[0].region.clone().expect("region");
     assert_eq!(r.kind, RegionType::Satin);
-    assert!(r.auto_direction && r.travel && r.underlay);
+    assert!(r.auto_direction && r.running_stitch_path.is_some() && r.underlay);
     assert_eq!(r.underlay_style, UnderlayStyle::Double);
     assert_eq!(
         (r.underlay_spacing, r.gradation, r.split_length),
@@ -269,7 +269,7 @@ fn every_region_type_is_set_sewn_saved_and_undone() {
     }
     let r = s.design().objects[0].region.clone().expect("region");
     assert_eq!(r.pattern.as_deref(), Some("scales"));
-    assert_eq!((r.random_shift, r.travel), (Some(20.0), false));
+    assert_eq!((r.random_shift, r.running_stitch_path), (Some(20.0), None));
     let bytes = project::encode(s.design()).expect("encode");
     assert_eq!(&project::decode(&bytes).expect("decode"), s.design());
     run(&mut s, "history.undo", json!({}));

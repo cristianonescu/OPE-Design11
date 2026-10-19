@@ -73,7 +73,7 @@ dearest:
 |---|---|---|---|---|---|
 | 1 | Satin sewn as a square wave, not a zigzag | Stitches | 5 | Defect | No |
 | 2 | Default PES is truncated v1 with no object section (**fixed**, internal regression; open test pending) | PES | 5 | Documented, unverified | Black-box open test |
-| 3 | Trims and jumps inside one fill or satin region; no Running Stitch Path | Stitches | 5 | Documented difference | No |
+| 3 | Trims and jumps inside one fill or satin region; no Running Stitch Path (**fixed**, internal regression) | Stitches | 5 | Documented difference | No |
 | 4 | Trims between underlay, top stitching and outline of one object | Stitches | 4 | Documented, unverified | Single-needle policy |
 | 5 | Every design is written as one stitch group, nothing editable | PES | 5 | Documented, unverified | Yes (shapes, text) |
 | 6 | One sewing direction per text instead of per stroke | Fonts | 5 | Documented difference | Angles |
@@ -84,8 +84,8 @@ dearest:
 | 11 | No Connection Points (Default / Closest / Farther) for text | Fonts | 4 | Documented difference | Geometry |
 | 12 | No minimum font sizes or small-text fonts | Fonts | 4 | Documented difference | No |
 | 13 | No per-character colour or multi-character selection | Fonts | 4 | Documented difference | Colour grouping |
-| 14 | Programmable fill defaults to 0° instead of 45° | Stitches | 3 | Documented difference | No |
-| 15 | Missing fill, satin and zigzag attributes; wrong ranges | Stitches | 3 | Documented difference | Geometry |
+| 14 | Programmable fill defaults to 0° instead of 45° (**fixed**, internal regression; type change rule pending) | Stitches | 3 | Documented difference | No |
+| 15 | Missing fill, satin and zigzag attributes; wrong ranges (**partly fixed**: Frequency and ranges; Stitch Type, Half Stitch, Miter limit pending) | Stitches | 3 | Documented difference | Geometry |
 | 16 | Optimize Sewing Order does not move entry and exit points (**fixed**, internal regression) | Stitches | 3 | Documented difference | No |
 | 17 | Hole sewing not validated or paired (**fixed**, internal regression) | Stitches | 3 | Documented difference | No |
 | 18 | PES thread table drops chart names and colour type (**fixed**: round trip; chart strings pending) | PES | 3 | Documented difference | Chart strings |
@@ -196,6 +196,27 @@ Line references are relative to `crates/`.
     filled at 0° gives 2 trims and 2 jumps inside the object.
 - **REA:** none.
 - **Grade:** Documented difference.
+- **Status:** fixed, internal regression tier only (not reference verified).
+  - `RegionSewing::running_stitch_path` (`RunningStitchPath {Inside, AlongOutline, OnOutline}`)
+    replaces `travel`; fill and satin default to Inside. Old `.osd` files load: `travel: true`
+    is Inside, `travel: false` or no value keeps the jumps they sewed before.
+  - `region::reroute_with` and `paths::TravelGraph::outline`: Inside is the shortest path inside
+    the region; On outline walks the outline the shorter way round; Along outline walks it
+    0.5 mm inside (a placeholder until measured). Both outline variants fall back to Inside
+    when the two ends are not on one contour.
+  - Exclusions: `object.setRegion {runningStitchPath}` is refused with Auto direction, a
+    feathered edge, on text, for other sew types, and Inside with gradation. Where the
+    attribute is unavailable the region travels inside (what PE-DESIGN sews there needs a
+    reference); gradation turns a stored Inside into Along outline.
+  - Exposed in `object.setRegion` (`runningStitchPath`; `travel` still accepted) and the
+    Sewing Attributes pane (Running stitch path, hidden for text).
+  - Tests: `crates/openstitch-engine/tests/region_compat.rs`
+    (`fill_and_satin_travel_between_parts_without_trims` for the U polygon with every value,
+    satin and gradation; `the_outline_paths_differ_from_inside_travel`,
+    `running_stitch_path_follows_the_guide_exclusions`,
+    `running_stitch_path_defaults_and_old_files`, `old_fill_without_travel_still_jumps`) and
+    `outline_travel_walks_on_or_just_inside_the_outline`. The golden fixtures did not change:
+    their regions have one part each, or come from `.osd` files without `travel`.
 - **Test:**
   - Inputs: the U polygon → `object.setRegion {type:"fill",angle:0}` → `object.toStitches` →
     `stitches.points`.
@@ -317,8 +338,8 @@ Line references are relative to `crates/`.
 - **Grade:** Documented difference.
 - **Status:** fixed, internal regression tier only (not reference verified). Auto satin
   derives a skeleton and sews along it, each row reaching the outline
-  (`skeleton::rungs_within`). Travel (Running Stitch Path) is ignored and hidden with Auto
-  satin; OpenStitch has no Half Stitch or Stitch Type for regions. Fill, regions with holes or
+  (`skeleton::rungs_within`). Running Stitch Path is hidden with Auto satin, which travels
+  inside (item 3); OpenStitch has no Half Stitch or Stitch Type for regions. Fill, regions with holes or
   several parts, gradation, feathered edges, split stitches and shapes the skeleton does not
   cover (85 %) keep the principal-axis angle. Test:
   `auto_direction_satin_follows_a_bent_band`.
@@ -509,6 +530,13 @@ Line references are relative to `crates/`.
   the programmable fill example is captioned "45° (default)".
 - **REA:** none.
 - **Grade:** Documented difference.
+- **Status:** fixed for new regions, internal regression tier only (not reference verified).
+  `RegionSewing::new` gives programmable fill 45° and every other type 0°; `object.setRegion`
+  on an object without a region starts from the requested type's defaults. Not changed: a
+  type change keeps the old angle (a default-filled rectangle switched to programmable fill
+  stays at 0°); whether PE-DESIGN does the same needs a reference. Test:
+  `programmable_fill_defaults_to_45_degrees` (an outline-only 40×40 mm rectangle; dominant
+  stitch direction 45° ±1°).
 - **Test:** `shape.rectangle 40×40` → `object.setRegion {type:"programmableFill"}`. Assert the
   dominant row direction is 45° ±1°.
 - **Fix:**
@@ -536,6 +564,15 @@ Line references are relative to `crates/`.
 - **Grade:**
   - Missing options and ranges: documented difference.
   - Turning-end and half-stitch geometry: needs reference.
+- **Status:** partly fixed, internal regression tier only (not reference verified).
+  - Fill `frequency` (0–50 %, the needle shift from row to row) feeds `generate::row_phase`
+    in plain and shaped fill; unset keeps the ⅓ stagger, so existing designs sew as before.
+  - `object.setRegion` refuses Frequency outside 0–50 (all types that use it);
+    `object.setLine` limits run times to 1–5 for E/V and every other type, 1–6 for chain.
+  - Tests: `frequency_and_run_times_follow_the_guide_ranges`,
+    `fill_frequency_sets_the_row_to_row_needle_shift` (0, 25 and 50 %, ±2 % of the stitch).
+  - Not implemented, needs reference geometry (method 1): Stitch Type (turning ends), Half
+    Stitch for regions, and zigzag Sharp Corners / Miter limit.
 - **Test:**
   - `object.setRegion {type:"fill",frequency:60}` and `object.setLine {type:"eStitch",runTimes:6}`
     are refused.

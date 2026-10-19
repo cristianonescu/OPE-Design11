@@ -699,6 +699,57 @@ pub enum FeatherSide {
     Both,
 }
 
+/// How fill and satin move between separate parts of one region (PE-DESIGN Running Stitch
+/// Path). Every value travels with running stitches; none jumps.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RunningStitchPath {
+    /// The shortest path inside the region.
+    #[default]
+    Inside,
+    /// Along the outline, just inside it.
+    AlongOutline,
+    /// On the outline.
+    OnOutline,
+}
+
+impl RunningStitchPath {
+    pub fn id(self) -> &'static str {
+        match self {
+            RunningStitchPath::Inside => "inside",
+            RunningStitchPath::AlongOutline => "alongOutline",
+            RunningStitchPath::OnOutline => "onOutline",
+        }
+    }
+
+    pub fn from_id(id: &str) -> Option<Self> {
+        [
+            RunningStitchPath::Inside,
+            RunningStitchPath::AlongOutline,
+            RunningStitchPath::OnOutline,
+        ]
+        .into_iter()
+        .find(|p| p.id() == id)
+    }
+}
+
+/// Reads `runningStitchPath`, or the old `travel` flag (true: inside, false: jumps).
+fn running_stitch_path<'de, D: serde::Deserializer<'de>>(
+    d: D,
+) -> Result<Option<RunningStitchPath>, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Stored {
+        Travel(bool),
+        Path(RunningStitchPath),
+    }
+    Ok(match Option::<Stored>::deserialize(d)? {
+        None | Some(Stored::Travel(false)) => None,
+        Some(Stored::Travel(true)) => Some(RunningStitchPath::Inside),
+        Some(Stored::Path(p)) => Some(p),
+    })
+}
+
 /// Feathered edge: row ends shortened by a deterministic pseudo-random amount up to `width`.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -745,9 +796,15 @@ pub struct RegionSewing {
     /// Satin: rows longer than this (mm) are split into staggered stitches.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub split_length: Option<f64>,
-    /// Move between separated parts with running stitches inside the region instead of jumps.
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub travel: bool,
+    /// Move between separated parts with running stitches (Running Stitch Path); `None` jumps,
+    /// as fill and satin did before (designs saved with `travel` off or unset).
+    #[serde(
+        default,
+        alias = "travel",
+        deserialize_with = "running_stitch_path",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub running_stitch_path: Option<RunningStitchPath>,
     /// Pattern id: programmable fill, motif fill, net, zigzag net and decorative fill.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pattern: Option<String>,
@@ -762,7 +819,8 @@ pub struct RegionSewing {
     /// Running stitch length of line-based fills, mm (default 2).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub run_pitch: Option<f64>,
-    /// Piping / programmable-fill base: needle shift per row, % of a stitch (default 33).
+    /// Fill, piping and programmable-fill base: needle shift per row, % of a stitch (0-50,
+    /// default 33).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub frequency: Option<f64>,
     /// Programmable / motif fill: shift of every other tile row (column), % of the tile.
@@ -822,13 +880,14 @@ pub struct RegionSewing {
 
 impl RegionSewing {
     pub fn new(kind: RegionType, thread: Thread) -> Self {
-        // The newer types travel inside the region by default; fill and satin keep jumps
-        // (their output must not change unless travel is asked for).
-        let travel = !matches!(kind, RegionType::Fill | RegionType::Satin);
         RegionSewing {
             kind,
             thread,
-            angle: 0.0,
+            // Guide: programmable fill "45° (default)"; the other types sew at 0°.
+            angle: match kind {
+                RegionType::ProgrammableFill => 45.0,
+                _ => 0.0,
+            },
             density: match kind {
                 RegionType::Fill | RegionType::ProgrammableFill => 2.5,
                 RegionType::Satin => 3.0,
@@ -844,7 +903,7 @@ impl RegionSewing {
             gradation: None,
             feather: None,
             split_length: None,
-            travel,
+            running_stitch_path: Some(RunningStitchPath::Inside),
             pattern: None,
             pattern_width: None,
             pattern_height: None,
@@ -868,6 +927,39 @@ impl RegionSewing {
             curved_lines: false,
             skeleton: None,
         }
+    }
+
+    /// Whether Running Stitch Path can be chosen: fill and satin without Auto direction or a
+    /// feathered edge (and not on text, which the caller knows).
+    pub fn running_stitch_path_available(&self) -> bool {
+        matches!(self.kind, RegionType::Fill | RegionType::Satin)
+            && !self.auto_direction
+            && self.feather.is_none()
+    }
+
+    /// The travel actually sewn between parts, `None` for jumps. Where the attribute is not
+    /// available the region travels inside; gradation rules out Inside (Along outline then).
+    pub fn travel_path(&self) -> Option<RunningStitchPath> {
+        let chosen = self.running_stitch_path?;
+        if !matches!(self.kind, RegionType::Fill | RegionType::Satin) {
+            return Some(RunningStitchPath::Inside);
+        }
+        let path = if self.running_stitch_path_available() {
+            chosen
+        } else {
+            RunningStitchPath::Inside
+        };
+        Some(match path {
+            RunningStitchPath::Inside if self.gradation.is_some() => {
+                RunningStitchPath::AlongOutline
+            }
+            p => p,
+        })
+    }
+
+    /// Fill: needle shift from one row to the next, fraction of a stitch (default ⅓).
+    pub fn fill_shift(&self) -> Option<f64> {
+        self.frequency.map(|f| f.clamp(0.0, 50.0) / 100.0)
     }
 
     /// Spacing in mm, or the type's default.

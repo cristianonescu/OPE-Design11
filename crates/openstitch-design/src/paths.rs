@@ -209,6 +209,20 @@ pub struct TravelGraph {
     /// Prefer walking along the outline when both ends lie on the same contour (PE-DESIGN's
     /// "minimize feed": travel around the object edges, where the stitches stay hidden).
     pub along_edges: bool,
+    /// Running Stitch Path: travel on the outline, or along it just inside, whenever both ends
+    /// lie on one contour (the shortest inside path otherwise).
+    pub outline: Option<OutlineTravel>,
+    /// How far (0.1 mm) an end may be from the outline and still count as on it.
+    pub outline_tolerance: f64,
+}
+
+/// Travel that follows the outline (see [`TravelGraph::outline`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum OutlineTravel {
+    /// On the outline itself.
+    On,
+    /// Along the outline, this far (0.1 mm) inside it.
+    Inset(f64),
 }
 
 const MAX_NODES: usize = 600;
@@ -234,18 +248,63 @@ impl TravelGraph {
             adjacency: None,
             bounds,
             along_edges: false,
+            outline: None,
+            outline_tolerance: 1.0,
         }
+    }
+
+    /// The outline walk for [`TravelGraph::outline`], checked to stay inside the region.
+    fn outline_path(&self, a: Vec2, b: Vec2, mode: OutlineTravel) -> Option<Vec<Vec2>> {
+        let on = self.edge_path_within(a, b, self.outline_tolerance)?;
+        let OutlineTravel::Inset(d) = mode else {
+            return Some(on);
+        };
+        // Each interior point moves to where the walk's two edges, offset `d` inwards, meet
+        // (a miter); the walk stays on the outline where the inset would leave the region.
+        let inward = |p: Vec2, q: Vec2| -> Option<Vec2> {
+            let t = q - p;
+            if t.length() < 1e-9 {
+                return None;
+            }
+            let n = v2(-t.y, t.x) * (1.0 / t.length());
+            let m = p.lerp(q, 0.5);
+            [n, n * -1.0].into_iter().find(|&n| self.inside(m + n * d))
+        };
+        let mut inset = on.clone();
+        for i in 1..on.len().saturating_sub(1) {
+            let offset = match (inward(on[i - 1], on[i]), inward(on[i], on[i + 1])) {
+                (Some(a), Some(b)) => {
+                    let s = 1.0 + dot(a, b);
+                    if s < 0.2 {
+                        continue;
+                    }
+                    (a + b) * (d / s)
+                }
+                (Some(a), None) | (None, Some(a)) => a * d,
+                (None, None) => continue,
+            };
+            inset[i] = on[i] + offset;
+        }
+        inset
+            .windows(2)
+            .all(|w| self.visible(w[0], w[1]))
+            .then_some(inset)
+            .or(Some(on))
     }
 
     /// Walks along the closed contour that both `a` and `b` lie on (within 0.1 mm), the
     /// shorter way round; `None` when they are not on one contour.
     pub fn edge_path(&self, a: Vec2, b: Vec2) -> Option<Vec<Vec2>> {
+        self.edge_path_within(a, b, 1.0)
+    }
+
+    fn edge_path_within(&self, a: Vec2, b: Vec2, tolerance: f64) -> Option<Vec<Vec2>> {
         for c in self.regions.iter().chain(&self.holes) {
             let poly = c.path();
             let (Some((sa, da)), Some((sb, db))) = (project(&poly, a), project(&poly, b)) else {
                 continue;
             };
-            if da > 1.0 || db > 1.0 {
+            if da > tolerance || db > tolerance {
                 continue;
             }
             let w = Walker::new(&poly);
@@ -347,6 +406,11 @@ impl TravelGraph {
 
     /// Shortest inside path from `a` to `b` (both ends included), or `None`.
     pub fn path(&mut self, a: Vec2, b: Vec2) -> Option<Vec<Vec2>> {
+        if let Some(mode) = self.outline
+            && let Some(walk) = self.outline_path(a, b, mode)
+        {
+            return Some(walk);
+        }
         if self.along_edges
             && let Some(edge) = self.edge_path(a, b)
             && length(&edge) <= 3.0 * a.distance(b) + 20.0

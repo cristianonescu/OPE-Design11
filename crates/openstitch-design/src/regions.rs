@@ -32,7 +32,7 @@ pub fn generate(
     let region = Region {
         closed,
         holes,
-        travel: r.travel,
+        travel: r.travel_path().is_some(),
         pitch,
     };
     match r.kind {

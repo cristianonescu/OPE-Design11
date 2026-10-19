@@ -1132,24 +1132,21 @@ fn every_line_type_has_inspector_controls_the_engine_accepts() {
 
 #[test]
 fn auto_satin_offers_no_travel() {
-    use super::inspector::{Control, region_controls};
+    use super::inspector::region_controls;
     use openstitch_design::RegionSewing;
     let travel = |r: &RegionSewing| {
-        region_controls(r).iter().any(|c| {
-            matches!(
-                c,
-                Control::Toggle {
-                    param: "travel",
-                    ..
-                }
-            )
-        })
+        region_controls(r)
+            .iter()
+            .any(|c| matches!(c.param(), "runningStitchPath" | "travel"))
     };
     let mut r = RegionSewing::new(RegionType::Satin, Thread::rgb(0));
     assert!(travel(&r));
     r.auto_direction = true;
     assert!(!travel(&r), "no Running Stitch Path with Auto satin");
+    // The guide makes the attribute unavailable with Auto direction for fill too.
     r.kind = RegionType::Fill;
+    assert!(!travel(&r));
+    r.auto_direction = false;
     assert!(travel(&r));
 }
 
