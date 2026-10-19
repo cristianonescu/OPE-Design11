@@ -64,6 +64,8 @@ pub struct Server {
     tools: Vec<Tool>,
     by_name: HashMap<String, usize>,
     protocol_version: Option<&'static str>,
+    /// Commands go to a running editor instead of `session` (`--live`).
+    live: Option<openstitch_remote::Client>,
 }
 
 impl Server {
@@ -88,7 +90,38 @@ impl Server {
             tools,
             by_name,
             protocol_version: None,
+            live: None,
         })
+    }
+
+    /// Sends every command to the running editor behind `client`. The editor applies its own
+    /// capabilities and file roots; this server's capabilities still limit the tools offered.
+    pub fn with_live(mut self, client: openstitch_remote::Client) -> Self {
+        self.live = Some(client);
+        self
+    }
+
+    pub fn is_live(&self) -> bool {
+        self.live.is_some()
+    }
+
+    /// Runs one engine command here or in the live editor.
+    fn run(&mut self, id: &str, arguments: &Value) -> Result<Value, String> {
+        let Some(client) = &mut self.live else {
+            return self
+                .session
+                .execute(id, Some(arguments))
+                .map_err(|e| e.to_string());
+        };
+        let mut reply = client.handle(&json!({ "command": id, "params": arguments }));
+        if reply["ok"] == json!(true) {
+            Ok(reply["result"].take())
+        } else {
+            Err(reply["error"]
+                .as_str()
+                .unwrap_or("editor error")
+                .to_string())
+        }
     }
 
     pub fn config(&self) -> &Config {
@@ -303,11 +336,7 @@ impl Server {
     /// A `CallToolResult`. Command failures are tool errors (`isError`), so the model sees them.
     pub fn call(&mut self, kind: &ToolKind, arguments: &Value) -> Value {
         let outcome = match kind {
-            ToolKind::Command(id) => self
-                .session
-                .execute(id, Some(arguments))
-                .map(|v| tool_success(&v))
-                .map_err(|e| e.to_string()),
+            ToolKind::Command(id) => self.run(id, arguments).map(|v| tool_success(&v)),
             ToolKind::Batch => self.run_batch(arguments),
             ToolKind::Preview => self.preview(arguments),
         };
@@ -362,15 +391,13 @@ impl Server {
         let mut results = Vec::with_capacity(plan.len());
         let mut failed = 0;
         for (i, (name, id, args)) in plan.iter().enumerate() {
-            match self.session.execute(id, Some(args)) {
+            match self.run(id, args) {
                 Ok(value) => {
                     results.push(json!({ "step": i, "tool": name, "ok": true, "result": value }))
                 }
                 Err(e) => {
                     failed += 1;
-                    results.push(
-                        json!({ "step": i, "tool": name, "ok": false, "error": e.to_string() }),
-                    );
+                    results.push(json!({ "step": i, "tool": name, "ok": false, "error": e }));
                     if !continue_on_error {
                         break;
                     }
@@ -398,6 +425,13 @@ impl Server {
         let show_travel = p
             .bool("showTravel", Some(false))
             .map_err(|e| e.to_string())?;
+        if self.live.is_some() {
+            return Err(
+                "preview renders this server's own design; with --live use design_info or \
+                 design_generate"
+                    .into(),
+            );
+        }
         let design = self.session.design();
         let pattern = Compiler::for_design(design).compile(design);
         let png = preview::png(design, &pattern, size as u32, show_travel)?;

@@ -105,11 +105,13 @@ impl Sandbox {
         };
         if allowed.is_empty() {
             let flag = match access {
-                Access::Write => "--root or --write-root",
-                Access::Read => "--root or --read-root",
+                Access::Write => "openstitch-mcp --root/--write-root, openstitch --listen-root",
+                Access::Read => {
+                    "openstitch-mcp --root/--read-root, openstitch --listen-root/--listen-read-root"
+                }
             };
             return fail(format!(
-                "no {} root is configured; start the server with {flag}",
+                "no {} root is configured ({flag})",
                 access.as_str()
             ));
         }

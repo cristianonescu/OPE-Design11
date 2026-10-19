@@ -45,7 +45,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
   designs, multi-position hoops and jumbo frame; printing (actual size, reduced, positioning
   sheets, Print and Stitch; `openstitch-print`); transfer via USB media.
 - **Automation:** per-command capabilities (read-only mode, file access off) for MCP and
-  `stitchtool serve`.
+  `stitchtool serve`; loopback socket transport for the live editor (`openstitch --listen`,
+  per-launch token, file roots; `stitchtool connect`, `openstitch-mcp --live`).
 - **Distribution:** per-OS packages on every merge to `main` (macOS universal `.app`, Windows
   MSI + zip, Linux tarball with thumbnailer); tag-only draft releases.
 
@@ -62,8 +63,7 @@ for macOS, Windows and Linux. CI builds and tests all three.
 5. **Distribution:** code signing (owner's certificates), macOS Apple-Event file opening,
    AppImage/Flatpak, PES thumbnails on macOS and Windows (need `unsafe` FFI, which the workspace
    forbids).
-6. **Automation:** loopback socket transport for the live app (token auth, file roots).
-7. **Reference tier:** once a licensed PE-DESIGN is available (VM_PLAN.md), generate fixtures,
+6. **Reference tier:** once a licensed PE-DESIGN is available (VM_PLAN.md), generate fixtures,
    calibrate defaults and estimates, and promote rows to Verified Compatible.
 
 Wireless transfer and Link are Blocked: their protocols are undocumented and will not be

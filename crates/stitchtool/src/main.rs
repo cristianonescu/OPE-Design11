@@ -7,6 +7,10 @@
 //!                                  # one JSON request per stdin line, one reply per stdout line;
 //!                                  # --read-only refuses edits, undo/redo and file writes,
 //!                                  # --no-files refuses every file read and write
+//! stitchtool connect [--endpoint FILE]
+//!                                  # same JSON lines, sent to the running editor (started with
+//!                                  # `openstitch --listen PORT`); FILE defaults to automation.json
+//!                                  # in the OpenStitch config directory
 //! ```
 
 use openstitch_engine::{Capabilities, Session};
@@ -16,8 +20,7 @@ use std::path::Path;
 use std::process::ExitCode;
 
 const MAX_LINE: usize = 1 << 20;
-const USAGE: &str =
-    "usage: stitchtool commands | exec <script.json> | serve [--read-only] [--no-files]";
+const USAGE: &str = "usage: stitchtool commands | exec <script.json> | serve [--read-only] [--no-files] | connect [--endpoint FILE]";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -49,6 +52,8 @@ fn main() -> ExitCode {
             session.set_capabilities(caps);
             serve(session)
         }
+        ["connect"] => return connect(None),
+        ["connect", "--endpoint", file] => return connect(Some(Path::new(file))),
         _ => return fail(USAGE),
     }
     ExitCode::SUCCESS
@@ -82,7 +87,33 @@ fn exec(script: &Path) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// Forwards stdin request lines to the running editor and prints its replies.
+fn connect(endpoint: Option<&Path>) -> ExitCode {
+    let Some(file) = endpoint
+        .map(Path::to_path_buf)
+        .or_else(openstitch_remote::default_endpoint_file)
+    else {
+        return fail("no OpenStitch config directory; pass --endpoint FILE");
+    };
+    let mut client = match openstitch_remote::Client::from_file(&file) {
+        Ok(c) => c,
+        Err(e) => {
+            return fail(&format!(
+                "cannot read {} ({e}); is the editor running with --listen?",
+                file.display()
+            ));
+        }
+    };
+    lines(|req| client.handle(req));
+    ExitCode::SUCCESS
+}
+
 fn serve(mut session: Session) {
+    lines(|req| session.handle(req));
+}
+
+/// One JSON request per stdin line, one reply per stdout line.
+fn lines(mut handle: impl FnMut(&Value) -> Value) {
     let stdin = std::io::stdin();
     let mut out = std::io::stdout().lock();
     for line in stdin.lock().lines() {
@@ -91,7 +122,7 @@ fn serve(mut session: Session) {
             continue;
         }
         let reply = match serde_json::from_str::<Value>(&line) {
-            Ok(req) if line.len() <= MAX_LINE => session.handle(&req),
+            Ok(req) if line.len() <= MAX_LINE => handle(&req),
             _ => json!({ "ok": false, "error": "invalid JSON request" }),
         };
         if writeln!(out, "{reply}").and_then(|()| out.flush()).is_err() {

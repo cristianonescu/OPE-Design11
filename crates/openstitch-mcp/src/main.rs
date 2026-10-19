@@ -10,11 +10,16 @@ const USAGE: &str =
     "usage: openstitch-mcp [--root DIR]... [--read-root DIR]... [--write-root DIR]...
                       [--read-only] [--no-files]
                       [--max-request-bytes N] [--max-response-bytes N]
+                      [--live [--endpoint FILE]]
   --root DIR         commands may read and write files under DIR (repeatable)
   --read-root DIR    commands may only read files under DIR (repeatable)
   --write-root DIR   same as --root
   --read-only        inspect and preview only: no edits, undo/redo or file writes
   --no-files         no file access at all (cannot be combined with roots)
+  --live             drive the running editor (started with `openstitch --listen PORT`)
+                     instead of an own design; the editor's file roots apply
+  --endpoint FILE    the editor's endpoint file (default: automation.json in the
+                     OpenStitch config directory); implies --live
 With no roots, every file command is refused. Relative paths resolve against the first
 write root, else the first read root.";
 
@@ -29,8 +34,12 @@ fn dir(path: &str) -> PathBuf {
     }
 }
 
-fn parse(mut args: impl Iterator<Item = String>) -> Result<Option<Config>, String> {
+/// The server settings, and the endpoint file with `--live` (`None` inside: the default file).
+type Parsed = (Config, Option<Option<PathBuf>>);
+
+fn parse(mut args: impl Iterator<Item = String>) -> Result<Option<Parsed>, String> {
     let mut config = Config::default();
+    let mut live = None;
     while let Some(flag) = args.next() {
         let mut value = || args.next().ok_or_else(|| format!("{flag} needs a value"));
         match flag.as_str() {
@@ -48,6 +57,8 @@ fn parse(mut args: impl Iterator<Item = String>) -> Result<Option<Config>, Strin
                     config.max_response_bytes = n;
                 }
             }
+            "--live" => live = Some(live.flatten()),
+            "--endpoint" => live = Some(Some(PathBuf::from(value()?))),
             "--read-only" => config.capabilities = config.capabilities.read_only(),
             "--no-files" => config.capabilities = config.capabilities.without_files(),
             "-h" | "--help" => return Ok(None),
@@ -61,12 +72,15 @@ fn parse(mut args: impl Iterator<Item = String>) -> Result<Option<Config>, Strin
     {
         return Err("--no-files cannot be combined with --root/--read-root/--write-root".into());
     }
-    Ok(Some(config))
+    if live.is_some() && !(config.read_roots.is_empty() && config.write_roots.is_empty()) {
+        return Err("with --live the editor's own roots apply (openstitch --listen-root)".into());
+    }
+    Ok(Some((config, live)))
 }
 
 fn main() -> ExitCode {
-    let config = match parse(std::env::args().skip(1)) {
-        Ok(Some(config)) => config,
+    let (config, live) = match parse(std::env::args().skip(1)) {
+        Ok(Some(parsed)) => parsed,
         Ok(None) => {
             println!("{USAGE}");
             return ExitCode::SUCCESS;
@@ -84,7 +98,28 @@ fn main() -> ExitCode {
             return ExitCode::from(66);
         }
     };
-    if let Some(sandbox) = server.sandbox() {
+    if let Some(file) = live {
+        let Some(file) = file.or_else(openstitch_remote::default_endpoint_file) else {
+            log("no OpenStitch config directory; pass --endpoint FILE");
+            return ExitCode::from(64);
+        };
+        match openstitch_remote::Client::from_file(&file) {
+            Ok(client) => {
+                log(&format!(
+                    "ready; driving the editor at {}",
+                    client.endpoint().address
+                ));
+                server = server.with_live(client);
+            }
+            Err(e) => {
+                log(&format!(
+                    "cannot read {} ({e}); is the editor running with --listen?",
+                    file.display()
+                ));
+                return ExitCode::from(66);
+            }
+        }
+    } else if let Some(sandbox) = server.sandbox() {
         log(&format!(
             "ready; write roots: {:?}, read roots: {:?}, capabilities: {:?}",
             sandbox.write_roots(),

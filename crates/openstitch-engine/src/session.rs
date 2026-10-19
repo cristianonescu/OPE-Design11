@@ -140,6 +140,12 @@ impl Session {
             .collect()
     }
 
+    /// Confines file commands to `sandbox` (`None`: paths resolve against the base directory).
+    /// Returns the previous sandbox, so a transport can scope one client's roots to its requests.
+    pub fn set_sandbox(&mut self, sandbox: Option<Sandbox>) -> Option<Sandbox> {
+        std::mem::replace(&mut self.state.sandbox, sandbox)
+    }
+
     pub fn sandbox(&self) -> Option<&Sandbox> {
         self.state.sandbox.as_ref()
     }
@@ -162,9 +168,8 @@ impl Session {
         v
     }
 
-    /// Runs one command. Failures leave the document untouched; a successful edit that changes
-    /// the design is one undo step.
-    pub fn execute(&mut self, id: &str, params: Option<&Value>) -> CommandResult {
+    /// The command `id` if it exists and this session's capabilities allow it.
+    pub fn permits(&self, id: &str) -> Result<&CommandSpec, CommandError> {
         let spec = self
             .registry
             .get(id)
@@ -178,9 +183,16 @@ impl Session {
                 ),
             });
         }
+        Ok(spec)
+    }
+
+    /// Runs one command. Failures leave the document untouched; a successful edit that changes
+    /// the design is one undo step.
+    pub fn execute(&mut self, id: &str, params: Option<&Value>) -> CommandResult {
+        let spec = self.permits(id)?;
         let p = Params::new(id, params)?;
-        let run = spec.run;
-        match spec.effect {
+        let (run, effect) = (spec.run, spec.effect);
+        match effect {
             Effect::History => self.history(id),
             Effect::Edit => {
                 let mut scratch = self.state.clone();
