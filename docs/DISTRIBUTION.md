@@ -79,6 +79,9 @@ OpenStitch-x86_64.flatpak`; the runtime comes from Flathub). It is a separate wo
 the main build does not wait for the SDK download.
 
 Limits:
+- flatpak-builder runs `appstreamcli compose` on the host, which needs the host's SVG image
+  loader (Debian/Ubuntu: `librsvg2-common`) and `eu-strip` (`elfutils`); without them the build
+  ends with `file-read-error` on the scalable icon or a missing `eu-strip`.
 - Cargo downloads crates during the build (`build-args: --share=network`), which local
   `flatpak-builder` allows. Flathub builds offline: a submission needs the crates as sources,
   generated from `Cargo.lock` by `flatpak-cargo-generator.py` (flatpak-builder-tools) into
