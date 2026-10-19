@@ -38,7 +38,7 @@ SCENES = {
                      [("docs/images/rust-editor-stitches-tab.png", 1600)]),
     "floating": (["--demo", "--tool", "pen", "--show", "floating"],
                  [("docs/images/rust-editor-floating-panes.png", 1600)]),
-    "realistic": (["--demo", "--show", "realistic", "--ribbon", "view", "--zoom", "1.4"],
+    "realistic": (["--demo", "--show", "realistic", "--ribbon", "view", "--zoom", "1.2"],
                   [("docs/images/readme/realistic-view.png", 1280)]),
     "simulator": (["--demo", "--simulate", "0.55", "--ribbon", "view"],
                   [("docs/images/readme/stitch-simulator.png", 1280)]),

@@ -58,7 +58,7 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Stitches ▸ Divide by Colour, Split at Point, Connect, Split Off Area | Stitches tab |
 | Design ▸ Design Settings, Image to Embroidery, pattern wizards | Application menu ▸ Design Settings, Wizard ▸; Image tab; Home ▸ Wizards |
 | Tools ▸ Programmable Stitch Creator, Stitch Design Factory | Options ▸ |
-| View ▸ Fit, travel, realistic, rulers, grid, grid spacing, reference window, measure | Home ▸ Tools ▸ Zoom ▾, Measure; View tab |
+| View ▸ Fit, travel, realistic, rulers, grid, snap to grid, grid spacing, reference window, measure | Home ▸ Tools ▸ Zoom ▾, Measure; View tab |
 | Toolbar tools and hints | Home ▸ Select / Tools, contextual tabs; hints in the status bar |
 
 ## Commands by tab
@@ -134,7 +134,7 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Show/Hide | Reference Window |  | `Action::ReferenceWindow` | view/UI only | yes |
 | Grid | Show Grid |  | `Action::ShowGrid` | view/UI only | yes |
 | Grid | Show Grid with Axes |  | `Action::GridAxes` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Grid | Snap to Grid |  | `Action::SnapToGrid` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Grid | Snap to Grid |  | `Action::SnapToGrid` | view/UI only | yes |
 | Grid | Grid Spacing |  | `Action::GridSpacing` | view/UI only | yes |
 | Ruler | Ruler |  | `Action::Ruler` | view/UI only | yes |
 | Guideline | Guideline |  | `Action::Guideline` | view/UI only | **not yet** (disabled, ScreenTip says so) |

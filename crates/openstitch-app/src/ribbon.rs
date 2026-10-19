@@ -466,8 +466,8 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
         | LineSewType | RegionColor | RegionSewType | EntryExit | SewingPoints => {}
         FabricSelector | Cut | PencilClosed | OpenStraight | PencilOpen | SaveImage
         | ModifyImage | ImageRotateRight | ImageRotateLeft | SolidView | RealisticSettings
-        | GridAxes | Guideline | FontFilter | FontFilterSettings | EdgeRadius
-        | CurvedBlock | Running | Feed | ReverseDirectionLine | ChangeColor | MoveSections => {}
+        | GridAxes | Guideline | FontFilter | FontFilterSettings | EdgeRadius | CurvedBlock
+        | Running | Feed | ReverseDirectionLine | ChangeColor | MoveSections => {}
     }
 }
 
