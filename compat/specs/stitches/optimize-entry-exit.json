@@ -1,0 +1,140 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "optimize-entry-exit",
+  "area": "stitches",
+  "title": "Optimize Sewing Order moves entry and exit points",
+  "description": "Three same-colour 10 mm squares drawn at x = 0, 50 and 25 mm: Optimize Sewing Order sews them left to right and moves each exit and the next entry to the facing sides, so each move crosses only the 15 mm gap between neighbours.",
+  "covers": {
+    "audit": [
+      16
+    ],
+    "featureMatrix": [
+      {
+        "area": "Editing",
+        "feature": "Sewing order editing"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 16 (the audit's 10 mm assumed 20 mm spacing; 25 mm spacing leaves 15 mm)"
+    },
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_1827935.html",
+      "note": "rearranges the order and the entry/exit points"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 0,
+        "y": 0,
+        "width": 10,
+        "height": 10,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 50,
+        "y": 0,
+        "width": 10,
+        "height": 10,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 25,
+        "y": 0,
+        "width": 10,
+        "height": 10,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "order.optimize",
+      "params": {}
+    },
+    {
+      "command": "object.list",
+      "id": "order"
+    }
+  ],
+  "exports": [
+    {
+      "path": "squares.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/optimize-entry-exit.pes",
+      "make": "On a 100 × 100 mm Design Page draw three 10 × 10 mm squares, red fill, no line sewing, with top-left corners at (0, 0), (50, 0) and (25, 0) mm in that order. Run Optimize Sewing Order (record whether Options ▸ Optimize Entry/Exit Points was on). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "order",
+      "measure": {
+        "kind": "replyValue",
+        "pointer": "",
+        "pluck": "id"
+      },
+      "source": {
+        "step": "order"
+      },
+      "expected": [
+        1,
+        3,
+        2
+      ],
+      "evidence": "audit item 16: sewn left to right (x = 0, 25, 50)"
+    },
+    {
+      "id": "travel",
+      "measure": {
+        "kind": "travelGaps"
+      },
+      "source": {
+        "export": "squares.pes"
+      },
+      "expected": [
+        15,
+        15
+      ],
+      "tolerance": {
+        "mm": 0.5
+      },
+      "evidence": "audit item 16: each move crosses the gap between outlines, ±0.5 mm",
+      "reference": {}
+    },
+    {
+      "id": "travel-total",
+      "measure": {
+        "kind": "totalJumpLength"
+      },
+      "source": {
+        "export": "squares.pes"
+      },
+      "evidence": "PE-DESIGN 11 output of the same design",
+      "reference": {
+        "tolerance": {
+          "mm": 2
+        }
+      }
+    }
+  ]
+}

@@ -36,6 +36,26 @@ jobs:
       - run: cargo build --workspace --all-targets --locked
       - run: cargo test --workspace --locked
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      # Compatibility harness (docs/COMPATIBILITY_TESTS.md): runs compat/specs, fails on a failing
+      # or invalid spec or a stale docs/COMPATIBILITY_STATUS.md; specs waiting for a PE-DESIGN
+      # reference file are reported as pending, not failed.
+      - name: Compatibility specs
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo run -p stitchtool --locked -- compat --check-status docs/COMPATIBILITY_STATUS.md
+      - name: Compatibility summary
+        if: always() && matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: if [ -f target/compat/summary.md ]; then cat target/compat/summary.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - name: Compatibility report
+        if: always() && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: compat-report
+          path: |
+            target/compat/report.json
+            target/compat/summary.md
+          if-no-files-found: ignore
+          retention-days: 14
 
   version-label:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

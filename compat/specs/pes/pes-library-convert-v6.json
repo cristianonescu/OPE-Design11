@@ -1,0 +1,115 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-library-convert-v6",
+  "area": "pes",
+  "title": "Design Database convert writes PES version 6",
+  "description": "library.convert of a DST file to PES writes version 6 with the stitch group and a thread table, like design.export.",
+  "covers": {
+    "audit": [
+      2
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES write v1 and v6"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 2"
+    }
+  ],
+  "inputs": [
+    {
+      "from": "crates/openstitch-formats/tests/fixtures/oracle.dst",
+      "name": "oracle.dst"
+    }
+  ],
+  "script": [
+    {
+      "command": "library.convert",
+      "params": {
+        "paths": [
+          "oracle.dst"
+        ],
+        "format": "pes"
+      },
+      "id": "convert"
+    }
+  ],
+  "exports": [
+    {
+      "path": "oracle.pes",
+      "fromScript": true
+    }
+  ],
+  "measurements": [
+    {
+      "id": "written",
+      "measure": {
+        "kind": "replyValue",
+        "pointer": "/written"
+      },
+      "source": {
+        "step": "convert"
+      },
+      "expected": 1,
+      "evidence": "one file converted"
+    },
+    {
+      "id": "version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "oracle.pes"
+      },
+      "expected": "0060",
+      "evidence": "audit item 2: version ≥ 6"
+    },
+    {
+      "id": "classes",
+      "measure": {
+        "kind": "pesClasses"
+      },
+      "source": {
+        "export": "oracle.pes"
+      },
+      "expected": [
+        "CEmbOne",
+        "CSewSeg"
+      ],
+      "evidence": "audit item 2: at least one CEmbOne"
+    },
+    {
+      "id": "stitches-kept",
+      "measure": {
+        "kind": "compare",
+        "against": "crates/openstitch-formats/tests/fixtures/oracle.dst",
+        "options": {
+          "origin": "boundsCenter",
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false,
+          "counts": {
+            "count": 0
+          }
+        }
+      },
+      "source": {
+        "export": "oracle.pes"
+      },
+      "tier": "oracle",
+      "evidence": "pyembroidery's oracle.dst: the converted file sews the same needle points"
+    }
+  ]
+}

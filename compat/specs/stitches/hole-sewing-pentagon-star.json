@@ -1,0 +1,191 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "hole-sewing-pentagon-star",
+  "area": "stitches",
+  "title": "Hole sewing cuts out only the paired shape",
+  "description": "A 40 mm pentagon with a 20 mm star inside it, set as a hole-sewing pair: the pentagon's fill covers the pentagon minus the star (833.5 mm², ±2 %), and a later region that is not the pair is not cut out.",
+  "covers": {
+    "audit": [
+      17
+    ],
+    "featureMatrix": [
+      {
+        "area": "Editing",
+        "feature": "Hole sewing"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 17"
+    },
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_1836721.html",
+      "note": "hole sewing applies to a pair where one region encloses the other"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.polygon",
+      "params": {
+        "points": [
+          [
+            50.0,
+            30.0
+          ],
+          [
+            69.0211,
+            43.8197
+          ],
+          [
+            61.7557,
+            66.1803
+          ],
+          [
+            38.2443,
+            66.1803
+          ],
+          [
+            30.9789,
+            43.8197
+          ]
+        ],
+        "fill": "Blue"
+      }
+    },
+    {
+      "command": "shape.polygon",
+      "params": {
+        "points": [
+          [
+            50.0,
+            42.0
+          ],
+          [
+            52.3511,
+            48.7639
+          ],
+          [
+            59.5106,
+            48.9098
+          ],
+          [
+            53.8042,
+            53.2361
+          ],
+          [
+            55.8779,
+            60.0902
+          ],
+          [
+            50.0,
+            56.0
+          ],
+          [
+            44.1221,
+            60.0902
+          ],
+          [
+            46.1958,
+            53.2361
+          ],
+          [
+            40.4894,
+            48.9098
+          ],
+          [
+            47.6489,
+            48.7639
+          ]
+        ],
+        "fill": "Yellow"
+      }
+    },
+    {
+      "command": "object.setHoleSewing",
+      "params": {
+        "ids": [
+          2,
+          1
+        ],
+        "enabled": true
+      },
+      "id": "pair"
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 45,
+        "y": 62,
+        "width": 10,
+        "height": 4,
+        "fill": "Red"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "holes.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/hole-sewing-pentagon-star.pes",
+      "make": "On a 100 × 100 mm Design Page draw a regular pentagon of circumradius 20 mm centred at (50, 50) mm (blue fill, point up) and a five-pointed star of outer radius 10 mm and inner radius 4 mm centred at (50, 52) mm (yellow fill, point up); the exact vertices are in compat/specs/stitches/hole-sewing-pentagon-star.json. Line sewing off, Fill Stitch at 0°. Select both and apply Hole Sewing; then draw a 10 × 4 mm red rectangle at (45, 62) mm. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "pair",
+      "measure": {
+        "kind": "replyValue",
+        "pointer": ""
+      },
+      "source": {
+        "step": "pair"
+      },
+      "expected": {
+        "outer": 1,
+        "inner": 2
+      },
+      "evidence": "the outer shape is found by enclosure"
+    },
+    {
+      "id": "pentagon-area",
+      "measure": {
+        "kind": "stitchedArea"
+      },
+      "source": {
+        "export": "holes.pes",
+        "colorBlock": 0
+      },
+      "expected": 833.5,
+      "tolerance": {
+        "percent": 2
+      },
+      "evidence": "audit item 17: pentagon − star ±2 %",
+      "reference": {}
+    },
+    {
+      "id": "blocks",
+      "measure": {
+        "kind": "colorBlocks"
+      },
+      "source": {
+        "export": "holes.pes"
+      },
+      "expected": 3,
+      "evidence": "three regions of three colours"
+    }
+  ]
+}

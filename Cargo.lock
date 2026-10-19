@@ -2363,6 +2363,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "openstitch-compat"
+version = "0.1.0"
+dependencies = [
+ "openstitch-core",
+ "openstitch-engine",
+ "openstitch-formats",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "openstitch-core"
 version = "0.1.0"
 dependencies = [
@@ -3315,6 +3326,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 name = "stitchtool"
 version = "0.1.0"
 dependencies = [
+ "openstitch-compat",
  "openstitch-engine",
  "openstitch-remote",
  "serde_json",

@@ -1,0 +1,186 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "running-stitch-path-exclusions",
+  "area": "stitches",
+  "title": "Running Stitch Path follows the guide's exclusions",
+  "description": "object.setRegion refuses a Running Stitch Path where the guide says the attribute is not available: an unknown value, with Auto direction, with a feathered edge, Inside with gradation, for sew types without it, and on text.",
+  "covers": {
+    "audit": [
+      3
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Fill (tatami: angle or auto direction"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 3"
+    },
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Running Stitch Path availability"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.polygon",
+      "params": {
+        "points": [
+          [
+            10,
+            10
+          ],
+          [
+            40,
+            10
+          ],
+          [
+            40,
+            40
+          ],
+          [
+            30,
+            40
+          ],
+          [
+            30,
+            20
+          ],
+          [
+            20,
+            20
+          ],
+          [
+            20,
+            40
+          ],
+          [
+            10,
+            40
+          ]
+        ],
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "U",
+        "size": 20,
+        "x": 60,
+        "y": 60
+      }
+    }
+  ],
+  "exports": [],
+  "measurements": [
+    {
+      "id": "unknown-value",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "runningStitchPath": "outside"
+        }
+      },
+      "expected": true,
+      "evidence": "the guide's three values only"
+    },
+    {
+      "id": "with-auto-direction",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "runningStitchPath": "alongOutline",
+          "autoDirection": true
+        }
+      },
+      "expected": true,
+      "evidence": "guide: unavailable with Auto direction"
+    },
+    {
+      "id": "with-feathered-edge",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "runningStitchPath": "alongOutline",
+          "featherWidth": 1
+        }
+      },
+      "expected": true,
+      "evidence": "guide: unavailable with a feathered edge"
+    },
+    {
+      "id": "inside-with-gradation",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "runningStitchPath": "inside",
+          "gradation": 50
+        }
+      },
+      "expected": true,
+      "evidence": "guide: Inside of region is unavailable with gradation"
+    },
+    {
+      "id": "other-sew-type",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "runningStitchPath": "inside",
+          "type": "spiral"
+        }
+      },
+      "expected": true,
+      "evidence": "guide: Satin and Fill only"
+    },
+    {
+      "id": "on-text",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 2,
+          "runningStitchPath": "onOutline"
+        }
+      },
+      "expected": true,
+      "evidence": "guide: unavailable for text"
+    },
+    {
+      "id": "on-outline-with-gradation",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "runningStitchPath": "onOutline",
+          "gradation": 50
+        }
+      },
+      "expected": false,
+      "evidence": "guide: On outline stays available with gradation"
+    }
+  ]
+}

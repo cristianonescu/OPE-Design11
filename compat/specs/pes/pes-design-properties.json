@@ -1,0 +1,188 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-design-properties",
+  "area": "pes",
+  "title": "Design Property fields reach the PES header and come back",
+  "description": "The five Design Property strings set with design.setProperties are in the PES 6 header byte for byte, and stitches.import into a new design adopts them.",
+  "covers": {
+    "audit": [
+      19
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "Design Property"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 19"
+    },
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_1911437.html",
+      "note": "Design Property"
+    },
+    {
+      "kind": "spec",
+      "url": "https://edutechwiki.unige.ch/en/Embroidery_format_PES",
+      "note": "the field order"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "Rose"
+      }
+    },
+    {
+      "command": "design.setProperties",
+      "params": {
+        "category": "Flowers",
+        "author": "Ana Pérez",
+        "keywords": "rose, red, spring",
+        "comments": "Line one\nline two"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 20,
+        "y": 20,
+        "width": 40,
+        "height": 30,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "design.export",
+      "params": {
+        "path": "rose.pes",
+        "pesVersion": "6"
+      }
+    },
+    {
+      "command": "design.new",
+      "params": {}
+    },
+    {
+      "command": "stitches.import",
+      "params": {
+        "path": "rose.pes"
+      },
+      "id": "import"
+    }
+  ],
+  "exports": [
+    {
+      "path": "rose.pes",
+      "fromScript": true
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "pes/pes-design-properties.pes",
+      "make": "Open target/compat/work/pes-design-properties/rose.pes in PE-DESIGN 11, check Design Property shows the five fields (name Rose, category Flowers, author Ana Pérez, keywords \"rose, red, spring\", comments on two lines), and save it unchanged as PES. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "metadata-name",
+      "measure": {
+        "kind": "metadata",
+        "key": "name"
+      },
+      "source": {
+        "export": "rose.pes"
+      },
+      "expected": "Rose",
+      "evidence": "audit item 19: byte-exact",
+      "reference": {}
+    },
+    {
+      "id": "metadata-category",
+      "measure": {
+        "kind": "metadata",
+        "key": "category"
+      },
+      "source": {
+        "export": "rose.pes"
+      },
+      "expected": "Flowers",
+      "evidence": "audit item 19: byte-exact",
+      "reference": {}
+    },
+    {
+      "id": "metadata-author",
+      "measure": {
+        "kind": "metadata",
+        "key": "author"
+      },
+      "source": {
+        "export": "rose.pes"
+      },
+      "expected": "Ana Pérez",
+      "evidence": "audit item 19: byte-exact",
+      "reference": {}
+    },
+    {
+      "id": "metadata-keywords",
+      "measure": {
+        "kind": "metadata",
+        "key": "keywords"
+      },
+      "source": {
+        "export": "rose.pes"
+      },
+      "expected": "rose, red, spring",
+      "evidence": "audit item 19: byte-exact",
+      "reference": {}
+    },
+    {
+      "id": "metadata-comments",
+      "measure": {
+        "kind": "metadata",
+        "key": "comments"
+      },
+      "source": {
+        "export": "rose.pes"
+      },
+      "expected": "Line one\nline two",
+      "evidence": "audit item 19: byte-exact",
+      "reference": {}
+    },
+    {
+      "id": "adopted",
+      "measure": {
+        "kind": "replyValue",
+        "pointer": "/propertiesAdopted"
+      },
+      "source": {
+        "step": "import"
+      },
+      "expected": true,
+      "evidence": "an empty design adopts the file's fields"
+    },
+    {
+      "id": "adopted-values",
+      "measure": {
+        "kind": "replyValue",
+        "pointer": "/properties"
+      },
+      "source": {
+        "step": "import"
+      },
+      "expected": {
+        "category": "Flowers",
+        "author": "Ana Pérez",
+        "keywords": "rose, red, spring",
+        "comments": "Line one\nline two"
+      },
+      "evidence": "the four fields come back"
+    }
+  ]
+}

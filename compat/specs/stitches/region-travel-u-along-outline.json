@@ -1,0 +1,191 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "region-travel-u-along-outline",
+  "area": "stitches",
+  "title": "Fill travels along the outline of a U without trims",
+  "description": "The U polygon of audit item 3, sewn as one region, travels between its two legs with running stitches inside the region: no trim and no jump between the first and the last stitch, and every stitch's midpoint inside the U (or within 0.1 mm of its outline: 0.05 mm as the audit allows plus the file's 0.1 mm grid).",
+  "covers": {
+    "audit": [
+      3
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Fill (tatami: angle or auto direction"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 3"
+    },
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Running Stitch Path: Inside of region, Along outline or On outline; no jump option"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.polygon",
+      "params": {
+        "points": [
+          [
+            10,
+            10
+          ],
+          [
+            40,
+            10
+          ],
+          [
+            40,
+            40
+          ],
+          [
+            30,
+            40
+          ],
+          [
+            30,
+            20
+          ],
+          [
+            20,
+            20
+          ],
+          [
+            20,
+            40
+          ],
+          [
+            10,
+            40
+          ]
+        ],
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "type": "fill",
+        "angle": 0,
+        "runningStitchPath": "alongOutline",
+        "id": 1
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "u.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/region-travel-u-along-outline.pes",
+      "make": "On a 100 × 100 mm Design Page draw the closed polygon (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm. Line sewing off; region colour red; region sew type Fill Stitch, Direction 0°, Running Stitch Path Along outline. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "trims-inside",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "trim"
+      },
+      "source": {
+        "export": "u.pes"
+      },
+      "expected": 0,
+      "evidence": "audit item 3: 0 trims inside the object",
+      "reference": {}
+    },
+    {
+      "id": "jumps-inside",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "jump"
+      },
+      "source": {
+        "export": "u.pes"
+      },
+      "expected": 0,
+      "evidence": "audit item 3: travel is running stitches, no jumps",
+      "reference": {}
+    },
+    {
+      "id": "stitches-outside",
+      "measure": {
+        "kind": "stitchesOutside",
+        "polygon": [
+          [
+            10,
+            10
+          ],
+          [
+            40,
+            10
+          ],
+          [
+            40,
+            40
+          ],
+          [
+            30,
+            40
+          ],
+          [
+            30,
+            20
+          ],
+          [
+            20,
+            20
+          ],
+          [
+            20,
+            40
+          ],
+          [
+            10,
+            40
+          ]
+        ],
+        "within": 0.1
+      },
+      "source": {
+        "export": "u.pes"
+      },
+      "expected": 0,
+      "evidence": "audit item 3: every travel midpoint inside the region"
+    },
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "u.pes"
+      },
+      "expected": {
+        "min": 100
+      },
+      "evidence": "region_compat: the U sews more than 100 stitches",
+      "reference": {
+        "tolerance": {
+          "percent": 15
+        }
+      }
+    }
+  ]
+}

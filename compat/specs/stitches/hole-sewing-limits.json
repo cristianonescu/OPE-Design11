@@ -1,0 +1,290 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "hole-sewing-limits",
+  "area": "stitches",
+  "title": "Hole sewing is refused outside the guide's limits",
+  "description": "object.setHoleSewing refuses a partial overlap, a self-crossing outline, a region sewn along several direction lines, a feathered edge, a region enclosing nothing and more than two shapes; each refusal names the reason.",
+  "covers": {
+    "audit": [
+      17
+    ],
+    "featureMatrix": [
+      {
+        "area": "Editing",
+        "feature": "Hole sewing"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 17"
+    },
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_1836721.html",
+      "note": "refused for self-crossing outlines or multiple direction lines"
+    },
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "feathered edges are unavailable with hole sewing"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 200,
+        "height": 200
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 0,
+        "y": 0,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "command": "shape.polygon",
+      "params": {
+        "points": [
+          [
+            50,
+            0
+          ],
+          [
+            90,
+            40
+          ],
+          [
+            90,
+            0
+          ],
+          [
+            50,
+            40
+          ]
+        ]
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 83,
+        "y": 17,
+        "width": 4,
+        "height": 6
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 0,
+        "y": 50,
+        "width": 40,
+        "height": 20
+      }
+    },
+    {
+      "command": "object.setDirectionLines",
+      "params": {
+        "id": 5,
+        "lines": [
+          [
+            [
+              0,
+              50
+            ],
+            [
+              0,
+              70
+            ]
+          ],
+          [
+            [
+              40,
+              50
+            ],
+            [
+              40,
+              70
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 15,
+        "y": 55,
+        "width": 5,
+        "height": 5
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 50,
+        "y": 50,
+        "width": 40,
+        "height": 20
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 7,
+        "featherWidth": 2
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 65,
+        "y": 55,
+        "width": 5,
+        "height": 5
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 0,
+        "y": 100,
+        "width": 10,
+        "height": 10
+      }
+    }
+  ],
+  "exports": [],
+  "measurements": [
+    {
+      "id": "partial-overlap",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setHoleSewing",
+        "params": {
+          "ids": [
+            1,
+            2
+          ],
+          "enabled": true
+        },
+        "errorContains": "fully inside"
+      },
+      "expected": true,
+      "evidence": "guide: hole sewing limits"
+    },
+    {
+      "id": "self-crossing",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setHoleSewing",
+        "params": {
+          "ids": [
+            3,
+            4
+          ],
+          "enabled": true
+        },
+        "errorContains": "crosses itself"
+      },
+      "expected": true,
+      "evidence": "guide: hole sewing limits"
+    },
+    {
+      "id": "self-crossing-alone",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setHoleSewing",
+        "params": {
+          "id": 3,
+          "enabled": true
+        },
+        "errorContains": "crosses itself"
+      },
+      "expected": true,
+      "evidence": "guide: hole sewing limits"
+    },
+    {
+      "id": "direction-lines",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setHoleSewing",
+        "params": {
+          "ids": [
+            5,
+            6
+          ],
+          "enabled": true
+        },
+        "errorContains": "direction lines"
+      },
+      "expected": true,
+      "evidence": "guide: hole sewing limits"
+    },
+    {
+      "id": "feathered",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setHoleSewing",
+        "params": {
+          "ids": [
+            7,
+            8
+          ],
+          "enabled": true
+        },
+        "errorContains": "feathered"
+      },
+      "expected": true,
+      "evidence": "guide: hole sewing limits"
+    },
+    {
+      "id": "encloses-nothing",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setHoleSewing",
+        "params": {
+          "id": 9,
+          "enabled": true
+        },
+        "errorContains": "encloses no other region"
+      },
+      "expected": true,
+      "evidence": "guide: hole sewing limits"
+    },
+    {
+      "id": "three-shapes",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setHoleSewing",
+        "params": {
+          "ids": [
+            1,
+            2,
+            9
+          ],
+          "enabled": true
+        },
+        "errorContains": "exactly two"
+      },
+      "expected": true,
+      "evidence": "guide: hole sewing limits"
+    }
+  ]
+}
