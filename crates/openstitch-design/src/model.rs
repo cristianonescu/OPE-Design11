@@ -40,6 +40,9 @@ pub struct Design {
     /// Guidelines (view aid, never sewn). Omitted while empty.
     #[serde(default, skip_serializing_if = "Guides::is_empty")]
     pub guides: Guides,
+    /// Design Property: category, author, keywords, comments. Omitted while empty.
+    #[serde(default, skip_serializing_if = "DesignProperties::is_empty")]
+    pub properties: DesignProperties,
 }
 
 /// A raster image placed on the Design Page as a tracing reference (PE-DESIGN's background
@@ -105,6 +108,63 @@ impl Guides {
     }
 }
 
+/// Design Property text fields, written to the PES v4+ header next to the design name and
+/// read back from it. Each field is omitted while empty.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct DesignProperties {
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub category: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub author: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub keywords: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub comments: String,
+}
+
+impl DesignProperties {
+    /// Field names, as `StitchPattern` metadata keys and command parameters.
+    pub const KEYS: [&str; 4] = ["category", "author", "keywords", "comments"];
+    /// A PES header string holds at most this many bytes.
+    pub const MAX_BYTES: usize = 255;
+
+    pub fn is_empty(&self) -> bool {
+        self.fields().iter().all(|(_, v)| v.is_empty())
+    }
+
+    /// `(key, value)` in [`DesignProperties::KEYS`] order.
+    pub fn fields(&self) -> [(&'static str, &str); 4] {
+        [
+            ("category", &self.category),
+            ("author", &self.author),
+            ("keywords", &self.keywords),
+            ("comments", &self.comments),
+        ]
+    }
+
+    pub fn field_mut(&mut self, key: &str) -> Option<&mut String> {
+        match key {
+            "category" => Some(&mut self.category),
+            "author" => Some(&mut self.author),
+            "keywords" => Some(&mut self.keywords),
+            "comments" => Some(&mut self.comments),
+            _ => None,
+        }
+    }
+
+    /// The fields found in a stitch pattern's metadata (as a PES file supplies them).
+    pub fn from_metadata(metadata: &std::collections::BTreeMap<String, String>) -> Self {
+        let mut p = Self::default();
+        for key in Self::KEYS {
+            if let (Some(v), Some(f)) = (metadata.get(key), p.field_mut(key)) {
+                f.clone_from(v);
+            }
+        }
+        p
+    }
+}
+
 impl Default for Design {
     fn default() -> Self {
         Self::new("Untitled", DesignPage::default())
@@ -124,6 +184,7 @@ impl Design {
             patterns: Vec::new(),
             sewing: Vec::new(),
             guides: Guides::default(),
+            properties: DesignProperties::default(),
         }
     }
 

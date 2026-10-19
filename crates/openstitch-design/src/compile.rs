@@ -137,6 +137,11 @@ impl Compiler {
     pub fn compile(&self, design: &Design) -> StitchPattern {
         let mut w = self.writer();
         w.out.set_name(design.name.clone());
+        for (key, value) in design.properties.fields() {
+            if !value.is_empty() {
+                w.out.metadata.insert(key.into(), value.into());
+            }
+        }
         for object in design.objects.iter().filter(|o| o.visible) {
             sew_object(&mut w, object, design);
         }

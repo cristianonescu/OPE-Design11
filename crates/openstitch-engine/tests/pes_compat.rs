@@ -1,0 +1,254 @@
+//! PES compatibility (docs/COMPATIBILITY_AUDIT.md items 2 and 19): every user-facing PES path
+//! writes version 6 with a stitch-group object and the thread table, and the Design Property
+//! fields reach the file, survive `.osd` and come back on import. Internal regressions only; no
+//! PE-DESIGN reference stands behind them.
+#![cfg(feature = "formats")]
+
+use openstitch_engine::Session;
+use openstitch_formats::pes;
+use serde_json::{Value, json};
+use std::path::{Path, PathBuf};
+
+fn temp_dir(tag: &str) -> PathBuf {
+    let n = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let dir = std::env::temp_dir().join(format!(
+        "openstitch-pes-{tag}-{n}-{:?}",
+        std::thread::current().id()
+    ));
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    dir.canonicalize().expect("canonical")
+}
+
+fn run(s: &mut Session, id: &str, params: Value) -> Value {
+    s.execute(id, Some(&params))
+        .unwrap_or_else(|e| panic!("{id}: {e}"))
+}
+
+/// Version ≥ 6, at least one `CEmbOne` and a thread table.
+fn assert_full_pes(path: &Path) -> pes::ObjectSection {
+    let bytes = std::fs::read(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let objects = pes::read_objects(&bytes).expect("objects");
+    let version: u32 = objects.version.parse().expect("numeric version");
+    assert!(version >= 60, "{}: version {version}", path.display());
+    assert!(
+        !objects.objects.is_empty(),
+        "{}: no CEmbOne",
+        path.display()
+    );
+    assert!(
+        !objects.threads.is_empty(),
+        "{}: no thread table",
+        path.display()
+    );
+    objects
+}
+
+fn rose(dir: &Path) -> Session {
+    let mut s = Session::new(dir);
+    run(
+        &mut s,
+        "design.new",
+        json!({"name": "t1", "width": 100, "height": 100}),
+    );
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 20, "y": 20, "width": 40, "height": 30, "fill": "Red", "outline": "Black"}),
+    );
+    s
+}
+
+#[test]
+fn design_export_without_version_writes_full_v6() {
+    let dir = temp_dir("export");
+    let mut s = rose(&dir);
+    run(&mut s, "design.export", json!({"path": "a.pes"}));
+    let objects = assert_full_pes(&dir.join("a.pes"));
+    assert_eq!(objects.version, "0060");
+    assert_eq!(objects.threads.len(), 2);
+    // `1t` stays available as the smallest, machine-only file.
+    run(
+        &mut s,
+        "design.export",
+        json!({"path": "b.pes", "pesVersion": "1t"}),
+    );
+    let small = pes::read_objects(&std::fs::read(dir.join("b.pes")).expect("b")).expect("b");
+    assert_eq!(small.version, "0001");
+    assert!(small.objects.is_empty() && small.threads.is_empty());
+}
+
+#[test]
+fn name_drop_export_writes_full_v6() {
+    let dir = temp_dir("namedrop");
+    let mut s = Session::new(&dir);
+    run(
+        &mut s,
+        "text.add",
+        json!({"text": "Ann", "size": 10, "x": 50, "y": 40}),
+    );
+    run(&mut s, "text.setNameDrop", json!({"id": 1}));
+    let r = run(
+        &mut s,
+        "nameDrop.export",
+        json!({"rows": ["Ann", "Bo"], "name": "tag"}),
+    );
+    assert_eq!(r["count"], 2);
+    for f in ["tag001.pes", "tag002.pes"] {
+        assert_full_pes(&dir.join(f));
+    }
+}
+
+#[cfg(feature = "library")]
+#[test]
+fn library_convert_writes_full_v6() {
+    let dir = temp_dir("convert");
+    std::fs::write(
+        dir.join("oracle.dst"),
+        include_bytes!("../../openstitch-formats/tests/fixtures/oracle.dst"),
+    )
+    .expect("dst");
+    let mut s = Session::new(&dir);
+    let r = run(
+        &mut s,
+        "library.convert",
+        json!({"paths": ["oracle.dst"], "format": "pes"}),
+    );
+    assert_eq!(r["written"], 1, "{r}");
+    assert_full_pes(&dir.join("oracle.pes"));
+}
+
+const PROPERTIES: [(&str, &str); 4] = [
+    ("category", "Flowers"),
+    ("author", "Ana Pérez"),
+    ("keywords", "rose, red, spring"),
+    ("comments", "Line one\nline two"),
+];
+
+fn set_properties(s: &mut Session) {
+    let params: serde_json::Map<String, Value> = PROPERTIES
+        .iter()
+        .map(|&(k, v)| (k.to_string(), json!(v)))
+        .collect();
+    run(s, "design.setProperties", Value::Object(params));
+}
+
+#[test]
+fn design_properties_reach_the_pes_header_byte_exact() {
+    let dir = temp_dir("props");
+    let mut s = Session::new(&dir);
+    run(&mut s, "design.new", json!({"name": "Rose"}));
+    set_properties(&mut s);
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 20, "y": 20, "width": 40, "height": 30, "fill": "Red"}),
+    );
+    run(
+        &mut s,
+        "design.export",
+        json!({"path": "rose.pes", "pesVersion": "6"}),
+    );
+    let objects = assert_full_pes(&dir.join("rose.pes"));
+    assert_eq!(
+        objects.metadata.get("name").map(String::as_str),
+        Some("Rose")
+    );
+    for (k, v) in PROPERTIES {
+        assert_eq!(objects.metadata.get(k).map(String::as_str), Some(v), "{k}");
+    }
+    let info = run(&mut s, "design.info", json!({}));
+    assert_eq!(info["properties"]["author"], "Ana Pérez");
+
+    // Only the fields given change; "" clears one.
+    run(
+        &mut s,
+        "design.setProperties",
+        json!({"keywords": "", "author": "Bo"}),
+    );
+    let p = &s.design().properties;
+    assert_eq!((p.category.as_str(), p.author.as_str()), ("Flowers", "Bo"));
+    assert!(p.keywords.is_empty());
+}
+
+#[test]
+fn design_properties_are_validated_all_or_nothing() {
+    let mut s = Session::new(temp_dir("validate"));
+    set_properties(&mut s);
+    let before = s.design().properties.clone();
+    for bad in [
+        json!({}),
+        json!({"author": 3}),
+        json!({"category": "ok", "author": "x".repeat(256)}),
+        json!({"category": "ok", "comments": "bell\u{7}"}),
+    ] {
+        assert!(
+            s.execute("design.setProperties", Some(&bad)).is_err(),
+            "{bad}"
+        );
+        assert_eq!(s.design().properties, before, "{bad}");
+    }
+    // 255 bytes is the PES limit, counted in UTF-8 bytes.
+    run(
+        &mut s,
+        "design.setProperties",
+        json!({"comments": "é".repeat(127)}),
+    );
+    assert!(
+        s.execute(
+            "design.setProperties",
+            Some(&json!({"comments": "é".repeat(128)}))
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn design_properties_survive_osd_and_come_back_on_import() {
+    let dir = temp_dir("osd");
+    let mut s = rose(&dir);
+    set_properties(&mut s);
+    run(&mut s, "project.save", json!({"path": "rose.osd"}));
+    run(&mut s, "design.export", json!({"path": "rose.pes"}));
+    let saved = s.design().clone();
+
+    let mut back = Session::new(&dir);
+    run(&mut back, "project.open", json!({"path": "rose.osd"}));
+    assert_eq!(back.design().properties, saved.properties);
+
+    // An empty design adopts the file's fields.
+    let mut fresh = Session::new(&dir);
+    let r = run(&mut fresh, "stitches.import", json!({"path": "rose.pes"}));
+    assert_eq!(r["propertiesAdopted"], true);
+    assert_eq!(r["properties"]["category"], "Flowers");
+    assert_eq!(fresh.design().properties, saved.properties);
+
+    // A design with its own fields keeps them unless asked; the file's are still offered.
+    let mut own = Session::new(&dir);
+    run(&mut own, "design.setProperties", json!({"author": "Me"}));
+    let r = run(&mut own, "stitches.import", json!({"path": "rose.pes"}));
+    assert_eq!(r["propertiesAdopted"], false);
+    assert_eq!(r["properties"]["author"], "Ana Pérez");
+    assert_eq!(own.design().properties.author, "Me");
+    run(
+        &mut own,
+        "stitches.import",
+        json!({"path": "rose.pes", "adoptProperties": true}),
+    );
+    assert_eq!(own.design().properties, saved.properties);
+
+    // A design without fields writes none, and `.osd` omits the key.
+    let mut plain = rose(&dir);
+    run(&mut plain, "project.save", json!({"path": "plain.osd"}));
+    let text = std::fs::read_to_string(dir.join("plain.osd")).expect("osd");
+    assert!(!text.contains("\"properties\""));
+    run(&mut plain, "design.export", json!({"path": "plain.pes"}));
+    let objects = assert_full_pes(&dir.join("plain.pes"));
+    assert!(
+        ["category", "author", "keywords", "comments"]
+            .iter()
+            .all(|k| !objects.metadata.contains_key(*k))
+    );
+}

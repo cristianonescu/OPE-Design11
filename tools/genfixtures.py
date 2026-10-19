@@ -31,6 +31,12 @@ pe.write_pec(p, os.path.join(out, "oracle.pec"))
 pe.write_pes(p, os.path.join(out, "oracle.pes"), {"version": "1t"})
 for v in ("1", "6", "6t"):  # PES with the object section / thread table
     pe.write_pes(p, os.path.join(out, "oracle_v%s.pes" % v), {"version": v})
+# PES v6 thread table with brand, catalogue number, description and chart all set (the chart is
+# an arbitrary test string, not a real Brother chart name).
+pc, _ = build()
+for t, (catalog, brand, chart) in zip(pc.threadlist, (("800", "Acme", "Test chart A"), ("405", "Acme", "Test chart B"))):
+    t.catalog_number, t.brand, t.chart = catalog, brand, chart
+pe.write_pes(pc, os.path.join(out, "oracle_v6_chart.pes"), {"version": "6"})
 pe.write_exp(p, os.path.join(out, "oracle.exp"))
 pe.write_jef(p, os.path.join(out, "oracle.jef"), {"date": "20261018120000"})
 pe.write_xxx(p, os.path.join(out, "oracle.xxx"))
