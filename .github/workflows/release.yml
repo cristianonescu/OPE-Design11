@@ -65,6 +65,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # WiX debug symbols are a build by-product, not something users download.
+          rm -f assets/*.wixpdb
           args=(--repo "$GITHUB_REPOSITORY" --draft --verify-tag
                 --title "OpenStitch $GITHUB_REF_NAME" --generate-notes)
           case "$GITHUB_REF_NAME" in *-*) args+=(--prerelease) ;; esac
