@@ -25,6 +25,6 @@ for s in 16 32 48 64 128 256 512; do
 done
 install -Dm644 "$root/assets/icons/openstitch.svg" "$dir/share/icons/hicolor/scalable/apps/openstitch.svg"
 install -Dm755 "$here/install.sh" "$dir/install.sh"
-cp "$root/README.md" "$root/THIRD_PARTY_NOTICES.md" "$dir/"
+cp "$root/README.md" "$root/THIRD_PARTY_NOTICES.md" "$root/LICENSE-MIT" "$root/LICENSE-APACHE" "$dir/"
 tar -C "$out" -czf "$out/$name.tar.gz" "$name"
 echo "$out/$name.tar.gz"

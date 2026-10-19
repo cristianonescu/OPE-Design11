@@ -1,12 +1,19 @@
 name: Release
 
-# Runs only when the owner pushes a version tag (vMAJOR.MINOR.PATCH) for a version declared
-# stable. Agents never create tags. The release is created as a draft for the owner to review
-# and publish.
+# Runs only when the owner pushes a version tag. Agents never create tags.
+# - vMAJOR.MINOR.PATCH: a version the owner declared stable.
+# - vMAJOR.MINOR.PATCH-alpha.N, -beta.N or -rc.N: a pre-release, marked as such on GitHub.
+# MAJOR.MINOR.PATCH must equal the workspace version in Cargo.toml. The release is created as a
+# draft for the owner to review and publish. Its notes start with docs/releases/<tag>.md when that
+# file exists, followed by GitHub's generated list of changes.
 
 on:
   push:
-    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
 
 permissions:
   contents: read
@@ -23,7 +30,8 @@ jobs:
         run: |
           set -euo pipefail
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
-          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != workspace version v$version"; exit 1; }
+          [[ "$GITHUB_REF_NAME" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)(-(alpha|beta|rc)\.[0-9]+)?$ ]] || { echo "tag $GITHUB_REF_NAME is not vX.Y.Z or vX.Y.Z-alpha|beta|rc.N"; exit 1; }
+          test "${BASH_REMATCH[1]}" = "$version" || { echo "tag $GITHUB_REF_NAME does not match workspace version $version"; exit 1; }
           git fetch origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "tag is not on main"; exit 1; }
 
@@ -44,14 +52,22 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: docs/releases
       - uses: actions/download-artifact@v4
         with:
           path: assets
           merge-multiple: true
       - name: Create draft release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" assets/* \
-            --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
-            --title "OpenStitch $GITHUB_REF_NAME" --generate-notes
+          set -euo pipefail
+          args=(--repo "$GITHUB_REPOSITORY" --draft --verify-tag
+                --title "OpenStitch $GITHUB_REF_NAME" --generate-notes)
+          case "$GITHUB_REF_NAME" in *-*) args+=(--prerelease) ;; esac
+          notes="docs/releases/$GITHUB_REF_NAME.md"
+          if [ -f "$notes" ]; then args+=(--notes-file "$notes"); fi
+          gh release create "$GITHUB_REF_NAME" assets/* "${args[@]}"
