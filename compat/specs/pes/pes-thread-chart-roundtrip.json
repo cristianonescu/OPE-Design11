@@ -1,0 +1,102 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-thread-chart-roundtrip",
+  "area": "pes",
+  "title": "PES thread chart and colour type survive a round trip",
+  "description": "pyembroidery's oracle_v6_chart.pes (threads with chart, brand, catalogue number and description) read and written again as PES 6 is byte-identical, and the thread table keeps the chart names.",
+  "covers": {
+    "audit": [
+      18
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES v6 thread table"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 18"
+    },
+    {
+      "kind": "oracle",
+      "note": "tools/genfixtures.py with pyembroidery 1.5.1 writes oracle_v6_chart.pes"
+    },
+    {
+      "kind": "spec",
+      "url": "https://github.com/EmbroidePy/pyembroidery/blob/master/pyembroidery/PesWriter.py",
+      "note": "pyembroidery reads and writes thread.chart"
+    }
+  ],
+  "inputs": [
+    {
+      "from": "crates/openstitch-formats/tests/fixtures/oracle_v6_chart.pes",
+      "name": "oracle_v6_chart.pes"
+    }
+  ],
+  "script": [],
+  "exports": [
+    {
+      "path": "chart.pes",
+      "fromInput": "oracle_v6_chart.pes",
+      "pesVersion": "6"
+    }
+  ],
+  "measurements": [
+    {
+      "id": "bytes",
+      "measure": {
+        "kind": "bytesIdentical",
+        "against": "crates/openstitch-formats/tests/fixtures/oracle_v6_chart.pes"
+      },
+      "source": {
+        "export": "chart.pes"
+      },
+      "tier": "oracle",
+      "evidence": "pyembroidery 1.5.1 wrote the fixture"
+    },
+    {
+      "id": "semantics",
+      "measure": {
+        "kind": "compare",
+        "against": "crates/openstitch-formats/tests/fixtures/oracle_v6_chart.pes"
+      },
+      "source": {
+        "export": "chart.pes"
+      },
+      "tier": "oracle",
+      "evidence": "pyembroidery 1.5.1 wrote the fixture"
+    },
+    {
+      "id": "threads",
+      "measure": {
+        "kind": "threads"
+      },
+      "source": {
+        "export": "chart.pes"
+      },
+      "tier": "oracle",
+      "evidence": "tools/genfixtures.py sets catalogue 800/405, brand Acme and charts \"Test chart A\"/\"Test chart B\" with pyembroidery 1.5.1",
+      "expected": [
+        {
+          "rgb": "#e01010",
+          "name": "Red",
+          "catalog": "800",
+          "brand": "Acme",
+          "chart": "Test chart A",
+          "kind": 10
+        },
+        {
+          "rgb": "#1040c0",
+          "name": "Blue",
+          "catalog": "405",
+          "brand": "Acme",
+          "chart": "Test chart B",
+          "kind": 10
+        }
+      ]
+    }
+  ]
+}

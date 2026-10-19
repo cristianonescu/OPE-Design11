@@ -11,6 +11,8 @@
 //!                                  # same JSON lines, sent to the running editor (started with
 //!                                  # `openstitch --listen PORT`); FILE defaults to automation.json
 //!                                  # in the OpenStitch config directory
+//! stitchtool compat [options]      # run the compatibility specs (compat/specs) and write the
+//!                                  # report; see docs/COMPATIBILITY_TESTS.md
 //! ```
 
 use openstitch_engine::{Capabilities, Session};
@@ -20,7 +22,7 @@ use std::path::Path;
 use std::process::ExitCode;
 
 const MAX_LINE: usize = 1 << 20;
-const USAGE: &str = "usage: stitchtool commands | exec <script.json> | serve [--read-only] [--no-files] | connect [--endpoint FILE]";
+const USAGE: &str = "usage: stitchtool commands | exec <script.json> | serve [--read-only] [--no-files] | connect [--endpoint FILE] | compat [options]";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -54,6 +56,7 @@ fn main() -> ExitCode {
         }
         ["connect"] => return connect(None),
         ["connect", "--endpoint", file] => return connect(Some(Path::new(file))),
+        ["compat", rest @ ..] => return compat(rest),
         _ => return fail(USAGE),
     }
     ExitCode::SUCCESS
@@ -85,6 +88,18 @@ fn exec(script: &Path) -> ExitCode {
         }
     }
     ExitCode::SUCCESS
+}
+
+fn compat(args: &[&str]) -> ExitCode {
+    let options = match openstitch_compat::cli::parse(args) {
+        Ok(o) => o,
+        Err(e) => return fail(&e),
+    };
+    match openstitch_compat::cli::run(&options) {
+        Ok(true) => ExitCode::SUCCESS,
+        Ok(false) => ExitCode::FAILURE,
+        Err(e) => fail(&e),
+    }
 }
 
 /// Forwards stdin request lines to the running editor and prints its replies.

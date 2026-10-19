@@ -1,0 +1,248 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "satin-zigzag-skeleton",
+  "area": "stitches",
+  "title": "Skeleton satin is a zigzag across the column",
+  "description": "A 5 × 2 mm column sewn in satin at density 3 must be a zigzag: the needle goes across the column on every stitch, alternating between the two long edges, with no short stitch along an edge (the old square wave doubled the stitch count and perforated both edges).",
+  "covers": {
+    "audit": [
+      1
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Satin: a zigzag across the column"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 1 (Defect: a square wave is wrong regardless of PE-DESIGN)"
+    },
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Region sewing attributes: satin is shown only in pictures"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.skeletonSatin",
+      "params": {
+        "points": [
+          [
+            10,
+            11
+          ],
+          [
+            15,
+            11
+          ]
+        ],
+        "width": 2
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "satin.pes"
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchSegments"
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "expected": 15,
+      "tolerance": {
+        "count": 1
+      },
+      "evidence": "audit item 1: 15 ±1 stitches for the 5 × 2 mm column at density 3"
+    },
+    {
+      "id": "edge-stitches",
+      "measure": {
+        "kind": "edgeStitches",
+        "rails": [
+          [
+            [
+              9,
+              10
+            ],
+            [
+              16,
+              10
+            ]
+          ],
+          [
+            [
+              9,
+              12
+            ],
+            [
+              16,
+              12
+            ]
+          ]
+        ],
+        "within": 0.05,
+        "maxLength": 0.5
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "expected": 0,
+      "evidence": "audit item 1: no stitch shorter than 0.5 mm lies along an edge"
+    },
+    {
+      "id": "off-edge-points",
+      "measure": {
+        "kind": "offRailPoints",
+        "rails": [
+          [
+            [
+              9,
+              10
+            ],
+            [
+              16,
+              10
+            ]
+          ],
+          [
+            [
+              9,
+              12
+            ],
+            [
+              16,
+              12
+            ]
+          ]
+        ],
+        "within": 0.05
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "expected": 0,
+      "evidence": "audit item 1: every needle point is on one of the two edges"
+    },
+    {
+      "id": "side-alternation",
+      "measure": {
+        "kind": "sideAlternation",
+        "rails": [
+          [
+            [
+              9,
+              10
+            ],
+            [
+              16,
+              10
+            ]
+          ],
+          [
+            [
+              9,
+              12
+            ],
+            [
+              16,
+              12
+            ]
+          ]
+        ],
+        "within": 0.05
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "expected": 1.0,
+      "evidence": "audit item 1: consecutive needle points alternate between the edges"
+    },
+    {
+      "id": "shortest-stitch",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "min"
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "expected": {
+        "min": 1.95
+      },
+      "evidence": "audit item 1, measured after the fix (c5f3bad): stitches of 2.0–2.03 mm"
+    },
+    {
+      "id": "longest-stitch",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "expected": {
+        "max": 2.1
+      },
+      "evidence": "audit item 1, measured after the fix (c5f3bad): stitches of 2.0–2.03 mm"
+    }
+  ]
+}

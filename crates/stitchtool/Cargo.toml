@@ -13,6 +13,7 @@ formats = ["openstitch-engine/formats"]
 [dependencies]
 openstitch-engine = { path = "../openstitch-engine" }
 openstitch-remote = { path = "../openstitch-remote" }
+openstitch-compat = { path = "../openstitch-compat" }
 serde_json.workspace = true
 
 [lints]

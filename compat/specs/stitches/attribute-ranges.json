@@ -1,0 +1,157 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "attribute-ranges",
+  "area": "stitches",
+  "title": "Frequency and run-time ranges follow the guide",
+  "description": "object.setRegion refuses a Frequency outside 0–50 %; object.setLine refuses 6 run times for E and V stitch and accepts 5, and accepts 6 chain times.",
+  "covers": {
+    "audit": [
+      15
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Fill (tatami: angle or auto direction"
+      },
+      {
+        "area": "Line sew types",
+        "feature": "Running (pitch, run times"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 15"
+    },
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Frequency 0–50 %"
+    },
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293378.html",
+      "note": "run times 1–5; E/V stroke times 1–3; Chain Time 1–6"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 40
+      }
+    }
+  ],
+  "exports": [],
+  "measurements": [
+    {
+      "id": "frequency-60",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "type": "fill",
+          "frequency": 60
+        }
+      },
+      "expected": true,
+      "evidence": "guide: Frequency 0–50 %"
+    },
+    {
+      "id": "frequency-negative",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "type": "fill",
+          "frequency": -1
+        }
+      },
+      "expected": true,
+      "evidence": "guide: Frequency 0–50 %"
+    },
+    {
+      "id": "frequency-50",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "type": "fill",
+          "frequency": 50
+        }
+      },
+      "expected": false,
+      "evidence": "guide: 50 % is the maximum"
+    },
+    {
+      "id": "e-stitch-6",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setLine",
+        "params": {
+          "id": 1,
+          "type": "eStitch",
+          "runTimes": 6
+        }
+      },
+      "expected": true,
+      "evidence": "guide: run times 1–5"
+    },
+    {
+      "id": "v-stitch-6",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setLine",
+        "params": {
+          "id": 1,
+          "type": "vStitch",
+          "runTimes": 6
+        }
+      },
+      "expected": true,
+      "evidence": "guide: run times 1–5"
+    },
+    {
+      "id": "v-stitch-5",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setLine",
+        "params": {
+          "id": 1,
+          "type": "vStitch",
+          "runTimes": 5
+        }
+      },
+      "expected": false,
+      "evidence": "guide: run times 1–5"
+    },
+    {
+      "id": "chain-6",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setLine",
+        "params": {
+          "id": 1,
+          "type": "chain",
+          "runTimes": 6
+        }
+      },
+      "expected": false,
+      "evidence": "guide: Chain Time 1–6"
+    }
+  ]
+}

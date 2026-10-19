@@ -1,0 +1,111 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "programmable-fill-45",
+  "area": "stitches",
+  "title": "Programmable fill defaults to 45°",
+  "description": "A new programmable fill on a 40 × 40 mm square is sewn at the guide's default direction, 45°: the stitch direction carrying the most length is 45° ±1° (angles measured from +x towards +y, the file's y axis pointing down), and the stored angle is 45.",
+  "covers": {
+    "audit": [
+      14
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Programmable fill"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 14"
+    },
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "the programmable fill example is captioned \"45° (default)\""
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 40,
+        "outline": "Black"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "programmableFill"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    },
+    {
+      "command": "object.get",
+      "params": {
+        "id": 1
+      },
+      "id": "object"
+    }
+  ],
+  "exports": [
+    {
+      "path": "pfill.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/programmable-fill-45.pes",
+      "make": "On a 100 × 100 mm Design Page draw a 40 × 40 mm square at (10, 10) mm. Line sewing off; set the region sew type to Programmable Fill Stitch without changing the direction or the pattern from their defaults (record the pattern name). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stored-angle",
+      "measure": {
+        "kind": "replyValue",
+        "pointer": "/region/angle"
+      },
+      "source": {
+        "step": "object"
+      },
+      "expected": 45,
+      "evidence": "RegionSewing::new: programmable fill starts at 45°"
+    },
+    {
+      "id": "dominant-direction",
+      "measure": {
+        "kind": "dominantAngle",
+        "bin": 1
+      },
+      "source": {
+        "export": "pfill.pes"
+      },
+      "expected": 45,
+      "tolerance": {
+        "deg": 1
+      },
+      "evidence": "audit item 14: dominant row direction 45° ±1°",
+      "reference": {}
+    }
+  ]
+}

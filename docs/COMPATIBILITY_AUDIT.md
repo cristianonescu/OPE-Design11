@@ -778,10 +778,24 @@ Line references are relative to `crates/`.
 3. **Reference capture (method 1):** calibrate the defaults and settle 6, 8, 11, 13 and 20.
 4. **Legal review:** editable shapes and text (5), PES v7–v10 and undocumented fields (method 4).
 
-The harness for steps 2 and 3 needs four parts:
+The harness for steps 2 and 3 is built (2026-10-19). It is `stitchtool compat`, in the
+crate `crates/openstitch-compat`, and is described in
+[COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md). It has four parts:
 
-- A test specification: the command script, plus the measurements listed in each item above.
-- A runner that executes the script with `stitchtool exec`.
-- A semantic PES/DST comparer: stitch coordinates, commands, colour changes, jumps, trims,
-  order, threads and dimensions.
-- Status tiers kept apart: internal regression, oracle, reference, and machine verified.
+- **Test specs:** `compat/specs/<area>/<id>.json`. Each holds the command script, the exports and
+  the measurements listed in the items above, with tolerances and evidence. The tests for items
+  1–3, 7 and 14–19 are converted; the Rust tests stay.
+- **Runner:** it executes each script headlessly in a sandboxed session, as `stitchtool exec`
+  does, and writes `target/compat/report.json` and `summary.md`. CI runs it on the ubuntu-latest
+  job.
+- **Semantic comparer:** it compares stitch coordinates, commands, colour changes, jumps, trims,
+  order, per-block counts, threads, dimensions, metadata and the PES object summary, with
+  normalised origins. Every difference is reported with its location.
+- **Status tiers, kept apart:** internal regression, oracle, reference (PE-DESIGN files in
+  `compat/reference/` with a provenance manifest) and machine verified (sew-out records in
+  `compat/machine/`). The generated [COMPATIBILITY_STATUS.md](COMPATIBILITY_STATUS.md) shows the
+  tier each item and FEATURE_MATRIX row has reached.
+
+The audit items' reference checks are written and wait for the owner's files: the specs report
+them as "pending reference". Step 2 starts when the owner adds the first file, following
+[compat/reference/README.md](../compat/reference/README.md).

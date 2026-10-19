@@ -1,0 +1,17 @@
+[package]
+name = "openstitch-compat"
+description = "OpenStitch compatibility harness: declarative specs, a semantic embroidery-file comparer, measurements, runner and tiered reports"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+openstitch-core.workspace = true
+openstitch-formats = { path = "../openstitch-formats" }
+openstitch-engine = { path = "../openstitch-engine" }
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

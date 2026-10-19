@@ -1,0 +1,177 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-default-v6",
+  "area": "pes",
+  "title": "Default PES is version 6 with objects and a thread table",
+  "description": "design.export without pesVersion writes PES version 6 with a CEmbOne/CSewSeg stitch group and the RGB thread table; 1t stays available as the smallest, machine-only file.",
+  "covers": {
+    "audit": [
+      2
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES write v1 and v6"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 2"
+    },
+    {
+      "kind": "spec",
+      "url": "https://edutechwiki.unige.ch/en/Embroidery_format_PES",
+      "note": "a minimal PES loads in PE-DESIGN as a blank document"
+    },
+    {
+      "kind": "spec",
+      "url": "https://github.com/EmbroidePy/pyembroidery/blob/master/pyembroidery/PesWriter.py",
+      "note": "version 6 layout"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "t1",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 20,
+        "y": 20,
+        "width": 40,
+        "height": 30,
+        "fill": "Red",
+        "outline": "Black"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes"
+    },
+    {
+      "path": "b.pes",
+      "pesVersion": "1t"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "pes/pes-default-v6.pes",
+      "make": "Run `stitchtool compat --only pes-default-v6` and open target/compat/work/pes-default-v6/a.pes in PE-DESIGN 11. If it opens blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead. If it opens with its stitches, save it unchanged as PES. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "machine": {
+    "record": "pes/pes-default-v6.json",
+    "make": "Copy target/compat/work/pes-default-v6/a.pes to a USB stick, load it on a Brother machine and sew it; record whether it loads, its colour changes and how it sews."
+  },
+  "measurements": [
+    {
+      "id": "version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": "0060",
+      "evidence": "audit item 2: version ≥ 6"
+    },
+    {
+      "id": "classes",
+      "measure": {
+        "kind": "pesClasses"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": [
+        "CEmbOne",
+        "CSewSeg"
+      ],
+      "evidence": "audit item 2: at least one CEmbOne"
+    },
+    {
+      "id": "threads",
+      "measure": {
+        "kind": "threads"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "internal regression: the Brother chart colours Red and Black from the script, custom colour type 0x0A, empty chart (audit item 18: chart strings for OpenStitch's colours wait for owner files)",
+      "expected": [
+        {
+          "rgb": "#ed171f",
+          "name": "Red",
+          "catalog": "5",
+          "brand": "Brother",
+          "chart": null,
+          "kind": 10
+        },
+        {
+          "rgb": "#000000",
+          "name": "Black",
+          "catalog": "20",
+          "brand": "Brother",
+          "chart": null,
+          "kind": 10
+        }
+      ]
+    },
+    {
+      "id": "machine-only-version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "b.pes"
+      },
+      "expected": "0001",
+      "evidence": "1t is version 1"
+    },
+    {
+      "id": "machine-only-classes",
+      "measure": {
+        "kind": "pesClasses"
+      },
+      "source": {
+        "export": "b.pes"
+      },
+      "expected": [],
+      "evidence": "1t has no objects"
+    },
+    {
+      "id": "reopened-by-pe-design",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN 11 opens a.pes with its stitches and colours",
+      "reference": {}
+    }
+  ]
+}
