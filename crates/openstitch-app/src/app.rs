@@ -160,6 +160,9 @@ pub struct EditorApp {
     pub db_chrome: crate::database_ui::Chrome,
     /// A PDF being handed to the system's print dialog or viewer.
     pub print_job: Option<openstitch_app::os_print::Job>,
+    /// The last PDF handed to [`EditorApp::print_pdf`]; in test builds nothing is printed and
+    /// tests read this instead.
+    pub printed: Option<PathBuf>,
     /// Loopback automation socket; its requests run in [`EditorApp::serve_remote`].
     pub remote: Option<openstitch_remote::Server>,
     /// Ribbon, Quick Access Toolbar, panes and window preferences.
@@ -231,6 +234,7 @@ impl EditorApp {
             db_textures: Default::default(),
             db_chrome: Default::default(),
             print_job: None,
+            printed: None,
             remote: None,
             ui: Default::default(),
         };
@@ -829,7 +833,11 @@ impl EditorApp {
     pub fn print_pdf(&mut self, pdf: &Path) {
         self.status = format!("Opening the print dialog for {}…", pdf.display());
         self.database.status = self.status.clone();
-        self.print_job = Some(openstitch_app::os_print::start(pdf));
+        self.printed = Some(pdf.to_path_buf());
+        // Tests run every command; they must never open a real print dialog.
+        if !cfg!(test) {
+            self.print_job = Some(openstitch_app::os_print::start(pdf));
+        }
     }
 
     fn poll_print(&mut self, ctx: &egui::Context) {
