@@ -480,7 +480,11 @@ Security model (`crates/openstitch-remote`):
 - **Limits.** Request lines over 1 MiB get an error and the connection is closed (the reader
   never buffers more); a connection idle for 5 minutes is closed; at most 4 connections at once
   (more get "too many connections"); a request that waits more than 30 s for the UI thread gets
-  a timeout error and is skipped if still queued. Clients cap replies at 64 MiB.
+  a timeout error and is skipped if still queued. Clients cap replies at 64 MiB. Every early
+  close (refused connection, wrong token, oversized line) writes the error, half-closes and
+  drains the client's unread bytes (at most 1 s / 4 MiB) before dropping the socket: closing
+  with unread data sends a TCP reset, which on Windows discards the reply before the client
+  reads it.
 - **One thread owns the session.** Connection threads never touch the `Session`; they queue a
   `Job` on an mpsc channel and wake egui (`request_repaint`), and `EditorApp::serve_remote`
   drains the queue at the start of each frame. A client's edit is one Undo step in the Edit

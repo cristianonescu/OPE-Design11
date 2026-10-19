@@ -2,12 +2,12 @@ use crate::endpoint::{Endpoint, new_token, tokens_match};
 use openstitch_engine::{Capabilities, Sandbox, Session};
 use serde_json::{Map, Value, json};
 use std::io::{self, BufRead, BufReader, Read, Write};
-use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream};
+use std::net::{Ipv4Addr, Shutdown, SocketAddr, TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// How the listener is set up and what its clients may do.
 #[derive(Clone, Debug)]
@@ -113,6 +113,8 @@ struct Shared {
     reply_timeout: Duration,
     max_connections: usize,
     active: AtomicUsize,
+    /// Refused connections still being closed (see [`close_with`]).
+    refusing: AtomicUsize,
     stop: AtomicBool,
     waker: Mutex<Option<Waker>>,
 }
@@ -148,6 +150,7 @@ impl Server {
             reply_timeout: config.reply_timeout,
             max_connections: config.max_connections.max(1),
             active: AtomicUsize::new(0),
+            refusing: AtomicUsize::new(0),
             stop: AtomicBool::new(false),
             waker: Mutex::new(None),
         });
@@ -246,12 +249,12 @@ fn accept(listener: TcpListener, shared: Arc<Shared>, jobs: Sender<Job>) {
         if shared.stop.load(Ordering::SeqCst) {
             break;
         }
-        let Ok(mut stream) = stream else { continue };
+        let Ok(stream) = stream else { continue };
         if !stream.peer_addr().is_ok_and(|a| a.ip().is_loopback()) {
             continue;
         }
         if shared.active.load(Ordering::SeqCst) >= shared.max_connections {
-            let _ = write_line(&mut stream, &failure(None, "too many connections"));
+            refuse(stream, &shared);
             continue;
         }
         shared.active.fetch_add(1, Ordering::SeqCst);
@@ -264,6 +267,56 @@ fn accept(listener: TcpListener, shared: Arc<Shared>, jobs: Sender<Job>) {
             });
         if spawned.is_err() {
             shared.active.fetch_sub(1, Ordering::SeqCst);
+        }
+    }
+}
+
+/// Connections refused at once; beyond this, extra connections are dropped without a reply.
+const MAX_REFUSING: usize = 8;
+/// How long a closing connection is drained for the client's unread request bytes.
+const DRAIN_TIME: Duration = Duration::from_secs(1);
+/// At most this much is drained before closing anyway.
+const DRAIN_BYTES: usize = 4 << 20;
+
+/// Answers "too many connections" on a short-lived thread, so the accept loop never waits for
+/// the drain.
+fn refuse(mut stream: TcpStream, shared: &Arc<Shared>) {
+    if shared.refusing.fetch_add(1, Ordering::SeqCst) >= MAX_REFUSING {
+        shared.refusing.fetch_sub(1, Ordering::SeqCst);
+        return;
+    }
+    let refusing = Arc::clone(shared);
+    let spawned = std::thread::Builder::new()
+        .name("openstitch-remote-refuse".into())
+        .spawn(move || {
+            close_with(&mut stream, &failure(None, "too many connections"));
+            refusing.refusing.fetch_sub(1, Ordering::SeqCst);
+        });
+    if spawned.is_err() {
+        shared.refusing.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
+/// Sends a final reply and closes gracefully: half-close the write side, then read and discard
+/// what the client is still sending (bounded in time and bytes) before dropping the socket.
+/// Closing a socket with unread received data makes the OS send a reset instead of a normal
+/// close, and on Windows a reset discards the reply before the client has read it.
+fn close_with(stream: &mut TcpStream, reply: &Value) {
+    if write_line(stream, reply).is_err() {
+        return;
+    }
+    let _ = stream.shutdown(Shutdown::Write);
+    let deadline = Instant::now() + DRAIN_TIME;
+    let mut buf = [0u8; 8192];
+    let mut drained = 0;
+    while drained < DRAIN_BYTES {
+        let left = deadline.saturating_duration_since(Instant::now());
+        if left.is_zero() || stream.set_read_timeout(Some(left)).is_err() {
+            break;
+        }
+        match stream.read(&mut buf) {
+            Ok(0) | Err(_) => break,
+            Ok(n) => drained += n,
         }
     }
 }
@@ -310,7 +363,8 @@ fn connection(stream: TcpStream, shared: &Shared, jobs: &Sender<Job>) -> io::Res
         body = body.strip_suffix(b"\r").unwrap_or(body);
         if body.len() > max {
             let message = format!("request exceeds {max} bytes");
-            return write_line(&mut writer, &failure(None, &message));
+            close_with(&mut writer, &failure(None, &message));
+            return Ok(());
         }
         if body.iter().all(u8::is_ascii_whitespace) {
             continue;
@@ -321,10 +375,11 @@ fn connection(stream: TcpStream, shared: &Shared, jobs: &Sender<Job>) -> io::Res
         };
         let token = request.remove("token");
         if !matches!(&token, Some(Value::String(t)) if tokens_match(&shared.token, t)) {
-            return write_line(
+            close_with(
                 &mut writer,
                 &failure(request.get("id"), "missing or invalid token"),
             );
+            return Ok(());
         }
         let reply = dispatch(Value::Object(request), shared, jobs);
         write_line(&mut writer, &reply)?;
