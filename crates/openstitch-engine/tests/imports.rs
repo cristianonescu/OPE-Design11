@@ -162,3 +162,100 @@ fn background_image_is_placed_shown_saved_and_undone() {
     assert!(s.execute("background.clear", Some(&json!({}))).is_err());
     assert!(s.execute("background.show", Some(&json!({}))).is_err());
 }
+
+#[test]
+fn background_image_turns_crops_adjusts_and_saves_as_shown() {
+    let dir = temp_dir();
+    // 200 × 100 px: red ramp left to right, blue in the bottom half.
+    let img = Raster::from_fn(200, 100, |x, y| {
+        [x as u8, 0, if y >= 50 { 255 } else { 0 }, 255]
+    })
+    .expect("raster");
+    std::fs::write(dir.join("ref.png"), img.encode_png().expect("png")).expect("write");
+    let mut s = Session::new(&dir);
+    run(
+        &mut s,
+        "background.set",
+        json!({"path": "ref.png", "width": 40, "x": 10, "y": 20}),
+    );
+    // 40 × 20 mm at (10, 20): centre (30, 30).
+    run(&mut s, "background.rotate", json!({"direction": "right"}));
+    let b = s.design().background.clone().expect("background");
+    assert_eq!((b.x, b.y, b.width, b.height), (200.0, 100.0, 200.0, 400.0));
+    assert_eq!(b.adjust.rotation, 1);
+    run(&mut s, "background.rotate", json!({"direction": "left"}));
+    run(&mut s, "background.rotate", json!({"direction": "left"}));
+    assert_eq!(s.design().background.as_ref().map(|b| b.adjust.rotation), Some(3));
+    run(&mut s, "background.rotate", json!({"direction": "right"}));
+    let b = s.design().background.clone().expect("background");
+    assert_eq!((b.x, b.y, b.width, b.height), (100.0, 200.0, 400.0, 200.0));
+
+    // Cropping the left quarter keeps the rest where it was, at the same scale.
+    let out = run(
+        &mut s,
+        "background.modify",
+        json!({"crop": [25, 0, 0, 50], "brightness": 20, "saturation": -100}),
+    );
+    assert_eq!(out["widthMM"], json!(30.0));
+    let b = s.design().background.clone().expect("background");
+    assert_eq!((b.x, b.y, b.width, b.height), (200.0, 200.0, 300.0, 100.0));
+    assert_eq!(b.adjust.crop, [0.25, 0.0, 0.0, 0.5]);
+    // Turning carries the crop with the image.
+    run(&mut s, "background.rotate", json!({"direction": "right"}));
+    let turned = s.design().background.clone().expect("background");
+    assert_eq!(turned.adjust.crop, [0.5, 0.25, 0.0, 0.0]);
+    run(&mut s, "history.undo", json!({}));
+    // Uncropping restores the whole image's place.
+    run(&mut s, "background.modify", json!({"crop": [0, 0, 0, 0]}));
+    let b = s.design().background.clone().expect("background");
+    assert_eq!((b.x, b.y, b.width, b.height), (100.0, 200.0, 400.0, 200.0));
+    run(&mut s, "history.undo", json!({}));
+    run(
+        &mut s,
+        "background.modify",
+        json!({"x": 0, "y": 5, "width": 60}),
+    );
+    let b = s.design().background.clone().expect("background");
+    assert_eq!((b.x, b.y, b.width, b.height), (0.0, 50.0, 600.0, 200.0));
+
+    // Saved as shown: 150 × 50 px of the top half, grey.
+    let out = run(&mut s, "background.save", json!({"path": "shown.bmp"}));
+    assert_eq!(out["pixels"], json!([150, 50]));
+    let saved = Raster::decode(&std::fs::read(dir.join("shown.bmp")).expect("read")).expect("bmp");
+    assert_eq!((saved.width(), saved.height()), (150, 50));
+    let [r, g, b, _] = saved.pixel(10, 10);
+    assert!(r == g && g == b, "desaturated");
+    for ext in ["png", "jpg"] {
+        run(&mut s, "background.save", json!({"path": format!("shown.{ext}")}));
+    }
+    // Adjustments travel with the project and the file is never changed.
+    run(&mut s, "project.save", json!({"path": "p.osd"}));
+    let mut t = Session::new(&dir);
+    run(&mut t, "project.open", json!({"path": "p.osd"}));
+    assert_eq!(t.design().background, s.design().background);
+    assert_eq!(
+        Raster::decode(&std::fs::read(dir.join("ref.png")).expect("read")).expect("png"),
+        img
+    );
+
+    for (id, params) in [
+        ("background.rotate", json!({"direction": "up"})),
+        ("background.rotate", json!({})),
+        ("background.modify", json!({"crop": [50, 0, 50, 0]})),
+        ("background.modify", json!({"crop": [95, 0, 0, 0]})),
+        ("background.modify", json!({"crop": [0, 0, 0]})),
+        ("background.modify", json!({"crop": "all"})),
+        ("background.modify", json!({"brightness": 101})),
+        ("background.modify", json!({"width": 0})),
+        ("background.modify", json!({"x": 1e9})),
+        ("background.save", json!({"path": "shown.gif"})),
+        ("background.save", json!({})),
+    ] {
+        assert!(s.execute(id, Some(&params)).is_err(), "{id} {params}");
+    }
+    run(&mut s, "background.clear", json!({}));
+    for id in ["background.rotate", "background.modify", "background.save"] {
+        let params = json!({"direction": "right", "path": "x.png"});
+        assert!(s.execute(id, Some(&params)).is_err(), "{id} without an image");
+    }
+}

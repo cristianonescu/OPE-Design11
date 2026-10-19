@@ -284,12 +284,42 @@ fn place(s: &mut EngineState, p: &Params, shapes: Vec<SvgShape>, b: Rect) -> cra
 
 #[cfg(feature = "digitize")]
 fn background_commands() -> Vec<CommandSpec> {
-    use openstitch_design::BackgroundImage;
+    use crate::sandbox::Access;
+    use openstitch_design::{BackgroundImage, ImageAdjust};
     use openstitch_digitize::Raster;
     use openstitch_digitize::raster::MAX_FILE_BYTES;
 
     fn opacity(p: &Params, default: f64) -> Result<f64, CommandError> {
         p.opt("opacity", default, 0.0, 1.0)
+    }
+
+    fn background<'a>(
+        s: &'a mut EngineState,
+        p: &Params,
+    ) -> Result<&'a mut BackgroundImage, CommandError> {
+        s.design
+            .background
+            .as_mut()
+            .ok_or_else(|| p.failed("no background image"))
+    }
+
+    /// The background image's pixels as shown on the Design Page.
+    fn shown(s: &EngineState, p: &Params) -> Result<Raster, CommandError> {
+        let b = s
+            .design
+            .background
+            .as_ref()
+            .ok_or_else(|| p.failed("no background image"))?;
+        let path = s.resolve(&b.path, Access::Read, &p.command)?;
+        let meta = std::fs::metadata(&path)
+            .map_err(|_| p.failed(format!("cannot read {}", path.display())))?;
+        if meta.len() > MAX_FILE_BYTES as u64 {
+            return Err(p.failed("background image too large"));
+        }
+        let data = std::fs::read(&path)
+            .map_err(|_| p.failed(format!("cannot read {}", path.display())))?;
+        let image = Raster::decode(&data).map_err(|e| p.failed(e.to_string()))?;
+        Ok(image.with_adjust(&b.adjust))
     }
 
     vec![
@@ -337,6 +367,7 @@ fn background_commands() -> Vec<CommandSpec> {
                     height,
                     opacity: opacity(p, 0.5)?,
                     visible: true,
+                    adjust: ImageAdjust::default(),
                 };
                 let out = json!({
                     "path": background.path,
@@ -365,6 +396,137 @@ fn background_commands() -> Vec<CommandSpec> {
                 b.visible = visible;
                 b.opacity = o;
                 Ok(json!({ "visible": visible, "opacity": o }))
+            },
+        ),
+        spec(
+            "background.rotate",
+            "Turn the background image 90° about its centre (Image ▸ Rotate Right / Left)",
+            Effect::Edit,
+            vec![req("direction", "\"right\" | \"left\"", "Right = clockwise")],
+            |s, p| {
+                let right = match p.string("direction", None)?.as_str() {
+                    "right" => true,
+                    "left" => false,
+                    _ => return Err(p.invalid("direction", "must be \"right\" or \"left\"")),
+                };
+                let b = background(s, p)?;
+                let [l, t, r, bt] = b.adjust.crop;
+                // The crop belongs to the turned image, so its sides turn with it.
+                b.adjust.crop = if right { [bt, l, t, r] } else { [t, r, bt, l] };
+                b.adjust.rotation = (b.adjust.rotation + if right { 1 } else { 3 }) % 4;
+                let (cx, cy) = (b.x + b.width / 2.0, b.y + b.height / 2.0);
+                (b.width, b.height) = (b.height, b.width);
+                (b.x, b.y) = (cx - b.width / 2.0, cy - b.height / 2.0);
+                Ok(json!({ "rotation": u32::from(b.adjust.rotation) * 90 }))
+            },
+        ),
+        spec(
+            "background.modify",
+            "Move, scale, crop or adjust the colours of the background image (Image ▸ Modify Image); the image file is not changed",
+            Effect::Edit,
+            vec![
+                opt("x", "mm", "Left edge (default: unchanged)"),
+                opt("y", "mm", "Top edge (default: unchanged)"),
+                opt(
+                    "width",
+                    "mm",
+                    "Width; the height follows the image's proportions (default: unchanged)",
+                ),
+                opt(
+                    "crop",
+                    "[left, top, right, bottom] %",
+                    "Cut off each side of the turned image, 0–90 % of its width or height; at least 5 % stays. The kept part stays where it was",
+                ),
+                opt("brightness", "-100–100", "0 = as in the file"),
+                opt("contrast", "-100–100", "0 = as in the file"),
+                opt("saturation", "-100–100", "-100 = greys; 0 = as in the file"),
+            ],
+            |s, p| {
+                let crop = match p.get("crop") {
+                    None => None,
+                    Some(_) => {
+                        let v = p.array("crop")?;
+                        let mut c = [0.0; 4];
+                        if v.len() != 4 {
+                            return Err(p.invalid("crop", "must be [left, top, right, bottom]"));
+                        }
+                        for (i, x) in v.iter().enumerate() {
+                            let n = x
+                                .as_f64()
+                                .filter(|n| (0.0..=ImageAdjust::MAX_CROP * 100.0).contains(n))
+                                .ok_or_else(|| p.invalid("crop", "each side must be 0–90 %"))?;
+                            c[i] = n / 100.0;
+                        }
+                        let keep = 1.0 - ImageAdjust::MIN_KEPT + 1e-9;
+                        if c[0] + c[2] > keep || c[1] + c[3] > keep {
+                            return Err(p.invalid("crop", "must keep at least 5 % of the image"));
+                        }
+                        Some(c)
+                    }
+                };
+                let level = |key: &str, now: f64| p.opt(key, now, -100.0, 100.0);
+                let b = background(s, p)?;
+                let brightness = level("brightness", b.adjust.brightness)?;
+                let contrast = level("contrast", b.adjust.contrast)?;
+                let saturation = level("saturation", b.adjust.saturation)?;
+                let mut n = b.clone();
+                if let Some(c) = crop {
+                    // Scale stays: the whole turned image would cover `full`.
+                    let [l, t, r, bt] = n.adjust.crop;
+                    let fw = n.width / (1.0 - l - r);
+                    let fh = n.height / (1.0 - t - bt);
+                    let (fx, fy) = (n.x - l * fw, n.y - t * fh);
+                    n.x = fx + c[0] * fw;
+                    n.y = fy + c[1] * fh;
+                    n.width = fw * (1.0 - c[0] - c[2]);
+                    n.height = fh * (1.0 - c[1] - c[3]);
+                    n.adjust.crop = c;
+                }
+                if p.has("width") {
+                    let w = p.opt("width", n.width / MM, 1.0, 2000.0)? * MM;
+                    n.height *= w / n.width;
+                    n.width = w;
+                }
+                if n.height > 2000.0 * MM || n.width > 2000.0 * MM {
+                    return Err(p.invalid("width", "makes the image larger than 2000 mm"));
+                }
+                n.x = p.opt("x", n.x / MM, -5000.0, 5000.0)? * MM;
+                n.y = p.opt("y", n.y / MM, -5000.0, 5000.0)? * MM;
+                n.adjust.brightness = brightness;
+                n.adjust.contrast = contrast;
+                n.adjust.saturation = saturation;
+                let out = json!({
+                    "x": n.x / MM, "y": n.y / MM, "widthMM": n.width / MM, "heightMM": n.height / MM,
+                    "crop": n.adjust.crop.map(|c| c * 100.0),
+                    "brightness": brightness, "contrast": contrast, "saturation": saturation,
+                });
+                *b = n;
+                Ok(out)
+            },
+        ),
+        spec(
+            "background.save",
+            "Save the background image as shown (turned, cropped, colours adjusted) to a PNG, BMP or JPEG file, chosen by the extension",
+            Effect::File,
+            vec![req(
+                "path",
+                "string",
+                "Image file to write: .png, .bmp or .jpg (relative to the session directory)",
+            )],
+            |s, p| {
+                let target = s.resolve(&p.string("path", None)?, Access::Write, &p.command)?;
+                let ext = target
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or_default()
+                    .to_string();
+                let image = shown(s, p)?;
+                let bytes = image.encode_as(&ext).map_err(|e| p.invalid("path", e.to_string()))?;
+                std::fs::write(&target, bytes).map_err(|e| p.failed(e.to_string()))?;
+                Ok(json!({
+                    "path": target.display().to_string(),
+                    "pixels": [image.width(), image.height()],
+                }))
             },
         ),
         spec(
