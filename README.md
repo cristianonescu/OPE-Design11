@@ -7,6 +7,21 @@ PE-DESIGN 11.
 Not affiliated with Brother Industries. No Brother code or assets are included; see
 [docs/LEGAL_AND_LICENSING.md](docs/LEGAL_AND_LICENSING.md).
 
+![The OpenStitch editor: sewing order on the left, the design page in the middle, sewing attributes on the right and the stitch simulator below](docs/images/readme/editor.png)
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Realistic view of a satin-stitched star](docs/images/readme/realistic-view.png) | ![Stitch simulator part-way through sewing a design](docs/images/readme/stitch-simulator.png) |
+| **Realistic view:** see how the stitches will look on fabric. | **Stitch simulator:** play the design back stitch by stitch, with jumps and trims. |
+| ![Drawing tools with shapes, hearts and a boolean merge](docs/images/readme/drawing.png) | ![Monogram with a decorative circle frame](docs/images/readme/monogram.png) |
+| **Drawing and editing:** shapes, Bézier outlines, arranged copies and shape operations. | **Lettering:** text, monograms and frames with open-licence or your own fonts. |
+| ![Auto Punch turning an image into embroidery regions](docs/images/readme/auto-punch.png) | ![Design Database browsing folders of designs as thumbnails](docs/images/readme/design-database.png) |
+| **Image to embroidery:** Auto Punch, Cross Stitch and Photo Stitch-style conversion. | **Design Database:** browse, search, organise and convert your design files. |
+| ![Programmable Stitch Creator drawing a fill pattern](docs/images/readme/stitch-creator.png) | |
+| **Programmable Stitch Creator:** draw your own fill and motif stitch patterns. | |
+
 ## What it does today
 
 - **Desktop editor** (`openstitch`):
