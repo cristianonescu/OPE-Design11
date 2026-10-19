@@ -568,7 +568,9 @@ openstitch_app::editor (lib, no egui, unit-tested)
   real canvas, tool, panel and shortcut code runs; `--screenshot out.png` captures the frame
   after the script (`--demo`, `--select`, `--simulate`, `--zoom`, `--size` set the scene;
   `--ribbon TAB`, `--pane TAB`, `--theme`, `--show appmenu|property|shortcuts|floating` set the
-  chrome; screenshots ignore the saved window preferences). The
+  chrome; screenshots ignore the saved window preferences). `python3 tools/screenshots.py`
+  rebuilds the editor screenshots from examples/ in a temporary folder with a stand-in home
+  folder, so no local path shows, and downscales and quantises them. The
   images in `docs/images/rust-editor-*.png` are made this way on macOS (Metal).
 
 ## Decisions
