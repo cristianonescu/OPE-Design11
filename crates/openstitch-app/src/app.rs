@@ -65,7 +65,7 @@ pub struct Launch {
 }
 
 /// Values `--show` accepts.
-pub const SHOW: [&str; 22] = [
+pub const SHOW: [&str; 23] = [
     "realistic",
     "solid",
     "fabric",
@@ -88,6 +88,7 @@ pub const SHOW: [&str; 22] = [
     "property",
     "shortcuts",
     "floating",
+    "print",
 ];
 
 pub struct EditorApp {
@@ -309,6 +310,7 @@ impl EditorApp {
                     self.sewing.open_app_menu = true;
                 }
                 "property" => self.ui.property_open = true,
+                "print" => self.ui.open_print = true,
                 "shortcuts" => self.ui.shortcuts_open = true,
                 "floating" => {
                     let p = &mut self.ui.prefs.panes;
