@@ -111,7 +111,7 @@ Behaviour follows the guide's pages
 | Select | Point Edit | `A` | `Action::PointTool` | `object.setPoint` | yes |
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
 | Clipboard | Paste | `Ctrl+V` | `Action::Paste` | `object.duplicate` | yes |
-| Clipboard | Cut | `Ctrl+X` | `Action::Cut` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Clipboard | Cut | `Ctrl+X` | `Action::Cut` | `object.delete`, then `object.paste` on Paste | yes |
 | Clipboard | Copy | `Ctrl+C` | `Action::Copy` | view/UI only | yes |
 | Clipboard | Duplicate | `Ctrl+D` | `Action::Duplicate` | `object.duplicate` | yes |
 | Clipboard | Delete | `Delete` | `Action::Delete` | `object.delete` | yes |
@@ -202,7 +202,7 @@ Behaviour follows the guide's pages
 | Edit | Convert to Stitches |  | `Action::ConvertToStitches` | `object.toStitches` | yes |
 | Edit | Convert to Outline |  | `Action::ConvertToOutline` | `object.toShapes` | yes |
 
-### Outline — Shapes (Outline) (contextual: Closed Straight Line / Closed Curve tool)
+### Outline — Shapes (Outline) (contextual: an Outline tool: straight line, curve or pencil)
 
 | Group | Command | Shortcut | OpenStitch action | Engine command | Available |
 |---|---|---|---|---|---|
@@ -211,10 +211,10 @@ Behaviour follows the guide's pages
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
 | Shapes | Closed Straight Line | `P` | `Action::ClosedStraight` | `shape.polygon` | yes |
 | Shapes | Closed Curve | `B` | `Action::ClosedCurve` | `shape.path` | yes |
-| Shapes | Pencil (Closed Curve) |  | `Action::PencilClosed` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Shapes | Open Straight Line |  | `Action::OpenStraight` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Shapes | Pencil (Closed Curve) |  | `Action::PencilClosed` | `shape.freehand` | yes |
+| Shapes | Open Straight Line | `L` | `Action::OpenStraight` | `shape.polygon` (`closed: false`) | yes |
 | Shapes | Open Curve |  | `Action::OpenCurve` | `shape.path` | yes |
-| Shapes | Pencil (Open Curve) |  | `Action::PencilOpen` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Shapes | Pencil (Open Curve) |  | `Action::PencilOpen` | `shape.freehand` (`closed: false`) | yes |
 | Color / Sew Type | Line color |  | `Action::LineColor` | `object.setLine` | yes |
 | Color / Sew Type | Line sew type |  | `Action::LineSewType` | `object.setLine` | yes |
 | Color / Sew Type | Region color |  | `Action::RegionColor` | `object.setRegion` | yes |
@@ -228,13 +228,13 @@ Behaviour follows the guide's pages
 | Select | Point Edit | `A` | `Action::PointTool` | `object.setPoint` | yes |
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
 | Shapes | Rectangle | `R` | `Action::Rectangle` | `shape.rectangle` | yes |
-| Shapes | Edge radius |  | `Action::EdgeRadius` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Shapes | Edge radius |  | `Action::EdgeRadius` | `shape.rectangle` (`cornerRadius`) | yes |
 | Color / Sew Type | Line color |  | `Action::LineColor` | `object.setLine` | yes |
 | Color / Sew Type | Line sew type |  | `Action::LineSewType` | `object.setLine` | yes |
 | Color / Sew Type | Region color |  | `Action::RegionColor` | `object.setRegion` | yes |
 | Color / Sew Type | Region sew type |  | `Action::RegionSewType` | `object.setRegion` | yes |
 
-### Manual Punch (contextual: Manual Punch tool)
+### Manual Punch (contextual: a Manual Punch tool)
 
 | Group | Command | Shortcut | OpenStitch action | Engine command | Available |
 |---|---|---|---|---|---|
@@ -242,9 +242,9 @@ Behaviour follows the guide's pages
 | Select | Point Edit | `A` | `Action::PointTool` | `object.setPoint` | yes |
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
 | Manual Punch | Straight Block | `U` | `Action::StraightBlock` | `shape.column` | yes |
-| Manual Punch | Curved Block |  | `Action::CurvedBlock` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Manual Punch | Running |  | `Action::Running` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Manual Punch | Feed |  | `Action::Feed` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Manual Punch | Curved Block |  | `Action::CurvedBlock` | `shape.column` (`curved: true`) | yes |
+| Manual Punch | Running |  | `Action::Running` | `shape.polygon` (`closed: false`) | yes |
+| Manual Punch | Feed |  | `Action::Feed` | `shape.feed` | yes |
 | Color / Sew Type | Region color |  | `Action::RegionColor` | `object.setRegion` | yes |
 | Color / Sew Type | Region sew type |  | `Action::RegionSewType` | `object.setRegion` | yes |
 
@@ -258,7 +258,7 @@ Behaviour follows the guide's pages
 | Edit Outline | Split Outline |  | `Action::SplitOutline` | `shape.split` | yes |
 | Edit Outline | Add Direction Line |  | `Action::AddDirectionLine` | `object.setDirectionCurve` | yes |
 | Edit Outline | Delete Direction Line |  | `Action::DeleteDirectionLine` | `object.setDirectionLines` | yes |
-| Edit Outline | Reverse Direction Line |  | `Action::ReverseDirectionLine` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Edit Outline | Reverse Direction Line |  | `Action::ReverseDirectionLine` | `object.reverseDirection` | yes |
 | Edit Outline | Edit Point | `A` | `Action::EditPoint` | `object.setPoint` | yes |
 | Edit Outline | Delete Point | `Delete` | `Action::DeletePoint` | `object.deletePoint` | yes |
 | Edit Outline | Split at Point |  | `Action::SplitAtPoint` | `stitches.splitAt` | yes |
@@ -281,7 +281,7 @@ Behaviour follows the guide's pages
 | Select | Point Edit | `A` | `Action::PointTool` | `object.setPoint` | yes |
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
 | Edit | Split Stitch Data |  | `Action::SplitStitchData` | `stitches.splitArea` | yes |
-| Edit | Change Color |  | `Action::ChangeColor` | `threads.remap` | **not yet** (disabled, ScreenTip says so) |
+| Edit | Change Color |  | `Action::ChangeColor` | `stitches.setThread` | yes |
 | Edit | Divide by Color |  | `Action::DivideByColor` | `stitches.divideByColor` | yes |
 | Edit | Split at Point |  | `Action::SplitAtPoint` | `stitches.splitAt` | yes |
 | Edit | Connect |  | `Action::Connect` | `stitches.connect` | yes |
@@ -296,9 +296,36 @@ Behaviour follows the guide's pages
 | Select | Select | `V` | `Action::SelectTool` | view/UI only | yes |
 | Select | Point Edit | `A` | `Action::PointTool` | `object.setPoint` | yes |
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
-| Hoop Settings | Move Sections |  | `Action::MoveSections` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Hoop Settings | Move Sections |  | `Action::MoveSections` | `sections.set` (`splitsX` / `splitsY`) | yes |
 | Hoop Settings | Design Settings |  | `Action::DesignSettings` | `machine.set` | yes |
 | Hoop Settings | Export Sections |  | `Action::ExportSections` | `sections.export` | yes |
+
+### How the drawing and editing commands work
+
+Behaviour follows the guide pages
+[Drawing outlines](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_1835552.html),
+[Using Manual Punch Tool](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/07_1892457.html),
+[Specifying the straight sewing direction](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_1869360.html)
+and [Adjusting the split positions](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/07_1925948.html).
+
+- **Cut** removes the selection (one Undo) and keeps it; **Paste** adds it back where it was
+  (`object.paste`). After Copy, Paste duplicates the copied objects as before.
+- **Open Straight Line** (`L`): click the points; double-click or Return ends the line (it never
+  closes on the first point). **Pencil**: press and drag; releasing ends the stroke. The trail
+  is simplified to within about 1.5 screen points and smoothed into Bézier curves; turns
+  sharper than 75° stay corners (`shape.freehand`, `tolerance`).
+- **Edge radius** sets the corner radius of the rectangles drawn next with the Rectangle tool.
+- **Curved Block** is clicked like Straight Block (both ends of each direction line); the sides
+  curve through the ends and the stitching follows them. **Running** and **Feed**: click the
+  points, double-click or Return ends; Running makes a running-stitch line, Feed a pattern of
+  jump stitches only (the frame moves, the thread is not cut). Each Manual Punch part is its
+  own pattern; switching tools ends the part (the guide switches within one input).
+- **Reverse Direction Line** reverses every direction line of the selected shape (or turns a
+  single sewing direction by 180°).
+- **Change Color** lists the selected stitch pattern's threads; pick one and its new colour.
+- **Move Sections** (on/off) lets you drag the red split lines of a split design; releasing
+  sets the new split position. Positions that would make a section larger than the hoop
+  allows are refused and the status bar says why.
 
 ### Application menu
 

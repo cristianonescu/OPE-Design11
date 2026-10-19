@@ -4,6 +4,7 @@
 
 use crate::app::EditorApp;
 use eframe::egui::{self, Color32, Pos2, Shape, Stroke};
+use openstitch_app::editor::sections::Axis;
 use openstitch_app::editor::{CommandRequest, Viewport};
 use openstitch_design::sections::{self, SectionKind, sectionable};
 use openstitch_design::{BROTHER_HOOPS, Vec2};
@@ -27,6 +28,25 @@ pub fn draw_sections(app: &EditorApp, painter: &egui::Painter, vp: &Viewport) {
             .is_some_and(|s| s.kind != SectionKind::Split);
     if !multi {
         return;
+    }
+    // Move Sections: the line being dragged, solid and thicker.
+    if let Some((axis, at)) = app.workspace.sections.dragged() {
+        let page = app.session.design().page;
+        let at = at * 10.0;
+        let (a, b) = match axis {
+            Axis::Vertical => (
+                openstitch_design::v2(at, 0.0),
+                openstitch_design::v2(at, page.height),
+            ),
+            Axis::Horizontal => (
+                openstitch_design::v2(0.0, at),
+                openstitch_design::v2(page.width, at),
+            ),
+        };
+        painter.line_segment(
+            [pos(vp.to_screen(a)), pos(vp.to_screen(b))],
+            Stroke::new(3.0, SECTION),
+        );
     }
     for (i, s) in plan.sections.iter().enumerate() {
         let r = egui::Rect::from_two_pos(
@@ -177,17 +197,7 @@ fn split_settings(app: &EditorApp, ui: &mut egui::Ui, requests: &mut Vec<Command
         requests.push(set(json!({ "smaller": smaller })));
     }
     // Split positions: the current ones (even split when none are set), editable in mm.
-    let plan = sections::plan(d);
-    let mut xs: Vec<f64> = Vec::new();
-    let mut ys: Vec<f64> = Vec::new();
-    for sec in &plan.sections {
-        if sec.rect.min_x > 0.0 && !xs.contains(&(sec.rect.min_x / 10.0)) {
-            xs.push(sec.rect.min_x / 10.0);
-        }
-        if sec.rect.min_y > 0.0 && !ys.contains(&(sec.rect.min_y / 10.0)) {
-            ys.push(sec.rect.min_y / 10.0);
-        }
-    }
+    let (xs, ys) = openstitch_app::editor::sections::current_splits(d);
     for (key, axis, values) in [
         ("splitsX", "Vertical splits", xs),
         ("splitsY", "Horizontal splits", ys),

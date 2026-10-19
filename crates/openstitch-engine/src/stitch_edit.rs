@@ -93,6 +93,39 @@ fn command_name(c: Command) -> &'static str {
 pub fn commands() -> Vec<CommandSpec> {
     vec![
         spec(
+            "stitches.setThread",
+            "Change Color: give one colour block of a stitch pattern another thread",
+            Effect::Edit,
+            vec![
+                ID,
+                req(
+                    "index",
+                    "int",
+                    "Colour block (0-based, as stitches.points lists threads)",
+                ),
+                req(
+                    "color",
+                    "color",
+                    "#rrggbb, a Brother thread name or chart number 1-64",
+                ),
+            ],
+            |s, p| {
+                let i = target(s, p, "id")?;
+                let n = s.design.objects[i]
+                    .stitch_block
+                    .as_ref()
+                    .map_or(0, |b| b.threads.len());
+                if n == 0 {
+                    return Err(p.failed("the stitch pattern has no threads"));
+                }
+                let k = p.int("index", None, 0, n as i64 - 1)? as usize;
+                let t = crate::commands::thread(p, "color")?
+                    .ok_or_else(|| p.invalid("color", "must be a thread colour"))?;
+                block(s, i).threads[k] = t;
+                Ok(json!(null))
+            },
+        ),
+        spec(
             "stitches.points",
             "List a stitch pattern's entries: index, position (mm), command and colour block",
             Effect::Read,

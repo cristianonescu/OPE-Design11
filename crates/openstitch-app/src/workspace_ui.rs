@@ -24,6 +24,8 @@ pub struct Workspace {
     /// View, Image and Text dialogs and the guideline being dragged.
     pub view: crate::view_ui::ViewState,
     pub measure: MeasureTool,
+    /// Hoop Settings ▸ Move Sections.
+    pub sections: openstitch_app::editor::sections::SectionMover,
     pub settings_open: bool,
     user_hoop: (f64, f64, String),
     /// Thread length and sewing time of the compiled design.
@@ -45,6 +47,7 @@ impl Default for Workspace {
             guides: false,
             view: Default::default(),
             measure: MeasureTool::default(),
+            sections: Default::default(),
             settings_open: false,
             user_hoop: (100.0, 100.0, String::new()),
             estimate: None,

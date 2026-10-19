@@ -508,6 +508,44 @@ fn shape_commands() -> Vec<CommandSpec> {
             },
         ),
         spec(
+            "shape.freehand",
+            "Add a freehand (Pencil) outline: the traced points simplified to within a tolerance and smoothed into curves",
+            Effect::Edit,
+            shape_docs(vec![
+                req(
+                    "points",
+                    "[[x, y]] mm",
+                    "The traced points in order (2-20000)",
+                ),
+                opt("closed", "bool", "Closed region (default true)"),
+                opt(
+                    "tolerance",
+                    "mm",
+                    "How far the outline may leave the trace (0.01-10, default 0.3)",
+                ),
+                opt(
+                    "smooth",
+                    "bool",
+                    "Curves through the kept points (default true; false: straight lines)",
+                ),
+            ]),
+            |s, p| {
+                let closed = p.bool("closed", Some(true))?;
+                let points = p.points("points", 2)?;
+                if points.len() > openstitch_design::freehand::MAX_POINTS {
+                    return Err(p.invalid(
+                        "points",
+                        format!("at most {} points", openstitch_design::freehand::MAX_POINTS),
+                    ));
+                }
+                let tolerance = p.opt("tolerance", 0.3, 0.01, 10.0)? * MM;
+                let smooth = p.bool("smooth", Some(true))?;
+                let c = openstitch_design::freehand::fit(&points, closed, tolerance, smooth)
+                    .ok_or_else(|| p.invalid("points", "the trace is too short"))?;
+                add_shape(s, p, c)
+            },
+        ),
+        spec(
             "shape.arc",
             "Add an elliptical arc, arc and string (chord) or fan (pie slice)",
             Effect::Edit,

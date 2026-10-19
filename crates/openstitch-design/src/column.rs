@@ -4,13 +4,84 @@
 //! algorithm. Lengths are 0.1 mm.
 
 use crate::generate::{Run, subdivide};
-use crate::geometry::{Contour, Vec2};
+use crate::geometry::{Bezier, Contour, Vec2};
 
 /// The closed outline of a column: the left ends in order, then the right ends back.
 pub fn outline(rungs: &[[Vec2; 2]]) -> Contour {
     let mut pts: Vec<Vec2> = rungs.iter().map(|r| r[0]).collect();
     pts.extend(rungs.iter().rev().map(|r| r[1]));
     Contour::new(pts, true)
+}
+
+/// Curved Block: each rail (the left ends, the right ends) as a smooth curve through its
+/// points — Catmull-Rom segments written as cubic Béziers, the end tangents along the chord.
+fn rail_curves(rail: &[Vec2]) -> Vec<Bezier> {
+    let n = rail.len();
+    (0..n.saturating_sub(1))
+        .map(|i| {
+            let prev = rail[i.saturating_sub(1)];
+            let next = rail[(i + 2).min(n - 1)];
+            Bezier {
+                c1: rail[i] + (rail[i + 1] - prev) * (1.0 / 6.0),
+                c2: rail[i + 1] - (next - rail[i]) * (1.0 / 6.0),
+            }
+        })
+        .collect()
+}
+
+fn bezier_at(a: Vec2, c: Bezier, b: Vec2, t: f64) -> Vec2 {
+    let s = 1.0 - t;
+    a * (s * s * s) + c.c1 * (3.0 * s * s * t) + c.c2 * (3.0 * s * t * t) + b * (t * t * t)
+}
+
+/// The closed outline of a Curved Block column: both rails curved through the line ends, the
+/// first and last lines straight.
+pub fn curved_outline(rungs: &[[Vec2; 2]]) -> Contour {
+    let mut c = outline(rungs);
+    let n = rungs.len();
+    if n < 3 {
+        return c;
+    }
+    let left: Vec<Vec2> = rungs.iter().map(|r| r[0]).collect();
+    let right: Vec<Vec2> = rungs.iter().map(|r| r[1]).collect();
+    let mut curves: Vec<Option<Bezier>> = rail_curves(&left).into_iter().map(Some).collect();
+    curves.push(None);
+    // The right rail runs backwards in the outline.
+    curves.extend(
+        rail_curves(&right)
+            .into_iter()
+            .rev()
+            .map(|z| Some(Bezier { c1: z.c2, c2: z.c1 })),
+    );
+    curves.push(None);
+    c.curves = curves;
+    c
+}
+
+/// Curved Block: the direction lines between the clicked ones, following the curved rails
+/// (about one every 2 mm of rail), clicked lines included.
+pub fn curved_rungs(rungs: &[[Vec2; 2]]) -> Vec<[Vec2; 2]> {
+    if rungs.len() < 3 {
+        return rungs.to_vec();
+    }
+    let left: Vec<Vec2> = rungs.iter().map(|r| r[0]).collect();
+    let right: Vec<Vec2> = rungs.iter().map(|r| r[1]).collect();
+    let (lc, rc) = (rail_curves(&left), rail_curves(&right));
+    let mut out = vec![rungs[0]];
+    for i in 0..rungs.len() - 1 {
+        let len = left[i]
+            .distance(left[i + 1])
+            .max(right[i].distance(right[i + 1]));
+        let steps = ((len / 20.0).ceil() as usize).clamp(1, 64);
+        for k in 1..=steps {
+            let t = k as f64 / steps as f64;
+            out.push([
+                bezier_at(left[i], lc[i], left[i + 1], t),
+                bezier_at(right[i], rc[i], right[i + 1], t),
+            ]);
+        }
+    }
+    out
 }
 
 /// Whether segments a–b and c–d cross (touching ends count).
@@ -113,6 +184,25 @@ mod tests {
             [v2(100.0, 0.0), v2(80.0, 40.0)],
             [v2(140.0, 80.0), v2(100.0, 80.0)],
         ]
+    }
+
+    #[test]
+    fn curved_block_rails_pass_through_the_line_ends() {
+        let o = curved_outline(&bend());
+        assert_eq!(o.points.len(), 6);
+        assert_eq!(o.curves.len(), 6);
+        // Rails curved; the first and last lines straight.
+        assert!(o.curve(0).is_some() && o.curve(1).is_some() && o.curve(2).is_none());
+        assert!(o.curve(3).is_some() && o.curve(4).is_some() && o.curve(5).is_none());
+        let dense = curved_rungs(&bend());
+        assert!(dense.len() > 6);
+        assert_eq!(dense[0], bend()[0]);
+        assert_eq!(*dense.last().expect("last"), bend()[2]);
+        assert!(dense.contains(&bend()[1]), "clicked lines are kept");
+        assert_eq!(validate(&dense), Ok(()));
+        // Two lines: nothing to curve.
+        assert_eq!(curved_rungs(&bend()[..2]), bend()[..2].to_vec());
+        assert!(!curved_outline(&bend()[..2]).has_curves());
     }
 
     #[test]

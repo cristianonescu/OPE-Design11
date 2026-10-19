@@ -743,6 +743,10 @@ pub struct RegionSewing {
     /// column sewn along them (satin and fill). Each is [left end, right end].
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub direction_lines: Vec<[Vec2; 2]>,
+    /// Curved Block (Manual Punch): the column's sides are smooth curves through the ends of
+    /// [`RegionSewing::direction_lines`] instead of straight lines between them.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub curved_lines: bool,
     /// Satin along a centre line with a width at each point: the stitch direction follows
     /// the line (variable-direction satin). Takes precedence over the other direction options.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -794,6 +798,7 @@ impl RegionSewing {
             direction_curve: None,
             stamps: Vec::new(),
             direction_lines: Vec::new(),
+            curved_lines: false,
             skeleton: None,
         }
     }

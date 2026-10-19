@@ -76,6 +76,8 @@ pub struct RibbonState {
     last_tool: Tool,
     /// Objects Copy remembered; Paste duplicates the ones still in the design.
     pub clipboard: BTreeSet<u64>,
+    /// Objects Cut took out of the design (`object.get` data); Paste adds them back.
+    pub cut: Vec<serde_json::Value>,
     /// Pan: the primary button drags the view.
     pub pan: bool,
     pub property_open: bool,
@@ -98,6 +100,7 @@ impl Default for RibbonState {
             open_app_menu: false,
             last_tool: Tool::Select,
             clipboard: BTreeSet::new(),
+            cut: Vec::new(),
             pan: false,
             property_open: false,
             shortcuts_open: false,
@@ -199,10 +202,9 @@ pub fn enabled(app: &EditorApp, a: Action) -> bool {
     match a {
         Undo => app.session.can_undo(),
         Redo => app.session.can_redo(),
-        Copy | Duplicate | Delete | ArrangeCopy | Arrange | RotateFlip | Size | DecorativeFrame => {
-            any
-        }
-        Paste => !clipboard_ids(app).is_empty(),
+        Cut | Copy | Duplicate | Delete | ArrangeCopy | Arrange | RotateFlip | Size
+        | DecorativeFrame => any,
+        Paste => !clipboard_ids(app).is_empty() || !app.ui.cut.is_empty(),
         CopyAttributes => edit_ui::copy_attributes_source(app).is_some(),
         PasteAttributes => edit_ui::paste_attributes_source(app).is_some(),
         Group => many,
@@ -221,7 +223,7 @@ pub fn enabled(app: &EditorApp, a: Action) -> bool {
         ConvertToStitches => outline,
         ConvertRegionToLine => region,
         SplitOutline | EntryExit => edit_ui::single_shape(app).is_some(),
-        AddDirectionLine | DeleteDirectionLine | SewingPoints => {
+        AddDirectionLine | DeleteDirectionLine | ReverseDirectionLine | SewingPoints => {
             edit_ui::single_region(app).is_some()
         }
         OffsetLines | FloralPattern => edit_ui::single_outline(app).is_some(),
@@ -232,6 +234,8 @@ pub fn enabled(app: &EditorApp, a: Action) -> bool {
         }
         SplitStitchData => convert_ui::stitch_selection(app).1.is_some(),
         DivideByColor => stitches,
+        ChangeColor => convert_ui::stitch_selection(app).1.is_some(),
+        MoveSections => openstitch_app::editor::sections::can_move(app.session.design()),
         Connect => convert_ui::stitch_selection(app).0.len() == 2,
         _ => true,
     }
@@ -262,6 +266,7 @@ pub fn active(app: &EditorApp, a: Action) -> bool {
         Ruler => app.workspace.rulers,
         Pan => app.ui.pan,
         Measure => app.workspace.measure.active,
+        MoveSections => app.workspace.sections.active,
         _ => false,
     }
 }
@@ -302,7 +307,37 @@ fn zoom_to_selection(app: &mut EditorApp) {
     }
 }
 
+/// Cut: the selection leaves the design (one Undo) and waits on the clipboard.
+fn cut(app: &mut EditorApp) {
+    let d = app.session.design();
+    let objects: Vec<serde_json::Value> = d
+        .objects
+        .iter()
+        .filter(|o| app.selection.contains(&o.id))
+        .filter_map(|o| serde_json::to_value(o).ok())
+        .collect();
+    if objects.is_empty() {
+        return;
+    }
+    let n = objects.len();
+    let request = CommandRequest::delete(&app.selection);
+    if app.execute(&request).is_some() {
+        app.ui.cut = objects;
+        app.ui.clipboard.clear();
+        app.selection.clear();
+        app.status = format!("{n} objects cut");
+    }
+}
+
 fn paste(app: &mut EditorApp) {
+    if !app.ui.cut.is_empty() {
+        let r = CommandRequest::new("object.paste", json!({ "objects": app.ui.cut }));
+        if let Some(result) = app.execute(&r) {
+            app.selection = CommandRequest::created_ids(&result);
+            app.status = "Pasted".into();
+        }
+        return;
+    }
     let ids = clipboard_ids(app);
     if ids.is_empty() {
         return;
@@ -376,7 +411,9 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
         FontCreator => app.lettering.fonts.open = true,
         AttributeSets => app.settings.sets_open = true,
         SelectAll => app.select_all(),
+        Cut => cut(app),
         Copy => {
+            app.ui.cut.clear();
             app.ui.clipboard = app.selection.clone();
             app.status = format!("{} objects copied", app.ui.clipboard.len());
         }
@@ -478,16 +515,29 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
         SplitStitchData => convert_ui::split_off_area(app),
         DivideByColor => convert_ui::divide_by_color(app),
         Connect => convert_ui::connect(app),
+        ReverseDirectionLine => {
+            if let Some(id) = edit_ui::single_region(app) {
+                app.execute(&CommandRequest::new(
+                    "object.reverseDirection",
+                    json!({ "ids": [id] }),
+                ));
+            }
+        }
+        MoveSections => {
+            app.workspace.sections.toggle();
+            app.workspace.measure.active = false;
+            app.ui.pan = false;
+        }
         ExportSections => crate::sections_ui::export_sections(app),
         // Tools are handled above; menus open their list; the rest are not available yet.
         SelectTool | PointTool | Rectangle | Ellipse | ClosedStraight | ClosedCurve | OpenCurve
-        | StraightBlock | EditPoint => {}
+        | StraightBlock | EditPoint | PencilClosed | OpenStraight | PencilOpen | CurvedBlock
+        | Running | Feed => {}
         Print | Wizard | Export | Options | Help | TextTools | ShapesTools | OtherZoom
         | Arrange | RotateFlip | Size | StampEmboss | ModifyOverlap | DecorativeFrame
         | SendEmbroidery | SaveImage | ImageDensity | GridSpacing | Font | TextSize | EditText
-        | LineColor | LineSewType | RegionColor | RegionSewType | EntryExit | SewingPoints => {}
-        Cut | PencilClosed | OpenStraight | PencilOpen | EdgeRadius | CurvedBlock | Running
-        | Feed | ReverseDirectionLine | ChangeColor | MoveSections => {}
+        | LineColor | LineSewType | RegionColor | RegionSewType | EntryExit | SewingPoints
+        | EdgeRadius | ChangeColor => {}
     }
 }
 
@@ -768,7 +818,59 @@ pub fn menu(app: &mut EditorApp, a: Action, ui: &mut egui::Ui) {
         }
         EntryExit => edit_ui::entry_exit_menu(app, ui),
         SewingPoints => edit_ui::sewing_points_menu(app, ui),
+        EdgeRadius => edge_radius_menu(app, ui),
+        ChangeColor => change_color_menu(app, ui),
         _ => {}
+    }
+}
+
+/// Shapes (Rectangle) ▸ Edge radius: the corner radius of the rectangles drawn next.
+fn edge_radius_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let mut r = app.tools.corner_radius();
+    ui.horizontal(|ui| {
+        ui.label("Edge radius");
+        ui.add(
+            egui::DragValue::new(&mut r)
+                .range(0.0..=100.0)
+                .speed(0.1)
+                .suffix(" mm"),
+        );
+    });
+    for mm in [0.0, 2.0, 5.0, 10.0] {
+        if ui.selectable_label(r == mm, format!("{mm} mm")).clicked() {
+            r = mm;
+        }
+    }
+    app.tools.set_corner_radius(r);
+}
+
+/// Stitches ▸ Change Color: each thread of the selected stitch pattern, with the PEC chart to
+/// pick its new colour.
+fn change_color_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let Some(id) = convert_ui::stitch_selection(app).1 else {
+        return;
+    };
+    let d = app.session.design();
+    let threads = d
+        .index_of(id)
+        .and_then(|i| d.objects[i].stitch_block.as_ref())
+        .map(|b| b.threads.clone())
+        .unwrap_or_default();
+    for (k, t) in threads.iter().enumerate() {
+        let name = t.name.as_deref().unwrap_or("Thread").to_string();
+        let (r, g, b) = (t.red, t.green, t.blue);
+        ui.menu_button(
+            RichText::new(format!("■ {}. {name}", k + 1)).color(Color32::from_rgb(r, g, b)),
+            |ui| {
+                if let Some(i) = panels::pec_grid(ui, &format!("change-color-{k}"), Some(t)) {
+                    app.execute(&CommandRequest::new(
+                        "stitches.setThread",
+                        json!({ "id": id, "index": k, "color": i }),
+                    ));
+                    ui.close();
+                }
+            },
+        );
     }
 }
 
@@ -1406,8 +1508,6 @@ mod tests {
         assert!(app.pattern_wizards.open.is_some());
         run(&mut app, Action::CrossStitch, &ctx);
         assert!(app.wizard.open);
-        run(&mut app, Action::Cut, &ctx); // unavailable: nothing happens
-        assert_eq!(app.session.design().objects.len(), n + 1);
     }
 
     #[test]
@@ -1475,6 +1575,105 @@ mod tests {
             out.textures_delta.clear();
         }
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn cut_and_paste_put_the_objects_back() {
+        let ctx = egui::Context::default();
+        let mut app = demo();
+        let n = app.session.design().objects.len();
+        assert!(!enabled(&app, Action::Cut));
+        app.selection = BTreeSet::from([1]);
+        let before = app.session.design().objects[0].clone();
+        run(&mut app, Action::Cut, &ctx);
+        assert_eq!(app.session.design().objects.len(), n - 1);
+        assert!(app.selection.is_empty() && enabled(&app, Action::Paste));
+        run(&mut app, Action::Paste, &ctx);
+        let d = app.session.design();
+        assert_eq!(d.objects.len(), n);
+        let pasted = d.objects.last().expect("pasted");
+        assert_eq!(app.selection, BTreeSet::from([pasted.id]));
+        assert_eq!(pasted.contours, before.contours, "back where it was");
+        // Cut is one Undo; Copy forgets the cut objects.
+        run(&mut app, Action::Undo, &ctx);
+        run(&mut app, Action::Undo, &ctx);
+        assert_eq!(app.session.design().objects.len(), n);
+        app.selection = BTreeSet::from([2]);
+        run(&mut app, Action::Copy, &ctx);
+        assert!(app.ui.cut.is_empty());
+    }
+
+    #[test]
+    fn drawing_and_editing_commands() {
+        let ctx = egui::Context::default();
+        let mut app = demo();
+        for (a, t) in [
+            (Action::OpenStraight, Tool::Line),
+            (Action::PencilClosed, Tool::Pencil),
+            (Action::PencilOpen, Tool::PencilOpen),
+            (Action::CurvedBlock, Tool::CurvedBlock),
+            (Action::Running, Tool::Running),
+            (Action::Feed, Tool::Feed),
+        ] {
+            run(&mut app, a, &ctx);
+            assert_eq!(app.tools.tool(), t);
+            assert!(active(&app, a) && !active(&app, Action::StraightBlock));
+        }
+        assert_eq!(update_tab(&mut app), [TabId::ManualPunch]);
+        // Reverse Direction Line on a region.
+        app.tools.set_tool(Tool::Select);
+        let id = app
+            .session
+            .design()
+            .objects
+            .iter()
+            .find(|o| o.region.is_some())
+            .expect("region")
+            .id;
+        app.selection = BTreeSet::from([id]);
+        let angle = |app: &EditorApp| {
+            let d = app.session.design();
+            d.objects[d.index_of(id).expect("o")]
+                .region
+                .as_ref()
+                .expect("r")
+                .angle
+        };
+        let a0 = angle(&app);
+        assert!(enabled(&app, Action::ReverseDirectionLine));
+        run(&mut app, Action::ReverseDirectionLine, &ctx);
+        assert_eq!(angle(&app), (a0 + 180.0).rem_euclid(360.0));
+        // Change Color needs one stitch pattern.
+        assert!(!enabled(&app, Action::ChangeColor));
+        run(&mut app, Action::ConvertToStitches, &ctx);
+        let st = *app.selection.first().expect("converted");
+        app.selection = BTreeSet::from([st]);
+        assert!(enabled(&app, Action::ChangeColor));
+        app.execute(&CommandRequest::new(
+            "stitches.setThread",
+            json!({ "id": st, "index": 0, "color": "#123456" }),
+        ));
+        let d = app.session.design();
+        let b = d.objects[d.index_of(st).expect("st")]
+            .stitch_block
+            .as_ref()
+            .expect("b");
+        assert_eq!(b.threads[0].hex(), "#123456");
+        // Move Sections needs a split design.
+        assert!(!enabled(&app, Action::MoveSections));
+        app.execute(&CommandRequest::new(
+            "design.new",
+            json!({ "name": "Banner", "width": 230, "height": 160 }),
+        ));
+        app.execute(&CommandRequest::new(
+            "sections.set",
+            json!({ "hoop": "130x180" }),
+        ));
+        assert!(enabled(&app, Action::MoveSections));
+        run(&mut app, Action::MoveSections, &ctx);
+        assert!(active(&app, Action::MoveSections));
+        run(&mut app, Action::MoveSections, &ctx);
+        assert!(!active(&app, Action::MoveSections));
     }
 
     #[test]

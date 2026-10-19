@@ -885,13 +885,17 @@ impl EditorApp {
             return;
         }
         let take = |s: KeyboardShortcut| ctx.input_mut(|i| i.consume_shortcut(&s));
-        // Copy and Paste arrive as clipboard events, not key presses.
-        let (copy, paste) = ctx.input(|i| {
+        // Cut, Copy and Paste arrive as clipboard events, not key presses.
+        let (cut, copy, paste) = ctx.input(|i| {
             (
+                i.events.iter().any(|e| matches!(e, egui::Event::Cut)),
                 i.events.iter().any(|e| matches!(e, egui::Event::Copy)),
                 i.events.iter().any(|e| matches!(e, egui::Event::Paste(_))),
             )
         });
+        if cut {
+            crate::ribbon::run(self, openstitch_app::editor::ribbon::Action::Cut, ctx);
+        }
         if copy {
             crate::ribbon::run(self, openstitch_app::editor::ribbon::Action::Copy, ctx);
         }
@@ -930,6 +934,8 @@ impl EditorApp {
             } else if self.workspace.measure.active {
                 self.workspace.measure.active = false;
                 self.workspace.measure.clear();
+            } else if self.workspace.sections.active {
+                self.workspace.sections.toggle();
             } else if self.tools.is_busy() {
                 self.tools.cancel();
             } else {
