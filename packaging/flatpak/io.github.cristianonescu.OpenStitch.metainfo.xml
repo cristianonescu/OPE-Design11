@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream metadata for the OpenStitch Flatpak (packaging/flatpak). -->
+<component type="desktop-application">
+  <id>io.github.cristianonescu.OpenStitch</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT OR Apache-2.0</project_license>
+  <name>OpenStitch</name>
+  <summary>Create and edit machine embroidery designs</summary>
+  <developer id="io.github.cristianonescu">
+    <name>OpenStitch contributors</name>
+  </developer>
+  <description>
+    <p>
+      OpenStitch is an independent embroidery design editor. It draws shapes and lettering,
+      turns them into running, satin and fill stitches, simulates the sew-out and writes
+      machine files such as PES and DST.
+    </p>
+    <p>
+      Designs are saved as open .osd projects; PES and other machine files can be opened and
+      imported.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.cristianonescu.OpenStitch.desktop</launchable>
+  <url type="homepage">https://github.com/cristianonescu/OPE-Design11</url>
+  <url type="bugtracker">https://github.com/cristianonescu/OPE-Design11/issues</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/cristianonescu/OPE-Design11/main/docs/images/readme/editor.png</image>
+      <caption>The editor with the ribbon, sewing order, design page and stitch simulator</caption>
+    </screenshot>
+  </screenshots>
+  <categories>
+    <category>Graphics</category>
+  </categories>
+  <keywords>
+    <keyword>embroidery</keyword>
+    <keyword>stitch</keyword>
+    <keyword>pes</keyword>
+  </keywords>
+  <provides>
+    <mediatype>application/x-openstitch-design</mediatype>
+    <mediatype>application/x-pes-embroidery</mediatype>
+  </provides>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-10-19"/>
+  </releases>
+</component>

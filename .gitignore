@@ -1,3 +1,6 @@
 .DS_Store
 /reference/
 target/
+# Local Flatpak builds (packaging/flatpak)
+/.flatpak-builder/
+/build-flatpak/
