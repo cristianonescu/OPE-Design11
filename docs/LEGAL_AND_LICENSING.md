@@ -17,6 +17,22 @@ an independently created program, when the information is not otherwise availabl
 permit using the results to make a substantially similar program or for other purposes. Art. 8
 makes contract terms void where they conflict with Art. 5(3) and 6.
 
+## User interface
+
+The editor arranges its commands like PE-DESIGN 11's Layout & Editing window (Application
+button, ribbon tabs and groups, Quick Access Toolbar, Sewing Order and attribute panes, status
+bar) so existing users can migrate; [UI_LAYOUT.md](UI_LAYOUT.md) maps each command. The line
+the project keeps:
+
+- **Reproduced:** the arrangement of commands, their names, grouping and workflow, as described
+  in Brother's public online guide. These are functional: they are how a user finds a command.
+- **Our own:** every icon (drawn in code in `crates/openstitch-app/src/icons.rs`), the
+  Application button mark, colours, spacing and the rest of the visual style.
+- **Never in the repository:** Brother artwork, icons, logos, fonts or screenshots of
+  PE-DESIGN. Documentation screenshots show OpenStitch only.
+- **Naming:** "PE-DESIGN" is not used as product branding in the user interface. Compatibility
+  statements in the documentation ("opens PE-DESIGN 11 files") are fine.
+
 ## Technique register
 
 | Technique | Status | Reason |

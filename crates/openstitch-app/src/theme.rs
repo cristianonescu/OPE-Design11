@@ -53,6 +53,7 @@ pub fn install(ctx: &egui::Context) {
         v.extreme_bg_color = Color32::from_rgb(0xfb, 0xfb, 0xfc);
         v.faint_bg_color = Color32::from_rgb(0xee, 0xf0, 0xf3);
         v.selection.bg_fill = Color32::from_rgb(0x2a, 0x7a, 0xd8);
+        v.selection.stroke = egui::Stroke::new(1.0, Color32::WHITE);
         v.hyperlink_color = Color32::from_rgb(0x1f, 0x5f, 0xb4);
         v.widgets.hovered.weak_bg_fill = Color32::from_rgb(0xdc, 0xe9, 0xf8);
         v.widgets.hovered.bg_fill = Color32::from_rgb(0xdc, 0xe9, 0xf8);

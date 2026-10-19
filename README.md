@@ -24,7 +24,9 @@ Not affiliated with Brother Industries. No Brother code or assets are included; 
 
 ## What it does today
 
-- **Desktop editor** (`openstitch`):
+- **Desktop editor** (`openstitch`), laid out like PE-DESIGN 11's Layout & Editing window
+  (Application menu, Home / Image / View ribbon with contextual tabs, Quick Access Toolbar,
+  Sewing Order and attribute panes; [docs/UI_LAYOUT.md](docs/UI_LAYOUT.md)), light or dark:
   - drawing tools (rectangle, ellipse, polygon, arcs and preset shapes, Bézier pen, point editing)
   - selection and transforms, grouping, arranged copies
   - sewing attributes and sewing order
@@ -43,6 +45,8 @@ Not affiliated with Brother Industries. No Brother code or assets are included; 
   - editable `.osd` projects
 - **Automation:** a scripting CLI (`stitchtool`) and an MCP server (`openstitch-mcp`). Both run
   the same commands as the editor.
+
+![OpenStitch editor](docs/images/rust-editor-overview.png)
 
 See [docs/FEATURE_MATRIX.md](docs/FEATURE_MATRIX.md) for the full status of every feature and
 how far it has been verified.
@@ -196,6 +200,7 @@ Releases are made only when a version is declared stable:
 
 - [Research log](docs/RESEARCH.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Editor window layout](docs/UI_LAYOUT.md)
 - [Feature matrix](docs/FEATURE_MATRIX.md)
 - [File formats](docs/FILE_FORMATS.md)
 - [Compatibility tests](docs/COMPATIBILITY_TESTS.md)

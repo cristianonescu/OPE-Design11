@@ -74,7 +74,13 @@ fn header(app: &mut EditorApp, ui: &mut egui::Ui, pane: Pane) {
     });
 }
 
-fn floating(app: &mut EditorApp, ctx: &egui::Context, pane: Pane, size: egui::Vec2) {
+fn floating(
+    app: &mut EditorApp,
+    ctx: &egui::Context,
+    pane: Pane,
+    pos: egui::Pos2,
+    size: egui::Vec2,
+) {
     let s = *pane.state(app);
     if !(s.visible && s.floating) {
         return;
@@ -82,11 +88,20 @@ fn floating(app: &mut EditorApp, ctx: &egui::Context, pane: Pane, size: egui::Ve
     let mut open = true;
     egui::Window::new(pane.title())
         .open(&mut open)
+        .default_pos(pos)
         .default_size(size)
         .resizable(true)
         .show(ctx, |ui| {
-            header(app, ui, pane);
-            ui.separator();
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
+                if ui
+                    .small_button("⊟ Dock")
+                    .on_hover_text("Dock to the window")
+                    .clicked()
+                {
+                    pane.state(app).floating = false;
+                    app.ui.save_prefs();
+                }
+            });
             pane.contents(app, ui);
         });
     if !open {
@@ -125,9 +140,29 @@ pub fn docked(app: &mut EditorApp, ui: &mut egui::Ui) {
 
 /// The floating panes (call after the central panel).
 pub fn floating_panes(app: &mut EditorApp, ctx: &egui::Context) {
-    floating(app, ctx, Pane::SewingOrder, vec2(260.0, 420.0));
-    floating(app, ctx, Pane::Attributes, vec2(300.0, 480.0));
-    floating(app, ctx, Pane::Simulator, vec2(720.0, 110.0));
+    let screen = ctx.content_rect();
+    let top = screen.min.y + 190.0;
+    floating(
+        app,
+        ctx,
+        Pane::SewingOrder,
+        egui::pos2(screen.min.x + 12.0, top),
+        vec2(260.0, 420.0),
+    );
+    floating(
+        app,
+        ctx,
+        Pane::Attributes,
+        egui::pos2(screen.max.x - 340.0, top),
+        vec2(320.0, 480.0),
+    );
+    floating(
+        app,
+        ctx,
+        Pane::Simulator,
+        egui::pos2(screen.min.x + 300.0, screen.max.y - 180.0),
+        vec2(720.0, 110.0),
+    );
 }
 
 /// Import / Color / Sewing Attributes / Text Attributes, as tabs.

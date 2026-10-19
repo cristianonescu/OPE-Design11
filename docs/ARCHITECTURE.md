@@ -549,15 +549,26 @@ openstitch_app::editor (lib, no egui, unit-tested)
 - **Travel vs sewn.** A move is drawn as thread only if it is a `stitch` and the thread has not
   been cut since the last stitch; jumps and the first move after a trim or colour change are
   travel and can be dimmed or hidden.
-- **Input.** Scroll pans, pinch or Ctrl/⌘+scroll zooms at the pointer, middle-drag or Space+drag
-  pans; ⌘/Ctrl+Z, ⇧+⌘Z / Ctrl+Y, ⌘S, ⇧⌘S, ⌘O, ⇧⌘I (import), ⌘N, ⌘0 (fit), ⌘A, ⌘D, Delete,
+- **Window chrome.** The command layout is data in `editor::ribbon` (every command is an
+  `Action` with label, ScreenTip, shortcut, engine command and availability; tabs, groups,
+  contextual-tab rules, Application and Option menus, Quick Access Toolbar defaults) and
+  `editor::prefs` (theme, Quick Access Toolbar, panes docked/floating/hidden, recent files,
+  saved as `ui.json` beside `user.json`). The binary's `ribbon.rs` draws it, decides which
+  commands are enabled for the selection and runs them; `panes.rs` holds the Sewing Order,
+  Import/Color/Sewing Attributes/Text Attributes and Stitch Simulator panes and the status bar;
+  `icons.rs` paints the icons; `theme.rs` the light (default), dark and system themes. See
+  [UI_LAYOUT.md](UI_LAYOUT.md).
+- **Input.** Scroll pans, pinch or Ctrl/⌘+scroll zooms at the pointer, middle-drag, Space+drag or
+  the Pan tool (H) pans; ⌘/Ctrl+C / V copy and paste objects, ⌘/Ctrl+= / − zoom; ⌘/Ctrl+Z, ⇧+⌘Z / Ctrl+Y, ⌘S, ⇧⌘S, ⌘O, ⇧⌘I (import), ⌘N, ⌘0 (fit), ⌘A, ⌘D, Delete,
   arrows (0.1 mm, Shift 1 mm), V/A/R/E/P/B tools (select, point, rectangle, ellipse, polygon,
   pen), Return closes a polygon or finishes a pen path, Esc cancels; with the Point tool Delete
   removes the selected vertex and C / S curve or straighten the segment under the pointer.
 - **Scripted runs.** `--script` feeds pointer and key events through eframe's `raw_input_hook`,
   in model millimetres (`drag:10,10,40,30;type:e;cmd+key:Z`) or window points (`sclick:x,y`), so the
   real canvas, tool, panel and shortcut code runs; `--screenshot out.png` captures the frame
-  after the script (`--demo`, `--select`, `--simulate`, `--zoom`, `--size` set the scene). The
+  after the script (`--demo`, `--select`, `--simulate`, `--zoom`, `--size` set the scene;
+  `--ribbon TAB`, `--pane TAB`, `--theme`, `--show appmenu|property|shortcuts|floating` set the
+  chrome; screenshots ignore the saved window preferences). The
   images in `docs/images/rust-editor-*.png` are made this way on macOS (Metal).
 
 ## Decisions
