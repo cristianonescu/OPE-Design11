@@ -24,6 +24,7 @@ pub mod route;
 pub mod sections;
 pub mod sewing;
 pub mod shapes;
+pub(crate) mod shaping;
 pub mod skeleton;
 pub mod stamp;
 pub mod stitch_edit;
@@ -39,7 +40,7 @@ pub use model::{
     Arrange, BackgroundImage, ChainShape, Design, DesignObject, DesignPage, Feather, FeatherSide,
     LineSewing, LineType, ObjectKind, RegionSewing, RegionType, StitchBlock, UnderlayStyle,
 };
-pub use text::{FONTS, FontInfo, Layout, TextAlign, TextError, TextSpec};
+pub use text::{CharEdit, FONTS, FontInfo, Layout, TextAlign, TextDirection, TextError, TextSpec};
 
 #[cfg(test)]
 mod stitch_type_tests;

@@ -625,11 +625,12 @@ fn set_name_drop(s: &mut EngineState, p: &Params, id: u64) -> Result<(), Command
             ..n
         },
         None => {
-            // Turning it on resets the spacing (as in PE-DESIGN), then fixes the box the text
-            // occupies before its placement transform.
+            // Turning it on resets the spacing and character edits (as in PE-DESIGN), then
+            // fixes the box the text occupies before its placement transform.
             let plain = TextSpec {
                 letter_spacing: 0.0,
                 line_spacing: 0.0,
+                characters: Vec::new(),
                 transform: openstitch_design::Transform::IDENTITY,
                 ..t.clone()
             };
@@ -657,6 +658,7 @@ fn set_name_drop(s: &mut EngineState, p: &Params, id: u64) -> Result<(), Command
     if spec.name_drop.is_none() {
         spec.letter_spacing = 0.0;
         spec.line_spacing = 0.0;
+        spec.characters.clear();
     }
     spec.name_drop = Some(nd);
     crate::commands::relayout(s, p, i)?;
@@ -683,7 +685,7 @@ fn name_drop_commands() -> Vec<CommandSpec> {
     vec![
         spec(
             "text.setNameDrop",
-            "Turn the Name Drop attribute on or off: the text is fitted into its current box whatever it says (resets letter and line spacing)",
+            "Turn the Name Drop attribute on or off: the text is fitted into its current box whatever it says (resets letter and line spacing and character edits)",
             Effect::Edit,
             vec![
                 crate::commands::IDS,

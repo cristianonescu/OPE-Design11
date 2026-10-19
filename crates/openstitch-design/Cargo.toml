@@ -14,6 +14,9 @@ serde.workspace = true
 serde_json.workspace = true
 ttf-parser = { version = "0.25", default-features = false, features = ["std"] }
 i_overlay = { version = "9.1", default-features = false }
+rustybuzz = { version = "=0.20.1", default-features = false, features = ["std"] }
+unicode-bidi = "=0.3.18"
+unicode-script = "=0.5.8"
 
 
 [lints]

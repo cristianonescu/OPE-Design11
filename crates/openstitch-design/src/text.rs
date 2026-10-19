@@ -12,6 +12,7 @@ use crate::fonts::{
 };
 use crate::geometry::{Bezier, Contour, Rect, Transform, Vec2, v2};
 use crate::model::StitchBlock;
+use crate::shaping;
 use openstitch_core::{Command, Stitch};
 use serde::{Deserialize, Serialize};
 use ttf_parser::{Face, GlyphId, OutlineBuilder};
@@ -98,6 +99,77 @@ pub struct TextSpec {
     /// layout (Name Drop lists, template slots).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub name_drop: Option<NameDrop>,
+    /// Apply the font's kerning (TrueType/OpenType fonts; embroidery fonts keep their own
+    /// spacing). Off in files written before it existed.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub kerning: bool,
+    /// Horizontal lines, or vertical columns (top to bottom, columns right to left).
+    #[serde(default, skip_serializing_if = "is_horizontal")]
+    pub direction: TextDirection,
+    /// Per-character edits, by character index, sorted and unique.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub characters: Vec<CharEdit>,
+}
+
+/// Which way text runs.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TextDirection {
+    #[default]
+    Horizontal,
+    /// CJK vertical writing: characters top to bottom, lines as columns from right to left.
+    /// Text on a path is always laid out along the path.
+    Vertical,
+}
+
+fn is_false(b: &bool) -> bool {
+    !*b
+}
+
+fn is_horizontal(d: &TextDirection) -> bool {
+    *d == TextDirection::Horizontal
+}
+
+fn is_zero(v: &f64) -> bool {
+    *v == 0.0
+}
+
+/// An edit of one character of a text: resized about the middle of its advance on the baseline
+/// and turned about its middle (half the capital height up; the middle of its cell in vertical
+/// text), then moved. Glyphs that stand for
+/// several characters (a cluster) follow the edit of their first character.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CharEdit {
+    /// Character index in [`TextSpec::text`] (Unicode scalar values, line breaks included).
+    pub index: usize,
+    /// Offset, mm (+y down), in the text's own frame (along the path for text on a path).
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub x: f64,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub y: f64,
+    /// Rotation, degrees clockwise.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub rotation: f64,
+    /// Capital height of this character, mm, instead of the text's size; its advance scales
+    /// with it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size: Option<f64>,
+}
+
+impl CharEdit {
+    /// True when the edit changes nothing.
+    pub fn is_noop(&self) -> bool {
+        self.x == 0.0 && self.y == 0.0 && self.rotation == 0.0 && self.size.is_none()
+    }
+
+    /// The scale factor against a text of capital height `size`.
+    fn factor(&self, size: f64) -> f64 {
+        match self.size {
+            Some(s) if s.is_finite() && s > 0.0 && size > 0.0 => (s / size).clamp(0.01, 100.0),
+            _ => 1.0,
+        }
+    }
 }
 
 /// Vertical placement in a Name Drop box.
@@ -183,7 +255,39 @@ impl TextSpec {
             transform: Transform::IDENTITY,
             glyphs: Vec::new(),
             name_drop: None,
+            kerning: false,
+            direction: TextDirection::Horizontal,
+            characters: Vec::new(),
         }
+    }
+
+    /// The edit of character `index`, if any.
+    pub fn char_edit(&self, index: usize) -> Option<&CharEdit> {
+        self.characters
+            .binary_search_by_key(&index, |e| e.index)
+            .ok()
+            .map(|i| &self.characters[i])
+    }
+
+    /// Sets (or, when it changes nothing, removes) the edit of `edit.index`.
+    pub fn set_char_edit(&mut self, edit: CharEdit) {
+        match self
+            .characters
+            .binary_search_by_key(&edit.index, |e| e.index)
+        {
+            Ok(i) if edit.is_noop() => {
+                self.characters.remove(i);
+            }
+            Ok(i) => self.characters[i] = edit,
+            Err(_) if edit.is_noop() => {}
+            Err(i) => self.characters.insert(i, edit),
+        }
+    }
+
+    /// Drops edits of characters the text no longer has.
+    pub fn trim_char_edits(&mut self) {
+        let n = self.text.chars().count();
+        self.characters.retain(|e| e.index < n);
     }
 }
 
@@ -214,6 +318,8 @@ impl std::error::Error for TextError {}
 #[derive(Clone, Debug, PartialEq)]
 pub struct Glyph {
     pub ch: char,
+    /// Index of `ch` in [`TextSpec::text`], in characters.
+    pub index: usize,
     pub contours: Vec<Contour>,
     pub stitches: Option<StitchBlock>,
 }
@@ -226,7 +332,8 @@ pub struct Layout {
     /// Characters the font has no glyph for (each once, in order of appearance). Glyphs over
     /// [`MAX_GLYPH_SEGMENTS`] count as missing.
     pub missing: Vec<char>,
-    /// Scripts in the text that need shaping this layout does not do ([`shaping_note`]).
+    /// Scripts in the text that need shaping this layout did not do ([`shaping_note`]): text
+    /// in an embroidery font, which is set one character after another (bidi order only).
     pub shaping: Vec<&'static str>,
 }
 
@@ -517,6 +624,55 @@ impl<'a> LoadedFont<'a> {
         }
     }
 
+    /// The shaper for a TrueType/OpenType font; embroidery fonts have none.
+    fn shaper(&self) -> Option<rustybuzz::Face<'a>> {
+        match &self.source {
+            Source::Face(f) => Some(rustybuzz::Face::from_face((**f).clone())),
+            Source::Embroidery(_) => None,
+        }
+    }
+
+    /// Height above the baseline and the height of a vertical cell, font units.
+    fn vertical_metrics(&self) -> (f64, f64) {
+        match &self.source {
+            Source::Face(f) => {
+                let (a, d) = (f64::from(f.ascender()), f64::from(f.descender()));
+                (a, a - d)
+            }
+            Source::Embroidery(e) => (e.ascender, e.ascender + e.descender),
+        }
+    }
+
+    /// `chars` set one glyph per character through the character map, with the font's own
+    /// advances (right-to-left pieces reversed), in the shaper's conventions.
+    fn unshaped(&self, chars: &[(char, usize)], options: shaping::Options) -> Vec<shaping::Shaped> {
+        let (ascender, cell) = self.vertical_metrics();
+        let mut out: Vec<shaping::Shaped> = chars
+            .iter()
+            .map(|&(ch, index)| {
+                let glyph = self.glyph(ch);
+                let advance = self.advance(glyph);
+                let (x_advance, y_advance, x_offset, y_offset) = if options.vertical {
+                    (0.0, -cell, -advance / 2.0, -ascender)
+                } else {
+                    (advance, 0.0, 0.0, 0.0)
+                };
+                shaping::Shaped {
+                    glyph,
+                    cluster: index,
+                    x_advance,
+                    y_advance,
+                    x_offset,
+                    y_offset,
+                }
+            })
+            .collect();
+        if options.rtl && !options.vertical {
+            out.reverse();
+        }
+        out
+    }
+
     /// Baseline to baseline, font units.
     fn line_height(&self) -> f64 {
         match &self.source {
@@ -615,11 +771,115 @@ pub fn glyph_outline(
     }
 }
 
-/// Where each character's glyph sits: font-unit origin → design transform.
+/// Where each glyph sits: font-unit origin → design transform.
 struct Placed {
     ch: char,
+    index: usize,
     glyph: Option<u32>,
     at: Transform,
+}
+
+/// Characters a shaper hides (format controls, variation selectors, …): never "missing".
+fn is_default_ignorable(c: char) -> bool {
+    matches!(
+        c,
+        '\u{00AD}'
+            | '\u{034F}'
+            | '\u{061C}'
+            | '\u{180B}'..='\u{180F}'
+            | '\u{200B}'..='\u{200F}'
+            | '\u{202A}'..='\u{202E}'
+            | '\u{2060}'..='\u{206F}'
+            | '\u{FE00}'..='\u{FE0F}'
+            | '\u{FEFF}'
+            | '\u{E0000}'..='\u{E0FFF}'
+    )
+}
+
+/// One glyph of a [`Run`]: its transform from the scaled glyph to its anchor, and the anchor
+/// (0.1 mm, relative to the line's start on the baseline, or the column's top centre).
+struct RunGlyph {
+    local: Transform,
+    anchor: Vec2,
+}
+
+/// A line or column of shaped glyphs placed one after another, with letter spacing and
+/// per-character edits.
+struct Run {
+    glyphs: Vec<RunGlyph>,
+    /// Advance of the whole run, 0.1 mm (along x, or down for vertical text).
+    length: f64,
+}
+
+impl Run {
+    fn along(
+        line: &[shaping::Shaped],
+        spec: &TextSpec,
+        scale: f64,
+        spacing: f64,
+        vertical: bool,
+    ) -> Run {
+        // Pen position and glyph origin of each glyph, along the run.
+        let mut pen = 0.0;
+        let mut started = false;
+        let mut at = Vec::with_capacity(line.len());
+        for g in line {
+            let k = spec
+                .char_edit(g.cluster)
+                .map_or(1.0, |e| e.factor(spec.size));
+            let advance = if vertical { -g.y_advance } else { g.x_advance } * scale * k;
+            if advance != 0.0 {
+                if started {
+                    pen += spacing;
+                }
+                started = true;
+            }
+            let offset = v2(g.x_offset, -g.y_offset) * (scale * k);
+            at.push((pen, advance, offset, k));
+            pen += advance;
+        }
+        // Each cluster turns and scales about the middle of the advance its glyphs span.
+        let middle = |cluster: usize| {
+            let (lo, hi) = line
+                .iter()
+                .zip(&at)
+                .filter(|(g, _)| g.cluster == cluster)
+                .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), (_, a)| {
+                    (lo.min(a.0), hi.max(a.0 + a.1))
+                });
+            (lo + hi) / 2.0
+        };
+        let glyphs = line
+            .iter()
+            .zip(&at)
+            .map(|(g, &(pen, _, offset, k))| {
+                let mid = middle(g.cluster);
+                let (anchor, origin) = if vertical {
+                    (v2(0.0, mid), v2(offset.x, pen + offset.y - mid))
+                } else {
+                    (v2(mid, 0.0), v2(pen + offset.x - mid, offset.y))
+                };
+                let mut local = Transform::scaling(k, k, v2(0.0, 0.0))
+                    .then(&Transform::translation(origin.x, origin.y));
+                if let Some(e) = spec.char_edit(g.cluster) {
+                    // Turned about the middle of the letter: half its capital height up.
+                    let pivot = if vertical {
+                        v2(0.0, 0.0)
+                    } else {
+                        v2(0.0, -spec.size * 10.0 * k / 2.0)
+                    };
+                    local = local
+                        .then(&Transform::rotation(e.rotation, pivot))
+                        .then(&Transform::translation(e.x * 10.0, e.y * 10.0));
+                }
+                RunGlyph { local, anchor }
+            })
+            .collect();
+        Run {
+            glyphs,
+            length: pen,
+        }
+    }
 }
 
 /// Lays `spec` out with a bundled font; see [`layout_in`].
@@ -674,74 +934,150 @@ pub fn layout_in(
     let scale = spec.size * font.unit_per_mm;
     let spacing = spec.letter_spacing * 10.0;
     let line_height = font.line_height() * scale + spec.line_spacing * 10.0;
+    let vertical = spec.direction == TextDirection::Vertical && path.is_none();
+    let shaper = font.shaper();
     let mut missing = Vec::new();
     let mut shaping = Vec::new();
 
-    // Pen advance of each character, per line.
-    let mut lines: Vec<Vec<(char, Option<u32>, f64)>> = Vec::new();
-    let source: String = if path.is_some() {
-        spec.text.replace(['\r', '\n'], " ")
-    } else {
-        spec.text.replace("\r\n", "\n")
-    };
-    for line in source.split('\n') {
-        let mut out = Vec::new();
-        for ch in line.chars() {
-            let ch = if ch == '\t' { ' ' } else { ch };
-            if ch.is_control() {
+    // Lines of (character, index in spec.text); text on a path is one line.
+    let mut lines: Vec<Vec<(char, usize)>> = vec![Vec::new()];
+    let all: Vec<char> = spec.text.chars().collect();
+    for (i, &ch) in all.iter().enumerate() {
+        let ch = match ch {
+            '\r' | '\n' if path.is_some() => ' ',
+            '\n' => {
+                lines.push(Vec::new());
                 continue;
             }
-            if let Some(note) = shaping_note(ch)
-                && !shaping.contains(&note)
-            {
-                shaping.push(note);
-            }
-            let glyph = font.glyph(ch);
-            if glyph.is_none() && ch != ' ' && !missing.contains(&ch) {
-                missing.push(ch);
-            }
-            out.push((ch, glyph, font.advance(glyph) * scale));
+            '\t' => ' ',
+            c if c.is_control() => continue,
+            c => c,
+        };
+        if let Some(line) = lines.last_mut() {
+            line.push((ch, i));
         }
-        lines.push(out);
     }
 
-    let width = |line: &[(char, Option<u32>, f64)]| -> f64 {
-        line.iter().map(|g| g.2).sum::<f64>() + spacing * line.len().saturating_sub(1) as f64
+    // Shaped glyphs of each line, in visual order (top to bottom for vertical text).
+    let options = |rtl| shaping::Options {
+        rtl,
+        vertical,
+        kerning: spec.kerning,
     };
+    let mut shaped_lines = Vec::with_capacity(lines.len());
+    for line in &lines {
+        let text: String = line.iter().map(|c| c.0).collect();
+        let pieces = if vertical {
+            // Columns are not reordered: characters run top to bottom in logical order.
+            vec![shaping::Piece {
+                range: 0..text.len(),
+                rtl: false,
+            }]
+        } else {
+            shaping::visual_pieces(&text)
+        };
+        // Byte offset in `text` → position in `line`.
+        let at: Vec<usize> = text.char_indices().map(|(b, _)| b).collect();
+        let pos = |b: usize| at.partition_point(|&x| x < b);
+        let mut out = Vec::new();
+        for piece in pieces {
+            let part = &line[pos(piece.range.start)..pos(piece.range.end)];
+            let shaped = shaper
+                .as_ref()
+                .and_then(|face| shaping::shape(face, part, options(piece.rtl)));
+            match shaped {
+                Some(glyphs) => out.extend(glyphs),
+                None => {
+                    for &(ch, _) in part {
+                        if let Some(note) = shaping_note(ch)
+                            && !shaping.contains(&note)
+                        {
+                            shaping.push(note);
+                        }
+                    }
+                    out.extend(font.unshaped(part, options(piece.rtl)));
+                }
+            }
+        }
+        // Characters whose cluster came out as .notdef.
+        let mut unmapped = Vec::new();
+        let mut clusters: Vec<usize> = out.iter().map(|g| g.cluster).collect();
+        clusters.sort_unstable();
+        clusters.dedup();
+        for g in out.iter().filter(|g| g.glyph.is_none()) {
+            let end = clusters
+                .iter()
+                .find(|&&c| c > g.cluster)
+                .copied()
+                .unwrap_or_else(|| line.last().map_or(0, |c| c.1 + 1));
+            unmapped.extend(g.cluster..end);
+        }
+        // In logical order, each once.
+        unmapped.sort_unstable();
+        for &(ch, i) in line {
+            if unmapped.binary_search(&i).is_ok()
+                && !font.has_char(ch)
+                && !ch.is_whitespace()
+                && !is_default_ignorable(ch)
+                && !missing.contains(&ch)
+            {
+                missing.push(ch);
+            }
+        }
+        shaped_lines.push(out);
+    }
+    let char_of = |index: usize| all.get(index).copied().unwrap_or(' ');
 
     let glyph_scale = font.units(scale);
     let mut placed = Vec::new();
     match path.map(PathWalker::new) {
         Some(walker) => {
-            let line = lines.concat();
-            let total = width(&line);
-            let mut pen = match spec.align {
+            let line = shaped_lines.concat();
+            let run = Run::along(&line, spec, scale, spacing, false);
+            let shift = match spec.align {
                 TextAlign::Left => 0.0,
-                TextAlign::Center => (walker.length - total) / 2.0,
-                TextAlign::Right => walker.length - total,
+                TextAlign::Center => (walker.length - run.length) / 2.0,
+                TextAlign::Right => walker.length - run.length,
             };
-            for (ch, glyph, advance) in line {
-                let (p, angle) = walker.at(pen + advance / 2.0);
+            for (g, p) in line.iter().zip(&run.glyphs) {
+                let (q, angle) = walker.at(shift + p.anchor.x);
                 let at = glyph_scale
-                    .then(&Transform::translation(-advance / 2.0, 0.0))
+                    .then(&p.local)
                     .then(&Transform::rotation(angle.to_degrees(), v2(0.0, 0.0)))
-                    .then(&Transform::translation(p.x, p.y));
-                placed.push(Placed { ch, glyph, at });
-                pen += advance + spacing;
+                    .then(&Transform::translation(q.x, q.y));
+                placed.push(Placed {
+                    ch: char_of(g.cluster),
+                    index: g.cluster,
+                    glyph: g.glyph,
+                    at,
+                });
             }
         }
         None => {
-            for (row, line) in lines.iter().enumerate() {
-                let mut pen = match spec.align {
+            for (row, line) in shaped_lines.iter().enumerate() {
+                let run = Run::along(line, spec, scale, spacing, vertical);
+                let shift = match spec.align {
                     TextAlign::Left => 0.0,
-                    TextAlign::Center => -width(line) / 2.0,
-                    TextAlign::Right => -width(line),
+                    TextAlign::Center => -run.length / 2.0,
+                    TextAlign::Right => -run.length,
                 };
-                let baseline = row as f64 * line_height;
-                for &(ch, glyph, advance) in line {
-                    let at = glyph_scale.then(&Transform::translation(pen, baseline));
-                    placed.push(Placed { ch, glyph, at });
-                    pen += advance + spacing;
+                // Rows go down; vertical columns go from right to left.
+                let origin = if vertical {
+                    v2(-(row as f64) * line_height, shift)
+                } else {
+                    v2(shift, row as f64 * line_height)
+                };
+                for (g, p) in line.iter().zip(&run.glyphs) {
+                    let at = glyph_scale.then(&p.local).then(&Transform::translation(
+                        origin.x + p.anchor.x,
+                        origin.y + p.anchor.y,
+                    ));
+                    placed.push(Placed {
+                        ch: char_of(g.cluster),
+                        index: g.cluster,
+                        glyph: g.glyph,
+                        at,
+                    });
                 }
             }
         }
@@ -780,6 +1116,7 @@ pub fn layout_in(
         });
         glyphs.push(Glyph {
             ch: g.ch,
+            index: g.index,
             contours,
             stitches,
         });
@@ -1047,6 +1384,262 @@ mod tests {
                 .contours(),
         );
         assert!(i.width() > 90.0 && i.height() < 40.0, "{i:?}");
+    }
+
+    fn lay_spec(spec: &TextSpec) -> Layout {
+        layout(spec, None).expect("layout")
+    }
+
+    /// Centre x of each outlined glyph, by character.
+    fn centres(l: &Layout) -> Vec<(char, f64)> {
+        l.outlined()
+            .map(|g| (g.ch, bounds(&g.contours).center().x))
+            .collect()
+    }
+
+    #[test]
+    fn kerning_is_applied_only_when_asked() {
+        let mut spec = TextSpec::new("AVAV", DEFAULT_FONT, 10.0);
+        let plain = bounds(&lay_spec(&spec).contours());
+        // Without kerning the advances are the font's own (as before shaping existed).
+        let font = LoadedFont::load(DEFAULT_FONT).expect("font");
+        let scale = 10.0 * font.unit_per_mm;
+        let a = font.advance(font.glyph('A')) * scale;
+        let v = font.advance(font.glyph('V')) * scale;
+        let first = bounds(&lay("A", 10.0).contours());
+        let last = bounds(&lay("V", 10.0).contours());
+        let expect = 2.0 * a + v + last.max_x - first.min_x;
+        assert!(
+            (plain.width() - expect).abs() < 1e-6,
+            "{plain:?} vs {expect}"
+        );
+        spec.kerning = true;
+        let kerned = bounds(&lay_spec(&spec).contours());
+        assert!(
+            kerned.width() < plain.width() - 10.0,
+            "A-V pairs pull together: {} vs {}",
+            kerned.width(),
+            plain.width()
+        );
+    }
+
+    #[test]
+    fn each_letter_stays_its_own_glyph() {
+        // Standard ligatures are off: "fi" and "ffl" are separate letters.
+        let l = lay("fi ffl", 10.0);
+        assert_eq!(l.outlined().map(|g| g.ch).collect::<String>(), "fiffl");
+        assert_eq!(
+            l.outlined().map(|g| g.index).collect::<Vec<_>>(),
+            vec![0, 1, 3, 4, 5]
+        );
+        // The shaper composes a base letter and a combining accent into the precomposed glyph.
+        let composed = lay("e\u{0301}", 10.0);
+        let precomposed = lay("\u{00E9}", 10.0);
+        assert_eq!(composed.outlined().count(), 1);
+        assert_eq!(composed.contours(), precomposed.contours());
+        assert!(composed.missing.is_empty() && composed.shaping.is_empty());
+    }
+
+    #[test]
+    fn right_to_left_runs_are_reversed() {
+        // A right-to-left override puts the letters right to left (Lato has no Hebrew glyphs;
+        // the bidi algorithm is the same).
+        let l = lay("\u{202E}AB\u{202C}CD", 10.0);
+        let c = centres(&l);
+        let x = |ch| c.iter().find(|g| g.0 == ch).expect("glyph").1;
+        assert!(x('B') < x('A'), "{c:?}");
+        assert!(x('A') < x('C') && x('C') < x('D'), "{c:?}");
+        assert!(
+            l.missing.is_empty(),
+            "format controls are not missing: {:?}",
+            l.missing
+        );
+        assert_eq!(
+            l.outlined().map(|g| g.index).collect::<Vec<_>>(),
+            vec![2, 1, 4, 5]
+        );
+    }
+
+    #[test]
+    fn vertical_text_runs_down_in_columns_right_to_left() {
+        let mut spec = TextSpec::new("HI\nO", DEFAULT_FONT, 10.0);
+        spec.direction = TextDirection::Vertical;
+        let l = lay_spec(&spec);
+        let b: Vec<Rect> = l.outlined().map(|g| bounds(&g.contours)).collect();
+        assert_eq!(b.len(), 3);
+        let (h, i, o) = (b[0], b[1], b[2]);
+        assert!(i.min_y > h.max_y, "I is below H: {h:?} {i:?}");
+        assert!(
+            h.center().x.abs() < 1.0 && i.center().x.abs() < 1.0,
+            "centred on x = 0"
+        );
+        assert!(o.max_x < h.min_x, "the second column is to the left");
+        assert!(
+            (o.min_y - h.min_y).abs() < 20.0,
+            "columns start at the same height"
+        );
+        assert!(h.min_y >= 0.0, "the first column starts at y = 0");
+        // Centred columns sit about y = 0.
+        spec.align = TextAlign::Center;
+        let c = bounds(&lay_spec(&spec).outlined().next().expect("H").contours);
+        assert!(c.max_y < 0.0, "{c:?}");
+        // Text on a path ignores the direction.
+        let path = Contour::new(vec![v2(0.0, 300.0), v2(2000.0, 300.0)], false);
+        let along = layout(&spec, Some(&path)).expect("layout");
+        let b: Vec<Rect> = along.outlined().map(|g| bounds(&g.contours)).collect();
+        assert!(b[1].min_x > b[0].max_x);
+    }
+
+    #[test]
+    fn character_edits_move_turn_and_resize_one_letter() {
+        let base = TextSpec::new("HIH", DEFAULT_FONT, 10.0);
+        let before: Vec<Rect> = lay_spec(&base)
+            .outlined()
+            .map(|g| bounds(&g.contours))
+            .collect();
+        let mut spec = base.clone();
+        spec.set_char_edit(CharEdit {
+            index: 1,
+            x: 2.0,
+            y: -3.0,
+            ..Default::default()
+        });
+        let moved: Vec<Rect> = lay_spec(&spec)
+            .outlined()
+            .map(|g| bounds(&g.contours))
+            .collect();
+        assert!((moved[1].min_x - before[1].min_x - 20.0).abs() < 1e-6);
+        assert!((moved[1].min_y - before[1].min_y + 30.0).abs() < 1e-6);
+        assert_eq!(
+            moved[2], before[2],
+            "an offset does not move the next letter"
+        );
+
+        spec.set_char_edit(CharEdit {
+            index: 1,
+            rotation: 90.0,
+            ..Default::default()
+        });
+        let turned: Vec<Rect> = lay_spec(&spec)
+            .outlined()
+            .map(|g| bounds(&g.contours))
+            .collect();
+        assert!(turned[1].width() > turned[1].height(), "{:?}", turned[1]);
+        assert!((turned[1].center().x - before[1].center().x).abs() < 1.0);
+
+        spec.set_char_edit(CharEdit {
+            index: 1,
+            size: Some(20.0),
+            ..Default::default()
+        });
+        let big: Vec<Rect> = lay_spec(&spec)
+            .outlined()
+            .map(|g| bounds(&g.contours))
+            .collect();
+        assert!((big[1].height() - 2.0 * before[1].height()).abs() < 1e-6);
+        assert!(
+            (big[1].max_y - before[1].max_y).abs() < 1e-6,
+            "stands on the baseline"
+        );
+        assert!(
+            big[2].min_x > before[2].min_x + 10.0,
+            "a larger letter pushes the next one"
+        );
+
+        // A no-op edit removes the entry; edits past the end of a shorter text are dropped.
+        spec.set_char_edit(CharEdit {
+            index: 1,
+            ..Default::default()
+        });
+        assert!(spec.characters.is_empty());
+        spec.set_char_edit(CharEdit {
+            index: 2,
+            x: 1.0,
+            ..Default::default()
+        });
+        spec.text = "HI".into();
+        spec.trim_char_edits();
+        assert!(spec.characters.is_empty());
+    }
+
+    #[test]
+    fn new_text_fields_default_and_stay_out_of_old_files() {
+        let old: TextSpec =
+            serde_json::from_str(r#"{"text":"A","font":"lato-bold","size":10}"#).expect("old");
+        assert!(!old.kerning);
+        assert_eq!(old.direction, TextDirection::Horizontal);
+        assert!(old.characters.is_empty());
+        let json = serde_json::to_string(&old).expect("json");
+        assert!(
+            !json.contains("kerning")
+                && !json.contains("direction")
+                && !json.contains("characters")
+        );
+        let mut new = old.clone();
+        new.kerning = true;
+        new.direction = TextDirection::Vertical;
+        new.set_char_edit(CharEdit {
+            index: 0,
+            rotation: 15.0,
+            ..Default::default()
+        });
+        let json = serde_json::to_string(&new).expect("json");
+        assert!(json.contains(r#""direction":"vertical""#), "{json}");
+        assert!(
+            json.contains(r#""characters":[{"index":0,"rotation":15.0}]"#),
+            "{json}"
+        );
+        assert_eq!(serde_json::from_str::<TextSpec>(&json).expect("back"), new);
+    }
+
+    #[test]
+    fn embroidery_fonts_are_set_in_bidi_order_without_shaping() {
+        use crate::fonts::{EmbroideryFont, EmbroideryGlyph};
+        let square = Contour::new(
+            vec![
+                v2(0.0, 0.0),
+                v2(100.0, 0.0),
+                v2(100.0, -100.0),
+                v2(0.0, -100.0),
+            ],
+            true,
+        );
+        let mut e = EmbroideryFont::new(100.0);
+        for ch in ['A', '\u{05D0}', '\u{05D1}'] {
+            e.set_glyph(EmbroideryGlyph {
+                ch,
+                advance: 100.0,
+                contours: vec![square.clone()],
+                stitches: None,
+            });
+        }
+        let fonts = [DesignFont {
+            id: "squares".into(),
+            family: "Squares".into(),
+            style: String::new(),
+            source: None,
+            data: FontData::Embroidery(e),
+        }];
+        let l = layout_in(
+            &TextSpec::new("A \u{05D0}\u{05D1}", "squares", 10.0),
+            None,
+            &fonts,
+        )
+        .expect("layout");
+        let c = centres(&l);
+        assert_eq!(
+            c.iter().map(|g| g.0).collect::<String>(),
+            "A\u{05D1}\u{05D0}"
+        );
+        assert!(c[0].1 < c[1].1 && c[1].1 < c[2].1, "{c:?}");
+        assert_eq!(l.shaping, vec!["Hebrew (right-to-left)"]);
+        // Vertical: stacked in logical order.
+        let mut spec = TextSpec::new("A\u{05D0}", "squares", 10.0);
+        spec.direction = TextDirection::Vertical;
+        let v = layout_in(&spec, None, &fonts).expect("layout");
+        let b: Vec<Rect> = v.outlined().map(|g| bounds(&g.contours)).collect();
+        assert!(b[1].min_y >= b[0].max_y - 1e-6, "{b:?}");
+        assert!(b[0].center().x.abs() < 1e-6);
     }
 
     #[test]

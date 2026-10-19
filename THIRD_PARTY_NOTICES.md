@@ -77,6 +77,19 @@ Linked into `openstitch-design` for polygon boolean operations and offsets. Lice
 Apache-2.0 (the same terms as OpenStitch); see each crate's `LICENSE` files in its published
 package. Copyright (c) Nail Sharipov.
 
+## rustybuzz 0.20.1 — https://github.com/harfbuzz/rustybuzz
+
+Linked into `openstitch-design` for OpenType text shaping. MIT licence; a port of HarfBuzz's
+shaping algorithm. Copyright (c) HarfBuzz developers, Copyright (c) 2020 Yevhenii Reizner; see
+the `LICENSE` file in its published package. Its
+dependencies `unicode-bidi-mirroring`, `unicode-ccc`, `unicode-properties`, `bytemuck`,
+`smallvec`, `bitflags`, `core_maths` and `libm` are MIT and/or Apache-2.0.
+
+## unicode-bidi 0.3.18 and unicode-script 0.5.8 — https://github.com/servo/unicode-bidi, https://github.com/unicode-rs/unicode-script
+
+Linked into `openstitch-design` for the Unicode Bidirectional Algorithm and script runs.
+Licensed MIT OR Apache-2.0 (the same terms as OpenStitch).
+
 ## Lato (Bold) — https://github.com/latofonts/lato-source
 
 Bundled unmodified as `crates/openstitch-design/fonts/Lato-Bold.ttf` (from

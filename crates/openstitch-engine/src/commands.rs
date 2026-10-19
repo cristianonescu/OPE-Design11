@@ -8,7 +8,7 @@ use crate::session::EngineState;
 use openstitch_core::{Command, PEC_CHART, StitchPattern, Thread};
 use openstitch_design::patterns::{self, Pattern, PatternKind};
 use openstitch_design::shapes::{self, ArcMode};
-use openstitch_design::text::{self, TextAlign, TextSpec};
+use openstitch_design::text::{self, TextAlign, TextDirection, TextSpec};
 use openstitch_design::{
     Arrange, Bezier, ChainShape, Compiler, Contour, Design, DesignObject, DesignPage, Feather,
     FeatherSide, Layout, LineSewing, LineType, ObjectKind, Rect, RegionSewing, RegionType,
@@ -175,6 +175,15 @@ fn describe(o: &DesignObject) -> Value {
         r["text"] = json!(t.text);
         r["font"] = json!(t.font);
         r["sizeMM"] = json!(t.size);
+        if t.kerning {
+            r["kerning"] = json!(true);
+        }
+        if t.direction == TextDirection::Vertical {
+            r["direction"] = json!("vertical");
+        }
+        if !t.characters.is_empty() {
+            r["characters"] = json!(t.characters);
+        }
         if let Some(path) = t.path {
             r["path"] = json!(path);
         }
@@ -1520,7 +1529,17 @@ fn text_docs(text_required: bool) -> Vec<ParamDoc> {
         opt(
             "align",
             "left|center|right",
-            "Alignment about x, or along the path",
+            "Alignment about x, or along the path (top, middle, bottom for vertical text)",
+        ),
+        opt(
+            "kerning",
+            "bool",
+            "Apply the font's kerning (TrueType/OpenType fonts; default off)",
+        ),
+        opt(
+            "direction",
+            "horizontal|vertical",
+            "Vertical: characters top to bottom, lines as columns right to left (not on a path)",
         ),
     ]
 }
@@ -1538,6 +1557,7 @@ fn text_params(
             return Err(p.invalid("text", format!("must be 1-{MAX_TEXT_CHARS} characters")));
         }
         spec.text = t;
+        spec.trim_char_edits();
     }
     if p.has("font") {
         let f = p.string("font", None)?;
@@ -1556,7 +1576,56 @@ fn text_params(
             _ => return Err(p.invalid("align", "must be left, center or right")),
         };
     }
+    spec.kerning = p.bool("kerning", Some(spec.kerning))?;
+    if p.has("direction") {
+        spec.direction = match p.string("direction", None)?.as_str() {
+            "horizontal" => TextDirection::Horizontal,
+            "vertical" => TextDirection::Vertical,
+            _ => return Err(p.invalid("direction", "must be horizontal or vertical")),
+        };
+    }
     Ok(())
+}
+
+/// `text.setCharacter`: edits (or resets) characters `index..index + count` of a text.
+fn set_characters(s: &mut EngineState, p: &Params) -> CommandResult {
+    let id = p.int("id", None, 0, i64::MAX)? as u64;
+    let i = text_index(s, p, id)?;
+    let mut spec = s.design.objects[i].text.clone().expect("text object");
+    let n = spec.text.chars().count();
+    if n == 0 {
+        return Err(p.failed(format!("object {id} has no characters")));
+    }
+    let index = p.int("index", None, 0, n as i64 - 1)? as usize;
+    let count = p.int("count", Some(1), 1, (n - index) as i64)? as usize;
+    let reset = p.bool("reset", Some(false))?;
+    for k in index..index + count {
+        let mut e = match spec.char_edit(k) {
+            Some(e) if !reset => e.clone(),
+            _ => openstitch_design::CharEdit {
+                index: k,
+                ..Default::default()
+            },
+        };
+        e.x = p.opt("x", e.x, -500.0, 500.0)?;
+        e.y = p.opt("y", e.y, -500.0, 500.0)?;
+        e.rotation = p.opt("rotation", e.rotation, -360.0, 360.0)?;
+        if p.is_null("size") {
+            e.size = None;
+        } else if p.has("size") {
+            e.size = Some(p.opt("size", spec.size, 1.0, 300.0)?);
+        }
+        spec.set_char_edit(e);
+    }
+    s.design.objects[i].text = Some(spec);
+    let mut r = relayout(s, p, i)?;
+    r["characters"] = json!(
+        s.design.objects[i]
+            .text
+            .as_ref()
+            .map_or(0, |t| t.characters.len())
+    );
+    Ok(r)
 }
 
 /// The `path` parameter: a shape object (not `text_id` itself) whose first contour text follows.
@@ -1725,6 +1794,42 @@ fn text_commands() -> Vec<CommandSpec> {
                 }
                 Ok(json!({ "missing": missing, "shaping": shaping }))
             },
+        ),
+        spec(
+            "text.setCharacter",
+            "Edit single characters of a text: offset, rotation and size per character (reset clears them)",
+            Effect::Edit,
+            vec![
+                req("id", "int", "Text object"),
+                req(
+                    "index",
+                    "int",
+                    "First character, counted in Unicode characters from 0 (line breaks count)",
+                ),
+                opt("count", "int", "Characters to edit from index (default 1)"),
+                opt(
+                    "x",
+                    "mm",
+                    "Offset to the right, -500...500 (along the path for path text)",
+                ),
+                opt("y", "mm", "Offset downwards, -500...500"),
+                opt(
+                    "rotation",
+                    "degrees",
+                    "Clockwise turn about the character's middle, -360...360",
+                ),
+                opt(
+                    "size",
+                    "mm | null",
+                    "Capital height of these characters, 1-300; null returns to the text's size",
+                ),
+                opt(
+                    "reset",
+                    "bool",
+                    "Clear the characters' edits first (alone: back to normal)",
+                ),
+            ],
+            set_characters,
         ),
         spec(
             "text.setPath",
