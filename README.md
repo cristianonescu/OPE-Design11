@@ -72,8 +72,8 @@ The builds are not code-signed yet:
   time (or run `xattr -dr com.apple.quarantine OpenStitch.app`).
 - **Windows:** choose *More info → Run anyway* in the SmartScreen prompt.
 
-Official releases are published only when a version is declared stable (see
-[Releases](#releases)).
+Stable releases and pre-releases (alpha, beta, rc) are published from tags; see
+[Releases](#releases).
 
 ## Build from source
 
@@ -181,22 +181,42 @@ configuration.
 
 ## Releases
 
-Releases are made only when a version is declared stable:
+Only the maintainer creates release tags:
+
+- `vX.Y.Z` is a stable release.
+- `vX.Y.Z-alpha.N`, `-beta.N` and `-rc.N` are pre-releases, marked as such on GitHub.
+
+To release:
 
 1. Set `version` in the root `Cargo.toml` (for example `0.2.0`) through a normal pull request.
-2. After it is merged, the maintainer tags that commit on `main`:
+   A pre-release of that version uses the same number: `0.2.0` → `v0.2.0-beta.1`.
+2. Optionally add release notes as `docs/releases/<tag>.md`, also through a pull request.
+3. Smoke-test the macOS package from the latest `main` run (download the
+   `openstitch-main-<sha>-macos-universal` artifact first):
 
    ```bash
-   git tag v0.2.0
+   tools/smoke-macos.sh artifact
+   ```
+
+   Launch the Windows and Linux packages once by hand; there is no script for them yet.
+4. After both pull requests are merged, tag that commit on `main` and push the tag:
+
+   ```bash
+   git tag v0.2.0-beta.1
    ```
 
    ```bash
-   git push origin v0.2.0
+   git push origin v0.2.0-beta.1
    ```
 
-3. The **Release** workflow checks that the tag matches the version and is on `main`, runs the
-   full test suite, builds all three platforms and creates a **draft** GitHub release with the
-   archives. Review the draft and publish it.
+5. The **Release** workflow then:
+   - checks the tag's form, that `X.Y.Z` matches the workspace version, and that the tag is on
+     `main`;
+   - runs the full test suite and builds all three platforms;
+   - creates a **draft** GitHub release with the packages. The notes start with
+     `docs/releases/<tag>.md` when it exists, followed by the generated list of changes.
+
+   Review the draft and publish it.
 
 ## Documents
 
@@ -216,3 +236,17 @@ Releases are made only when a version is declared stable:
 
 `tools/` holds the Python scripts that generate fixtures and data tables
 (`pip install pyembroidery`, run with `python -I`).
+
+## License
+
+OpenStitch is licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+- MIT license ([LICENSE-MIT](LICENSE-MIT))
+
+at your option. Unless you explicitly state otherwise, any contribution you intentionally submit
+for inclusion in OpenStitch, as defined in the Apache-2.0 license, is dual-licensed as above,
+without any additional terms or conditions.
+
+Bundled fonts and third-party crates keep their own licences; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -48,6 +48,7 @@ modules:
         install -Dm644 assets/icons/openstitch-$s.png /app/share/icons/hicolor/${s}x$s/apps/io.github.cristianonescu.OpenStitch.png;
         done
       - install -Dm644 assets/icons/openstitch.svg /app/share/icons/hicolor/scalable/apps/io.github.cristianonescu.OpenStitch.svg
+      - install -Dm644 LICENSE-MIT LICENSE-APACHE THIRD_PARTY_NOTICES.md -t /app/share/licenses/io.github.cristianonescu.OpenStitch
     sources:
       - type: dir
         path: ../..

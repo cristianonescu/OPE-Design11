@@ -17,7 +17,7 @@ cp "$bin" "$app/Contents/MacOS/openstitch"
 cp "$root/assets/icons/openstitch.icns" "$app/Contents/Resources/openstitch.icns"
 sed "s/@VERSION@/$version/g" "$here/Info.plist" > "$app/Contents/Info.plist"
 printf 'APPL????' > "$app/Contents/PkgInfo"
-cp "$root/THIRD_PARTY_NOTICES.md" "$app/Contents/Resources/"
+cp "$root/THIRD_PARTY_NOTICES.md" "$root/LICENSE-MIT" "$root/LICENSE-APACHE" "$app/Contents/Resources/"
 plutil -lint "$app/Contents/Info.plist"
 codesign --force --sign - "$app"
 (cd "$out" && ditto -c -k --keepParent OpenStitch.app "OpenStitch-$version-macos-$(uname -m).zip")

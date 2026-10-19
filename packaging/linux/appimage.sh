@@ -68,6 +68,8 @@ done
 install -Dm644 "$root/assets/icons/openstitch.svg" "$app/usr/share/icons/hicolor/scalable/apps/openstitch.svg"
 install -Dm644 "$root/README.md" "$app/usr/share/doc/openstitch/README.md"
 install -Dm644 "$root/THIRD_PARTY_NOTICES.md" "$app/usr/share/doc/openstitch/THIRD_PARTY_NOTICES.md"
+install -Dm644 "$root/LICENSE-MIT" "$app/usr/share/doc/openstitch/LICENSE-MIT"
+install -Dm644 "$root/LICENSE-APACHE" "$app/usr/share/doc/openstitch/LICENSE-APACHE"
 # AppImage layout: AppRun, the desktop entry and its icon at the top of the AppDir.
 install -Dm755 "$here/AppRun" "$app/AppRun"
 cp "$here/openstitch.desktop" "$app/openstitch.desktop"

@@ -122,7 +122,7 @@ jobs:
           name="openstitch-cli-$LABEL-${{ matrix.name }}"
           mkdir -p "stage/$name" dist
           ext=""; [ "$RUNNER_OS" = "Windows" ] && ext=".exe"
-          cp "bin/stitchtool$ext" "bin/openstitch-mcp$ext" README.md THIRD_PARTY_NOTICES.md "stage/$name/"
+          cp "bin/stitchtool$ext" "bin/openstitch-mcp$ext" README.md THIRD_PARTY_NOTICES.md LICENSE-MIT LICENSE-APACHE "stage/$name/"
           cp -R examples "stage/$name/examples"
           if [ "$RUNNER_OS" = "Windows" ]; then
             (cd stage && 7z a -tzip "../dist/$name.zip" "$name" > /dev/null)
@@ -196,7 +196,7 @@ jobs:
         run: |
           $name = "OpenStitch-$env:LABEL-windows-x86_64"
           New-Item -ItemType Directory -Force "stage-win\$name" | Out-Null
-          Copy-Item bin\openstitch.exe, README.md, THIRD_PARTY_NOTICES.md, assets\icons\openstitch.ico "stage-win\$name\"
+          Copy-Item bin\openstitch.exe, README.md, THIRD_PARTY_NOTICES.md, LICENSE-MIT, LICENSE-APACHE, assets\icons\openstitch.ico "stage-win\$name\"
           Compress-Archive -Path "stage-win\$name" -DestinationPath "dist\$name.zip"
 
       - name: WiX Toolset 3

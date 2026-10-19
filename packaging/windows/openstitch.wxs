@@ -54,6 +54,8 @@
       </Component>
       <Component Id="Notices" Guid="99db175f-5b51-42ff-a4cc-4a9eb2d9f0ba" Win64="yes">
         <File Id="ThirdPartyNotices" Source="$(var.Notices)" Name="THIRD_PARTY_NOTICES.md" KeyPath="yes" />
+        <File Id="LicenseMit" Source="LICENSE-MIT" Name="LICENSE-MIT.txt" />
+        <File Id="LicenseApache" Source="LICENSE-APACHE" Name="LICENSE-APACHE.txt" />
       </Component>
     </DirectoryRef>
 
