@@ -219,7 +219,14 @@ pub fn enabled(app: &EditorApp, a: Action) -> bool {
         ExportSections => crate::sections_ui::has_sections(app),
         ImageDensity | DeleteImage => background,
         SaveImage | ModifyImage | ImageRotateRight | ImageRotateLeft => background,
-        Font | TextSize | EditText => texts,
+        Font | TextSize | EditText | EditCharacter => texts,
+        DeriveSkeleton => edit_ui::single_region(app).is_some_and(|id| {
+            let d = app.session.design();
+            d.index_of(id).is_some_and(|i| {
+                let o = &d.objects[i];
+                o.kind == openstitch_design::ObjectKind::Shape && !o.hole_sewing
+            })
+        }),
         LineColor | LineSewType | RegionColor | RegionSewType => outline,
         ConvertToBlocks | ConvertToOutlines => stitches,
         ConvertToOutline => stitches || texts,
@@ -532,15 +539,23 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
             app.ui.pan = false;
         }
         ExportSections => crate::sections_ui::export_sections(app),
+        DeriveSkeleton => {
+            if let Some(id) = edit_ui::single_region(app) {
+                app.execute(&CommandRequest::new(
+                    "object.deriveSkeleton",
+                    json!({ "id": id }),
+                ));
+            }
+        }
         // Tools are handled above; menus open their list; the rest are not available yet.
         SelectTool | PointTool | Rectangle | Ellipse | ClosedStraight | ClosedCurve | OpenCurve
         | StraightBlock | EditPoint | PencilClosed | OpenStraight | PencilOpen | CurvedBlock
-        | Running | Feed => {}
+        | Running | Feed | SatinSkeleton => {}
         Print | Wizard | Export | Options | Help | TextTools | ShapesTools | OtherZoom
         | Arrange | RotateFlip | Size | StampEmboss | ModifyOverlap | DecorativeFrame
         | SendEmbroidery | SaveImage | ImageDensity | GridSpacing | Font | TextSize | EditText
         | LineColor | LineSewType | RegionColor | RegionSewType | EntryExit | SewingPoints
-        | EdgeRadius | ChangeColor => {}
+        | EdgeRadius | ChangeColor | SkeletonWidth | EditCharacter => {}
     }
 }
 
@@ -823,6 +838,8 @@ pub fn menu(app: &mut EditorApp, a: Action, ui: &mut egui::Ui) {
         SewingPoints => edit_ui::sewing_points_menu(app, ui),
         EdgeRadius => edge_radius_menu(app, ui),
         ChangeColor => change_color_menu(app, ui),
+        SkeletonWidth => skeleton_width_menu(app, ui),
+        EditCharacter => crate::lettering_ui::character_menu(app, ui),
         _ => {}
     }
 }
@@ -845,6 +862,26 @@ fn edge_radius_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
         }
     }
     app.tools.set_corner_radius(r);
+}
+
+/// Shapes (Manual Punch) ▸ Column width: the width of the next Satin Skeleton points.
+fn skeleton_width_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let mut w = app.tools.skeleton_width();
+    ui.horizontal(|ui| {
+        ui.label("Column width");
+        ui.add(
+            egui::DragValue::new(&mut w)
+                .range(0.1..=openstitch_design::skeleton::MAX_WIDTH)
+                .speed(0.1)
+                .suffix(" mm"),
+        );
+    });
+    for mm in [1.5, 3.0, 5.0, 8.0] {
+        if ui.selectable_label(w == mm, format!("{mm} mm")).clicked() {
+            w = mm;
+        }
+    }
+    app.tools.set_skeleton_width(w);
 }
 
 /// Stitches ▸ Change Color: each thread of the selected stitch pattern, with the PEC chart to
@@ -1646,6 +1683,26 @@ mod tests {
         assert!(enabled(&app, Action::ReverseDirectionLine));
         run(&mut app, Action::ReverseDirectionLine, &ctx);
         assert_eq!(angle(&app), (a0 + 180.0).rem_euclid(360.0));
+        // Satin Skeleton from Shape: the region becomes satin along a derived centre line.
+        let bar = app
+            .execute(&CommandRequest::new(
+                "shape.rectangle",
+                json!({ "x": 10, "y": 10, "width": 60, "height": 8 }),
+            ))
+            .and_then(|r| r["id"].as_u64())
+            .expect("bar");
+        app.selection = BTreeSet::from([bar]);
+        assert!(enabled(&app, Action::DeriveSkeleton));
+        run(&mut app, Action::DeriveSkeleton, &ctx);
+        let d = app.session.design();
+        let r = d.objects[d.index_of(bar).expect("o")]
+            .region
+            .as_ref()
+            .expect("r");
+        assert!(r.skeleton.is_some(), "{}", app.status);
+        run(&mut app, Action::Undo, &ctx);
+        run(&mut app, Action::Undo, &ctx);
+        app.selection = BTreeSet::from([id]);
         // Change Color needs one stitch pattern.
         assert!(!enabled(&app, Action::ChangeColor));
         run(&mut app, Action::ConvertToStitches, &ctx);

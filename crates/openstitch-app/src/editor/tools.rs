@@ -9,8 +9,12 @@ use openstitch_design::{Contour, Design, DesignObject, ObjectKind, Rect, Transfo
 use serde_json::json;
 use std::collections::BTreeSet;
 
+pub mod characters;
 pub mod needles;
+pub mod skeleton;
+pub use characters::{CharacterDrag, CharacterFrame, CharacterOverlay};
 pub use needles::NeedleOverlay;
+pub use skeleton::SkeletonOverlay;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Tool {
@@ -36,10 +40,12 @@ pub enum Tool {
     Running,
     /// Manual Punch Feed: click the points the frame jumps through without sewing.
     Feed,
+    /// Satin Skeleton: draw a satin column's centre line like the pen, with a width per point.
+    Skeleton,
 }
 
 impl Tool {
-    pub const ALL: [Tool; 13] = [
+    pub const ALL: [Tool; 14] = [
         Tool::Select,
         Tool::Point,
         Tool::Rectangle,
@@ -53,6 +59,7 @@ impl Tool {
         Tool::CurvedBlock,
         Tool::Running,
         Tool::Feed,
+        Tool::Skeleton,
     ];
 
     pub fn label(self) -> &'static str {
@@ -70,6 +77,7 @@ impl Tool {
             Tool::CurvedBlock => "CurvedBlock",
             Tool::Running => "Running",
             Tool::Feed => "Feed",
+            Tool::Skeleton => "Skeleton",
         }
     }
 
@@ -286,6 +294,30 @@ enum Gesture {
     PenAnchor {
         index: usize,
     },
+    /// Satin Skeleton: a width handle of point `index` being dragged, of the line being drawn
+    /// or (`stored`) of that object's skeleton; `edited` is the new width, mm.
+    SkeletonWidth {
+        index: usize,
+        stored: Option<u64>,
+        edited: Option<f64>,
+    },
+    /// Satin Skeleton: a point of object `id`'s stored skeleton being dragged.
+    SkeletonPoint {
+        id: u64,
+        index: usize,
+        start: Vec2,
+        edited: Option<Vec2>,
+    },
+    /// Point tool on a text: character `index` being moved, turned or resized.
+    Character {
+        id: u64,
+        index: usize,
+        mode: CharacterDrag,
+        start: Vec2,
+        base: openstitch_design::CharEdit,
+        frame: CharacterFrame,
+        edited: Option<openstitch_design::CharEdit>,
+    },
     /// Point tool on a stitch pattern: selected needle points being dragged, or a marquee.
     Needles {
         start: Vec2,
@@ -329,6 +361,11 @@ pub struct ToolController {
     needle_owner: Option<u64>,
     /// Snap to grid: the grid step in model units.
     snap: Option<f64>,
+    /// Satin Skeleton: widths (mm) of the anchors in `pen`, and the width of the next one.
+    widths: Vec<f64>,
+    skeleton_width: Option<f64>,
+    /// Point tool on a text: the selected character (text id, character index).
+    character: Option<(u64, usize)>,
 }
 
 /// Drags shorter than this (points) are clicks.
@@ -406,6 +443,7 @@ impl ToolController {
     pub fn set_tool(&mut self, t: Tool) {
         self.cancel();
         self.point = None;
+        self.character = None;
         self.tool = Some(t);
     }
 
@@ -414,6 +452,7 @@ impl ToolController {
         self.gesture = None;
         self.polygon.clear();
         self.pen.clear();
+        self.widths.clear();
         self.punch.clear();
         self.pencil.clear();
         self.preview = None;
@@ -433,6 +472,7 @@ impl ToolController {
             Tool::Pen => self.pen_tool(e, ctx),
             Tool::Pencil | Tool::PencilOpen => self.pencil_tool(e, ctx),
             Tool::Punch | Tool::CurvedBlock | Tool::Running | Tool::Feed => self.punch_tool(e, ctx),
+            Tool::Skeleton => self.skeleton_tool(e, ctx),
         }
     }
 
@@ -442,6 +482,7 @@ impl ToolController {
         match self.tool() {
             Tool::Polygon | Tool::Line => self.finish_polygon(),
             Tool::Pen => self.finish_pen(false),
+            Tool::Skeleton => self.finish_skeleton(),
             t if t.is_punch() => self.finish_punch(),
             _ => vec![],
         }
@@ -487,6 +528,9 @@ impl ToolController {
     fn point_tool(&mut self, e: PointerEvent, ctx: &ToolContext) -> Vec<ToolEffect> {
         if let Some(o) = ctx.needle_target() {
             return self.needle_tool(e, ctx, o);
+        }
+        if let Some(o) = ctx.text_target() {
+            return self.character_tool(e, ctx, o);
         }
         let p = e.location;
         match (e.phase, self.gesture.clone()) {
@@ -1232,6 +1276,9 @@ fn finish_select(
         | Gesture::Vertex { .. }
         | Gesture::Control { .. }
         | Gesture::PenAnchor { .. }
+        | Gesture::SkeletonWidth { .. }
+        | Gesture::SkeletonPoint { .. }
+        | Gesture::Character { .. }
         | Gesture::Needles { .. } => vec![],
     }
 }

@@ -312,3 +312,78 @@ fn bad_skeleton_parameters_fail_cleanly() {
         assert_eq!(s.design(), &before, "{cmd}");
     }
 }
+
+#[test]
+fn skeleton_derived_from_a_shape() {
+    let mut s = Session::new(std::env::temp_dir());
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 0, "y": 0, "width": 60, "height": 6}),
+    );
+    let before = s.design().clone();
+    let r = run(&mut s, "object.deriveSkeleton", json!({"id": 1}));
+    let o = &s.design().objects[0];
+    let region = o.region.as_ref().expect("region");
+    assert_eq!(region.kind, RegionType::Satin);
+    let sk = region.skeleton.as_ref().expect("skeleton");
+    assert_eq!(r["points"].as_array().map(Vec::len), Some(sk.points.len()));
+    assert!(sk.length() > 480.0, "{}", sk.length());
+    assert!(
+        sk.points.iter().all(|p| (p.y - 30.0).abs() < 3.0),
+        "{:?}",
+        sk
+    );
+    assert_eq!(o.contours, before.objects[0].contours, "outline kept");
+    let p = Compiler::default().compile(s.design());
+    assert!(p.count(Command::Stitch) > 100);
+    // One undo step.
+    run(&mut s, "history.undo", json!({}));
+    assert_eq!(s.design(), &before);
+    run(
+        &mut s,
+        "object.deriveSkeleton",
+        json!({"id": 1, "reshape": true}),
+    );
+    assert_ne!(s.design().objects[0].contours, before.objects[0].contours);
+}
+
+#[test]
+fn deriving_a_skeleton_fails_cleanly() {
+    let mut s = Session::new(std::env::temp_dir());
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 0, "y": 0, "width": 40, "height": 10}),
+    );
+    run(
+        &mut s,
+        "object.setHoleSewing",
+        json!({"id": 1, "enabled": true}),
+    );
+    run(
+        &mut s,
+        "shape.polygon",
+        json!({"points": [[0, 50], [30, 50], [30, 60]], "closed": false}),
+    );
+    run(
+        &mut s,
+        "text.add",
+        json!({"text": "A", "x": 50, "y": 50, "size": 10}),
+    );
+    let before = s.design().clone();
+    for params in [
+        json!({}),
+        json!({"id": 99}),
+        json!({"id": 1}),
+        json!({"id": 2}),
+        json!({"id": 3}),
+        json!({"id": 1, "reshape": "yes"}),
+    ] {
+        assert!(
+            s.execute("object.deriveSkeleton", Some(&params)).is_err(),
+            "{params}"
+        );
+        assert_eq!(s.design(), &before, "{params}");
+    }
+}

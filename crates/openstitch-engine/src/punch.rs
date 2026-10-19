@@ -354,5 +354,60 @@ pub fn commands() -> Vec<CommandSpec> {
                 Ok(json!(null))
             },
         ),
+        spec(
+            "object.deriveSkeleton",
+            "Derive a satin skeleton from the shape's closed outline (an approximation of its medial axis): the region becomes satin sewn along it",
+            Effect::Edit,
+            vec![
+                req("id", "int", "Shape object with region sewing"),
+                opt(
+                    "reshape",
+                    "bool",
+                    "Replace the outline with the column's (default false)",
+                ),
+            ],
+            |s, p| {
+                let reshape = p.bool("reshape", Some(false))?;
+                let id = p.int("id", None, 0, i64::MAX)? as u64;
+                let i = s
+                    .design
+                    .index_of(id)
+                    .ok_or_else(|| p.not_found(format!("object {id}")))?;
+                let o = &mut s.design.objects[i];
+                if o.kind != openstitch_design::ObjectKind::Shape {
+                    return Err(p.failed(format!("object {id} is not a shape")));
+                }
+                if o.hole_sewing {
+                    return Err(p.failed("a skeleton cannot be added to a shape with hole sewing"));
+                }
+                if o.region.is_none() {
+                    return Err(p.failed(format!("object {id} has no region sewing")));
+                }
+                let sk = skeleton::derive(&o.contours).ok_or_else(|| {
+                    p.failed(format!(
+                        "object {id}: no centre line found (needs a closed outline wider than 0.2 mm)"
+                    ))
+                })?;
+                let outline = if reshape {
+                    Some(
+                        skeleton::outline(&sk)
+                            .ok_or_else(|| p.failed("the derived centre line is too short"))?,
+                    )
+                } else {
+                    None
+                };
+                let result = json!({
+                    "points": sk.points.iter().map(|q| [q.x / 10.0, q.y / 10.0]).collect::<Vec<_>>(),
+                    "widths": sk.widths,
+                });
+                let r = o.region.as_mut().expect("checked");
+                r.kind = RegionType::Satin;
+                r.skeleton = Some(sk);
+                if let Some(c) = outline {
+                    o.contours = vec![c];
+                }
+                Ok(result)
+            },
+        ),
     ]
 }

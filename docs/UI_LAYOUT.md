@@ -198,6 +198,7 @@ Behaviour follows the guide's pages
 | Color / Sew Type | Region sew type |  | `Action::RegionSewType` | `object.setRegion` | yes |
 | Edit | Edit Text |  | `Action::EditText` | `object.setText` | yes |
 | Edit | Fit Text to outline |  | `Action::FitTextToOutline` | `text.setPath` | yes |
+| Edit | Edit Character |  | `Action::EditCharacter` | `text.setCharacter` | yes |
 | Edit | Convert to Blocks |  | `Action::ConvertToBlocks` | `object.toShapes` | yes |
 | Edit | Convert to Stitches |  | `Action::ConvertToStitches` | `object.toStitches` | yes |
 | Edit | Convert to Outline |  | `Action::ConvertToOutline` | `object.toShapes` | yes |
@@ -245,6 +246,8 @@ Behaviour follows the guide's pages
 | Manual Punch | Curved Block |  | `Action::CurvedBlock` | `shape.column` (`curved: true`) | yes |
 | Manual Punch | Running |  | `Action::Running` | `shape.polygon` (`closed: false`) | yes |
 | Manual Punch | Feed |  | `Action::Feed` | `shape.feed` | yes |
+| Manual Punch | Satin Skeleton |  | `Action::SatinSkeleton` | `shape.skeletonSatin`; `object.setSkeleton` (editing) | yes |
+| Manual Punch | Column width |  | `Action::SkeletonWidth` | `shape.skeletonSatin` (`widths`) | yes |
 | Color / Sew Type | Region color |  | `Action::RegionColor` | `object.setRegion` | yes |
 | Color / Sew Type | Region sew type |  | `Action::RegionSewType` | `object.setRegion` | yes |
 
@@ -262,6 +265,7 @@ Behaviour follows the guide's pages
 | Edit Outline | Edit Point | `A` | `Action::EditPoint` | `object.setPoint` | yes |
 | Edit Outline | Delete Point | `Delete` | `Action::DeletePoint` | `object.deletePoint` | yes |
 | Edit Outline | Split at Point |  | `Action::SplitAtPoint` | `stitches.splitAt` | yes |
+| Edit Outline | Satin Skeleton from Shape |  | `Action::DeriveSkeleton` | `object.deriveSkeleton` | yes |
 | Color / Sew Type | Line color |  | `Action::LineColor` | `object.setLine` | yes |
 | Color / Sew Type | Line sew type |  | `Action::LineSewType` | `object.setLine` | yes |
 | Color / Sew Type | Region color |  | `Action::RegionColor` | `object.setRegion` | yes |
@@ -322,7 +326,29 @@ and [Adjusting the split positions](https://support.brother.com/g/s/hf/htmldoc/p
   own pattern; switching tools ends the part (the guide switches within one input).
 - **Reverse Direction Line** reverses every direction line of the selected shape (or turns a
   single sewing direction by 180°).
+- **Satin Skeleton** (Manual Punch tab; OpenStitch's own tool, PE-DESIGN has no direct
+  equivalent): click the centre line of a satin column like the Closed/Open Curve pen (click
+  for a corner, drag for a smooth point); every point carries a column width, shown as a
+  handle on either side of the line, and dragging a handle sets that point's width. New points
+  take **Column width**. Double-click or Return ends the line as one satin object sewn
+  perpendicular to it (`shape.skeletonSatin`; curves are flattened, widths interpolated
+  between the points). With nothing being drawn the tool shows the selected object's
+  skeleton: dragging a width handle or a centre point is one `object.setSkeleton` (the outline
+  follows when it is the column's own).
+- **Satin Skeleton from Shape** (Shapes ▸ Edit Outline) sews the selected shape as satin along
+  a centre line derived from its outline — an approximation of the medial axis (grid
+  clearance, the longest path through the shape, corner ends trimmed; branches are not
+  followed). Edit the result with the Satin Skeleton tool.
 - **Change Color** lists the selected stitch pattern's threads; pick one and its new colour.
+- **Editing characters** (after the guide's
+  [Editing individual characters](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/05_1904502.html)):
+  with **Point Edit** on the selected text, click a character to select it; its box gets the
+  usual handles. Drag inside it to move the character (Shift locks one axis), the top handle
+  to turn it about its middle (Shift: 15° steps), any other handle to resize it (its capital
+  height). Each drag is one `text.setCharacter`, so one Undo; moves follow the text's own
+  direction when it is rotated, mirrored, on a path or in a Name Drop box. **Text ▸ Edit
+  Character** shows the selected character's offset, rotation and size to type, and resets
+  it. One character at a time (the guide also selects several).
 - **Move Sections** (on/off) lets you drag the red split lines of a split design; releasing
   sets the new split position. Positions that would make a section larger than the hoop
   allows are refused and the status bar says why.

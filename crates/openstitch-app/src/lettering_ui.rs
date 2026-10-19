@@ -1019,3 +1019,70 @@ fn template_window(app: &mut EditorApp, ctx: &egui::Context) {
         app.lettering.templates.step = 1;
     }
 }
+
+/// Text ▸ Edit Character: offset, rotation and size of the character picked with Point Edit.
+/// A value is applied when its drag ends or it is typed, so each change is one Undo.
+pub fn character_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    use openstitch_app::editor::Tool;
+    use openstitch_app::editor::tools::characters::{char_edit, set_character};
+    let design = app.session.design().clone();
+    let picked = app.tools.selected_character(&app.tool_context(&design));
+    let Some((id, index)) = picked else {
+        ui.label("Pick Point Edit, then click a character of the selected text.");
+        if app.tools.tool() != Tool::Point && ui.button("Point Edit").clicked() {
+            app.tools.set_tool(Tool::Point);
+            app.workspace.measure.active = false;
+            app.ui.pan = false;
+        }
+        return;
+    };
+    let Some(spec) = design
+        .index_of(id)
+        .and_then(|i| design.objects[i].text.as_ref())
+    else {
+        return;
+    };
+    let ch = spec.text.chars().nth(index).unwrap_or(' ');
+    ui.label(format!(
+        "Character “{ch}” ({} of {})",
+        index + 1,
+        spec.text.chars().count()
+    ));
+    let before = char_edit(spec, index);
+    let mut e = before.clone();
+    let mut size = e.size.unwrap_or(spec.size);
+    let mut commit = false;
+    egui::Grid::new("character-edit").show(ui, |ui| {
+        let mut row = |ui: &mut egui::Ui, label: &str, v: &mut f64, range, suffix: &str| {
+            ui.label(label);
+            let r = ui.add(
+                egui::DragValue::new(v)
+                    .range(range)
+                    .speed(0.1)
+                    .max_decimals(2)
+                    .suffix(suffix),
+            );
+            commit |= r.drag_stopped() || (r.changed() && !r.dragged());
+            ui.end_row();
+        };
+        row(ui, "Right", &mut e.x, -500.0..=500.0, " mm");
+        row(ui, "Down", &mut e.y, -500.0..=500.0, " mm");
+        row(ui, "Rotation", &mut e.rotation, -360.0..=360.0, "°");
+        row(ui, "Size", &mut size, 1.0..=300.0, " mm");
+    });
+    if (size - e.size.unwrap_or(spec.size)).abs() > 1e-9 {
+        e.size = ((size - spec.size).abs() > 1e-9).then_some(size);
+    }
+    if commit && e != before {
+        app.execute(&set_character(id, &e));
+    }
+    if ui
+        .add_enabled(!before.is_noop(), egui::Button::new("Reset character"))
+        .clicked()
+    {
+        app.execute(&CommandRequest::new(
+            "text.setCharacter",
+            json!({ "id": id, "index": index, "reset": true }),
+        ));
+    }
+}
