@@ -75,7 +75,11 @@ fn fabric_selector_sets_recommended_attributes() {
         "shape.rectangle",
         json!({"x": 50, "y": 10, "width": 30, "height": 8, "fill": "#00ff00"}),
     );
-    run(&mut s, "object.setRegion", json!({"id": 2, "type": "satin"}));
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": 2, "type": "satin"}),
+    );
     run(&mut s, "text.add", json!({"text": "A", "x": 50, "y": 60}));
     let before = s.design().clone();
 
@@ -86,13 +90,20 @@ fn fabric_selector_sets_recommended_attributes() {
     let fill = d.objects[0].region.as_ref().expect("fill");
     assert_eq!(fill.density, towel.fill_density);
     assert!(fill.underlay);
-    assert_eq!(fill.thread, before.objects[0].region.as_ref().expect("r").thread);
+    assert_eq!(
+        fill.thread,
+        before.objects[0].region.as_ref().expect("r").thread
+    );
     let satin = d.objects[1].region.as_ref().expect("satin");
     assert_eq!(satin.density, towel.satin_density);
     assert_eq!(satin.pull_compensation, towel.pull_compensation);
 
     // Only the objects asked for; leather turns underlay off.
-    run(&mut s, "fabric.apply", json!({"fabric": "leather", "ids": [1]}));
+    run(
+        &mut s,
+        "fabric.apply",
+        json!({"fabric": "leather", "ids": [1]}),
+    );
     let d = s.design();
     assert!(!d.objects[0].region.as_ref().expect("fill").underlay);
     assert_eq!(
@@ -109,6 +120,9 @@ fn fabric_selector_sets_recommended_attributes() {
         json!({"fabric": "felt", "ids": [99]}),
         json!({"fabric": "felt", "ids": []}),
     ] {
-        assert!(s.execute("fabric.apply", Some(&params)).is_err(), "{params}");
+        assert!(
+            s.execute("fabric.apply", Some(&params)).is_err(),
+            "{params}"
+        );
     }
 }

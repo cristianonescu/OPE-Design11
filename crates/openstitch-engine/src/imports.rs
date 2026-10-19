@@ -402,7 +402,11 @@ fn background_commands() -> Vec<CommandSpec> {
             "background.rotate",
             "Turn the background image 90° about its centre (Image ▸ Rotate Right / Left)",
             Effect::Edit,
-            vec![req("direction", "\"right\" | \"left\"", "Right = clockwise")],
+            vec![req(
+                "direction",
+                "\"right\" | \"left\"",
+                "Right = clockwise",
+            )],
             |s, p| {
                 let right = match p.string("direction", None)?.as_str() {
                     "right" => true,
@@ -521,7 +525,9 @@ fn background_commands() -> Vec<CommandSpec> {
                     .unwrap_or_default()
                     .to_string();
                 let image = shown(s, p)?;
-                let bytes = image.encode_as(&ext).map_err(|e| p.invalid("path", e.to_string()))?;
+                let bytes = image
+                    .encode_as(&ext)
+                    .map_err(|e| p.invalid("path", e.to_string()))?;
                 std::fs::write(&target, bytes).map_err(|e| p.failed(e.to_string()))?;
                 Ok(json!({
                     "path": target.display().to_string(),

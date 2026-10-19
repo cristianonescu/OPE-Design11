@@ -185,7 +185,10 @@ fn background_image_turns_crops_adjusts_and_saves_as_shown() {
     assert_eq!(b.adjust.rotation, 1);
     run(&mut s, "background.rotate", json!({"direction": "left"}));
     run(&mut s, "background.rotate", json!({"direction": "left"}));
-    assert_eq!(s.design().background.as_ref().map(|b| b.adjust.rotation), Some(3));
+    assert_eq!(
+        s.design().background.as_ref().map(|b| b.adjust.rotation),
+        Some(3)
+    );
     run(&mut s, "background.rotate", json!({"direction": "right"}));
     let b = s.design().background.clone().expect("background");
     assert_eq!((b.x, b.y, b.width, b.height), (100.0, 200.0, 400.0, 200.0));
@@ -226,7 +229,11 @@ fn background_image_turns_crops_adjusts_and_saves_as_shown() {
     let [r, g, b, _] = saved.pixel(10, 10);
     assert!(r == g && g == b, "desaturated");
     for ext in ["png", "jpg"] {
-        run(&mut s, "background.save", json!({"path": format!("shown.{ext}")}));
+        run(
+            &mut s,
+            "background.save",
+            json!({"path": format!("shown.{ext}")}),
+        );
     }
     // Adjustments travel with the project and the file is never changed.
     run(&mut s, "project.save", json!({"path": "p.osd"}));
@@ -256,6 +263,9 @@ fn background_image_turns_crops_adjusts_and_saves_as_shown() {
     run(&mut s, "background.clear", json!({}));
     for id in ["background.rotate", "background.modify", "background.save"] {
         let params = json!({"direction": "right", "path": "x.png"});
-        assert!(s.execute(id, Some(&params)).is_err(), "{id} without an image");
+        assert!(
+            s.execute(id, Some(&params)).is_err(),
+            "{id} without an image"
+        );
     }
 }

@@ -1,8 +1,9 @@
-//! Workspace aids that never change the design: grid settings, ruler ticks, the measure tool,
-//! the Reference window's mapping and the realistic thread shading. Model units are 0.1 mm.
+//! Workspace aids: grid settings, ruler ticks, the measure tool, the Reference window's mapping,
+//! the solid and realistic views and guideline editing (guidelines are the one aid saved with
+//! the design, through `guides.set`). Model units are 0.1 mm.
 
 use super::viewport::{ScreenRect, Viewport};
-use openstitch_design::{Rect, Vec2, v2};
+use openstitch_design::{Guides, Rect, Vec2, v2};
 
 /// Grid drawn on the Design Page.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -14,6 +15,8 @@ pub struct GridSettings {
     pub major_every: u32,
     /// Drawing, moving and point editing snap to the grid (shown or not).
     pub snap: bool,
+    /// View ▸ Show Grid with Axes: solid grid lines; off, the grid is dotted.
+    pub axes: bool,
 }
 
 impl Default for GridSettings {
@@ -23,6 +26,7 @@ impl Default for GridSettings {
             spacing_mm: 10.0,
             major_every: 5,
             snap: false,
+            axes: true,
         }
     }
 }
@@ -244,6 +248,136 @@ pub fn thread_shades(rgb: [u8; 3]) -> [[u8; 3]; 3] {
 /// Real thread width on screen: 40-weight embroidery thread lies about 0.4 mm wide.
 pub const THREAD_WIDTH_MM: f64 = 0.4;
 
+/// Solid View: stitches drawn this wide, without shading, so the rows of a fill or satin
+/// (0.3–0.45 mm apart at usual densities) merge into flat areas of thread colour.
+pub const SOLID_WIDTH_MM: f64 = 0.7;
+
+/// View ▸ Realistic View Settings: thread width, contrast and brightness of the realistic view
+/// (the settings the guide lists). Kept in the window preferences.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RealisticSettings {
+    /// Width a stitch is drawn, mm.
+    pub thread_width_mm: f64,
+    /// −100 to 100: how far the edge shadow and highlight sit from the thread colour.
+    pub contrast: f64,
+    /// −100 to 100: lightens or darkens every shade.
+    pub brightness: f64,
+}
+
+impl Default for RealisticSettings {
+    fn default() -> Self {
+        RealisticSettings {
+            thread_width_mm: THREAD_WIDTH_MM,
+            contrast: 0.0,
+            brightness: 0.0,
+        }
+    }
+}
+
+impl RealisticSettings {
+    pub const WIDTH_RANGE: std::ops::RangeInclusive<f64> = 0.2..=1.0;
+
+    /// The settings brought into range (from a hand-edited preferences file).
+    pub fn clamped(self) -> Self {
+        let width = if self.thread_width_mm.is_finite() {
+            self.thread_width_mm
+        } else {
+            THREAD_WIDTH_MM
+        };
+        let level = |v: f64| {
+            if v.is_finite() {
+                v.clamp(-100.0, 100.0)
+            } else {
+                0.0
+            }
+        };
+        RealisticSettings {
+            thread_width_mm: width.clamp(*Self::WIDTH_RANGE.start(), *Self::WIDTH_RANGE.end()),
+            contrast: level(self.contrast),
+            brightness: level(self.brightness),
+        }
+    }
+
+    /// Edge, body and highlight shades of a thread colour, as [`thread_shades`] with this
+    /// contrast and brightness.
+    pub fn shades(&self, rgb: [u8; 3]) -> [[u8; 3]; 3] {
+        let k = 1.0 + self.contrast.clamp(-100.0, 100.0) / 100.0;
+        let lift = self.brightness.clamp(-100.0, 100.0) / 100.0 * 96.0;
+        let shade = |c: u8, f: f64| {
+            let v = f64::from(c);
+            // Contrast scales the distance from the plain colour.
+            let v = v + (f - v) * k;
+            (v + lift).round().clamp(0.0, 255.0) as u8
+        };
+        let [edge, _, light] = thread_shades(rgb);
+        let body = rgb.map(|c| shade(c, f64::from(c)));
+        let mix = |s: [u8; 3]| [0, 1, 2].map(|i| shade(rgb[i], f64::from(s[i])));
+        [mix(edge), body, mix(light)]
+    }
+}
+
+/// Snaps a guideline position to the grid when the grid is shown and snapping is on (as the
+/// guide describes); otherwise rounds to 0.1 mm.
+pub fn snap_guide(at: f64, grid: &GridSettings) -> f64 {
+    match grid.snap_step() {
+        Some(step) if grid.visible => (at / step).round() * step,
+        _ => at.round(),
+    }
+}
+
+/// A guideline being dragged out of a ruler or moved: which list it belongs to and, for an
+/// existing one, its index.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GuideDrag {
+    /// A vertical guideline (x position, from the top ruler).
+    pub vertical: bool,
+    pub index: Option<usize>,
+    /// Current position, 0.1 mm.
+    pub at: f64,
+}
+
+impl GuideDrag {
+    /// The guidelines with this one placed at `self.at` (added when new).
+    pub fn placed(&self, guides: &Guides) -> Guides {
+        let mut g = guides.clone();
+        let list = if self.vertical {
+            &mut g.vertical
+        } else {
+            &mut g.horizontal
+        };
+        match self.index.filter(|&i| i < list.len()) {
+            Some(i) => list[i] = self.at,
+            None if list.len() < Guides::MAX => list.push(self.at),
+            None => {}
+        }
+        g
+    }
+}
+
+/// The guidelines without vertical (or horizontal) guideline `index`.
+pub fn remove_guide(guides: &Guides, vertical: bool, index: usize) -> Guides {
+    let mut g = guides.clone();
+    let list = if vertical {
+        &mut g.vertical
+    } else {
+        &mut g.horizontal
+    };
+    if index < list.len() {
+        list.remove(index);
+    }
+    g
+}
+
+/// The guideline whose ruler marker is within `tolerance` model units of `at`, nearest first.
+pub fn guide_near(list: &[f64], at: f64, tolerance: f64) -> Option<usize> {
+    list.iter()
+        .enumerate()
+        .map(|(i, &g)| (i, (g - at).abs()))
+        .filter(|&(_, d)| d <= tolerance)
+        .min_by(|a, b| a.1.total_cmp(&b.1))
+        .map(|(i, _)| i)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -371,6 +505,91 @@ mod tests {
             (c.x - 100.0).abs() < 1e-6 && (c.y - 100.0).abs() < 1e-6,
             "{c:?}"
         );
+    }
+
+    #[test]
+    fn realistic_settings_change_width_contrast_and_brightness() {
+        let rgb = [200, 40, 40];
+        assert_eq!(
+            RealisticSettings::default().shades(rgb),
+            thread_shades(rgb),
+            "the defaults are the plain realistic view"
+        );
+        let flat = RealisticSettings {
+            contrast: -100.0,
+            ..Default::default()
+        };
+        assert_eq!(flat.shades(rgb), [rgb; 3]);
+        let strong = RealisticSettings {
+            contrast: 100.0,
+            ..Default::default()
+        };
+        let [d, _, l] = strong.shades(rgb);
+        let [d0, _, l0] = thread_shades(rgb);
+        assert!(d[0] < d0[0] && l[1] > l0[1]);
+        let bright = RealisticSettings {
+            brightness: 50.0,
+            ..Default::default()
+        };
+        assert!(bright.shades(rgb)[1][1] > 40);
+        let wild = RealisticSettings {
+            thread_width_mm: f64::NAN,
+            contrast: 900.0,
+            brightness: -900.0,
+        }
+        .clamped();
+        assert_eq!(wild.thread_width_mm, THREAD_WIDTH_MM);
+        assert_eq!((wild.contrast, wild.brightness), (100.0, -100.0));
+    }
+
+    #[test]
+    fn guidelines_snap_add_move_and_remove() {
+        let mut grid = GridSettings::default();
+        assert_eq!(snap_guide(123.4, &grid), 123.0);
+        grid.snap = true;
+        assert_eq!(snap_guide(123.4, &grid), 100.0, "snaps to the 10 mm grid");
+        grid.visible = false;
+        assert_eq!(snap_guide(123.4, &grid), 123.0, "only while the grid shows");
+
+        let g = Guides::default();
+        let g = GuideDrag {
+            vertical: true,
+            index: None,
+            at: 50.0,
+        }
+        .placed(&g);
+        let g = GuideDrag {
+            vertical: false,
+            index: None,
+            at: 70.0,
+        }
+        .placed(&g);
+        let g = GuideDrag {
+            vertical: true,
+            index: Some(0),
+            at: 80.0,
+        }
+        .placed(&g);
+        assert_eq!(
+            (g.vertical.clone(), g.horizontal.clone()),
+            (vec![80.0], vec![70.0])
+        );
+        assert_eq!(guide_near(&g.vertical, 83.0, 5.0), Some(0));
+        assert_eq!(guide_near(&g.vertical, 90.0, 5.0), None);
+        let g = remove_guide(&g, false, 0);
+        assert!(g.horizontal.is_empty());
+        assert_eq!(remove_guide(&g, true, 7), g);
+        let full = Guides {
+            vertical: vec![0.0; Guides::MAX],
+            horizontal: Vec::new(),
+        };
+        let more = GuideDrag {
+            vertical: true,
+            index: None,
+            at: 1.0,
+        }
+        .placed(&full);
+        assert_eq!(more.vertical.len(), Guides::MAX, "at most 100");
     }
 
     #[test]

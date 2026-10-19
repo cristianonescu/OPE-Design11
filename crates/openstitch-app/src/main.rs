@@ -50,6 +50,7 @@ mod settings_ui;
 mod sewing_ui;
 mod theme;
 mod transfer_ui;
+mod view_ui;
 mod wizard_ui;
 mod workspace_ui;
 
