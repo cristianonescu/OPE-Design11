@@ -213,6 +213,7 @@ pub fn enabled(app: &EditorApp, a: Action) -> bool {
         Export | Print | SendEmbroidery => drawn,
         ExportSections => crate::sections_ui::has_sections(app),
         ImageDensity | DeleteImage => background,
+        SaveImage | ModifyImage | ImageRotateRight | ImageRotateLeft => background,
         Font | TextSize | EditText => texts,
         LineColor | LineSewType | RegionColor | RegionSewType => outline,
         ConvertToBlocks | ConvertToOutlines => stitches,
@@ -244,8 +245,12 @@ pub fn active(app: &EditorApp, a: Action) -> bool {
         return app.tools.tool() == t && !app.workspace.measure.active && !app.ui.pan;
     }
     match a {
-        StitchView => !app.workspace.realistic,
+        StitchView => !app.workspace.realistic && !app.workspace.solid,
         RealisticView => app.workspace.realistic,
+        SolidView => app.workspace.solid && !app.workspace.realistic,
+        GridAxes => app.workspace.grid.axes,
+        Guideline => app.workspace.guides,
+        FontFilter => app.ui.prefs.font_filter.on,
         ViewThreadTrimming => app.show_travel,
         PaneSewingOrder => panes.sewing_order.visible,
         PaneSimulator => panes.simulator.visible,
@@ -420,8 +425,25 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
         PhotoStitch1 => image_wizard(app, Method::PhotoFill),
         PhotoStitch2 => image_wizard(app, Method::PhotoLines),
         DesignCenter => image_wizard(app, Method::DesignCenter),
-        StitchView => app.workspace.realistic = false,
-        RealisticView => app.workspace.realistic = true,
+        StitchView => (app.workspace.realistic, app.workspace.solid) = (false, false),
+        RealisticView => (app.workspace.realistic, app.workspace.solid) = (true, false),
+        SolidView => (app.workspace.realistic, app.workspace.solid) = (false, true),
+        RealisticSettings => app.workspace.view.realistic_open = true,
+        GridAxes => app.workspace.grid.axes ^= true,
+        Guideline => {
+            app.workspace.guides ^= true;
+            // Guidelines come out of the rulers.
+            app.workspace.rulers |= app.workspace.guides;
+        }
+        ModifyImage => app.workspace.view.image_open = true,
+        ImageRotateRight => crate::view_ui::rotate_image(app, "right"),
+        ImageRotateLeft => crate::view_ui::rotate_image(app, "left"),
+        FontFilter => {
+            app.ui.prefs.font_filter.on ^= true;
+            app.ui.save_prefs();
+        }
+        FontFilterSettings => app.workspace.view.fonts_open = true,
+        FabricSelector => app.workspace.view.fabric_open = true,
         ViewThreadTrimming => app.show_travel = !app.show_travel,
         PaneSewingOrder => toggle_pane(app, |p| p.sewing_order.visible ^= true),
         PaneSimulator => toggle_pane(app, |p| p.simulator.visible ^= true),
@@ -462,12 +484,10 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
         | StraightBlock | EditPoint => {}
         Print | Wizard | Export | Options | Help | TextTools | ShapesTools | OtherZoom
         | Arrange | RotateFlip | Size | StampEmboss | ModifyOverlap | DecorativeFrame
-        | SendEmbroidery | ImageDensity | GridSpacing | Font | TextSize | EditText | LineColor
-        | LineSewType | RegionColor | RegionSewType | EntryExit | SewingPoints => {}
-        FabricSelector | Cut | PencilClosed | OpenStraight | PencilOpen | SaveImage
-        | ModifyImage | ImageRotateRight | ImageRotateLeft | SolidView | RealisticSettings
-        | GridAxes | Guideline | FontFilter | FontFilterSettings | EdgeRadius | CurvedBlock
-        | Running | Feed | ReverseDirectionLine | ChangeColor | MoveSections => {}
+        | SendEmbroidery | SaveImage | ImageDensity | GridSpacing | Font | TextSize | EditText
+        | LineColor | LineSewType | RegionColor | RegionSewType | EntryExit | SewingPoints => {}
+        Cut | PencilClosed | OpenStraight | PencilOpen | EdgeRadius | CurvedBlock | Running
+        | Feed | ReverseDirectionLine | ChangeColor | MoveSections => {}
     }
 }
 
@@ -644,6 +664,7 @@ pub fn menu(app: &mut EditorApp, a: Action, ui: &mut egui::Ui) {
         ModifyOverlap => edit_ui::overlap_menu(app, ui),
         DecorativeFrame => edit_ui::decorative_menu(app, ui),
         ImageDensity => image_density_menu(app, ui),
+        SaveImage => crate::view_ui::save_image_menu(app, ui),
         GridSpacing => {
             for s in openstitch_app::editor::workspace::GridSettings::SPACINGS_MM {
                 let label = if s == 25.4 {
@@ -1330,6 +1351,73 @@ mod tests {
         assert!(app.wizard.open);
         run(&mut app, Action::Cut, &ctx); // unavailable: nothing happens
         assert_eq!(app.session.design().objects.len(), n + 1);
+    }
+
+    #[test]
+    fn view_image_text_and_fabric_commands() {
+        let ctx = egui::Context::default();
+        let mut app = demo();
+        // View modes are exclusive.
+        run(&mut app, Action::SolidView, &ctx);
+        assert!(active(&app, Action::SolidView) && !active(&app, Action::StitchView));
+        run(&mut app, Action::RealisticView, &ctx);
+        assert!(!active(&app, Action::SolidView) && active(&app, Action::RealisticView));
+        run(&mut app, Action::StitchView, &ctx);
+        assert!(active(&app, Action::StitchView));
+        run(&mut app, Action::GridAxes, &ctx);
+        assert!(!app.workspace.grid.axes);
+        app.workspace.rulers = false;
+        run(&mut app, Action::Guideline, &ctx);
+        assert!(active(&app, Action::Guideline) && app.workspace.rulers);
+        run(&mut app, Action::FontFilter, &ctx);
+        assert!(active(&app, Action::FontFilter));
+
+        // Image commands need a background image.
+        assert!(!enabled(&app, Action::ImageRotateRight));
+        let dir = std::env::temp_dir().join(format!("openstitch-view-ui-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let png = dir.join("bg.png");
+        let raster =
+            openstitch_digitize::Raster::from_fn(40, 20, |x, _| [x as u8 * 6, 90, 30, 255])
+                .expect("raster");
+        std::fs::write(&png, raster.encode_png().expect("png")).expect("write");
+        app.execute(&CommandRequest::new(
+            "background.set",
+            json!({ "path": png.display().to_string(), "width": 40 }),
+        ));
+        for a in [
+            Action::SaveImage,
+            Action::ModifyImage,
+            Action::ImageRotateLeft,
+        ] {
+            assert!(enabled(&app, a), "{a:?}");
+        }
+        run(&mut app, Action::ImageRotateRight, &ctx);
+        let b = app.session.design().background.clone().expect("background");
+        assert_eq!((b.adjust.rotation, b.width, b.height), (1, 200.0, 400.0));
+        let shown = crate::view_ui::shown_image(&app).expect("image");
+        assert_eq!((shown.width(), shown.height()), (20, 40));
+
+        // Every new window draws without panicking.
+        for a in [
+            Action::RealisticSettings,
+            Action::ModifyImage,
+            Action::FontFilterSettings,
+            Action::FabricSelector,
+        ] {
+            run(&mut app, a, &ctx);
+        }
+        let v = &app.workspace.view;
+        assert!(v.realistic_open && v.image_open && v.fonts_open && v.fabric_open);
+        app.workspace.solid = true;
+        for _ in 0..2 {
+            let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+                crate::view_ui::windows(&mut app, ui.ctx());
+                crate::canvas::canvas(&mut app, ui);
+            });
+            out.textures_delta.clear();
+        }
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

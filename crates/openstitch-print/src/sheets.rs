@@ -1080,6 +1080,7 @@ mod tests {
             height: 400.0,
             opacity: 1.0,
             visible: true,
+            adjust: Default::default(),
         });
         let img = Image {
             width: 2,

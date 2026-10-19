@@ -1,8 +1,11 @@
 //! Window preferences kept between runs in `ui.json` next to the user settings file: colour
-//! theme, Quick Access Toolbar, which panes show (docked or floating) and the most recently
-//! used files. Unknown or malformed entries fall back to the defaults.
+//! theme, Quick Access Toolbar, which panes show (docked or floating), the most recently used
+//! files, the realistic view settings and the font filter. Unknown or malformed entries fall
+//! back to the defaults.
 
+use super::lettering::FontChoice;
 use super::ribbon::{Action, QAT_DEFAULT};
+use super::workspace::RealisticSettings;
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 
@@ -66,6 +69,40 @@ pub struct Panes {
     pub attributes: PaneState,
 }
 
+/// Text ▸ Font Filter: fonts hidden from the font lists while the filter is on.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct FontFilter {
+    pub on: bool,
+    /// Font ids cleared in Font Filter Settings.
+    pub hidden: Vec<String>,
+}
+
+impl FontFilter {
+    /// Most hidden font ids kept.
+    pub const MAX_HIDDEN: usize = 1_000;
+
+    pub fn shows(&self, id: &str) -> bool {
+        !self.on || !self.hidden.iter().any(|h| h == id)
+    }
+
+    /// The fonts the lists show. With every font hidden the filter is ignored, so a list is
+    /// never empty.
+    pub fn apply(&self, fonts: Vec<FontChoice>) -> Vec<FontChoice> {
+        if !self.on || fonts.iter().all(|f| !self.shows(&f.id)) {
+            return fonts;
+        }
+        fonts.into_iter().filter(|f| self.shows(&f.id)).collect()
+    }
+
+    /// Shows or hides one font in the filter settings.
+    pub fn set_shown(&mut self, id: &str, shown: bool) {
+        self.hidden.retain(|h| h != id);
+        if !shown && self.hidden.len() < Self::MAX_HIDDEN {
+            self.hidden.push(id.to_string());
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct UiPrefs {
     pub theme: Theme,
@@ -75,6 +112,8 @@ pub struct UiPrefs {
     pub panes: Panes,
     /// Newest first.
     pub recent: Vec<PathBuf>,
+    pub realistic: RealisticSettings,
+    pub font_filter: FontFilter,
 }
 
 impl Default for UiPrefs {
@@ -85,6 +124,8 @@ impl Default for UiPrefs {
             qat_below: false,
             panes: Panes::default(),
             recent: Vec::new(),
+            realistic: RealisticSettings::default(),
+            font_filter: FontFilter::default(),
         }
     }
 }
@@ -113,6 +154,12 @@ impl UiPrefs {
                 "attributes": pane_json(self.panes.attributes),
             },
             "recent": self.recent.iter().map(|p| p.display().to_string()).collect::<Vec<_>>(),
+            "realisticView": {
+                "threadWidthMM": self.realistic.thread_width_mm,
+                "contrast": self.realistic.contrast,
+                "brightness": self.realistic.brightness,
+            },
+            "fontFilter": { "on": self.font_filter.on, "hidden": self.font_filter.hidden },
         })
     }
 
@@ -155,6 +202,29 @@ impl UiPrefs {
                         .collect()
                 })
                 .unwrap_or_default(),
+            realistic: {
+                let r = &v["realisticView"];
+                let n = |k: &str, d: f64| r[k].as_f64().unwrap_or(d);
+                RealisticSettings {
+                    thread_width_mm: n("threadWidthMM", d.realistic.thread_width_mm),
+                    contrast: n("contrast", d.realistic.contrast),
+                    brightness: n("brightness", d.realistic.brightness),
+                }
+                .clamped()
+            },
+            font_filter: FontFilter {
+                on: v["fontFilter"]["on"].as_bool().unwrap_or(false),
+                hidden: v["fontFilter"]["hidden"]
+                    .as_array()
+                    .map(|l| {
+                        l.iter()
+                            .filter_map(Value::as_str)
+                            .map(str::to_string)
+                            .take(FontFilter::MAX_HIDDEN)
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+            },
         }
     }
 
@@ -211,6 +281,10 @@ mod tests {
         p.toggle_qat(Action::Print);
         p.panes.simulator.visible = false;
         p.panes.attributes.floating = true;
+        p.realistic.contrast = 40.0;
+        p.realistic.thread_width_mm = 0.6;
+        p.font_filter.on = true;
+        p.font_filter.set_shown("lato-bold", false);
         for i in 0..12 {
             p.add_recent(Path::new(&format!("/d/{i}.osd")));
         }
@@ -226,6 +300,37 @@ mod tests {
         assert_eq!(q.qat, [Action::Save]);
         assert_eq!(q.panes, Panes::default());
         assert_eq!(UiPrefs::from_json(&json!(null)), UiPrefs::default());
+        let wild = json!({ "realisticView": { "threadWidthMM": 50, "contrast": "x" }, "fontFilter": { "on": 1, "hidden": [3, "a"] } });
+        let w = UiPrefs::from_json(&wild);
+        assert_eq!(w.realistic.thread_width_mm, 1.0);
+        assert_eq!(w.realistic.contrast, 0.0);
+        assert_eq!(
+            w.font_filter,
+            FontFilter {
+                on: false,
+                hidden: vec!["a".into()]
+            }
+        );
+    }
+
+    #[test]
+    fn font_filter_hides_fonts_but_never_all() {
+        let font = |id: &str| FontChoice {
+            id: id.into(),
+            label: id.into(),
+        };
+        let fonts = vec![font("a"), font("b")];
+        let mut f = FontFilter::default();
+        f.set_shown("a", false);
+        assert_eq!(f.apply(fonts.clone()), fonts, "off: everything shows");
+        f.on = true;
+        assert_eq!(f.apply(fonts.clone()), [font("b")]);
+        assert!(f.shows("b") && !f.shows("a"));
+        f.set_shown("b", false);
+        assert_eq!(f.apply(fonts.clone()), fonts, "never an empty list");
+        f.set_shown("a", true);
+        f.set_shown("a", true);
+        assert_eq!(f.hidden, ["b"]);
     }
 
     #[test]

@@ -8,7 +8,9 @@ mod convert;
 #[cfg(feature = "digitize")]
 mod digitize;
 mod drawing;
+pub mod fabric;
 pub mod fonts;
+mod guides;
 #[cfg(feature = "formats")]
 pub mod imports;
 mod lettering;

@@ -65,8 +65,10 @@ pub struct Launch {
 }
 
 /// Values `--show` accepts.
-pub const SHOW: [&str; 20] = [
+pub const SHOW: [&str; 22] = [
     "realistic",
+    "solid",
+    "fabric",
     "reference",
     "settings",
     "measure",
@@ -144,8 +146,13 @@ pub struct EditorApp {
     pub pattern_wizards: openstitch_app::editor::pattern_wizards::PatternWizards,
     /// Attribute sets and user thread charts windows.
     pub settings: crate::settings_ui::SettingsState,
-    /// The decoded background image, keyed by its path (`None` when it cannot be read).
-    pub background_texture: Option<(String, Option<eframe::egui::TextureHandle>)>,
+    /// The background image as shown, keyed by its path and adjustments (`None` when it
+    /// cannot be read).
+    pub background_texture: Option<(
+        String,
+        openstitch_design::ImageAdjust,
+        Option<eframe::egui::TextureHandle>,
+    )>,
     /// Design Database mode (File ▸ Design Database…).
     pub database: openstitch_app::editor::database::Database,
     pub db_textures: crate::database_ui::Textures,
@@ -270,6 +277,8 @@ impl EditorApp {
         for v in &l.show {
             match v.as_str() {
                 "realistic" => self.workspace.realistic = true,
+                "solid" => self.workspace.solid = true,
+                "fabric" => self.workspace.view.fabric_open = true,
                 "reference" => self.workspace.reference = true,
                 "settings" => self.workspace.settings_open = true,
                 "attributes" => self.settings.sets_open = true,
@@ -1075,6 +1084,7 @@ impl eframe::App for EditorApp {
         crate::creator_ui::creator_window(self, &ctx);
         crate::sewing_ui::sewing_window(self, &ctx);
         crate::pattern_wizard_ui::windows(self, &ctx);
+        crate::view_ui::windows(self, &ctx);
         let canvas = self.workspace.canvas;
         crate::workspace_ui::reference_window(self, &ctx, canvas);
         self.screenshot_step(&ctx);

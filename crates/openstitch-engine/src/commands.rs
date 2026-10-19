@@ -243,6 +243,8 @@ pub fn all() -> Vec<CommandSpec> {
     v.extend(crate::transfer::commands());
     v.extend(crate::machine::commands());
     v.extend(crate::sections::commands());
+    v.extend(crate::guides::commands());
+    v.extend(crate::fabric::commands());
     v.extend(crate::print::commands());
     v.extend(crate::pattern_cmds::commands());
     v.extend(crate::sewing_cmds::commands());
