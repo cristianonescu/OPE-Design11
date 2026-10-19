@@ -57,6 +57,8 @@ jobs:
           sparse-checkout: docs/releases
       - uses: actions/download-artifact@v4
         with:
+          # Only the packages; the test job's compat-report is not a download for users.
+          pattern: openstitch-*
           path: assets
           merge-multiple: true
       - name: Create draft release
