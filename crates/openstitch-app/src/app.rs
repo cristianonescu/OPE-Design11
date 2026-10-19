@@ -156,6 +156,7 @@ pub struct EditorApp {
     /// Design Database mode (File ▸ Design Database…).
     pub database: openstitch_app::editor::database::Database,
     pub db_textures: crate::database_ui::Textures,
+    pub db_chrome: crate::database_ui::Chrome,
     /// Loopback automation socket; its requests run in [`EditorApp::serve_remote`].
     pub remote: Option<openstitch_remote::Server>,
     /// Ribbon, Quick Access Toolbar, panes and window preferences.
@@ -225,6 +226,7 @@ impl EditorApp {
             background_texture: None,
             database: Default::default(),
             db_textures: Default::default(),
+            db_chrome: Default::default(),
             remote: None,
             ui: Default::default(),
         };
@@ -300,7 +302,12 @@ impl EditorApp {
                 }
                 "usb" => crate::transfer_ui::open(self),
                 "arrange" => self.edit.arrange_open = true,
-                "appmenu" => self.ui.open_app_menu = true,
+                "appmenu" => {
+                    // Whichever window shows: the editor's or a suite window's.
+                    self.ui.open_app_menu = true;
+                    self.creator.open_app_menu = true;
+                    self.sewing.open_app_menu = true;
+                }
                 "property" => self.ui.property_open = true,
                 "shortcuts" => self.ui.shortcuts_open = true,
                 "floating" => {
@@ -818,11 +825,23 @@ impl EditorApp {
             || self.session.design().name.clone(),
             |n| n.to_string_lossy().into_owned(),
         );
-        let title = format!(
-            "{}{} — OpenStitch",
-            name,
-            if self.is_dirty() { " •" } else { "" }
-        );
+        let program = if self.database.open {
+            Some(openstitch_app::editor::suite::DATABASE.title)
+        } else if self.creator.open {
+            Some(openstitch_app::editor::suite::CREATOR.title)
+        } else if self.sewing.open {
+            Some(openstitch_app::editor::suite::FACTORY.title)
+        } else {
+            None
+        };
+        let title = match program {
+            Some(p) => format!("{p} — OpenStitch"),
+            None => format!(
+                "{}{} — OpenStitch",
+                name,
+                if self.is_dirty() { " •" } else { "" }
+            ),
+        };
         if title != self.title {
             ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
             self.title = title;
@@ -1057,9 +1076,16 @@ impl eframe::App for EditorApp {
         let ctx = ui.ctx().clone();
         self.ui.apply_theme(&ctx);
         self.serve_remote();
-        if self.database.open {
+        if self.database.open || self.creator.open || self.sewing.open {
+            // The other suite windows take the whole window, as separate programs do.
             self.update_title(&ctx);
-            crate::database_ui::database(self, ui);
+            if self.database.open {
+                crate::database_ui::database(self, ui);
+            } else if self.creator.open {
+                crate::creator_ui::creator(self, ui);
+            } else {
+                crate::sewing_ui::factory(self, ui);
+            }
             self.screenshot_step(&ctx);
             return;
         }
@@ -1081,8 +1107,6 @@ impl eframe::App for EditorApp {
         crate::settings_ui::windows(self, &ctx);
         crate::wizard_ui::image_wizard_window(self, &ctx);
         crate::lettering_ui::windows(self, &ctx);
-        crate::creator_ui::creator_window(self, &ctx);
-        crate::sewing_ui::sewing_window(self, &ctx);
         crate::pattern_wizard_ui::windows(self, &ctx);
         crate::view_ui::windows(self, &ctx);
         let canvas = self.workspace.canvas;

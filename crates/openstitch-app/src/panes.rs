@@ -558,6 +558,11 @@ pub fn windows(app: &mut EditorApp, ctx: &egui::Context) {
             });
         });
     app.ui.shortcuts_open = open;
+    about_window(app, ctx);
+}
+
+/// Help ▸ About (every window).
+pub fn about_window(app: &mut EditorApp, ctx: &egui::Context) {
     let mut open = app.ui.about_open;
     egui::Window::new("About OpenStitch")
         .open(&mut open)
