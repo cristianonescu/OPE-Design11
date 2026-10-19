@@ -107,6 +107,16 @@ cargo run -p stitchtool -- serve                      # JSON-lines control chann
 ```
 
 ```bash
+cargo run -p openstitch-app -- --listen 0 --listen-root ~/Embroidery   # editor with the automation socket
+cargo run -p stitchtool -- connect                    # JSON lines to the running editor
+cargo run -p openstitch-mcp -- --live                 # MCP tools act on the running editor
+```
+
+The socket listens on 127.0.0.1 only and every request must carry the per-launch token that the
+editor prints and writes to `automation.json` (readable by you only) in the OpenStitch config
+directory; clients read it from there. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#automation-socket-live-editor).
+
+```bash
 cargo run -p openstitch-mcp -- --root ~/Embroidery     # MCP server on stdio (see below)
 ```
 

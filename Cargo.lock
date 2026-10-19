@@ -2348,6 +2348,7 @@ dependencies = [
  "openstitch-engine",
  "openstitch-formats",
  "openstitch-library",
+ "openstitch-remote",
  "rfd",
  "serde_json",
 ]
@@ -2428,6 +2429,7 @@ dependencies = [
  "openstitch-core",
  "openstitch-design",
  "openstitch-engine",
+ "openstitch-remote",
  "openstitch-render",
  "png",
  "serde_json",
@@ -2441,6 +2443,15 @@ dependencies = [
  "miniz_oxide 0.8.9",
  "openstitch-core",
  "openstitch-design",
+]
+
+[[package]]
+name = "openstitch-remote"
+version = "0.1.0"
+dependencies = [
+ "getrandom 0.3.4",
+ "openstitch-engine",
+ "serde_json",
 ]
 
 [[package]]
@@ -3275,6 +3286,7 @@ name = "stitchtool"
 version = "0.1.0"
 dependencies = [
  "openstitch-engine",
+ "openstitch-remote",
  "serde_json",
 ]
 

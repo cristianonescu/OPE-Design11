@@ -1,0 +1,19 @@
+[package]
+name = "openstitch-remote"
+description = "Loopback socket transport: drive a running OpenStitch editor's session from stitchtool or MCP"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+openstitch-engine = { path = "../openstitch-engine", default-features = false }
+serde_json.workspace = true
+# Per-launch token from the OS random source.
+getrandom = "0.3.4"
+
+[dev-dependencies]
+openstitch-engine = { path = "../openstitch-engine" }
+
+[lints]
+workspace = true

@@ -17,6 +17,7 @@ no web runtime.
 | `openstitch-engine` | done | `Session` (design, undo/redo, dispatch), command registry (incl. `import.svg` via usvg and `background.*`) (JSON params validated by `Params`), `.osd` projects, `Sandbox` with separate read and write roots for automation transports. File commands behind the default `formats` feature; Design Database commands (`library.*`) behind the default `library` feature. |
 | `stitchtool` | done | CLI: `commands`, `exec <script.json>`, `serve` (JSON lines over stdio). |
 | `openstitch-mcp` | done | MCP server on stdio: tools generated from `Session::commands()`, `run_batch`, `preview` (from `openstitch-render`), engine `Sandbox` roots, request/response caps. |
+| `openstitch-remote` | done | Loopback socket transport for the running editor: `Server` (127.0.0.1 listener, per-launch token, endpoint file, size limits and timeouts, requests handed to the UI thread), `Policy` (client capabilities and `Sandbox` roots scoped to each request), `Client` (used by `stitchtool connect` and `openstitch-mcp --live`). std::net threads, no async runtime. See [Automation socket](#automation-socket-live-editor). |
 | `openstitch-render` | done | tiny-skia + `png` rendering: design previews (MCP `preview`), file-manager thumbnails (`openstitch-thumbnailer`, freedesktop convention). |
 | `openstitch-print` | done | Printable PDF: actual-size (tiled), reduced, positioning sheets, Print and Stitch. Own minimal PDF 1.4 writer (vector paths, Helvetica text, RGB images, Flate via `miniz_oxide`): exact 1 mm = 72/25.4 pt, deterministic output, no PDF dependency for a handful of operators. |
 | `openstitch-app` | first version | Desktop editor `openstitch` (eframe/egui). The library half (`openstitch_app::editor`) holds every testable piece without egui: `Viewport`, hit-testing, `SelectionHandles`, the `ToolController` state machine, `RenderModel`, inspector and object-list models. Screenshot: [rust-editor-overview.png](images/rust-editor-overview.png). |
@@ -33,7 +34,8 @@ Rules: `#![forbid(unsafe_code)]` workspace-wide; clippy with `-D warnings`; work
 are listed explicitly so a crate under construction never breaks other builds. Engine-side
 runtime dependencies are only `serde`, `serde_json`, `ttf-parser` (see Lettering) and `i_overlay`
 (shape operations, see Decisions);
-`openstitch-mcp` adds `tiny-skia`, `png` and `base64`, all pure Rust.
+`openstitch-mcp` adds `tiny-skia`, `png` and `base64`, all pure Rust; `openstitch-remote` adds
+`getrandom` (the OS random source, for the socket token).
 
 **CI and delivery** (`.github/workflows/`; packaging details in [DISTRIBUTION.md](DISTRIBUTION.md)):
 
@@ -359,9 +361,10 @@ PhotoCraft (github.com/storytold/photocraft, Apache-2.0/MIT) is an independent r
 of Photoshop in Rust, used here as an architectural reference. Principles adopted:
 
 ```text
-openstitch-app (egui)   stitchtool exec   stitchtool serve (JSON lines)   openstitch-mcp
-        |                     |                       |                          |
-        +---------------------+-----------------------+--------------------------+
+openstitch-app (egui) <-- loopback socket <-- stitchtool connect / openstitch-mcp --live
+        |                     stitchtool exec   stitchtool serve (JSON lines)   openstitch-mcp
+        |                           |                       |                          |
+        +---------------------------+-----------------------+--------------------------+
                                      |
                          command registry (id + JSON params)
                                      |
@@ -384,8 +387,8 @@ openstitch-app (egui)   stitchtool exec   stitchtool serve (JSON lines)   openst
   depends on UI.
 - **Control channel:** `stitchtool serve` speaks newline-delimited JSON on stdio. Requests are
   `{"id", "command", "params"}`; replies are `{"id", "ok", "result" | "error"}`; lines are capped
-  at 1 MiB. It is for trusted local scripts and has no file roots. A socket transport for the live
-  app will need PhotoCraft's safeguards: loopback only, token auth, file roots.
+  at 1 MiB. It is for trusted local scripts and has no file roots. The running editor speaks the
+  same protocol over a loopback socket; see [Automation socket](#automation-socket-live-editor).
 - **MCP server (`openstitch-mcp`).** Newline-delimited JSON-RPC 2.0 on stdio, no network
   listener. Lifecycle: `initialize` (protocol version negotiated from 2025-11-25, 2025-06-18,
   2025-03-26, 2024-11-05; unknown requests get the newest), `notifications/initialized`, `ping`,
@@ -432,6 +435,68 @@ openstitch-app (egui)   stitchtool exec   stitchtool serve (JSON lines)   openst
     before decoding. A reply over 8 MiB is replaced by a -32603 error with the same id. Batches
     are capped at 256 steps, previews at 2048 px; the engine caps imports at 64 MiB and point
     lists at 100 000.
+
+## Automation socket (live editor)
+
+`openstitch --listen PORT` lets external tools drive the session of the editor that is open on
+screen, with the same JSON requests and per-command capabilities as `stitchtool serve`.
+`stitchtool connect` forwards stdin lines to it; `openstitch-mcp --live` sends every tool call to
+it (the `preview` tool, which renders the MCP server's own design, is refused in that mode).
+
+```text
+client --TCP 127.0.0.1--> connection thread --mpsc Job--> UI thread (EditorApp::serve_remote)
+       <---- reply line --                   <--reply----    Policy::apply → Session → restore
+```
+
+Protocol: one JSON object per line each way. Requests are
+`{"token", "id"?, "command", "params"?}`; replies are `{"id"?, "ok": true, "result"}` or
+`{"id"?, "ok": false, "error"}`, exactly `Session::handle`'s.
+
+Security model (`crates/openstitch-remote`):
+
+- **Off by default.** Nothing listens unless the editor is started with `--listen PORT`
+  (`0`: an OS-assigned port).
+- **Loopback only.** The listener binds `127.0.0.1`, never `0.0.0.0`, and drops peers that are
+  not loopback. The client refuses non-loopback addresses, so the token is never sent off the
+  machine.
+- **Per-launch token.** 32 bytes from the OS random source (`getrandom`), hex-encoded, new at
+  every launch. Every request must carry it; it is compared in constant time, and a missing or
+  wrong token gets an error and the connection is closed. The editor prints the address, token
+  and endpoint file on stderr, and writes `{"address", "token", "pid"}` to `automation.json` in
+  the OS config directory (next to `user.json`: `~/Library/Application Support/OpenStitch`,
+  `%APPDATA%\OpenStitch`, `$XDG_CONFIG_HOME/openstitch`). On Unix the directory is created
+  0700 and the file 0600; it is created exclusively after removing any previous file, so a
+  planted symlink is not followed. On Windows the per-user `%APPDATA%` ACL keeps it private.
+  The file is removed when the editor exits normally (only if it still holds this launch's
+  token); after a crash a stale file just points at a closed port.
+- **Same capabilities as `stitchtool serve` and MCP.** `--listen-read-only` (no edits,
+  undo/redo or file writes) and `--listen-no-files` (no file access). The engine refuses at
+  dispatch and again in `EngineState::resolve`.
+- **File roots.** Clients get an engine `Sandbox`: `--listen-root DIR` (read/write) and
+  `--listen-read-root DIR` (read only), repeatable. With no roots every file command is refused,
+  so a token alone never reaches the disk. The editor's own session keeps full access and no
+  sandbox: `Policy::apply` swaps the client's capabilities and sandbox in for one request and
+  `Policy::restore` puts the editor's back (`Session::set_sandbox`).
+- **Limits.** Request lines over 1 MiB get an error and the connection is closed (the reader
+  never buffers more); a connection idle for 5 minutes is closed; at most 4 connections at once
+  (more get "too many connections"); a request that waits more than 30 s for the UI thread gets
+  a timeout error and is skipped if still queued. Clients cap replies at 64 MiB.
+- **One thread owns the session.** Connection threads never touch the `Session`; they queue a
+  `Job` on an mpsc channel and wake egui (`request_repaint`), and `EditorApp::serve_remote`
+  drains the queue at the start of each frame. A client's edit is one Undo step in the Edit
+  menu, and a client's `history.undo` / `history.redo` act like the menu (a grouped user gesture
+  undoes as a whole), so the editor's history stays coherent.
+
+Threat model: this protects against other machines and against other local users. It does not
+protect against code running as the same user, which can read the token file (or the editor's
+memory) anyway. A request that times out may still run if the UI thread picked it up just
+before the deadline.
+
+Tests: `crates/openstitch-remote/tests/socket.rs` (round trip through a test host, wrong and
+missing tokens, oversized and invalid lines, read-only and file-root enforcement, timeouts,
+connection limit, endpoint file life cycle, loopback-only client),
+`openstitch-app` `remote::tests` (shared undo history with the editor),
+`openstitch-mcp/tests/live.rs` and `stitchtool/tests/connect.rs`.
 
 ## Desktop editor (`crates/openstitch-app`)
 

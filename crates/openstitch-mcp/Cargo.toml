@@ -11,6 +11,7 @@ base64 = "0.23.1"
 openstitch-core.workspace = true
 openstitch-design = { path = "../openstitch-design" }
 openstitch-engine = { path = "../openstitch-engine" }
+openstitch-remote = { path = "../openstitch-remote" }
 openstitch-render = { path = "../openstitch-render" }
 serde_json.workspace = true
 

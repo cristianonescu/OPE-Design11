@@ -17,6 +17,8 @@ openstitch-design = { path = "../openstitch-design" }
 openstitch-engine = { path = "../openstitch-engine" }
 openstitch-formats = { path = "../openstitch-formats" }
 openstitch-library = { path = "../openstitch-library" }
+# Loopback automation socket (`--listen`).
+openstitch-remote = { path = "../openstitch-remote" }
 # Size-limited PNG/JPEG/BMP decoding for the background reference image.
 openstitch-digitize = { path = "../openstitch-digitize" }
 # Images on the clipboard (already used by eframe for text).

@@ -55,6 +55,8 @@ pub struct Launch {
     pub database_view: Option<openstitch_app::editor::database::View>,
     /// Design Database dialog to open: search, convert, catalog, delete, newfolder.
     pub database_dialog: Option<String>,
+    /// Automation socket (`--listen`); started by `main` before the window opens.
+    pub listen: Option<openstitch_remote::ServerConfig>,
 }
 
 /// Values `--show` accepts.
@@ -115,8 +117,8 @@ pub struct EditorApp {
     frames: u64,
     /// Engine history steps per user-level edit, so one gesture (e.g. scale + move, or
     /// new design + import + centre) is one Undo.
-    undo_groups: Vec<usize>,
-    redo_groups: Vec<usize>,
+    pub(crate) undo_groups: Vec<usize>,
+    pub(crate) redo_groups: Vec<usize>,
     /// Rulers, grid, measure tool, Reference window, Design Settings, estimates.
     pub workspace: crate::workspace_ui::Workspace,
     /// Groups, arrange copies, shape operations, attributes, entry/exit points.
@@ -138,6 +140,8 @@ pub struct EditorApp {
     /// Design Database mode (File ▸ Design Database…).
     pub database: openstitch_app::editor::database::Database,
     pub db_textures: crate::database_ui::Textures,
+    /// Loopback automation socket; its requests run in [`EditorApp::serve_remote`].
+    pub remote: Option<openstitch_remote::Server>,
 }
 
 struct Screenshot {
@@ -203,6 +207,7 @@ impl EditorApp {
             background_texture: None,
             database: Default::default(),
             db_textures: Default::default(),
+            remote: None,
         };
         app.refresh();
         app.saved_revision = app.revision;
@@ -426,7 +431,7 @@ impl EditorApp {
     }
 
     /// Recompiles after a change, keeping selection and simulator position valid.
-    fn refresh(&mut self) {
+    pub(crate) fn refresh(&mut self) {
         self.revision += 1;
         let d = self.session.design();
         self.selection.retain(|id| d.index_of(*id).is_some());
@@ -1179,6 +1184,7 @@ impl eframe::App for EditorApp {
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
+        self.serve_remote();
         if self.database.open {
             self.update_title(&ctx);
             crate::database_ui::database(self, ui);
