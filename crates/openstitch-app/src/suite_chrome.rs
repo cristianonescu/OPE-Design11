@@ -475,10 +475,18 @@ mod tests {
             app.sewing.tool = crate::sewing_ui::FactoryTool::SelectPoint;
             app
         };
+        let templated = || {
+            let mut app = plain();
+            let path = template_png("runs");
+            crate::sewing_ui::open_template(&mut app.sewing, &path, &egui::Context::default())
+                .expect("template");
+            app.sewing.modify_template = true;
+            app
+        };
         every_command_runs_or_is_unavailable(
             FACTORY.actions(),
-            &[F::Open, F::SaveAs, F::Export],
-            &[&plain, &cross, &selected],
+            &[F::Open, F::SaveAs, F::Export, F::OpenTemplate],
+            &[&plain, &cross, &selected, &templated],
         );
     }
 
@@ -503,6 +511,123 @@ mod tests {
         assert!(!app.sewing.editor.snap);
         app.run(F::ImportPane, &ctx);
         assert!(!app.active(F::ImportPane));
+    }
+
+    /// A 4×2 PNG of the test's own in a temp folder (templates are user-supplied images).
+    fn template_png(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "openstitch-sdf-template-{tag}-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let path = dir.join("template.png");
+        let rgba: Vec<u8> = (0..8).flat_map(|i| [i * 30, 90, 160, 255]).collect();
+        std::fs::write(
+            &path,
+            openstitch_app::png::encode_rgba(4, 2, &rgba).expect("png"),
+        )
+        .expect("write");
+        path
+    }
+
+    #[test]
+    fn factory_tools_swap_duplicate_and_view_commands() {
+        use crate::sewing_ui::FactoryTool;
+        use FactoryAction as F;
+        let ctx = egui::Context::default();
+        let mut app = demo();
+        app.sewing.open = true;
+        for (a, tool) in [
+            (F::SelectObject, FactoryTool::SelectObject),
+            (F::PenTool, FactoryTool::Pen),
+            (F::Pan, FactoryTool::Pan),
+            (F::LineTool, FactoryTool::Line),
+        ] {
+            app.run(a, &ctx);
+            assert_eq!(app.sewing.tool, tool);
+            assert!(app.active(a));
+        }
+        // Swap: sewn from the other end; twice restores it.
+        let first = app.sewing.editor.doc.needles()[0];
+        app.run(F::Swap, &ctx);
+        assert_ne!(app.sewing.editor.doc.needles()[0], first);
+        app.run(F::Swap, &ctx);
+        assert_eq!(app.sewing.editor.doc.needles()[0], first);
+        // Duplicate doubles the decorative pattern; decorative satin cannot.
+        let n = app.sewing.editor.doc.points.len();
+        app.run(F::Duplicate, &ctx);
+        assert_eq!(app.sewing.editor.doc.points.len(), 2 * n);
+        app.sewing.editor = openstitch_app::editor::sewing::SewingEditor::new(
+            openstitch_design::sewing::SewingKind::DecorativeSatin,
+        );
+        assert!(!enabled(&app, F::Duplicate));
+        // Selected object zoom fits the pattern into the design area.
+        app.run(F::SelectedZoom, &ctx);
+        assert!(app.sewing.zoom > 1.0, "a short pattern is magnified");
+        // Orientation, simulator, grid spacing.
+        assert!(app.active(F::HorizontalOrientation));
+        app.run(F::HorizontalOrientation, &ctx);
+        assert!(!app.sewing.horizontal);
+        app.run(F::StitchSimulator, &ctx);
+        assert!(app.active(F::StitchSimulator));
+        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| app.menu(F::GridSpacing, ui));
+        out.textures_delta.clear();
+        // Template commands wait for a template.
+        for a in [F::ModifyTemplate, F::DeleteImage, F::TemplateDensity] {
+            assert!(!enabled(&app, a), "{a:?}");
+        }
+    }
+
+    #[test]
+    fn factory_template_opens_modifies_and_is_deleted() {
+        use FactoryAction as F;
+        let ctx = egui::Context::default();
+        let mut app = demo();
+        app.sewing.open = true;
+        let path = template_png("edit");
+        crate::sewing_ui::open_template(&mut app.sewing, &path, &ctx).expect("template");
+        let t = app.sewing.template.as_ref().expect("open");
+        assert_eq!(t.size.y * 2.0, t.size.x, "keeps the image's proportions");
+        assert!(enabled(&app, F::DeleteImage));
+        app.run(F::ModifyTemplate, &ctx);
+        assert!(app.active(F::ModifyTemplate));
+        assert!(
+            enabled(&app, F::Delete),
+            "Delete removes the template while modifying"
+        );
+        app.run(F::Delete, &ctx);
+        assert!(app.sewing.template.is_none() && !app.sewing.modify_template);
+        // Not an image: refused, nothing open.
+        let bad = path.with_file_name("not-an-image.png");
+        std::fs::write(&bad, b"hello").expect("write");
+        assert!(crate::sewing_ui::open_template(&mut app.sewing, &bad, &ctx).is_err());
+        assert!(app.sewing.template.is_none());
+    }
+
+    #[test]
+    fn factory_simulator_plays_needle_by_needle() {
+        use FactoryAction as F;
+        let mut app = demo();
+        app.sewing.open = true;
+        app.run(F::StitchSimulator, &egui::Context::default());
+        app.sewing.sim.playing = true;
+        app.sewing.sim.pos = Some(0);
+        let ctx = egui::Context::default();
+        let mut frames = 0;
+        while app.sewing.sim.playing && frames < 400 {
+            let input = egui::RawInput {
+                predicted_dt: 0.05,
+                ..egui::RawInput::default()
+            };
+            let mut out = ctx.run_ui(input, |ui| crate::sewing_ui::factory(&mut app, ui));
+            out.textures_delta.clear();
+            frames += 1;
+        }
+        assert!(
+            !app.sewing.sim.playing && app.sewing.sim.pos.is_none(),
+            "played to the end"
+        );
+        assert!(frames > 3, "one needle point at a time, not all at once");
     }
 
     fn temp_folder() -> PathBuf {

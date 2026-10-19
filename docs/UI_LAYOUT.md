@@ -493,49 +493,63 @@ Guide: [Stitch Design Factory Window](https://support.brother.com/g/s/hf/htmldoc
 | Help button | **Help ▾** |
 | Import pane | Left: the patterns kept in the project (Edit, Delete) |
 | Preview pane | Bottom: the pattern repeated along a seam |
-| Design area | The pattern with its width band, 1 mm grid, the end of the first repeat and two more repeats; Kind, Id, Name, Width and the kind's settings above it |
-| Status bar | Tool hint or the ScreenTip under the pointer; needle points, length, width, zoom |
+| Design area | The pattern with its width band, grid (Grid Spacing), the end of the first repeat and two more repeats, the start (blue square) and end (red square) points and the template image behind; landscape, or portrait with Horizontal Orientation off; Kind, Id, Name, Width and the kind's settings above it |
+| Status bar | Tool hint or the ScreenTip under the pointer; template and its density, needle points, length, width, grid spacing, zoom |
+| Stitch Simulator | A window: the editor simulator's controls (Play/Pause, start, previous/next needle point, end, slider, speed) sewing three repeats needle by needle |
 
 Single Stitch and Triple Stitch apply to cross patterns (each diagonal once or three times).
-Delete removes the selected point (Select Point tool, or the last point clicked).
+Delete removes the selected point (Select Point tool, or the last point clicked), or the
+template while Modify Template is on.
+Select Object selects the whole pattern (the window edits one); dragging it or the arrow keys
+move it by grid steps (Shift: straight), refused where it would leave the width band. The Pen
+Tool adds needle points, satin stations or cross cells along a dragged stroke, or replaces a
+decorative satin outline with it. Swap exchanges the start and end points (`swapped` in the
+document: the same needle points sewn in reverse order). Duplicate puts a copy of the pattern
+where it ends (not decorative satin, one outline). Selected object zoom fits the pattern to the
+design area; Pan drags it. Templates are images of the user's own (PNG, JPEG, BMP, GIF, TIFF):
+Modify Template draws a red frame (drag inside: move, its corner: scale, click outside or
+Escape: finish), Template Density fades it (0 % hides it, F6 steps), Delete Image removes it.
+Horizontal Orientation lays the page landscape (the feed running to the right, OpenStitch's
+default); off, the feed runs upwards. Grid Spacing: 0.25, 0.5, 1, 2 or 5 mm, also what points
+snap to.
 
 #### Home
 
 | Group | Command | Shortcut | OpenStitch action | Engine command | Available |
 |---|---|---|---|---|---|
-| Select | Select Object |  | `FactoryAction::SelectObject` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Select | Select Object |  | `FactoryAction::SelectObject` | view/UI only | yes |
 | Select | Select Point |  | `FactoryAction::SelectPoint` | view/UI only | yes |
 | Draw | Line Tool |  | `FactoryAction::LineTool` | view/UI only | yes |
-| Draw | Pen Tool |  | `FactoryAction::PenTool` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Draw | Pen Tool |  | `FactoryAction::PenTool` | view/UI only | yes |
 | Zoom | Zoom in | `Ctrl+=` | `FactoryAction::ZoomIn` | view/UI only | yes |
 | Zoom | Zoom Out | `Ctrl+-` | `FactoryAction::ZoomOut` | view/UI only | yes |
-| Zoom | Selected object zoom |  | `FactoryAction::SelectedZoom` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Zoom | Pan |  | `FactoryAction::Pan` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Zoom | Selected object zoom |  | `FactoryAction::SelectedZoom` | view/UI only | yes |
+| Zoom | Pan |  | `FactoryAction::Pan` | view/UI only | yes |
 | Stitch | Single Stitch |  | `FactoryAction::SingleStitch` | view/UI only | yes |
 | Stitch | Triple Stitch |  | `FactoryAction::TripleStitch` | view/UI only | yes |
-| Stitch | Swap |  | `FactoryAction::Swap` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Stitch | Swap |  | `FactoryAction::Swap` | `sewing.swap` | yes |
 | Edit | Flip Vertical |  | `FactoryAction::FlipVertical` | view/UI only | yes |
 | Edit | Flip Horizontal |  | `FactoryAction::FlipHorizontal` | view/UI only | yes |
-| Edit | Duplicate | `Ctrl+D` | `FactoryAction::Duplicate` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Edit | Duplicate | `Ctrl+D` | `FactoryAction::Duplicate` | `sewing.duplicate` | yes |
 | Edit | Delete | `Delete` | `FactoryAction::Delete` | view/UI only | yes |
 
 #### View
 
 | Group | Command | Shortcut | OpenStitch action | Engine command | Available |
 |---|---|---|---|---|---|
-| Template | Open Template |  | `FactoryAction::OpenTemplate` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Template | Modify Template |  | `FactoryAction::ModifyTemplate` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Template | Delete Image |  | `FactoryAction::DeleteImage` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Template | Template Density |  | `FactoryAction::TemplateDensity` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Template | Open Template |  | `FactoryAction::OpenTemplate` | view/UI only | yes |
+| Template | Modify Template |  | `FactoryAction::ModifyTemplate` | view/UI only | yes |
+| Template | Delete Image |  | `FactoryAction::DeleteImage` | view/UI only | yes |
+| Template | Template Density | `F6` | `FactoryAction::TemplateDensity` | view/UI only | yes |
 | Display | Needle Drop Point |  | `FactoryAction::NeedleDropPoint` | view/UI only | yes |
-| Display | Horizontal Orientation |  | `FactoryAction::HorizontalOrientation` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Display | Horizontal Orientation |  | `FactoryAction::HorizontalOrientation` | view/UI only | yes |
 | Show/Hide | Import Pane |  | `FactoryAction::ImportPane` | `sewing.list` | yes |
 | Show/Hide | Preview Window |  | `FactoryAction::PreviewWindow` | view/UI only | yes |
 | Show/Hide | Status Bar |  | `FactoryAction::StatusBar` | view/UI only | yes |
 | Grid | Show Grid |  | `FactoryAction::ShowGrid` | view/UI only | yes |
 | Grid | Snap to Grid |  | `FactoryAction::SnapToGrid` | view/UI only | yes |
-| Grid | Grid Spacing |  | `FactoryAction::GridSpacing` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Simulator | Stitch Simulator |  | `FactoryAction::StitchSimulator` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Grid | Grid Spacing |  | `FactoryAction::GridSpacing` | view/UI only | yes |
+| Simulator | Stitch Simulator |  | `FactoryAction::StitchSimulator` | view/UI only | yes |
 
 #### Application menu
 

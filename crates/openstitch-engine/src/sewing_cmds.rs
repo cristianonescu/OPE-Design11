@@ -38,6 +38,15 @@ fn find<'a>(s: &'a EngineState, p: &Params) -> Result<&'a SewingStitch, CommandE
         .ok_or_else(|| p.not_found(format!("sewing stitch pattern '{id}'")))
 }
 
+fn index(s: &EngineState, p: &Params) -> Result<usize, CommandError> {
+    let id = p.string("id", None)?;
+    s.design
+        .sewing
+        .iter()
+        .position(|q| q.id == id)
+        .ok_or_else(|| p.not_found(format!("sewing stitch pattern '{id}'")))
+}
+
 fn summary(q: &SewingStitch) -> Value {
     json!({
         "id": q.id, "name": q.name, "kind": q.kind.id(), "widthMM": q.width,
@@ -79,6 +88,31 @@ pub fn commands() -> Vec<CommandSpec> {
                     return Err(p.not_found(format!("sewing stitch pattern '{id}'")));
                 }
                 Ok(Value::Null)
+            },
+        ),
+        spec(
+            "sewing.swap",
+            "Swap the start and end of a sewing stitch pattern: the same needle points sewn in reverse order",
+            Effect::Edit,
+            vec![req("id", "string", "Pattern id")],
+            |s, p| {
+                let i = index(s, p)?;
+                let q = &mut s.design.sewing[i];
+                q.swap();
+                Ok(json!({ "id": q.id, "swapped": q.swapped }))
+            },
+        ),
+        spec(
+            "sewing.duplicate",
+            "Follow a sewing stitch pattern with a copy of itself where it ends along the feed (not decorative satin)",
+            Effect::Edit,
+            vec![req("id", "string", "Pattern id")],
+            |s, p| {
+                let i = index(s, p)?;
+                let d = s.design.sewing[i].duplicate().map_err(|e| p.failed(e))?;
+                let out = summary(&d);
+                s.design.sewing[i] = d;
+                Ok(out)
             },
         ),
         spec(

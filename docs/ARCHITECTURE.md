@@ -298,7 +298,12 @@ Verified Compatible).
   drawn along the feed with two faint repeats; satin stations keep their order and left ≤
   right while dragged. "Add to project" sends `sewing.define` (one Undo); patterns live in
   `Design::sewing`, never sewn by the embroidery compiler. Export (`sewing.export`) writes
-  `openstitch.sewing` JSON, SVG, or experimental PMV. `--show sdf` opens it on the project's
+  `openstitch.sewing` JSON, SVG, or experimental PMV. Swap and Duplicate change the pattern
+  (`SewingStitch::swap` / `duplicate`, also `sewing.swap` / `sewing.duplicate` on a pattern in
+  the project, one Undo each); Select Object moves it (`translate`, validated), the Pen Tool
+  adds along a stroke. The template image (a user-supplied file, size-limited decoder),
+  Horizontal Orientation, Grid Spacing and the Stitch Simulator (the editor simulator's
+  transport, `panels::sim_controls`, over three repeats) are window state. `--show sdf` opens it on the project's
   first pattern: [rust-editor-stitch-design-factory.png](images/rust-editor-stitch-design-factory.png).
 - **Editor wizard.** Design → Image to Embroidery… (`wizard_ui.rs`, model
   `openstitch_app::editor::wizard::ImageWizard`): choose an image, a method (Auto Punch, Cross

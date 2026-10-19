@@ -188,3 +188,66 @@ fn pmv_export_limits_needle_count() {
     assert!(long.needles().len() > sewing::PMV_MAX_NEEDLES);
     assert!(sewing::pmv(&long).is_err());
 }
+
+#[test]
+fn swap_sews_the_same_needles_from_the_other_end() {
+    for kind in SewingKind::ALL {
+        let mut s = SewingStitch::new(kind);
+        let before = s.needles();
+        s.swap();
+        let mut after = s.needles();
+        after.reverse();
+        assert_eq!(after, before, "{kind:?}");
+        // Kept in the document, and only written when on.
+        assert!(s.to_json(false).contains("\"swapped\":true"));
+        assert_eq!(sewing::parse(&s.to_json(false)).expect("round trip"), s);
+        s.swap();
+        assert!(!s.to_json(false).contains("swapped"));
+    }
+}
+
+#[test]
+fn duplicate_places_a_copy_where_the_pattern_ends() {
+    let s = SewingStitch::new(SewingKind::Decorative);
+    let d = s.duplicate().expect("decorative");
+    assert_eq!(d.points.len(), 2 * s.points.len());
+    assert_eq!(d.points[s.points.len()], v2(8.0, 0.0));
+    assert_eq!(d.length(), 16.0);
+
+    let s = SewingStitch::new(SewingKind::Satin);
+    let d = s.duplicate().expect("satin");
+    assert_eq!(d.profile.len(), 5, "the shared station is not repeated");
+    assert_eq!(d.profile[4], [16.0, -0.5, 0.5]);
+
+    let s = SewingStitch::new(SewingKind::Cross);
+    let d = s.duplicate().expect("cross");
+    assert!(d.cells.contains(&[3, 1]) && d.cells.contains(&[5, 1]));
+
+    assert!(
+        SewingStitch::new(SewingKind::DecorativeSatin)
+            .duplicate()
+            .is_err()
+    );
+    // Duplicating until the pattern is too long fails without changing it.
+    let mut s = SewingStitch::new(SewingKind::Decorative);
+    while let Ok(d) = s.duplicate() {
+        s = d;
+    }
+    assert!(s.validate().is_ok() && s.length() <= sewing::MAX_LENGTH);
+}
+
+#[test]
+fn translate_moves_every_point_inside_the_band_only() {
+    let mut s = SewingStitch::new(SewingKind::Decorative);
+    s.translate(v2(2.0, 0.5)).expect("inside");
+    assert_eq!(s.points[0], v2(2.0, 0.5));
+    let before = s.clone();
+    assert!(s.translate(v2(0.0, 1.0)).is_err(), "3.5 mm is the edge");
+    assert!(s.translate(v2(-5.0, 0.0)).is_err(), "x stays >= 0");
+    assert_eq!(s, before);
+
+    let mut c = SewingStitch::new(SewingKind::Cross);
+    c.translate(v2(4.1, 0.0)).expect("two cells");
+    assert!(c.cells.contains(&[2, 1]));
+    assert!(c.translate(v2(-20.0, 0.0)).is_err());
+}
