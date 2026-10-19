@@ -625,9 +625,18 @@ impl<'a> LoadedFont<'a> {
     }
 
     /// The shaper for a TrueType/OpenType font; embroidery fonts have none.
-    fn shaper(&self) -> Option<rustybuzz::Face<'a>> {
+    fn shaper(&self, kerning: bool) -> Option<rustybuzz::Face<'a>> {
         match &self.source {
-            Source::Face(f) => Some(rustybuzz::Face::from_face((**f).clone())),
+            Source::Face(f) => {
+                let face = if kerning {
+                    None
+                } else {
+                    shaping::without_kern_table(f)
+                };
+                Some(rustybuzz::Face::from_face(
+                    face.unwrap_or_else(|| (**f).clone()),
+                ))
+            }
             Source::Embroidery(_) => None,
         }
     }
@@ -935,7 +944,7 @@ pub fn layout_in(
     let spacing = spec.letter_spacing * 10.0;
     let line_height = font.line_height() * scale + spec.line_spacing * 10.0;
     let vertical = spec.direction == TextDirection::Vertical && path.is_none();
-    let shaper = font.shaper();
+    let shaper = font.shaper(spec.kerning);
     let mut missing = Vec::new();
     let mut shaping = Vec::new();
 

@@ -161,17 +161,30 @@ fn name_drop_resets_character_edits() {
 }
 
 /// Hebrew and Arabic through a system font, when the machine has one with both (fonts with
-/// these scripts are not bundled).
+/// these scripts are not bundled). Arial and DejaVu Sans have a legacy `kern` table, which once
+/// left unkerned right-to-left text in logical order (see `shaping::without_kern_table`).
 #[test]
 fn right_to_left_scripts_with_a_system_font() {
     let candidates = [
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/dejavu/DejaVuSans.ttf",
         "C:\\Windows\\Fonts\\arial.ttf",
     ];
-    let Some(path) = candidates.iter().map(Path::new).find(|p| p.exists()) else {
-        eprintln!("no system font with Hebrew and Arabic; skipped");
+    // The first font that has every character the test sets.
+    let needed = "ab\u{05E9}\u{05DC}\u{05D5}\u{05DD}\u{0628}\u{0633}\u{0644}\u{0627}\u{0645}";
+    let covers = |path: &Path| {
+        std::fs::read(path).is_ok_and(|bytes| {
+            openstitch_design::fonts::parse_face(&bytes, 0).is_some_and(|face| {
+                needed
+                    .chars()
+                    .all(|c| face.glyph_index(c).is_some_and(|g| g.0 != 0))
+            })
+        })
+    };
+    let Some(path) = candidates.iter().map(Path::new).find(|p| covers(p)) else {
+        eprintln!("no system font with the Hebrew and Arabic test characters; skipped");
         return;
     };
     let mut s = Session::new(temp_dir());

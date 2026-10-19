@@ -9,7 +9,8 @@
 
 use std::ops::Range;
 
-use rustybuzz::{Direction, Feature, UnicodeBuffer, ttf_parser::Tag};
+use rustybuzz::ttf_parser::{self, Tag};
+use rustybuzz::{Direction, Feature, UnicodeBuffer};
 use unicode_bidi::BidiInfo;
 use unicode_script::{Script, UnicodeScript};
 
@@ -82,6 +83,67 @@ fn script_pieces(line: &str, range: Range<usize>) -> Vec<Range<usize>> {
     }
     out.push(start..range.end);
     out
+}
+
+/// `face` without its legacy `kern` table, for text set without kerning; `None` when it has
+/// none (or cannot be rebuilt).
+///
+/// rustybuzz 0.20.1 reverses a right-to-left buffer around each `kern` subtable but skips the
+/// reversal back when kerning is not requested, so unkerned right-to-left text in fonts with a
+/// `kern` table (Arial, DejaVu Sans) came out in logical order. Without the table the shaper never
+/// takes that path; with kerning off the table would add nothing anyway.
+pub(crate) fn without_kern_table<'a>(face: &ttf_parser::Face<'a>) -> Option<ttf_parser::Face<'a>> {
+    face.tables().kern?;
+    let raw = face.raw_face();
+    let t = |tag: &[u8; 4]| raw.table(Tag::from_bytes(tag));
+    let tables = ttf_parser::RawFaceTables {
+        head: t(b"head")?,
+        hhea: t(b"hhea")?,
+        maxp: t(b"maxp")?,
+        bdat: t(b"bdat"),
+        bloc: t(b"bloc"),
+        cbdt: t(b"CBDT"),
+        cblc: t(b"CBLC"),
+        cff: t(b"CFF "),
+        cmap: t(b"cmap"),
+        colr: t(b"COLR"),
+        cpal: t(b"CPAL"),
+        ebdt: t(b"EBDT"),
+        eblc: t(b"EBLC"),
+        glyf: t(b"glyf"),
+        hmtx: t(b"hmtx"),
+        kern: None,
+        loca: t(b"loca"),
+        name: t(b"name"),
+        os2: t(b"OS/2"),
+        post: t(b"post"),
+        sbix: t(b"sbix"),
+        stat: t(b"STAT"),
+        svg: t(b"SVG "),
+        vhea: t(b"vhea"),
+        vmtx: t(b"vmtx"),
+        vorg: t(b"VORG"),
+        gdef: t(b"GDEF"),
+        gpos: t(b"GPOS"),
+        gsub: t(b"GSUB"),
+        math: t(b"MATH"),
+        ankr: t(b"ankr"),
+        feat: t(b"feat"),
+        kerx: t(b"kerx"),
+        morx: t(b"morx"),
+        trak: t(b"trak"),
+        avar: t(b"avar"),
+        cff2: t(b"CFF2"),
+        fvar: t(b"fvar"),
+        gvar: t(b"gvar"),
+        hvar: t(b"HVAR"),
+        mvar: t(b"MVAR"),
+        vvar: t(b"VVAR"),
+    };
+    // Table data is untrusted: a parser panic keeps the original face.
+    std::panic::catch_unwind(|| ttf_parser::Face::from_raw_tables(tables).ok())
+        .ok()
+        .flatten()
 }
 
 /// How a piece is shaped.

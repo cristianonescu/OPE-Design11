@@ -166,7 +166,9 @@ No image codec is added: `--screenshot` writes PNG with a 100-line stored-deflat
   right-to-left runs. Standard and contextual ligatures (`liga`, `clig`) are turned off so each
   letter stays its own glyph for digitizing and per-character edits; required ligatures stay.
   Kerning (`kern`) follows `TextSpec::kerning` (off by default, so files written before it
-  existed lay out unchanged). Glyph clusters keep the index of their first character
+  existed lay out unchanged; unkerned text is shaped without the font's legacy `kern` table,
+  which works around a rustybuzz 0.20.1 bug that left such right-to-left text in logical
+  order). Glyph clusters keep the index of their first character
   (`Glyph::index`). Shaper panics on damaged fonts are contained: that run falls back to one
   glyph per character. Embroidery fonts are not shaped: their characters are set one after
   another in bidi order with their own advances, and scripts that need shaping are named in
