@@ -86,8 +86,8 @@ dearest:
 | 13 | No per-character colour or multi-character selection | Fonts | 4 | Documented difference | Colour grouping |
 | 14 | Programmable fill defaults to 0° instead of 45° | Stitches | 3 | Documented difference | No |
 | 15 | Missing fill, satin and zigzag attributes; wrong ranges | Stitches | 3 | Documented difference | Geometry |
-| 16 | Optimize Sewing Order does not move entry and exit points | Stitches | 3 | Documented difference | No |
-| 17 | Hole sewing not validated or paired | Stitches | 3 | Documented difference | No |
+| 16 | Optimize Sewing Order does not move entry and exit points (**fixed**, internal regression) | Stitches | 3 | Documented difference | No |
+| 17 | Hole sewing not validated or paired (**fixed**, internal regression) | Stitches | 3 | Documented difference | No |
 | 18 | PES thread table drops chart names and colour type (**fixed**: round trip; chart strings pending) | PES | 3 | Documented difference | Chart strings |
 | 19 | Design Property metadata cannot be set; lost on import (**fixed**, internal regression) | PES | 3 | Documented difference | No |
 | 20 | Character kerning moves one glyph without reflowing the line | Fonts | 3 | Documented, unverified | Reflow rule |
@@ -568,6 +568,15 @@ Line references are relative to `crates/`.
   - After reordering, set each entry to the outline point nearest the previous exit and each
     exit to the point nearest the next entry.
   - Add the persistent option, applied when shapes are created.
+- **Status:** fixed at the internal-regression tier (not verified against PE-DESIGN output).
+  `order.optimize` sets each exit and the next entry to the closest points of the two
+  outlines; Options ▸ Optimize Entry/Exit Points (`options.set {optimizeEntryExit}`, user
+  settings, default off — the PE-DESIGN default is unverified) links each new shape the same
+  way. Tests in `openstitch-engine/tests/order_holes.rs`:
+  `optimize_moves_entry_and_exit_to_the_closest_points`,
+  `optimize_entry_exit_option_persists_and_applies_to_new_shapes`. 10 mm squares 25 mm apart
+  leave a 15 mm gap, so the test asserts 15 mm ±0.5 (measured 15.0 and 15.0; 41.1 and 36.3
+  before).
 
 ## 17. Hole sewing is not validated or paired
 
@@ -595,6 +604,12 @@ Line references are relative to `crates/`.
   - Validate full enclosure with `boolean::combine`, and check for self-crossing and the
     direction-line count.
   - Subtract only the paired shape.
+- **Status:** fixed at the internal-regression tier (not verified against PE-DESIGN output).
+  The outer object stores `holeInner`; `.osd` files saved before pair with the first enclosed
+  region sewn after. Tests in `openstitch-engine/tests/order_holes.rs`:
+  `hole_sewing_cuts_out_only_the_paired_shape` (measured 829.1 mm² vs pentagon − star
+  833.5 mm²), `designs_saved_before_pairs_cut_out_the_enclosed_region_only`,
+  `hole_sewing_is_refused_outside_the_guide_limits`.
 
 ## 18. PES thread table drops chart names and colour type
 
