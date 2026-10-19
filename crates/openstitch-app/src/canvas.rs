@@ -50,7 +50,7 @@ pub fn canvas(app: &mut EditorApp, ui: &mut egui::Ui) {
 
     navigate(ui, &response, rect, &mut vp, app.ui.pan);
     app.viewport = Some(vp);
-    if !app.ui.pan {
+    if !app.ui.pan && !crate::view_ui::guide_pointer(app, ui, &response, rect, &vp) {
         pointer(app, ui, &response, vp);
     }
     app.ensure_render_model();
@@ -65,6 +65,9 @@ pub fn canvas(app: &mut EditorApp, ui: &mut egui::Ui) {
     if app.workspace.realistic {
         crate::workspace_ui::draw_realistic(app, &painter, &vp);
         draw_travel(app, &painter, &vp);
+    } else if app.workspace.solid {
+        crate::view_ui::draw_solid(app, &painter, &vp);
+        draw_travel(app, &painter, &vp);
     } else {
         draw_stitches(app, &painter, &vp);
     }
@@ -76,6 +79,8 @@ pub fn canvas(app: &mut EditorApp, ui: &mut egui::Ui) {
     crate::edit_ui::draw_markers(app, &painter, &vp);
     crate::sections_ui::draw_sections(app, &painter, &vp);
     crate::workspace_ui::draw_measure(&painter, &vp, &app.workspace.measure);
+    crate::view_ui::draw_image_frame(app, &painter, &vp);
+    crate::view_ui::draw_guides(app, &painter, rect, &vp);
     if let (Some(_), Some(n)) = (app.simulate, app.render.needle) {
         let c = pos(vp.to_screen(n));
         painter.circle_stroke(
@@ -110,6 +115,7 @@ pub fn canvas(app: &mut EditorApp, ui: &mut egui::Ui) {
     }
     if app.workspace.rulers {
         crate::workspace_ui::draw_rulers(&painter, rect, &vp, response.hover_pos());
+        crate::view_ui::draw_guide_markers(app, &painter, rect, &vp);
     }
     let cursor = match app.tools.tool() {
         _ if app.ui.pan => egui::CursorIcon::Grab,
@@ -244,25 +250,22 @@ fn draw_background(
     if app
         .background_texture
         .as_ref()
-        .is_none_or(|(p, _)| *p != b.path)
+        .is_none_or(|(p, a, _)| *p != b.path || *a != b.adjust)
     {
-        let texture = std::fs::read(&b.path)
-            .ok()
-            .and_then(|data| openstitch_digitize::Raster::decode(&data).ok())
-            .map(|r| {
-                let size = [r.width() as usize, r.height() as usize];
-                let mut rgba = Vec::with_capacity(size[0] * size[1] * 4);
-                for y in 0..r.height() {
-                    for x in 0..r.width() {
-                        rgba.extend_from_slice(&r.pixel(x, y));
-                    }
+        let texture = crate::view_ui::shown_image(app).ok().map(|r| {
+            let size = [r.width() as usize, r.height() as usize];
+            let mut rgba = Vec::with_capacity(size[0] * size[1] * 4);
+            for y in 0..r.height() {
+                for x in 0..r.width() {
+                    rgba.extend_from_slice(&r.pixel(x, y));
                 }
-                let image = egui::ColorImage::from_rgba_unmultiplied(size, &rgba);
-                ctx.load_texture("background", image, egui::TextureOptions::LINEAR)
-            });
-        app.background_texture = Some((b.path.clone(), texture));
+            }
+            let image = egui::ColorImage::from_rgba_unmultiplied(size, &rgba);
+            ctx.load_texture("background", image, egui::TextureOptions::LINEAR)
+        });
+        app.background_texture = Some((b.path.clone(), b.adjust, texture));
     }
-    if let Some((_, Some(texture))) = &app.background_texture {
+    if let Some((_, _, Some(texture))) = &app.background_texture {
         let r = model_rect(
             vp,
             &Rect {

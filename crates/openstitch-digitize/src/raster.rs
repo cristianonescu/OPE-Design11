@@ -1,7 +1,7 @@
 //! Bounded image decoding and the RGBA raster every conversion works on.
 
 use crate::DigitizeError;
-use openstitch_design::{Vec2, v2};
+use openstitch_design::{ImageAdjust, Vec2, v2};
 
 /// Largest accepted image file.
 pub const MAX_FILE_BYTES: usize = 32 << 20;
@@ -191,6 +191,135 @@ impl Raster {
         }
     }
 
+    /// The raster turned by `quarters` × 90° clockwise.
+    pub fn rotated(&self, quarters: u32) -> Raster {
+        let q = quarters % 4;
+        if q == 0 {
+            return self.clone();
+        }
+        let (w, h) = if q == 2 {
+            (self.width, self.height)
+        } else {
+            (self.height, self.width)
+        };
+        let mut rgba = Vec::with_capacity(self.rgba.len());
+        for y in 0..h {
+            for x in 0..w {
+                // The source pixel that lands on (x, y).
+                let (sx, sy) = match q {
+                    1 => (y, self.height - 1 - x),
+                    2 => (self.width - 1 - x, self.height - 1 - y),
+                    _ => (self.width - 1 - y, x),
+                };
+                rgba.extend_from_slice(&self.pixel(sx, sy));
+            }
+        }
+        Raster {
+            width: w,
+            height: h,
+            rgba,
+        }
+    }
+
+    /// The pixels `[x0, x1) × [y0, y1)`, clamped to the image and at least one pixel.
+    pub fn cropped(&self, x0: u32, y0: u32, x1: u32, y1: u32) -> Raster {
+        let x0 = x0.min(self.width - 1);
+        let y0 = y0.min(self.height - 1);
+        let x1 = x1.clamp(x0 + 1, self.width);
+        let y1 = y1.clamp(y0 + 1, self.height);
+        let mut rgba = Vec::with_capacity((x1 - x0) as usize * (y1 - y0) as usize * 4);
+        for y in y0..y1 {
+            let i = (y as usize * self.width as usize + x0 as usize) * 4;
+            rgba.extend_from_slice(&self.rgba[i..i + (x1 - x0) as usize * 4]);
+        }
+        Raster {
+            width: x1 - x0,
+            height: y1 - y0,
+            rgba,
+        }
+    }
+
+    /// Brightness, contrast and saturation changed, each −100 to 100 (0 = unchanged):
+    /// brightness adds up to ±255 × ½, contrast scales the distance from mid-grey (−100 = flat
+    /// grey, 100 = 3 ×), saturation scales the distance from the pixel's grey (−100 = grey).
+    /// Alpha is kept.
+    pub fn adjusted(&self, brightness: f64, contrast: f64, saturation: f64) -> Raster {
+        let b = brightness.clamp(-100.0, 100.0) / 100.0 * 127.5;
+        let c = contrast.clamp(-100.0, 100.0) / 100.0;
+        let contrast = if c < 0.0 { 1.0 + c } else { 1.0 + 2.0 * c };
+        let saturation = 1.0 + saturation.clamp(-100.0, 100.0) / 100.0;
+        if b == 0.0 && contrast == 1.0 && saturation == 1.0 {
+            return self.clone();
+        }
+        let mut rgba = self.rgba.clone();
+        for px in rgba.chunks_exact_mut(4) {
+            let [r, g, bl] = [px[0], px[1], px[2]].map(f64::from);
+            let grey = 0.299 * r + 0.587 * g + 0.114 * bl;
+            for c in &mut px[..3] {
+                let v = grey + (f64::from(*c) - grey) * saturation;
+                let v = (v - 127.5) * contrast + 127.5 + b;
+                *c = v.round().clamp(0.0, 255.0) as u8;
+            }
+        }
+        Raster {
+            width: self.width,
+            height: self.height,
+            rgba,
+        }
+    }
+
+    /// The background image as shown on the Design Page: turned, cropped, then its colours
+    /// changed by `a`.
+    pub fn with_adjust(&self, a: &ImageAdjust) -> Raster {
+        let r = self.rotated(u32::from(a.rotation));
+        let (w, h) = (f64::from(r.width), f64::from(r.height));
+        let [l, t, rt, b] = a.crop.map(|c| c.clamp(0.0, ImageAdjust::MAX_CROP));
+        let r = if a.crop == [0.0; 4] {
+            r
+        } else {
+            r.cropped(
+                (l * w).round() as u32,
+                (t * h).round() as u32,
+                ((1.0 - rt) * w).round() as u32,
+                ((1.0 - b) * h).round() as u32,
+            )
+        };
+        r.adjusted(a.brightness, a.contrast, a.saturation)
+    }
+
+    /// The raster encoded as PNG, BMP or JPEG, chosen by file extension (`png`, `bmp`, `jpg`,
+    /// `jpeg`; any case). BMP and JPEG are written over white, without alpha.
+    pub fn encode_as(&self, extension: &str) -> Result<Vec<u8>, DigitizeError> {
+        let format = match extension.to_ascii_lowercase().as_str() {
+            "png" => return self.encode_png(),
+            "bmp" => image::ImageFormat::Bmp,
+            "jpg" | "jpeg" => image::ImageFormat::Jpeg,
+            other => {
+                return Err(DigitizeError::Decode(format!(
+                    "cannot write .{other} images (use .png, .bmp or .jpg)"
+                )));
+            }
+        };
+        let mut rgb = Vec::with_capacity(self.width as usize * self.height as usize * 3);
+        for px in self.rgba.chunks_exact(4) {
+            let a = u32::from(px[3]);
+            for &c in &px[..3] {
+                rgb.push(((u32::from(c) * a + 255 * (255 - a)) / 255) as u8);
+            }
+        }
+        let mut out = std::io::Cursor::new(Vec::new());
+        image::write_buffer_with_format(
+            &mut out,
+            &rgb,
+            self.width,
+            self.height,
+            image::ExtendedColorType::Rgb8,
+            format,
+        )
+        .map_err(|e| DigitizeError::Decode(e.to_string()))?;
+        Ok(out.into_inner())
+    }
+
     /// Luminance 0–255 (Rec. 601) composited over white.
     pub fn luma_over_white(&self, x: u32, y: u32) -> f64 {
         let [r, g, b, a] = self.pixel(x, y);
@@ -236,5 +365,87 @@ impl Frame {
     /// Millimetres per pixel.
     pub fn mm_per_px(&self) -> f64 {
         self.scale / 10.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample() -> Raster {
+        // 3 × 2: pixel value encodes its position.
+        Raster::from_fn(3, 2, |x, y| [(10 * y + x) as u8, 0, 0, 255]).expect("raster")
+    }
+
+    #[test]
+    fn rotation_turns_clockwise_and_round_trips() {
+        let r = sample();
+        let q = r.rotated(1);
+        assert_eq!((q.width(), q.height()), (2, 3));
+        // Clockwise: the bottom-left source pixel lands top-left.
+        assert_eq!(q.pixel(0, 0)[0], 10);
+        assert_eq!(q.pixel(1, 0)[0], 0);
+        assert_eq!(q.pixel(1, 2)[0], 2);
+        assert_eq!(r.rotated(2).pixel(0, 0)[0], 12);
+        assert_eq!(r.rotated(3).pixel(0, 0)[0], 2);
+        assert_eq!(q.rotated(3), r);
+        assert_eq!(r.rotated(4), r);
+    }
+
+    #[test]
+    fn crop_clamps_to_the_image() {
+        let r = sample();
+        let c = r.cropped(1, 1, 3, 2);
+        assert_eq!((c.width(), c.height()), (2, 1));
+        assert_eq!(c.pixel(0, 0)[0], 11);
+        let tiny = r.cropped(9, 9, 0, 0);
+        assert_eq!((tiny.width(), tiny.height()), (1, 1));
+        assert_eq!(tiny.pixel(0, 0)[0], 12);
+    }
+
+    #[test]
+    fn adjustments_brighten_flatten_and_desaturate() {
+        let r = Raster::from_fn(1, 1, |_, _| [200, 100, 50, 128]).expect("raster");
+        assert_eq!(r.adjusted(0.0, 0.0, 0.0), r);
+        let bright = r.adjusted(100.0, 0.0, 0.0).pixel(0, 0);
+        assert!(bright[0] == 255 && bright[2] > 50 && bright[3] == 128);
+        let flat = r.adjusted(0.0, -100.0, 0.0).pixel(0, 0);
+        assert!(flat[..3].iter().all(|&c| c == 128));
+        let grey = r.adjusted(0.0, 0.0, -100.0).pixel(0, 0);
+        assert!(grey[0] == grey[1] && grey[1] == grey[2]);
+        let strong = r.adjusted(0.0, 100.0, 0.0).pixel(0, 0);
+        assert!(strong[0] > 200 && strong[2] < 50);
+    }
+
+    #[test]
+    fn encodes_png_bmp_and_jpeg() {
+        let r = Raster::from_fn(8, 8, |x, y| [(x * 30) as u8, (y * 30) as u8, 90, 255])
+            .expect("raster");
+        for ext in ["png", "BMP", "jpg", "jpeg"] {
+            let bytes = r.encode_as(ext).expect(ext);
+            let back = Raster::decode(&bytes).expect("decode");
+            assert_eq!((back.width(), back.height()), (8, 8), "{ext}");
+        }
+        assert_eq!(
+            Raster::decode(&r.encode_as("bmp").expect("bmp")).expect("bmp"),
+            r,
+            "BMP is lossless"
+        );
+        assert!(r.encode_as("gif").is_err());
+    }
+
+    #[test]
+    fn background_adjustments_turn_then_crop() {
+        let r = Raster::from_fn(10, 4, |x, y| [(10 * y + x) as u8, 0, 0, 255]).expect("raster");
+        assert_eq!(r.with_adjust(&ImageAdjust::default()), r);
+        let a = ImageAdjust {
+            rotation: 1,
+            crop: [0.0, 0.5, 0.0, 0.0],
+            ..ImageAdjust::default()
+        };
+        let out = r.with_adjust(&a);
+        // Turned to 4 × 10, then the top half cut off.
+        assert_eq!((out.width(), out.height()), (4, 5));
+        assert_eq!(out.pixel(0, 0)[0], 35);
     }
 }

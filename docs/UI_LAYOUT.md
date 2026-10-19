@@ -34,6 +34,46 @@ Commands OpenStitch does not implement yet are shown disabled, with a ScreenTip 
 `ribbon::tests` check that every button runs an existing action or is marked unavailable, that
 each engine command named exists, and that the contextual tabs follow the tool and selection.
 
+## View, Image and Text commands
+
+Behaviour follows the guide's pages
+[Changing the display of the embroidery design](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_2051337.html),
+[Specifying Basic Display Settings](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/03_1246217.html),
+[Changing the size, angle and position of the image](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/06_1804142.html),
+[Saving the image data](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/06_1804194.html),
+[Setting text attributes](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/05_1810676.html) (Font Filter) and
+[Using Fabric Selector](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/03_1246198.html).
+
+- **Solid View** draws every stitch 0.7 mm wide without shading, so the rows of a region merge
+  into flat areas of thread colour. Solid, Stitch and Realistic are exclusive (ribbon and status
+  bar).
+- **Realistic View Settings**: thread width (0.2–1 mm, default 0.4), contrast and brightness
+  (−100–100), shown at once and kept in `ui.json`; Default restores them.
+- **Show Grid with Axes**: on, the grid is drawn with solid lines; off, dotted.
+- **Guideline** (also turns the rulers on): click or drag on the top ruler for a vertical
+  guideline, on the left ruler for a horizontal one; drag its marker in the ruler to move it,
+  click the × beside the marker (or drop it outside the canvas) to delete it. With Show Grid and
+  Snap to Grid on, guidelines move in grid steps. The status bar shows the position while
+  dragging. Up to 100 per ruler; they are saved in the `.osd` (`guides.set`, one Undo per
+  change) and hidden when Ruler or Guideline is off.
+- **Save Image** ▸ to File… writes the background image as shown (turned, cropped, colours
+  adjusted) as PNG, BMP or JPEG (`background.save`); ▸ to Clipboard copies it.
+- **Modify Image** opens a window with the image's position and width (the height keeps its
+  proportions), a crop of each side (the kept part stays where it was, at the same scale),
+  brightness, contrast and saturation; the image is outlined in red while the window is open.
+  Each change is one `background.modify` (one Undo); the image file is never changed.
+- **Rotate Right / Left** turn the background image 90° about its centre (`background.rotate`).
+- **Font Filter Settings** lists the built-in fonts and the fonts in the design with check
+  boxes (All / None per group, Default shows every font); OK turns the filter on. **Font
+  Filter** switches filtering on and off; it applies to every font list. A filter that would
+  hide every font is ignored. Both are kept in `ui.json`.
+- **Fabric Selector** (Application menu): pick a fabric type to read a description and advice
+  and see the recommended settings; OK applies them to every shape and text pattern on the
+  Design Page, or, with the check box cleared, to the selected ones (`fabric.apply`, one Undo).
+  It sets the density, stitch length, pull compensation and underlay of fill, programmable
+  fill and satin regions; colours and sew types stay. The values are OpenStitch's own
+  approximations (`openstitch_engine::fabric::FABRICS`), not PE-DESIGN's.
+
 ## Where the previous menus went
 
 | Previous menu item | Now |
@@ -106,11 +146,11 @@ each engine command named exists, and that the contextual tabs follow the tool a
 |---|---|---|---|---|---|
 | Image | Open Image |  | `Action::OpenImage` | `background.set` | yes |
 | Image | Paste Image |  | `Action::PasteImage` | `background.set` | yes |
-| Image | Save Image |  | `Action::SaveImage` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Image | Modify Image |  | `Action::ModifyImage` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Image | Save Image |  | `Action::SaveImage` | `background.save` | yes |
+| Image | Modify Image |  | `Action::ModifyImage` | `background.modify` | yes |
 | Image | Background Image Density |  | `Action::ImageDensity` | `background.show` | yes |
-| Image | Rotate Right |  | `Action::ImageRotateRight` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Image | Rotate Left |  | `Action::ImageRotateLeft` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Image | Rotate Right |  | `Action::ImageRotateRight` | `background.rotate` | yes |
+| Image | Rotate Left |  | `Action::ImageRotateLeft` | `background.rotate` | yes |
 | Image | Delete Image |  | `Action::DeleteImage` | `background.clear` | yes |
 | Image to Stitch | Auto Punch Wizard |  | `Action::AutoPunch` | `digitize.autoPunch` | yes |
 | Image to Stitch | Cross Stitch Wizard |  | `Action::CrossStitch` | `digitize.crossStitch` | yes |
@@ -122,22 +162,22 @@ each engine command named exists, and that the contextual tabs follow the tool a
 
 | Group | Command | Shortcut | OpenStitch action | Engine command | Available |
 |---|---|---|---|---|---|
-| View | Solid View |  | `Action::SolidView` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| View | Solid View |  | `Action::SolidView` | view/UI only | yes |
 | View | Stitch View |  | `Action::StitchView` | view/UI only | yes |
 | View | Realistic View |  | `Action::RealisticView` | view/UI only | yes |
 | View | View Thread Trimming |  | `Action::ViewThreadTrimming` | view/UI only | yes |
-| View | Realistic View Settings |  | `Action::RealisticSettings` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| View | Realistic View Settings |  | `Action::RealisticSettings` | view/UI only | yes |
 | Show/Hide | Sewing Order |  | `Action::PaneSewingOrder` | view/UI only | yes |
 | Show/Hide | Stitch Simulator |  | `Action::PaneSimulator` | view/UI only | yes |
 | Show/Hide | Attributes Setting |  | `Action::PaneAttributes` | view/UI only | yes |
 | Show/Hide | Import Pane |  | `Action::PaneImport` | view/UI only | yes |
 | Show/Hide | Reference Window |  | `Action::ReferenceWindow` | view/UI only | yes |
 | Grid | Show Grid |  | `Action::ShowGrid` | view/UI only | yes |
-| Grid | Show Grid with Axes |  | `Action::GridAxes` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Grid | Show Grid with Axes |  | `Action::GridAxes` | view/UI only | yes |
 | Grid | Snap to Grid |  | `Action::SnapToGrid` | view/UI only | yes |
 | Grid | Grid Spacing |  | `Action::GridSpacing` | view/UI only | yes |
 | Ruler | Ruler |  | `Action::Ruler` | view/UI only | yes |
-| Guideline | Guideline |  | `Action::Guideline` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Guideline | Guideline |  | `Action::Guideline` | `guides.set` | yes |
 
 ### Text (contextual: text selected)
 
@@ -149,8 +189,8 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Text | Text |  | `Action::TextTools` | `text.add` | yes |
 | Text | Font |  | `Action::Font` | `object.setText` | yes |
 | Text | Text Size |  | `Action::TextSize` | `object.setText` | yes |
-| Text | Font Filter |  | `Action::FontFilter` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Text | Font Filter Settings |  | `Action::FontFilterSettings` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Text | Font Filter |  | `Action::FontFilter` | view/UI only | yes |
+| Text | Font Filter Settings |  | `Action::FontFilterSettings` | view/UI only | yes |
 | Text | TrueType Font Attribute Setting |  | `Action::TrueTypeAttributes` | `fonts.loadTrueType` | yes |
 | Color / Sew Type | Line color |  | `Action::LineColor` | `object.setLine` | yes |
 | Color / Sew Type | Line sew type |  | `Action::LineSewType` | `object.setLine` | yes |
@@ -271,7 +311,7 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Print |  | `Action::Print` | `design.print` | yes |
 | Design Property |  | `Action::DesignProperty` | `design.info` | yes |
 | Design Settings |  | `Action::DesignSettings` | `machine.set` | yes |
-| Fabric Selector |  | `Action::FabricSelector` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Fabric Selector |  | `Action::FabricSelector` | `fabric.apply` | yes |
 | Select Color Palette |  | `Action::SelectColorPalette` | `threads.charts` | yes |
 | Wizard |  | `Action::Wizard` | view/UI only | yes |
 | Export |  | `Action::Export` | `design.export` | yes |

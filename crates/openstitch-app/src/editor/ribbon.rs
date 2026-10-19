@@ -85,7 +85,7 @@ actions! {
     Print => "print", "Print", "Print the design to a PDF with its colour list.", None, Some("design.print"), true;
     DesignProperty => "designProperty", "Design Property", "Sewing information of the design: size, stitches, colours, thread and time.", None, Some("design.info"), true;
     DesignSettings => "designSettings", "Design Settings", "Machine, hoop and Design Page size.", None, Some("machine.set"), true;
-    FabricSelector => "fabricSelector", "Fabric Selector", "Suggested sewing attributes for a fabric type.", None, None, false;
+    FabricSelector => "fabricSelector", "Fabric Selector", "Sewing attributes suited to a fabric type, for all shape and text patterns or the selection.", None, Some("fabric.apply"), true;
     SelectColorPalette => "colorPalette", "Select Color Palette", "Choose or edit the thread colour charts.", None, Some("threads.charts"), true;
     Wizard => "wizard", "Wizard", "Create a design step by step: templates or an image.", None, None, true;
     Export => "export", "Export", "Write the design as a machine embroidery file.", None, Some("design.export"), true;
@@ -154,11 +154,11 @@ actions! {
     // Image tab.
     OpenImage => "openImage", "Open Image", "Show an image behind the design (PNG, JPEG, BMP).", None, Some("background.set"), true;
     PasteImage => "pasteImage", "Paste Image", "Use the image on the clipboard as the background.", None, Some("background.set"), true;
-    SaveImage => "saveImage", "Save Image", "Save the background image to a file.", None, None, false;
-    ModifyImage => "modifyImage", "Modify Image", "Crop or adjust the background image.", None, None, false;
+    SaveImage => "saveImage", "Save Image", "Save the background image as shown to a file, or copy it to the clipboard.", None, Some("background.save"), true;
+    ModifyImage => "modifyImage", "Modify Image", "Move, scale, crop or adjust the colours of the background image.", None, Some("background.modify"), true;
     ImageDensity => "imageDensity", "Background Image Density", "Show, hide or fade the background image.", None, Some("background.show"), true;
-    ImageRotateRight => "imageRotateRight", "Rotate Right", "Turn the background image 90° clockwise.", None, None, false;
-    ImageRotateLeft => "imageRotateLeft", "Rotate Left", "Turn the background image 90° anticlockwise.", None, None, false;
+    ImageRotateRight => "imageRotateRight", "Rotate Right", "Turn the background image 90° clockwise.", None, Some("background.rotate"), true;
+    ImageRotateLeft => "imageRotateLeft", "Rotate Left", "Turn the background image 90° anticlockwise.", None, Some("background.rotate"), true;
     DeleteImage => "deleteImage", "Delete Image", "Remove the background image.", None, Some("background.clear"), true;
     AutoPunch => "autoPunch", "Auto Punch Wizard", "Regions and outlines traced from an image.", None, Some("digitize.autoPunch"), true;
     CrossStitch => "crossStitch", "Cross Stitch Wizard", "Cross stitches in the image's colours.", None, Some("digitize.crossStitch"), true;
@@ -166,27 +166,27 @@ actions! {
     PhotoStitch2 => "photoStitch2", "Photo Stitch 2 Wizard", "A photo as zigzag lines.", None, Some("digitize.lineImage"), true;
     DesignCenter => "designCenter", "Import to Design Center", "Trace a line drawing into outlines and regions.", None, Some("digitize.designCenter"), true;
     // View tab.
-    SolidView => "solidView", "Solid View", "Stitches drawn as solid colour areas.", None, None, false;
+    SolidView => "solidView", "Solid View", "Stitches drawn as solid colour areas.", None, None, true;
     StitchView => "stitchView", "Stitch View", "Stitches drawn as lines.", None, None, true;
     RealisticView => "realisticView", "Realistic View", "Stitches drawn as thread with shading.", None, None, true;
     ViewThreadTrimming => "viewTrimming", "View Thread Trimming", "Show the jumps between stitched areas.", None, None, true;
-    RealisticSettings => "realisticSettings", "Realistic View Settings", "Brightness and contrast of the realistic view.", None, None, false;
+    RealisticSettings => "realisticSettings", "Realistic View Settings", "Thread width, contrast and brightness of the realistic view.", None, None, true;
     PaneSewingOrder => "paneSewingOrder", "Sewing Order", "Show or hide the Sewing Order pane.", None, None, true;
     PaneSimulator => "paneSimulator", "Stitch Simulator", "Show or hide the Stitch Simulator pane.", None, None, true;
     PaneAttributes => "paneAttributes", "Attributes Setting", "Show or hide the Color / Sewing Attributes / Text Attributes pane.", None, None, true;
     PaneImport => "paneImport", "Import Pane", "Show the Import pane.", None, None, true;
     ReferenceWindow => "reference", "Reference Window", "An overview of the Design Page; click to move the view.", None, None, true;
     ShowGrid => "showGrid", "Show Grid", "Show the grid on the Design Page.", None, None, true;
-    GridAxes => "gridAxes", "Show Grid with Axes", "Grid with axes through the centre of the Design Page.", None, None, false;
+    GridAxes => "gridAxes", "Show Grid with Axes", "Grid drawn as solid lines; off, it is dotted.", None, None, true;
     SnapToGrid => "snapToGrid", "Snap to Grid", "Objects move and draw in grid steps.", None, None, true;
     GridSpacing => "gridSpacing", "Grid Spacing", "Distance between grid lines.", None, None, true;
     Ruler => "ruler", "Ruler", "Show rulers along the work area.", None, None, true;
-    Guideline => "guideline", "Guideline", "Guidelines dragged out of the rulers.", None, None, false;
+    Guideline => "guideline", "Guideline", "Click a ruler to add a guideline; drag its marker to move it, click × to delete. Saved with the design.", None, Some("guides.set"), true;
     // Contextual tabs.
     Font => "font", "Font", "Font of the selected text.", None, Some("object.setText"), true;
     TextSize => "textSize", "Text Size", "Size of the selected text.", None, Some("object.setText"), true;
-    FontFilter => "fontFilter", "Font Filter", "Show only fonts of a kind.", None, None, false;
-    FontFilterSettings => "fontFilterSettings", "Font Filter Settings", "Choose the font kinds the filter shows.", None, None, false;
+    FontFilter => "fontFilter", "Font Filter", "Show only the fonts chosen in Font Filter Settings.", None, None, true;
+    FontFilterSettings => "fontFilterSettings", "Font Filter Settings", "Choose the fonts the filter shows.", None, None, true;
     TrueTypeAttributes => "trueType", "TrueType Font Attribute Setting", "Load a TrueType or OpenType font into the design.", None, Some("fonts.loadTrueType"), true;
     EditText => "editText", "Edit Text", "Change the characters of the selected text.", None, Some("object.setText"), true;
     LineColor => "lineColor", "Line color", "Thread colour of the outline.", None, Some("object.setLine"), true;
@@ -247,6 +247,7 @@ impl Action {
                 | ModifyOverlap
                 | DecorativeFrame
                 | SendEmbroidery
+                | SaveImage
                 | ImageDensity
                 | GridSpacing
                 | Font
@@ -280,6 +281,7 @@ impl Action {
                 | SnapToGrid
                 | Ruler
                 | Guideline
+                | FontFilter
                 | Pan
                 | Measure
         )
