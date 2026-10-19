@@ -339,6 +339,16 @@ fn refuse_without(s: &EngineState, p: &Params, access: Access) -> Result<(), Com
     }
 }
 
+/// The file `transfer.send` writes: the design compiled and encoded with the format's default
+/// options (PES: version 6 with objects and the thread table).
+fn encode(design: &openstitch_design::Design, ty: FileType) -> Result<Vec<u8>, String> {
+    let pattern = Compiler::for_design(design).compile(design);
+    if pattern.count(Command::Stitch) == 0 {
+        return Err("design has no stitches".into());
+    }
+    ty.write(&pattern).map_err(|e| e.to_string())
+}
+
 fn send(s: &mut EngineState, p: &Params) -> CommandResult {
     refuse_without(s, p, Access::Write)?;
     let volumes = detect();
@@ -368,11 +378,7 @@ fn send(s: &mut EngineState, p: &Params) -> CommandResult {
         .ok_or_else(|| p.invalid("format", "not a writable machine format"))?;
     let name = p.string("name", Some(&s.design.name))?;
     let overwrite = p.bool("overwrite", Some(false))?;
-    let pattern = Compiler::for_design(&s.design).compile(&s.design);
-    if pattern.count(Command::Stitch) == 0 {
-        return Err(p.failed("design has no stitches"));
-    }
-    let bytes = ty.write(&pattern).map_err(|e| p.failed(e.to_string()))?;
+    let bytes = encode(&s.design, ty).map_err(|e| p.failed(e))?;
     match write_to_volume(&volume.path, &name, ty.extension(), &bytes, overwrite) {
         Ok(path) => Ok(json!({
             "path": path.display().to_string(),
@@ -390,6 +396,21 @@ fn send(s: &mut EngineState, p: &Params) -> CommandResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sent_pes_is_version_6_with_objects_and_threads() {
+        let mut s = crate::Session::new(std::env::temp_dir());
+        s.execute(
+            "shape.rectangle",
+            Some(&json!({"x": 10, "y": 10, "width": 20, "height": 20, "fill": "Red", "outline": "Black"})),
+        )
+        .expect("shape");
+        let bytes = encode(s.design(), FileType::Pes).expect("encode");
+        let objects = openstitch_formats::pes::read_objects(&bytes).expect("objects");
+        assert_eq!(objects.version, "0060");
+        assert!(!objects.objects.is_empty() && !objects.threads.is_empty());
+        assert!(encode(&openstitch_design::Design::default(), FileType::Pes).is_err());
+    }
 
     #[test]
     fn diskutil_plists_tell_usb_sticks_from_internal_disks_and_images() {

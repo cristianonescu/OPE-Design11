@@ -83,6 +83,8 @@ pub struct RibbonState {
     /// Pan: the primary button drags the view.
     pub pan: bool,
     pub property_open: bool,
+    /// Design Property: the fields being edited (`None` = showing the design's own).
+    pub property_draft: Option<openstitch_design::DesignProperties>,
     pub shortcuts_open: bool,
     pub about_open: bool,
     pub pane_tab: PaneTab,
@@ -106,6 +108,7 @@ impl Default for RibbonState {
             cut: Vec::new(),
             pan: false,
             property_open: false,
+            property_draft: None,
             shortcuts_open: false,
             about_open: false,
             pane_tab: PaneTab::default(),

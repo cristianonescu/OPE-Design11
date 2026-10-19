@@ -429,11 +429,13 @@ fn commands_documented_and_unique() {
     let _ = v2(0.0, 0.0);
 }
 
-/// Golden regression: `examples/badge.json` exported `badge-golden.pes` on 2026-10-18; the
-/// engine must keep writing the identical bytes.
+/// Golden regression: `examples/badge.json` exported `badge-golden.pes` (version 1, no objects)
+/// on 2026-10-18. The same design exported as `1t` must keep writing the identical bytes; the
+/// script's default export is now version 6 with objects and sews the same stitches.
 #[cfg(feature = "formats")]
 #[test]
 fn script_output_matches_golden_pes() {
+    use openstitch_formats::pes;
     let dir = temp_dir();
     let script: Value = serde_json::from_str(include_str!("fixtures/badge.json")).expect("script");
     let mut s = Session::new(&dir);
@@ -441,8 +443,23 @@ fn script_output_matches_golden_pes() {
         let reply = s.handle(step);
         assert_eq!(reply["ok"], json!(true), "{reply}");
     }
+    run(
+        &mut s,
+        "design.export",
+        json!({"path": "badge-1t.pes", "pesVersion": "1t"}),
+    );
+    let golden = include_bytes!("fixtures/badge-golden.pes");
+    let machine_only = std::fs::read(dir.join("badge-1t.pes")).expect("exported");
+    assert_eq!(machine_only, golden);
     let rust = std::fs::read(dir.join("badge.pes")).expect("exported");
-    assert_eq!(rust, include_bytes!("fixtures/badge-golden.pes"));
+    let objects = pes::read_objects(&rust).expect("objects");
+    assert_eq!(objects.version, "0060");
+    assert!(!objects.objects.is_empty() && !objects.threads.is_empty());
+    let (v6, v1) = (
+        pes::read(&rust).expect("read"),
+        pes::read(golden).expect("read"),
+    );
+    assert_eq!(v6.stitches, v1.stitches);
 }
 
 #[cfg(feature = "formats")]

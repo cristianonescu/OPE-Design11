@@ -58,9 +58,18 @@ pub struct Thread {
     pub catalog_number: Option<Cow<'static, str>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub brand: Option<Cow<'static, str>>,
+    /// Thread chart name as stored in a PES v5+ thread table; only ever what a file supplied.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chart: Option<Cow<'static, str>>,
+    /// PES v5+ colour type code; `None` = custom colour ([`Thread::CUSTOM_KIND`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<u32>,
 }
 
 impl Thread {
+    /// PES colour type written when a thread has no other: custom colour.
+    pub const CUSTOM_KIND: u32 = 0x0A;
+
     pub const fn rgb(rgb: u32) -> Self {
         Self {
             red: (rgb >> 16) as u8,
@@ -69,6 +78,8 @@ impl Thread {
             name: None,
             catalog_number: None,
             brand: None,
+            chart: None,
+            kind: None,
         }
     }
 
@@ -88,6 +99,8 @@ impl Thread {
             name: Some(Cow::Borrowed(name)),
             catalog_number: Some(Cow::Borrowed(catalog)),
             brand: Some(Cow::Borrowed(brand)),
+            chart: None,
+            kind: None,
         }
     }
 

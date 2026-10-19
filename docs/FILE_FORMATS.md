@@ -71,19 +71,22 @@ distance), so distinct colours stay distinct on the machine.
 ## PES
 
 `#PESvvvv` signature, u32 offset of the PEC section, version-dependent object section, PEC
-section. Default output is `#PES0001`, offset 0x16, 10 zero bytes (no objects) — pyembroidery's
-"truncated" writer. `pes::WriteOptions` (engine: `design.export` `pesVersion` = `1t`, `1`, `6`,
-`6t`) selects the others. **Unverified:** whether every Brother machine and PE-DESIGN 11 open
-these files; needs a test on the owner's machine.
+section. Default output (`pes::WriteOptions::default`, `FileType::Pes.write`, and so
+`design.export` without `pesVersion`, Name Drop, USB transfer and Design Database convert) is
+`#PES0060` with one `CEmbOne`/`CSewSeg` stitch group and the RGB thread table, byte-identical to
+pyembroidery's `6`. `pesVersion` = `1t`, `1`, `6t` selects the others; `1t` (`#PES0001`, offset
+0x16, 10 zero bytes, no objects) stays as the smallest, machine-only file. **Unverified:**
+whether every Brother machine and PE-DESIGN 11 open these files; needs a black-box open test on
+the owner's machine (docs/COMPATIBILITY_AUDIT.md item 2).
 
 ### Save as a PES version: what each keeps
 
 | Written as | Stitches + PEC chart colours | Exact RGB, thread names, brands | Name, author, keywords… (metadata) | Stitch-group object (opens in PE-DESIGN as a grouped stitch pattern) | Editable shapes / text |
 |---|---|---|---|---|---|
-| `1t` (default, smallest) | ✅ | ❌ (nearest of the 64 Brother colours) | ❌ (8-character PEC label only) | ❌ | ❌ |
+| `1t` (machine only, smallest) | ✅ | ❌ (nearest of the 64 Brother colours) | ❌ (8-character PEC label only) | ❌ | ❌ |
 | `1` | ✅ | ❌ | ❌ | ✅ (colours as PEC indexes) | ❌ |
 | `6t` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `6` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `6` (default) | ✅ | ✅ | ✅ | ✅ | ❌ |
 | 4, 5 (5.5, 5.6), 7–10 | **Blocked** | | | | |
 
 Editor: File ▸ Export ▸ PES offers the four. Engine: `design.export` `pesVersion`.
@@ -101,16 +104,24 @@ Object section as pyembroidery 1.5.1 reads and writes it (little-endian):
 | v1 header | u16 scale-to-fit (1), u16 hoop (1), u16 object count |
 | v4+ header | u16 hoop, 2 ASCII digits, then five u8-length strings: name, category, author, keywords, comments |
 | v5–v10 | fixed fields (36 bytes in v6: hoop/page/grid settings, written with pyembroidery's values), u8-length image file name, six f32 (identity transform), u16 counts of programmable fills, motifs, feather patterns, u16 thread count, threads |
-| thread (v5+) | u8-string catalogue no., R G B, u8 0, u32 `0x0A` (custom colour), u8-strings name, brand, chart |
+| thread (v5+) | u8-string catalogue no., R G B, u8 0, u32 colour type (`0x0A` custom colour), u8-strings name, brand, chart |
 | objects | u16 object count, `FFFF 0000`, then objects named by u16-length class strings, separated by `FFFF 0000`, ended by `0000 0000` |
 | `CEmbOne` | 16 zero bytes, six f32 transform (a b c d tx ty; pyembroidery places the group at `tx = 1000 − w/2`, `ty = 1000 + h/2`), u16 1, 0, 0, width, height, 8 zero bytes, u16 section count |
 | `CSewSeg` | sections separated by `03 80`: u16 flag (0 stitches, 1 jump), u16 colour (PEC index in v1, thread-table index in v6), u16 n, n × (i16 x, i16 y) relative to the bottom-left corner; then u16 n and n × (section, colour) colour log |
 | v6 tail | after the objects u32 0, u32 0 and (i, 0) per colour-log entry; after the PEC section the PEC colour list padded to 128 bytes, 0x90 zero bytes per thread, u24 RGB per thread, u16 0 |
 
-The v6 thread table carries exact RGB, names, catalogue numbers and brands; the reader maps it
+The v6 thread table carries exact RGB, names, catalogue numbers, brands, chart names and the
+colour type (`Thread::chart`, `Thread::kind`). Chart and type are kept only as a file supplied
+them: OpenStitch writes an empty chart and type `0x0A` for its own colours and never invents
+Brother chart strings; a non-`0x0A` type read from a file is written back unchanged
+(`pes_v6_thread_chart_and_kind_round_trip_byte_identically`, fixture `oracle_v6_chart.pes`). EduTechWiki's
+other type codes (1 list colour, 2 appliqué, B Brother) are unverified. The reader maps the table
 onto colour blocks as pyembroidery does (one to one when it covers every block, else by first
 use of each PEC index). The v4+ metadata strings become pattern metadata (`name`, `category`,
-`author`, `keywords`, `comments`, plus `pes.hoopName`, `pes.imageFile`).
+`author`, `keywords`, `comments`, plus `pes.hoopName`, `pes.imageFile`). The design's Design
+Property fields (`Design.properties`, `design.setProperties`) are copied into that metadata when
+compiling, so v4+ output carries them; `stitches.import` offers the file's fields and adopts them
+into a design that has none (`adoptProperties` overrides).
 `pes::read_objects` exposes the parsed objects (transform, size, stitch runs, colour log).
 
 What does not survive: PE-DESIGN's editable shape, text and fill objects (`CSewFigSeg`,

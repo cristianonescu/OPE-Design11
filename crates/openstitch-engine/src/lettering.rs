@@ -809,7 +809,11 @@ fn name_drop_commands() -> Vec<CommandSpec> {
                 ),
                 req("name", "string", "Base file name"),
                 opt("format", "pes|dst|…", "File type (default pes)"),
-                opt("pesVersion", "1t|1|6|6t", "PES only: version (default 1t)"),
+                opt(
+                    "pesVersion",
+                    "1t|1|6|6t",
+                    "PES only: version (default 6; 1t = machine only, smallest)",
+                ),
             ],
             export,
         ),
@@ -828,8 +832,11 @@ fn export(s: &mut EngineState, p: &Params) -> Result<Value, CommandError> {
             let names: Vec<_> = FileType::writable().map(|t| t.extension()).collect();
             p.invalid("format", format!("use {}", names.join(", ")))
         })?;
-    let pes = openstitch_formats::pes::WriteOptions::parse(&p.string("pesVersion", Some("1t"))?)
-        .ok_or_else(|| p.invalid("pesVersion", "use 1t, 1, 6 or 6t"))?;
+    let pes = openstitch_formats::pes::WriteOptions::parse(&p.string(
+        "pesVersion",
+        Some(openstitch_formats::pes::WriteOptions::DEFAULT_NAME),
+    )?)
+    .ok_or_else(|| p.invalid("pesVersion", "use 1t, 1, 6 or 6t"))?;
     let dir = p.string("dir", Some(""))?;
     // Every row is laid out, compiled and encoded before any file is written.
     let mut files = Vec::new();

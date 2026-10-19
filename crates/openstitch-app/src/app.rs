@@ -786,7 +786,7 @@ impl EditorApp {
         ("6", "Version 6 — RGB colours, names, stitch group"),
         ("6t", "Version 6, stitches only"),
         ("1", "Version 1 — stitch group, chart colours"),
-        ("1t", "Version 1, stitches only (smallest)"),
+        ("1t", "Version 1, stitches only (machine only, smallest)"),
     ];
 
     /// Exports `ty`; `pes_version` picks the PES variant (`None` = the engine default).

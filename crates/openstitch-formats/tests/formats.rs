@@ -170,8 +170,59 @@ fn pec_pes_rewrite_is_byte_identical_to_reference() {
         let original = data(&format!("oracle.{ext}"));
         let mut pattern = t.read(&original).expect("read");
         pattern.set_name("oracle");
-        assert_eq!(t.write(&pattern).expect("write"), original, "{ext}");
+        // oracle.pes is pyembroidery's `1t`; the default PES is version 6 with objects.
+        let bytes = match t {
+            FileType::Pes => {
+                pes::write_with(&pattern, &pes::WriteOptions::parse("1t").expect("1t"))
+            }
+            _ => t.write(&pattern),
+        };
+        assert_eq!(bytes.expect("write"), original, "{ext}");
     }
+}
+
+#[test]
+fn default_pes_is_version_6_with_objects_and_thread_table() {
+    let pattern = pes::read(&data("oracle_v6.pes")).expect("read");
+    assert_eq!(
+        pes::WriteOptions::default(),
+        pes::WriteOptions::parse("6").expect("6")
+    );
+    assert_eq!(
+        pes::WriteOptions::parse(pes::WriteOptions::DEFAULT_NAME),
+        Some(pes::WriteOptions::default())
+    );
+    let bytes = FileType::Pes.write(&pattern).expect("write");
+    assert_eq!(bytes, data("oracle_v6.pes"));
+    let objects = pes::read_objects(&bytes).expect("objects");
+    assert_eq!(objects.version, "0060");
+    assert!(!objects.objects.is_empty());
+    assert_eq!(objects.threads.len(), 2);
+}
+
+#[test]
+fn pes_v6_thread_chart_and_kind_round_trip_byte_identically() {
+    let original = data("oracle_v6_chart.pes");
+    let pattern = pes::read(&original).expect("read");
+    let charts: Vec<_> = pattern.threads.iter().map(|t| t.chart.as_deref()).collect();
+    assert_eq!(charts, [Some("Test chart A"), Some("Test chart B")]);
+    assert_eq!(pattern.threads[0].brand.as_deref(), Some("Acme"));
+    assert_eq!(pattern.threads[0].catalog_number.as_deref(), Some("800"));
+    assert_eq!(pattern.threads[0].kind, None); // 0x0A, custom colour
+    let options = pes::WriteOptions::parse("6").expect("6");
+    assert_eq!(
+        pes::write_with(&pattern, &options).expect("write"),
+        original
+    );
+
+    // A non-default colour type is kept; unknown charts stay empty.
+    let mut p = pattern.clone();
+    p.threads[1].kind = Some(0x0B);
+    p.threads[1].chart = None;
+    let back = pes::read(&pes::write_with(&p, &options).expect("write")).expect("read");
+    assert_eq!(back.threads[1].kind, Some(0x0B));
+    assert_eq!(back.threads[1].chart, None);
+    assert_eq!(back.threads, p.threads);
 }
 
 #[test]
@@ -197,7 +248,7 @@ fn pes_versions_with_objects_rewrite_byte_identically() {
         );
     }
     assert_eq!(pes::WriteOptions::parse("6x"), None);
-    assert_eq!(
+    assert_ne!(
         pes::WriteOptions::default(),
         pes::WriteOptions::parse("1t").expect("1t")
     );
@@ -765,6 +816,10 @@ fn every_fixture_round_trips_byte_identically_through_file_type() {
                     ..Default::default()
                 },
             ),
+            // pyembroidery's `1t`; FileType writes version 6 with objects.
+            FileType::Pes => {
+                pes::write_with(&pattern, &pes::WriteOptions::parse("1t").expect("1t"))
+            }
             _ => t.write(&pattern),
         }
         .expect("write");

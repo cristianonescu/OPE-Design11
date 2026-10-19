@@ -295,6 +295,21 @@ fn list() -> Value {
 
 // MARK: design
 
+/// A Design Property field: at most 255 bytes (one PES header string), no control characters
+/// other than line breaks and tabs.
+fn validate_property(p: &Params, key: &str, value: &str) -> Result<(), CommandError> {
+    if value.len() > openstitch_design::DesignProperties::MAX_BYTES {
+        return Err(p.invalid(key, "must be at most 255 bytes (UTF-8)"));
+    }
+    if value
+        .chars()
+        .any(|c| c.is_control() && !matches!(c, '\n' | '\r' | '\t'))
+    {
+        return Err(p.invalid(key, "must not contain control characters"));
+    }
+    Ok(())
+}
+
 fn design_commands() -> Vec<CommandSpec> {
     vec![
         spec(
@@ -334,6 +349,39 @@ fn design_commands() -> Vec<CommandSpec> {
             },
         ),
         spec(
+            "design.setProperties",
+            "Set the Design Property fields written to PES (category, author, keywords, comments)",
+            Effect::Edit,
+            vec![
+                opt("category", "string", "Category (\"\" clears)"),
+                opt("author", "string", "Author (\"\" clears)"),
+                opt("keywords", "string", "Keywords (\"\" clears)"),
+                opt("comments", "string", "Comments (\"\" clears)"),
+            ],
+            |s, p| {
+                let mut properties = s.design.properties.clone();
+                let mut given = false;
+                for key in openstitch_design::DesignProperties::KEYS {
+                    if !p.has(key) {
+                        continue;
+                    }
+                    given = true;
+                    let value = p.string(key, None)?;
+                    validate_property(p, key, &value)?;
+                    if let Some(field) = properties.field_mut(key) {
+                        *field = value;
+                    }
+                }
+                if !given {
+                    return Err(
+                        p.invalid("category", "give category, author, keywords or comments")
+                    );
+                }
+                s.design.properties = properties;
+                Ok(json!(s.design.properties))
+            },
+        ),
+        spec(
             "design.info",
             "Design summary, stitch statistics, thread length and sewing-time estimates, sewing area",
             Effect::Read,
@@ -342,6 +390,7 @@ fn design_commands() -> Vec<CommandSpec> {
                 let pattern = Compiler::for_design(&s.design).compile(&s.design);
                 Ok(json!({
                     "name": s.design.name,
+                    "properties": s.design.properties,
                     "pageWidthMM": s.design.page.width / MM,
                     "pageHeightMM": s.design.page.height / MM,
                     "objects": s.design.objects.len(),
@@ -2059,15 +2108,27 @@ fn codec_commands() -> Vec<CommandSpec> {
             vec![
                 PATH,
                 opt("format", "pes|pec|dst|...", "Override the extension"),
+                opt(
+                    "adoptProperties",
+                    "bool",
+                    "Copy the file's Design Property fields into the design (default: only when the design has none)",
+                ),
             ],
             |s, p| {
                 let (path, data) = read_file(s, p, 64 << 20)?;
                 let pattern = file_type(p, &path)?
                     .read(&data)
                     .map_err(|e| p.failed(e.to_string()))?;
+                let found = openstitch_design::DesignProperties::from_metadata(&pattern.metadata);
+                let adopt = p.bool("adoptProperties", Some(s.design.properties.is_empty()))?
+                    && !found.is_empty();
                 let mut object = DesignObject::stitches(StitchBlock::from(&pattern));
                 object.name = path.file_name().map(|n| n.to_string_lossy().into_owned());
-                Ok(json!({ "id": s.design.add(object) }))
+                let id = s.design.add(object);
+                if adopt {
+                    s.design.properties = found.clone();
+                }
+                Ok(json!({ "id": id, "properties": found, "propertiesAdopted": adopt }))
             },
         ),
         spec(
@@ -2080,7 +2141,7 @@ fn codec_commands() -> Vec<CommandSpec> {
                 opt(
                     "pesVersion",
                     "1t|1|6|6t",
-                    "PES only: version 1 or 6, `t` = no objects (default 1t; 6 keeps RGB threads)",
+                    "PES only: version 1 or 6, `t` = no objects (default 6: RGB threads, names, stitch group; 1t = machine only, smallest)",
                 ),
                 opt(
                     "split",
@@ -2093,9 +2154,10 @@ fn codec_commands() -> Vec<CommandSpec> {
                 let path = s.resolve(&raw_path, Access::Write, &p.command)?;
                 let split = p.bool("split", Some(false))?;
                 let ty = file_type(p, &path)?;
-                let pes_options = openstitch_formats::pes::WriteOptions::parse(
-                    &p.string("pesVersion", Some("1t"))?,
-                )
+                let pes_options = openstitch_formats::pes::WriteOptions::parse(&p.string(
+                    "pesVersion",
+                    Some(openstitch_formats::pes::WriteOptions::DEFAULT_NAME),
+                )?)
                 .ok_or_else(|| p.invalid("pesVersion", "use 1t, 1, 6 or 6t"))?;
                 if !ty.can_write() {
                     let names: Vec<_> = FileType::writable().map(|t| t.extension()).collect();

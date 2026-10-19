@@ -529,7 +529,12 @@ pub fn windows(app: &mut EditorApp, ctx: &egui::Context) {
                     ui.end_row();
                 }
             });
+            ui.separator();
+            property_fields(app, ui);
         });
+    if !open {
+        app.ui.property_draft = None;
+    }
     app.ui.property_open = open;
     let mut open = app.ui.shortcuts_open;
     egui::Window::new("Keyboard Shortcuts")
@@ -561,6 +566,69 @@ pub fn windows(app: &mut EditorApp, ctx: &egui::Context) {
     about_window(app, ctx);
 }
 
+/// Design Property: category, author, keywords and comments, saved into PES files.
+fn property_fields(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let current = app.session.design().properties.clone();
+    let draft = app.ui.property_draft.get_or_insert_with(|| current.clone());
+    egui::Grid::new("property_fields")
+        .num_columns(2)
+        .show(ui, |ui| {
+            for (label, key) in [
+                ("Category", "category"),
+                ("Author", "author"),
+                ("Keywords", "keywords"),
+                ("Comments", "comments"),
+            ] {
+                ui.label(label);
+                if let Some(field) = draft.field_mut(key) {
+                    let edit = if key == "comments" {
+                        egui::TextEdit::multiline(field).desired_rows(3)
+                    } else {
+                        egui::TextEdit::singleline(field)
+                    };
+                    ui.add(edit.char_limit(openstitch_design::DesignProperties::MAX_BYTES));
+                }
+                ui.end_row();
+            }
+        });
+    let changed = *draft != current;
+    ui.horizontal(|ui| {
+        if ui
+            .add_enabled(changed, egui::Button::new("Apply"))
+            .clicked()
+        {
+            apply_property_draft(app);
+        }
+        if ui
+            .add_enabled(changed, egui::Button::new("Revert"))
+            .clicked()
+        {
+            app.ui.property_draft = None;
+        }
+    });
+}
+
+/// Writes the Design Property draft to the design (`design.setProperties`, one Undo step).
+/// Keeps the draft when the engine refuses it; the status bar says why.
+pub fn apply_property_draft(app: &mut EditorApp) -> bool {
+    let Some(draft) = app.ui.property_draft.clone() else {
+        return false;
+    };
+    let params = serde_json::Value::Object(
+        draft
+            .fields()
+            .iter()
+            .map(|&(k, v)| (k.to_string(), serde_json::Value::from(v)))
+            .collect(),
+    );
+    let request = openstitch_app::editor::CommandRequest::new("design.setProperties", params);
+    let ok = app.execute(&request).is_some();
+    if ok {
+        app.ui.property_draft = None;
+    }
+    ok
+}
+
 /// Help ▸ About (every window).
 pub fn about_window(app: &mut EditorApp, ctx: &egui::Context) {
     let mut open = app.ui.about_open;
@@ -575,4 +643,30 @@ pub fn about_window(app: &mut EditorApp, ctx: &egui::Context) {
             ui.hyperlink("https://github.com/cristianonescu/OPE-Design11");
         });
     app.ui.about_open = open;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::Launch;
+
+    #[test]
+    fn design_property_edits_apply_as_one_undo_step() {
+        let mut app = EditorApp::new(Launch::default());
+        let mut draft = app.session.design().properties.clone();
+        draft.author = "Ana".into();
+        draft.comments = "two\nlines".into();
+        app.ui.property_draft = Some(draft.clone());
+        assert!(apply_property_draft(&mut app));
+        assert_eq!(app.session.design().properties, draft);
+        assert_eq!(app.ui.property_draft, None);
+
+        // A refused edit keeps the draft and leaves the design alone.
+        let mut bad = draft.clone();
+        bad.category = "x".repeat(300);
+        app.ui.property_draft = Some(bad.clone());
+        assert!(!apply_property_draft(&mut app));
+        assert_eq!(app.ui.property_draft, Some(bad));
+        assert_eq!(app.session.design().properties, draft);
+    }
 }
