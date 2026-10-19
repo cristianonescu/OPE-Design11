@@ -745,8 +745,13 @@ fn bad_shape_operation_parameters_fail_cleanly() {
     );
     run(
         &mut s,
+        "shape.rectangle",
+        json!({"x": 22, "y": 22, "width": 5, "height": 5}),
+    );
+    run(
+        &mut s,
         "object.setHoleSewing",
-        json!({"id": 2, "enabled": true}),
+        json!({"ids": [2, 5], "enabled": true}),
     );
     let before = s.design().clone();
     let bad: Vec<(&str, Value)> = vec![

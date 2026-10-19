@@ -60,6 +60,15 @@ fn add_set(design: &mut Design, objects: Vec<DesignObject>, t: &Transform) -> Ve
         ids.insert(old, new);
         out.push(new);
     }
+    // A hole-sewing pair copied together stays a pair; an outer shape copied alone loses it.
+    for &id in &out {
+        let i = design.index_of(id).expect("just added");
+        let o = &mut design.objects[i];
+        if let Some(h) = o.hole_inner {
+            o.hole_inner = ids.get(&h).copied();
+            o.hole_sewing = o.hole_inner.is_some();
+        }
+    }
     for &id in &out {
         let i = design.index_of(id).expect("just added");
         let path = design.objects[i].text.as_ref().and_then(|spec| spec.path);
@@ -491,10 +500,13 @@ fn paste_attributes_command() -> CommandSpec {
                     d.thread = sl.thread.clone();
                 }
                 if !colours_only && has("holeSewing") {
+                    // The copy pairs with the region it encloses, found when it is sewn.
                     dst.hole_sewing = src.hole_sewing && dst.region.is_some();
+                    dst.hole_inner = None;
                 }
                 if dst.region.is_none() {
                     dst.hole_sewing = false;
+                    dst.hole_inner = None;
                 }
                 changed.push(dst.id);
             }

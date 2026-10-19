@@ -197,6 +197,9 @@ impl Session {
             Effect::Edit => {
                 let mut scratch = self.state.clone();
                 let result = run(&mut scratch, &p)?;
+                if scratch.user.optimize_entry_exit {
+                    link_new_shapes(&self.state.design, &mut scratch.design);
+                }
                 // Text on a path follows any edit of its path.
                 scratch.design.relayout_text();
                 scratch.design.dissolve_single_groups();
@@ -274,5 +277,19 @@ impl Session {
             _ => return Err(CommandError::UnknownCommand(id.into())),
         }
         Ok(json!({ "canUndo": self.can_undo(), "canRedo": self.can_redo() }))
+    }
+}
+
+/// Options ▸ Optimize Entry/Exit Points: each shape `after` has that `before` did not is linked
+/// to the objects sewn before and after it (see [`crate::order::link_entry_exit`]).
+fn link_new_shapes(before: &openstitch_design::Design, after: &mut openstitch_design::Design) {
+    let added: Vec<usize> = (0..after.objects.len())
+        .filter(|&i| {
+            after.objects[i].kind == openstitch_design::ObjectKind::Shape
+                && before.index_of(after.objects[i].id).is_none()
+        })
+        .collect();
+    for i in added {
+        crate::order::link_entry_exit(after, i.saturating_sub(1)..i + 1);
     }
 }

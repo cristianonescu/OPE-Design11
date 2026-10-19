@@ -149,7 +149,7 @@ impl Compiler {
     }
 
     /// The stitches `design.objects[index]` alone generates, as it would be sewn inside the
-    /// design (hole sewing still skips the regions sewn after it), visible or not. Used to
+    /// design (hole sewing still skips its paired inner shape), visible or not. Used to
     /// convert a shape or text into a stitch pattern.
     pub fn compile_object(&self, design: &Design, index: usize) -> StitchPattern {
         let mut w = self.writer();
@@ -250,19 +250,13 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
     });
 }
 
-/// Closed outlines of visible regions sewn after `object`, when it has hole sewing on.
+/// Closed outlines of the visible inner shape `object` is sewn around, when it has hole
+/// sewing on.
 fn holes_above(object: &DesignObject, design: &Design) -> Vec<Contour> {
-    if !object.hole_sewing {
-        return Vec::new();
-    }
-    let Some(i) = design.index_of(object.id) else {
-        return Vec::new();
-    };
-    design.objects[i + 1..]
-        .iter()
-        .filter(|o| o.visible && o.is_outline() && o.region.is_some())
-        .flat_map(|o| o.contours.iter().filter(|c| c.closed).cloned())
-        .collect()
+    crate::holes::paired_inner(object, design)
+        .filter(|o| o.visible)
+        .and_then(crate::holes::region_contours)
+        .unwrap_or_default()
 }
 
 fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<Element> {
