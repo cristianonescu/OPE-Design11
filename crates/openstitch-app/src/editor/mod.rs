@@ -19,6 +19,7 @@ pub mod request;
 pub mod ribbon;
 pub mod sections;
 pub mod sewing;
+pub mod suite;
 pub mod tools;
 pub mod viewport;
 pub mod wizard;

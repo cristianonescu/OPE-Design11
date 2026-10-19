@@ -1,14 +1,17 @@
-//! Programmable Stitch Creator window (Tools → Programmable Stitch Creator…). The pattern and
-//! its editing live in [`openstitch_app::editor::creator`]; this draws them. "Add to design"
-//! runs one `pattern.define` command (one Undo); the library folder holds patterns between
-//! sessions.
+//! Programmable Stitch Creator (Options ▸ Programmable Stitch Creator): a window of its own in
+//! place of Layout & Editing, with the suite's Application menu, ribbon (Home, View), ScreenTips
+//! and status bar ([`openstitch_app::editor::suite::CREATOR`]). The pattern and its editing live
+//! in [`openstitch_app::editor::creator`]; this draws them. Add to Design runs one
+//! `pattern.define` command (one Undo); the library folder holds patterns between sessions.
 
 use crate::app::EditorApp;
+use crate::suite_chrome::{self, Host};
 use eframe::egui::{self, Color32, Pos2, Sense, Stroke};
 use openstitch_app::editor::CommandRequest;
 use openstitch_app::editor::creator::{
     self, Creator, KINDS, LibraryEntry, kind_name, library_dir, load_library, save_to_library,
 };
+use openstitch_app::editor::suite::{CREATOR, CreatorAction};
 use openstitch_core::Command;
 use openstitch_design::patterns::{self, PatternKind};
 use openstitch_design::{Compiler, Vec2, v2};
@@ -18,8 +21,19 @@ use std::path::PathBuf;
 /// A sewn polyline in its thread colour.
 type StitchLine = (Color32, Vec<Vec2>);
 
+/// What a click on the Design Page does.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum CreatorTool {
+    /// Picks the current line.
+    Select,
+    /// Moves and deletes points.
+    EditPoint,
+    /// Adds points to the current line (and moves and deletes them).
+    #[default]
+    DrawLine,
+}
+
 /// Window state.
-#[derive(Default)]
 pub struct CreatorState {
     pub open: bool,
     pub doc: Creator,
@@ -31,6 +45,42 @@ pub struct CreatorState {
     pub message: String,
     /// Preview polylines for the document they were computed from.
     preview: Option<(Creator, Vec<StitchLine>)>,
+    /// Ribbon tab (index into `CREATOR.tabs`).
+    pub tab: usize,
+    pub tool: CreatorTool,
+    /// Design Page magnification (1 = fit).
+    pub zoom: f32,
+    /// Line copied with Copy or Cut.
+    pub clipboard: Option<Vec<Vec2>>,
+    pub show_preview: bool,
+    pub show_status: bool,
+    pub show_grid: bool,
+    pub open_app_menu: bool,
+    hover: Option<&'static str>,
+}
+
+impl Default for CreatorState {
+    fn default() -> Self {
+        CreatorState {
+            open: false,
+            doc: Creator::default(),
+            library: Vec::new(),
+            dir: None,
+            loaded: false,
+            drag: None,
+            message: String::new(),
+            preview: None,
+            tab: 0,
+            tool: CreatorTool::default(),
+            zoom: 1.0,
+            clipboard: None,
+            show_preview: true,
+            show_status: true,
+            show_grid: true,
+            open_app_menu: false,
+            hover: None,
+        }
+    }
 }
 
 impl CreatorState {
@@ -39,110 +89,255 @@ impl CreatorState {
         self.library = self.dir.as_deref().map(load_library).unwrap_or_default();
         self.loaded = true;
     }
+
+    fn current_line(&self) -> Option<Vec<Vec2>> {
+        self.doc.paths.get(self.doc.current).cloned()
+    }
+
+    fn save(&mut self) {
+        let (Ok(p), Some(dir)) = (self.doc.pattern(), self.dir.clone()) else {
+            return;
+        };
+        self.message = match save_to_library(&dir, &p) {
+            Ok(path) => format!("Saved {}", path.display()),
+            Err(e) => format!("Cannot save: {e}"),
+        };
+        self.refresh_library();
+    }
 }
 
-pub fn creator_window(app: &mut EditorApp, ctx: &egui::Context) {
-    if !app.creator.open {
-        return;
+const MIN_ZOOM: f32 = 0.5;
+const MAX_ZOOM: f32 = 4.0;
+
+impl Host<CreatorAction> for EditorApp {
+    fn enabled(&self, a: CreatorAction) -> bool {
+        use CreatorAction::*;
+        let st = &self.creator;
+        let lines = st.doc.paths.len();
+        let many = st.doc.kind != PatternKind::Motif && lines < patterns::MAX_PATHS;
+        match a {
+            Save => st.doc.pattern().is_ok() && st.dir.is_some(),
+            SaveAs => st.doc.pattern().is_ok(),
+            AddToDesign => st.doc.define_request().is_ok(),
+            NewLine | Duplicate => many,
+            Paste => many && st.clipboard.is_some(),
+            Cut | Delete => lines > 1,
+            ZoomIn => st.zoom < MAX_ZOOM,
+            ZoomOut => st.zoom > MIN_ZOOM,
+            _ => true,
+        }
     }
+
+    fn active(&self, a: CreatorAction) -> bool {
+        use CreatorAction::*;
+        let st = &self.creator;
+        match a {
+            SelectTool => st.tool == CreatorTool::Select,
+            EditPoint => st.tool == CreatorTool::EditPoint,
+            DrawLine => st.tool == CreatorTool::DrawLine,
+            PreviewWindow => st.show_preview,
+            StatusBar => st.show_status,
+            GridAxes => st.show_grid,
+            _ => false,
+        }
+    }
+
+    fn run(&mut self, a: CreatorAction, _ctx: &egui::Context) {
+        use CreatorAction::*;
+        if !suite_chrome::enabled(self, a) {
+            return;
+        }
+        let st = &mut self.creator;
+        match a {
+            NewFill => st.doc = Creator::new(PatternKind::Fill),
+            NewMotif => st.doc = Creator::new(PatternKind::Motif),
+            NewDecorative => st.doc = Creator::new(PatternKind::Decorative),
+            Open => open_file(st),
+            Save => st.save(),
+            SaveAs => save_as(st),
+            Exit => st.open = false,
+            SelectTool => st.tool = CreatorTool::Select,
+            EditPoint => st.tool = CreatorTool::EditPoint,
+            DrawLine => st.tool = CreatorTool::DrawLine,
+            NewLine => {
+                st.doc.new_path();
+            }
+            ZoomIn => st.zoom = (st.zoom * 1.25).min(MAX_ZOOM),
+            ZoomOut => st.zoom = (st.zoom / 1.25).max(MIN_ZOOM),
+            Cut => {
+                st.clipboard = st.current_line();
+                st.doc.delete_path();
+            }
+            Copy => {
+                st.clipboard = st.current_line();
+                st.message = "Line copied".into();
+            }
+            Paste => {
+                if let Some(line) = st.clipboard.clone() {
+                    st.doc.paste_path(&line);
+                }
+            }
+            Duplicate => {
+                if let Some(line) = st.current_line() {
+                    st.doc.paste_path(&line);
+                }
+            }
+            Delete => {
+                st.doc.delete_path();
+            }
+            FlipVertical => st.doc.flip(false),
+            FlipHorizontal => st.doc.flip(true),
+            AddToDesign => {
+                if let Ok(r) = st.doc.define_request() {
+                    add_to_design(self, &r);
+                }
+            }
+            PreviewWindow => st.show_preview ^= true,
+            StatusBar => st.show_status ^= true,
+            GridAxes => st.show_grid ^= true,
+            _ => {}
+        }
+    }
+
+    fn menu(&mut self, a: CreatorAction, ui: &mut egui::Ui) {
+        use CreatorAction::*;
+        match a {
+            Help => crate::ribbon::help_menu(self, ui),
+            OtherZoom => {
+                for (label, z) in [("Fit to window", 1.0), ("200 %", 2.0), ("400 %", 4.0)] {
+                    if ui.button(label).clicked() {
+                        self.creator.zoom = z;
+                        ui.close();
+                    }
+                }
+            }
+            GridInterval => {
+                ui.checkbox(&mut self.creator.doc.snap, "Snap to 1/16 of the tile");
+            }
+            _ => {}
+        }
+    }
+
+    fn set_hover(&mut self, tip: &'static str) {
+        self.creator.hover = Some(tip);
+    }
+}
+
+fn open_file(st: &mut CreatorState) {
+    let Some(path) = rfd::FileDialog::new()
+        .add_filter("OpenStitch pattern", &["json"])
+        .set_directory(st.dir.clone().unwrap_or_default())
+        .pick_file()
+    else {
+        return;
+    };
+    match std::fs::read_to_string(&path)
+        .map_err(|e| e.to_string())
+        .and_then(|t| patterns::parse(&t))
+    {
+        Ok(p) => {
+            st.doc = Creator::from_pattern(&p);
+            st.message = format!("Opened {}", p.name);
+        }
+        Err(e) => st.message = format!("Cannot open: {e}"),
+    }
+}
+
+fn save_as(st: &mut CreatorState) {
+    let Ok(p) = st.doc.pattern() else {
+        return;
+    };
+    if let Some(path) = rfd::FileDialog::new()
+        .add_filter("OpenStitch pattern", &["json"])
+        .set_file_name(creator::library_file_name(&p))
+        .save_file()
+    {
+        st.message = match std::fs::write(&path, p.to_json()) {
+            Ok(()) => format!("Saved {}", path.display()),
+            Err(e) => format!("Cannot save: {e}"),
+        };
+    }
+}
+
+fn add_to_design(app: &mut EditorApp, r: &CommandRequest) {
+    app.creator.message = if app.execute(r).is_some() {
+        format!(
+            "'{}' is in the design; choose it in the Sewing Attributes pane",
+            r.params["pattern"]["id"].as_str().unwrap_or("?")
+        )
+    } else {
+        app.status.clone()
+    };
+}
+
+fn tool_hint(t: CreatorTool) -> &'static str {
+    match t {
+        CreatorTool::Select => "Click a line to make it the current one",
+        CreatorTool::EditPoint => "Drag a point to move it · right-click deletes it",
+        CreatorTool::DrawLine => "Click: add a point · drag: move · right-click: delete",
+    }
+}
+
+/// Draws the whole window in place of Layout & Editing.
+pub fn creator(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let ctx = ui.ctx().clone();
     if !app.creator.loaded {
         app.creator.refresh_library();
     }
-    let mut open = true;
-    let mut requests: Vec<CommandRequest> = Vec::new();
-    egui::Window::new("Programmable Stitch Creator")
-        .open(&mut open)
-        .default_width(860.0)
-        .resizable(true)
-        .fade_in(false)
-        .show(ctx, |ui| {
-            let user = app.session.design().patterns.clone();
-            let st = &mut app.creator;
-            header(ui, st, &user);
-            ui.separator();
-            ui.horizontal_top(|ui| {
-                ui.vertical(|ui| {
-                    ui.label("Pattern (click: add point · drag: move · right-click: delete)");
-                    edit_canvas(ui, st);
-                    ui.horizontal(|ui| {
-                        ui.checkbox(&mut st.doc.snap, "Snap to 1/16");
-                        if ui
-                            .add_enabled(
-                                st.doc.kind != PatternKind::Motif,
-                                egui::Button::new("New path"),
-                            )
-                            .clicked()
-                        {
-                            st.doc.new_path();
-                        }
-                        if ui
-                            .add_enabled(st.doc.paths.len() > 1, egui::Button::new("Delete path"))
-                            .clicked()
-                        {
-                            st.doc.delete_path();
-                        }
-                        let n = st.doc.paths.len();
-                        if n > 1 {
-                            ui.label("Path");
-                            let mut cur = st.doc.current + 1;
-                            if ui
-                                .add(egui::DragValue::new(&mut cur).range(1..=n))
-                                .changed()
-                            {
-                                st.doc.current = cur - 1;
-                            }
-                        }
-                    });
-                });
-                ui.vertical(|ui| {
-                    ui.label("Preview");
-                    preview(ui, st);
-                });
+    app.creator.hover = None;
+    suite_chrome::shortcuts(app, &ctx, &CREATOR.actions());
+    let mut tab = app.creator.tab;
+    let mut open_menu = std::mem::take(&mut app.creator.open_app_menu);
+    egui::Panel::top("pc-ribbon").show(ui, |ui| {
+        suite_chrome::ribbon(app, ui, &CREATOR, &mut tab, &mut open_menu);
+    });
+    app.creator.tab = tab;
+    if app.creator.show_status {
+        egui::Panel::bottom("pc-status").show(ui, |ui| {
+            let st = &app.creator;
+            let text = if st.message.is_empty() {
+                tool_hint(st.tool)
+            } else {
+                st.message.as_str()
+            };
+            let points: usize = st.doc.paths.iter().map(Vec::len).sum();
+            suite_chrome::status_bar(ui, st.hover, text, |ui| {
+                ui.label(format!("{:.0} %", st.zoom * 100.0));
+                ui.separator();
+                ui.label(format!(
+                    "{} · {} lines · {points} points",
+                    kind_name(st.doc.kind),
+                    st.doc.paths.len()
+                ));
             });
-            ui.separator();
-            ui.horizontal(|ui| {
-                match st.doc.define_request() {
-                    Ok(r) => {
-                        if ui.button("Add to design").clicked() {
-                            requests.push(r);
-                        }
-                    }
-                    Err(e) => {
-                        ui.add_enabled(false, egui::Button::new("Add to design"));
-                        ui.colored_label(Color32::from_rgb(220, 90, 70), e);
-                    }
-                }
-                let valid = st.doc.pattern();
-                if ui
-                    .add_enabled(
-                        valid.is_ok() && st.dir.is_some(),
-                        egui::Button::new("Save to library"),
-                    )
-                    .clicked()
-                    && let (Ok(p), Some(dir)) = (valid, st.dir.clone())
-                {
-                    st.message = match save_to_library(&dir, &p) {
-                        Ok(path) => format!("Saved {}", path.display()),
-                        Err(e) => format!("Cannot save: {e}"),
-                    };
-                    st.refresh_library();
-                }
-                ui.weak(&st.message);
-            });
-            ui.separator();
-            library(ui, st, &mut requests);
         });
-    app.creator.open = open;
-    for r in requests {
-        if app.execute(&r).is_some() {
-            app.creator.message = format!(
-                "'{}' is in the design; choose it in the inspector",
-                r.params["pattern"]["id"].as_str().unwrap_or("?")
-            );
-        } else {
-            app.creator.message = app.status.clone();
-        }
     }
+    let mut requests: Vec<CommandRequest> = Vec::new();
+    let user = app.session.design().patterns.clone();
+    egui::Panel::left("pc-library")
+        .default_size(300.0)
+        .show(ui, |ui| library(ui, &mut app.creator, &mut requests));
+    if app.creator.show_preview {
+        egui::Panel::right("pc-preview")
+            .default_size(440.0)
+            .show(ui, |ui| {
+                ui.strong("Preview");
+                preview(ui, &mut app.creator);
+            });
+    }
+    egui::CentralPanel::default().show(ui, |ui| {
+        let st = &mut app.creator;
+        header(ui, st, &user);
+        if let Err(e) = st.doc.define_request() {
+            ui.colored_label(Color32::from_rgb(220, 90, 70), e);
+        }
+        ui.separator();
+        egui::ScrollArea::both().show(ui, |ui| edit_canvas(ui, st));
+    });
+    for r in requests {
+        add_to_design(app, &r);
+    }
+    crate::panes::about_window(app, &ctx);
 }
 
 fn header(ui: &mut egui::Ui, st: &mut CreatorState, user: &[patterns::Pattern]) {
@@ -226,23 +421,25 @@ impl Map {
 
 fn edit_canvas(ui: &mut egui::Ui, st: &mut CreatorState) {
     let (x0, y0, x1, y1) = st.doc.unit_box();
-    let w = 400.0;
-    let h = (w * ((y1 - y0) / (x1 - x0)) as f32).min(400.0);
+    let w = 480.0 * st.zoom;
+    let h = (w * ((y1 - y0) / (x1 - x0)) as f32).min(480.0 * st.zoom);
     let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click_and_drag());
     let painter = ui.painter_at(rect);
     painter.rect_filled(rect, 4.0, Color32::from_gray(250));
     let map = Map::new(rect, &st.doc);
     // Grid and the tile (or motif cell) itself.
-    let grid = Stroke::new(1.0, Color32::from_gray(230));
-    let steps = ((x1 - x0) / creator::SNAP).round() as i32;
-    for i in 0..=steps {
-        let x = x0 + f64::from(i) * creator::SNAP;
-        painter.line_segment([map.to_screen(v2(x, y0)), map.to_screen(v2(x, y1))], grid);
-    }
-    let steps = ((y1 - y0) / creator::SNAP).round() as i32;
-    for i in 0..=steps {
-        let y = y0 + f64::from(i) * creator::SNAP;
-        painter.line_segment([map.to_screen(v2(x0, y)), map.to_screen(v2(x1, y))], grid);
+    if st.show_grid {
+        let grid = Stroke::new(1.0, Color32::from_gray(230));
+        let steps = ((x1 - x0) / creator::SNAP).round() as i32;
+        for i in 0..=steps {
+            let x = x0 + f64::from(i) * creator::SNAP;
+            painter.line_segment([map.to_screen(v2(x, y0)), map.to_screen(v2(x, y1))], grid);
+        }
+        let steps = ((y1 - y0) / creator::SNAP).round() as i32;
+        for i in 0..=steps {
+            let y = y0 + f64::from(i) * creator::SNAP;
+            painter.line_segment([map.to_screen(v2(x0, y)), map.to_screen(v2(x1, y))], grid);
+        }
     }
     let cell = egui::Rect::from_two_pos(
         map.to_screen(v2(
@@ -308,7 +505,16 @@ fn edit_canvas(ui: &mut egui::Ui, st: &mut CreatorState) {
         }
         best
     };
+    let tool = st.tool;
     if let Some(pos) = resp.interact_pointer_pos() {
+        if tool == CreatorTool::Select {
+            if resp.clicked()
+                && let Some((i, _)) = nearest(pos, &st.doc)
+            {
+                st.doc.current = i;
+            }
+            return;
+        }
         if resp.drag_started() {
             st.drag = nearest(pos, &st.doc);
             if let Some((i, _)) = st.drag {
@@ -323,9 +529,10 @@ fn edit_canvas(ui: &mut egui::Ui, st: &mut CreatorState) {
         if resp.clicked() {
             match nearest(pos, &st.doc) {
                 Some((i, _)) => st.doc.current = i,
-                None => {
+                None if tool == CreatorTool::DrawLine => {
                     st.doc.add_point(map.to_unit(pos));
                 }
+                None => {}
             }
         }
         if resp.secondary_clicked()
@@ -419,77 +626,64 @@ fn stitch_lines(p: &openstitch_core::StitchPattern) -> Vec<StitchLine> {
 fn library(ui: &mut egui::Ui, st: &mut CreatorState, requests: &mut Vec<CommandRequest>) {
     ui.horizontal(|ui| {
         ui.strong("User library");
-        match &st.dir {
-            Some(d) => {
-                let text = d.display().to_string();
-                let short = if text.chars().count() > 60 {
-                    let tail: String = text
-                        .chars()
-                        .rev()
-                        .take(57)
-                        .collect::<Vec<_>>()
-                        .into_iter()
-                        .rev()
-                        .collect();
-                    format!("…{tail}")
-                } else {
-                    text.clone()
-                };
-                ui.weak(short).on_hover_text(text)
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            if ui.button("Refresh").clicked() {
+                st.refresh_library();
             }
-            None => ui.weak("no user folder (set OPENSTITCH_PATTERNS)"),
-        };
-        if ui.button("Refresh").clicked() {
-            st.refresh_library();
-        }
+        });
     });
+    match &st.dir {
+        Some(d) => {
+            let text = d.display().to_string();
+            ui.add(egui::Label::new(egui::RichText::new(&text).weak()).truncate())
+                .on_hover_text(text);
+        }
+        None => {
+            ui.weak("No user folder (set OPENSTITCH_PATTERNS)");
+        }
+    }
+    ui.separator();
     if st.library.is_empty() {
         ui.weak("No saved patterns yet.");
         return;
     }
     let mut edit = None;
     let mut remove = None;
-    egui::ScrollArea::vertical()
-        .max_height(140.0)
-        .show(ui, |ui| {
-            egui::Grid::new("creator-library")
-                .num_columns(3)
-                .show(ui, |ui| {
-                    for (i, e) in st.library.iter().enumerate() {
-                        let file = e
-                            .path
-                            .file_name()
-                            .map(|n| n.to_string_lossy().into_owned())
-                            .unwrap_or_default();
-                        match &e.pattern {
-                            Ok(p) => {
-                                ui.label(format!("{} ({}, {})", p.name, kind_name(p.kind), p.id));
-                                ui.horizontal(|ui| {
-                                    if ui.button("Edit").clicked() {
-                                        edit = Some(i);
-                                    }
-                                    if ui.button("Add to design").clicked() {
-                                        let doc: serde_json::Value =
-                                            serde_json::from_str(&p.to_json()).unwrap_or_default();
-                                        requests.push(CommandRequest::new(
-                                            "pattern.define",
-                                            json!({ "pattern": doc }),
-                                        ));
-                                    }
-                                    if ui.button("Delete file").clicked() {
-                                        remove = Some(i);
-                                    }
-                                });
-                            }
-                            Err(err) => {
-                                ui.colored_label(Color32::from_rgb(220, 90, 70), &file);
-                                ui.weak(err);
-                            }
+    egui::ScrollArea::vertical().show(ui, |ui| {
+        for (i, e) in st.library.iter().enumerate() {
+            let file = e
+                .path
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            match &e.pattern {
+                Ok(p) => {
+                    ui.label(format!("{} ({}, {})", p.name, kind_name(p.kind), p.id));
+                    ui.horizontal(|ui| {
+                        if ui.button("Edit").clicked() {
+                            edit = Some(i);
                         }
-                        ui.end_row();
-                    }
-                });
-        });
+                        if ui.button("Add to Design").clicked() {
+                            let doc: serde_json::Value =
+                                serde_json::from_str(&p.to_json()).unwrap_or_default();
+                            requests.push(CommandRequest::new(
+                                "pattern.define",
+                                json!({ "pattern": doc }),
+                            ));
+                        }
+                        if ui.button("Delete file").clicked() {
+                            remove = Some(i);
+                        }
+                    });
+                }
+                Err(err) => {
+                    ui.colored_label(Color32::from_rgb(220, 90, 70), &file);
+                    ui.weak(err);
+                }
+            }
+            ui.add_space(4.0);
+        }
+    });
     if let Some(i) = edit
         && let Ok(p) = &st.library[i].pattern
     {
