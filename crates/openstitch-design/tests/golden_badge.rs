@@ -12,7 +12,7 @@ fn golden_project_compiles_to_recorded_statistics() {
     let design: Design =
         serde_json::from_value(envelope["design"].clone()).expect("golden design decodes");
     let p = Compiler::default().compile(&design);
-    assert_eq!(p.count(Command::Stitch), 3174);
+    assert_eq!(p.count(Command::Stitch), 3055);
     assert_eq!(p.count(Command::Jump), 4);
     assert_eq!(p.count(Command::Trim), 4);
     assert_eq!(p.count(Command::ColorChange), 2);

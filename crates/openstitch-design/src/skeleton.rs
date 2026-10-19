@@ -198,21 +198,49 @@ impl Centre {
     }
 }
 
-/// Satin along the skeleton: left, right, left… with the stitches `spacing` apart along the
-/// centre line (0.1 mm), each lengthened by `pull` at both ends. Empty for a degenerate
-/// skeleton.
+/// Satin along the skeleton: the first rung sewn across, then one needle point per rung on
+/// alternate sides ([`crate::column::zigzag`]), the rungs `spacing` apart along the centre
+/// line (0.1 mm), each lengthened by `pull` at both ends. Empty for a degenerate skeleton.
 pub fn satin(s: &Skeleton, spacing: f64, pull: f64) -> Run {
     let Some(c) = Centre::new(s) else {
         return Vec::new();
     };
-    let mut run: Run = c
-        .rungs(spacing, pull)
-        .into_iter()
-        .enumerate()
-        .flat_map(|(k, [l, r])| if k % 2 == 0 { [l, r] } else { [r, l] })
-        .collect();
+    let mut run = crate::column::zigzag(c.rungs(spacing, pull));
     run.dedup_by(|a, b| a.distance(*b) < 1e-9);
     run
+}
+
+/// The rungs of [`satin`] filling the closed region `contours`, [left, right] in sewing
+/// order: each rung reaches from the centre line to the region's outline along the rung (at
+/// most 0.5 mm beyond the skeleton's half width), so the column covers the region where a
+/// derived width is only approximate; then it is lengthened by `pull` at both ends. Empty for
+/// a degenerate skeleton.
+pub fn rungs_within(s: &Skeleton, contours: &[Contour], spacing: f64, pull: f64) -> Vec<[Vec2; 2]> {
+    let Some(c) = Centre::new(s) else {
+        return Vec::new();
+    };
+    let edges: Vec<(Vec2, Vec2)> = contours
+        .iter()
+        .filter(|c| c.closed)
+        .flat_map(Contour::edges)
+        .collect();
+    let pull = if pull.is_finite() { pull } else { 0.0 };
+    c.rungs(spacing, 0.0)
+        .into_iter()
+        .map(|[l, r]| {
+            let centre = l.lerp(r, 0.5);
+            let half = l.distance(centre);
+            if half < 1e-6 || !crate::geometry::contains(centre, contours) {
+                return [l, r];
+            }
+            let reach = |end: Vec2| {
+                let dir = (end - centre) * (1.0 / half);
+                let d = ray(centre, dir, &edges).map_or(half, |d| d.min(half + 5.0));
+                centre + dir * (d + pull).max(0.0)
+            };
+            [reach(l), reach(r)]
+        })
+        .collect()
 }
 
 /// The column's outline: the left side along the centre line, then the right side back.
@@ -599,11 +627,6 @@ mod tests {
         }
     }
 
-    /// The stitches of a satin run: consecutive pairs.
-    fn stitches(run: &Run) -> Vec<(Vec2, Vec2)> {
-        run.windows(2).step_by(2).map(|w| (w[0], w[1])).collect()
-    }
-
     #[test]
     fn stitches_are_perpendicular_to_the_centre_line() {
         // An L: right 200, then down 200; 4 mm wide.
@@ -636,10 +659,13 @@ mod tests {
         let s = skeleton(&[(0.0, 0.0), (300.0, 0.0)], &[2.0, 6.0]);
         let spacing = 10.0 / 4.0; // 4 lines per mm
         let run = satin(&s, spacing, 0.0);
-        let st = stitches(&run);
-        // One stitch per spacing step, both ends included.
-        assert_eq!(run.len(), 242);
-        assert_eq!(st.len(), 121);
+        // One needle point per spacing step, both ends included, plus the first rung's other
+        // end.
+        assert_eq!(run.len(), 122);
+        // Every stitch crosses the centre line (y = 0): needle points alternate sides.
+        for w in run.windows(2) {
+            assert!(w[0].y * w[1].y < 0.0, "{w:?} runs along an edge");
+        }
         let centres: Vec<Vec2> = c_rungs(&s, spacing)
             .iter()
             .map(|[l, r]| l.lerp(*r, 0.5))
@@ -648,9 +674,9 @@ mod tests {
             assert!(w[0].distance(w[1]) <= spacing + 1e-9);
         }
         // Width tapers from 2 mm to 6 mm.
-        assert!((st[0].0.distance(st[0].1) - 20.0).abs() < 1e-6);
-        let (a, b) = (run[run.len() - 2], run[run.len() - 1]);
-        assert!((a.distance(b) - 60.0).abs() < 1e-6);
+        assert!((run[0].distance(run[1]) - 20.0).abs() < 1e-6);
+        let last = run[run.len() - 1];
+        assert!((last.x - 300.0).abs() < 1e-6 && (last.y.abs() - 30.0).abs() < 1e-6);
         // Pull compensation lengthens each stitch at both ends.
         let pulled = satin(&s, spacing, 3.0);
         assert!((pulled[0].distance(pulled[1]) - 26.0).abs() < 1e-6);

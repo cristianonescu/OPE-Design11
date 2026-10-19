@@ -158,9 +158,10 @@ pub fn fill(contours: &[Contour], p: &RegionParams, holes: &[Contour]) -> Vec<Ru
     })
 }
 
-/// Satin region: one stitch across the region per row, alternating direction.
+/// Satin region: one needle point per row on alternate edges, so every stitch crosses the
+/// region (see [`chain_satin_spans`]).
 pub fn satin(contours: &[Contour], p: &RegionParams, holes: &[Contour]) -> Vec<Run> {
-    sew_rows(contours, p, holes, |span, _, forward| {
+    chain_satin_spans(&row_spans(contours, p, holes), p, |span, _, forward| {
         if forward {
             vec![*span.start(), *span.end()]
         } else {
@@ -184,7 +185,12 @@ fn sew_rows(
     holes: &[Contour],
     points: impl Fn(&Span, usize, bool) -> Vec<f64>,
 ) -> Vec<Run> {
-    let spans: Vec<RowSpan> = scan_rows(contours, p.angle, p.row_spacing, holes)
+    chain_spans(&row_spans(contours, p, holes), p, points)
+}
+
+/// Inside intervals of every scan row, lengthened by the pull compensation at both ends.
+fn row_spans(contours: &[Contour], p: &RegionParams, holes: &[Contour]) -> Vec<RowSpan> {
+    scan_rows(contours, p.angle, p.row_spacing, holes)
         .into_iter()
         .flat_map(|r| {
             let (row, y) = (r.index, r.y);
@@ -198,8 +204,7 @@ fn sew_rows(
                 }
             })
         })
-        .collect();
-    chain_spans(&spans, p, points)
+        .collect()
 }
 
 /// Sews prepared row spans (see [`sew_rows`]): greedy nearest-end chaining, needle positions
@@ -209,6 +214,28 @@ pub fn chain_spans(
     p: &RegionParams,
     points: impl Fn(&Span, usize, bool) -> Vec<f64>,
 ) -> Vec<Run> {
+    chain(spans, p, points, false)
+}
+
+/// [`chain_spans`] for satin: when a row follows the previous one along the same edge (the
+/// next row, entered within three row distances of the last needle point), its first needle
+/// point is left out. The stitch then goes from one edge straight to the far edge of the next
+/// row, so needle points alternate between the edges and no short stitch runs along an edge.
+/// The first row of each run is sewn across in full.
+pub fn chain_satin_spans(
+    spans: &[RowSpan],
+    p: &RegionParams,
+    points: impl Fn(&Span, usize, bool) -> Vec<f64>,
+) -> Vec<Run> {
+    chain(spans, p, points, true)
+}
+
+fn chain(
+    spans: &[RowSpan],
+    p: &RegionParams,
+    points: impl Fn(&Span, usize, bool) -> Vec<f64>,
+    satin: bool,
+) -> Vec<Run> {
     let Some(first) = spans.first() else {
         return Vec::new();
     };
@@ -217,6 +244,7 @@ pub fn chain_spans(
     let mut current: Run = Vec::new();
     let mut position = v2(*first.range.start(), first.y);
     let join_limit = p.row_spacing * 3.0 + p.stitch_length;
+    let mut last_row: Option<(usize, f64)> = None;
     for _ in 0..spans.len() {
         let (mut best, mut forward, mut best_d) = (0, true, f64::INFINITY);
         for (i, s) in spans.iter().enumerate().filter(|(i, _)| !used[*i]) {
@@ -235,10 +263,19 @@ pub fn chain_spans(
             runs.push(std::mem::take(&mut current));
         }
         let xs = points(&s.range, s.row, forward);
-        current.extend(xs.iter().map(|&x| from_rotated(v2(x, s.y), p.angle)));
+        let along_edge = last_row.is_some_and(|(row, y)| {
+            row.abs_diff(s.row) == 1 && best_d <= 3.0 * (s.y - y).abs() + 1e-9
+        });
+        let skip = usize::from(satin && xs.len() >= 2 && !current.is_empty() && along_edge);
+        current.extend(
+            xs.iter()
+                .skip(skip)
+                .map(|&x| from_rotated(v2(x, s.y), p.angle)),
+        );
         if let Some(&x) = xs.last() {
             position = v2(x, s.y);
         }
+        last_row = Some((s.row, s.y));
     }
     if !current.is_empty() {
         runs.push(current);

@@ -368,13 +368,24 @@ fn auto_direction_sews_across_the_narrow_side() {
     r.auto_direction = true;
     let layers = crate::region::layers(std::slice::from_ref(&wide), &r, &[]);
     let runs = layers.last().expect("top");
+    // A zigzag stitch crosses the narrow side, slanting one row (1/3 mm) along it.
+    let slant = 50.0f64.hypot(10.0 / 3.0);
     for run in runs {
         for w in run.windows(2) {
             let d = w[0].distance(w[1]);
-            assert!(d <= 50.0 + 1e-6, "stitch {d} longer than the narrow side");
+            assert!(d <= slant + 1e-6, "stitch {d} longer than the narrow side");
         }
     }
-    assert_inside(runs, &[wide], "auto satin");
+    assert_inside(runs, std::slice::from_ref(&wide), "auto satin");
+    // Holes keep the single direction across the narrow side.
+    let hole = Contour::rectangle(80.0, 20.0, 40.0, 10.0);
+    let holed = crate::region::layers(std::slice::from_ref(&wide), &r, &[hole]);
+    for run in holed.last().expect("top") {
+        for w in run.windows(2) {
+            let d = w[0] - w[1];
+            assert!(d.x.abs() <= 10.0 / 3.0 + 1e-6 || d.y.abs() < 1e-6, "{w:?}");
+        }
+    }
 }
 
 #[test]
@@ -458,8 +469,10 @@ fn long_satin_stitches_split_and_stagger() {
     let mut r = region(RegionType::Satin);
     r.split_length = Some(5.0);
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
+    // The first stitch of a row comes from the previous row's edge, one row (1/3 mm) away.
+    let slant = 50.0f64.hypot(10.0 / 3.0);
     for run in &runs {
-        assert!(longest(run) <= 50.0 + 1e-6);
+        assert!(longest(run) <= slant + 1e-6);
     }
     assert_inside(&runs, &c, "split");
     let plain = crate::region::layers(&c, &region(RegionType::Satin), &[]);

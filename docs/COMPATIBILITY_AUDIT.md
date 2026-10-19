@@ -117,6 +117,12 @@ Line references are relative to `crates/`.
     ([region sewing attributes](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html)).
 - **REA:** none.
 - **Grade:** Defect.
+- **Status:** fixed, internal regression tier only (not reference verified). Region satin,
+  Manual Punch columns and skeleton satin sew the first row across, then one needle point per
+  row on alternate edges (`column::zigzag`, `generate::chain_satin_spans`); pull compensation
+  still lengthens every row. Tests: `crates/openstitch-engine/tests/satin_compat.rs`
+  (`region_satin_sews_a_zigzag_across_the_column`, `manual_punch_column_sews_a_zigzag`,
+  `skeleton_satin_sews_a_zigzag`, `pull_compensation_widens_the_zigzag`).
 - **Test:**
   - Inputs: `design.new` → `shape.rectangle {x:10,y:10,width:5,height:2}` →
     `object.setRegion {id:1,type:"satin",angle:90,density:3}` → `object.toStitches {ids:[1]}`
@@ -301,6 +307,13 @@ Line references are relative to `crates/`.
   Path are unavailable with Auto.
 - **REA:** none.
 - **Grade:** Documented difference.
+- **Status:** fixed, internal regression tier only (not reference verified). Auto satin
+  derives a skeleton and sews along it, each row reaching the outline
+  (`skeleton::rungs_within`). Travel (Running Stitch Path) is ignored and hidden with Auto
+  satin; OpenStitch has no Half Stitch or Stitch Type for regions. Fill, regions with holes or
+  several parts, gradation, feathered edges, split stitches and shapes the skeleton does not
+  cover (85 %) keep the principal-axis angle. Test:
+  `auto_direction_satin_follows_a_bent_band`.
 - **Test:**
   - Inputs: a 90° bent band 5 mm wide → `object.setRegion {type:"satin",autoDirection:true}`.
   - Assert: the stitch angle is within ±10° of perpendicular to the local band axis at 5

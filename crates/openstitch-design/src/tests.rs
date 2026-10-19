@@ -169,14 +169,22 @@ fn separated_parts_become_separate_runs() {
 }
 
 #[test]
-fn satin_one_stitch_per_row_with_pull_compensation() {
+fn satin_one_needle_point_per_row_with_pull_compensation() {
     let runs = generate::satin(
         &[Contour::rectangle(0.0, 0.0, 40.0, 20.0)],
         &params(90.0, 4.0, 40.0, 2.0),
         &[],
     );
     let pts: Vec<_> = runs.concat();
-    assert_eq!(pts.len(), 20);
+    // Ten rows: the first sewn across, then one needle point per row on alternate edges.
+    assert_eq!(pts.len(), 11);
+    for w in pts.windows(2) {
+        assert!(
+            ((w[0].y - w[1].y).abs() - 24.0).abs() < 1e-9,
+            "{w:?} runs along an edge"
+        );
+        assert!((w[0].x - w[1].x).abs() <= 4.0 + 1e-9);
+    }
     let ys: Vec<f64> = pts
         .iter()
         .map(|p| (p.y * 1000.0).round() / 1000.0)
