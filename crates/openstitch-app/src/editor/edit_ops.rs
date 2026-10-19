@@ -2,7 +2,7 @@
 //! arrange copies, shape operations, offset lines, attributes, entry/exit points).
 
 use super::request::{CommandRequest, mm};
-use openstitch_design::{Design, Vec2};
+use openstitch_design::{Design, Rect, Transform, Vec2, v2};
 use serde_json::json;
 use std::collections::BTreeSet;
 
@@ -303,6 +303,8 @@ pub struct ArrangeForm {
     pub spacing_y: f64,
     pub merge: bool,
     pub optimize: bool,
+    /// Circle centre (mm) dragged on the canvas; `None`: `radius` below the selection centre.
+    pub center: Option<Vec2>,
 }
 
 impl Default for ArrangeForm {
@@ -319,6 +321,7 @@ impl Default for ArrangeForm {
             spacing_y: 2.0,
             merge: false,
             optimize: false,
+            center: None,
         }
     }
 }
@@ -336,6 +339,10 @@ impl ArrangeForm {
                 p["count"] = json!(self.count);
                 p["radius"] = json!(self.radius);
                 p["rotate"] = json!(self.rotate);
+                if let Some(c) = self.center {
+                    p["cx"] = json!(c.x);
+                    p["cy"] = json!(c.y);
+                }
             }
             ArrangeMode::Matrix => {
                 p["rows"] = json!(self.rows);
@@ -346,6 +353,135 @@ impl ArrangeForm {
             _ => p["spacing"] = json!(self.spacing),
         }
         CommandRequest::new("object.arrangeCopies", p)
+    }
+
+    /// The circle centre in model units for a selection with bounds `b`.
+    fn circle_center(&self, b: &Rect) -> Vec2 {
+        self.center
+            .map_or(b.center() + v2(0.0, self.radius * 10.0), |c| c * 10.0)
+    }
+
+    /// One transform per copy for a selection with bounds `b` (model units), as
+    /// `object.arrangeCopies` places them; for the canvas preview.
+    pub fn transforms(&self, b: &Rect) -> Vec<Transform> {
+        let gap = self.spacing * 10.0;
+        match self.mode {
+            ArrangeMode::MirrorHorizontal => {
+                vec![Transform::scaling(-1.0, 1.0, v2(b.max_x + gap / 2.0, 0.0))]
+            }
+            ArrangeMode::MirrorVertical => {
+                vec![Transform::scaling(1.0, -1.0, v2(0.0, b.max_y + gap / 2.0))]
+            }
+            ArrangeMode::MirrorFourWay => {
+                let axis = v2(b.max_x + gap / 2.0, b.max_y + gap / 2.0);
+                vec![
+                    Transform::scaling(-1.0, 1.0, axis),
+                    Transform::scaling(1.0, -1.0, axis),
+                    Transform::scaling(-1.0, -1.0, axis),
+                ]
+            }
+            ArrangeMode::Circle => {
+                let n = self.count.clamp(2, 360);
+                let center = self.circle_center(b);
+                (1..n)
+                    .map(|k| {
+                        let r = Transform::rotation(360.0 * f64::from(k) / f64::from(n), center);
+                        if self.rotate {
+                            r
+                        } else {
+                            let to = r.apply(b.center()) - b.center();
+                            Transform::translation(to.x, to.y)
+                        }
+                    })
+                    .collect()
+            }
+            ArrangeMode::Matrix => {
+                let (sx, sy) = self.matrix_steps(b);
+                (0..self.rows)
+                    .flat_map(|r| (0..self.columns).map(move |c| (r, c)))
+                    .skip(1)
+                    .map(|(r, c)| Transform::translation(f64::from(c) * sx, f64::from(r) * sy))
+                    .collect()
+            }
+        }
+    }
+
+    fn matrix_steps(&self, b: &Rect) -> (f64, f64) {
+        (
+            b.width() + self.spacing_x * 10.0,
+            b.height() + self.spacing_y * 10.0,
+        )
+    }
+
+    /// Where the canvas drag handle sits: the mirror axis, the circle centre, or the top-left
+    /// corner of the last matrix copy. `None` when a matrix has a single row and column.
+    pub fn handle(&self, b: &Rect) -> Option<Vec2> {
+        let gap = self.spacing * 10.0;
+        let c = b.center();
+        match self.mode {
+            ArrangeMode::MirrorHorizontal => Some(v2(b.max_x + gap / 2.0, c.y)),
+            ArrangeMode::MirrorVertical => Some(v2(c.x, b.max_y + gap / 2.0)),
+            ArrangeMode::MirrorFourWay => Some(v2(b.max_x + gap / 2.0, b.max_y + gap / 2.0)),
+            ArrangeMode::Circle => Some(self.circle_center(b)),
+            ArrangeMode::Matrix => {
+                if self.rows * self.columns < 2 {
+                    return None;
+                }
+                let (sx, sy) = self.matrix_steps(b);
+                Some(v2(
+                    b.min_x + f64::from(self.columns - 1) * sx,
+                    b.min_y + f64::from(self.rows - 1) * sy,
+                ))
+            }
+        }
+    }
+
+    /// Moves the drag handle to `p` (model units): sets the mirror spacing, the circle centre
+    /// and radius, or the matrix spacing. Values stay in the dialog's ranges, 0.1 mm steps.
+    pub fn drag_handle(&mut self, b: &Rect, p: Vec2) {
+        let tenth = |units: f64, lo: f64| ((units / 10.0).clamp(lo, 1000.0) * 10.0).round() / 10.0;
+        match self.mode {
+            ArrangeMode::MirrorHorizontal => self.spacing = tenth(2.0 * (p.x - b.max_x), -100.0),
+            ArrangeMode::MirrorVertical => self.spacing = tenth(2.0 * (p.y - b.max_y), -100.0),
+            ArrangeMode::MirrorFourWay => {
+                self.spacing = tenth(p.x - b.max_x + p.y - b.max_y, -100.0)
+            }
+            ArrangeMode::Circle => {
+                self.radius = tenth(p.distance(b.center()), 0.0);
+                self.center = Some(v2(mm(p.x), mm(p.y)));
+            }
+            ArrangeMode::Matrix => {
+                // Copies may overlap but never stack: keep each step at least 0.1 mm.
+                if self.columns > 1 {
+                    let step = (p.x - b.min_x) / f64::from(self.columns - 1);
+                    let lo = (-100.0f64).max(0.1 - b.width() / 10.0);
+                    self.spacing_x = tenth(step - b.width(), lo);
+                }
+                if self.rows > 1 {
+                    let step = (p.y - b.min_y) / f64::from(self.rows - 1);
+                    let lo = (-100.0f64).max(0.1 - b.height() / 10.0);
+                    self.spacing_y = tenth(step - b.height(), lo);
+                }
+            }
+        }
+    }
+
+    /// After the radius was typed: a dragged circle centre keeps its direction from the
+    /// selection centre at the new distance.
+    pub fn radius_changed(&mut self, b: &Rect) {
+        let Some(c) = self.center else { return };
+        let from = b.center() * 0.1;
+        let d = c - from;
+        let dir = if d.length() > 1e-9 {
+            d * (1.0 / d.length())
+        } else {
+            v2(0.0, 1.0)
+        };
+        let to = from + dir * self.radius;
+        self.center = Some(v2(
+            (to.x * 100.0).round() / 100.0,
+            (to.y * 100.0).round() / 100.0,
+        ));
     }
 }
 
@@ -465,6 +601,14 @@ pub fn clear_entry_exit(id: u64) -> CommandRequest {
         "object.setEntryExit",
         json!({ "id": id, "regionEntry": null, "regionExit": null, "lineEntry": null }),
     )
+}
+
+/// The entry/exit marker of object `id` within `radius` of `p`, nearest first.
+pub fn entry_exit_at(design: &Design, id: u64, p: Vec2, radius: f64) -> Option<(EntryExit, Vec2)> {
+    entry_exit_markers(design, id)
+        .into_iter()
+        .filter(|(_, m)| m.distance(p) <= radius)
+        .min_by(|a, b| a.1.distance(p).total_cmp(&b.1.distance(p)))
 }
 
 /// The entry/exit points of object `id` to draw: (which, position in model units).

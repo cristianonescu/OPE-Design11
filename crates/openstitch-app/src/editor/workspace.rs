@@ -12,6 +12,8 @@ pub struct GridSettings {
     pub spacing_mm: f64,
     /// Every n-th line is darker.
     pub major_every: u32,
+    /// Drawing, moving and point editing snap to the grid (shown or not).
+    pub snap: bool,
 }
 
 impl Default for GridSettings {
@@ -20,12 +22,18 @@ impl Default for GridSettings {
             visible: true,
             spacing_mm: 10.0,
             major_every: 5,
+            snap: false,
         }
     }
 }
 
 impl GridSettings {
     pub const SPACINGS_MM: [f64; 6] = [1.0, 2.0, 5.0, 10.0, 20.0, 25.4];
+
+    /// The snapping step in model units, when snapping is on.
+    pub fn snap_step(&self) -> Option<f64> {
+        (self.snap && self.spacing_mm > 0.0).then_some(self.spacing_mm * 10.0)
+    }
 
     /// Grid line positions along one axis of a page `length` model units long, with whether
     /// each is a major line. Empty when lines would be closer than `min_points` on screen.

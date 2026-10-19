@@ -2,7 +2,7 @@
 //!
 //! ```text
 //! openstitch [FILE] [--demo] [--select ID,ID] [--simulate FRACTION] [--tool select|point|rectangle|ellipse|polygon|pen]
-//!            [--size WxH] [--zoom F] [--show realistic,reference,settings,measure,norulers,text,usb]
+//!            [--size WxH] [--zoom F] [--show realistic,reference,settings,measure,norulers,text,usb,arrange]
 //!            [--script STEPS] [--screenshot OUT.png]
 //!            [--image IMAGE [--convert autopunch|cross|photofill|photolines|designcenter]]
 //!            [--pattern PATTERN.json]

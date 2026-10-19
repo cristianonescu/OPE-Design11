@@ -283,6 +283,8 @@ pub struct ToolController {
     /// Point tool on a stitch pattern: selected needle point indexes, and whose they are.
     needles: BTreeSet<usize>,
     needle_owner: Option<u64>,
+    /// Snap to grid: the grid step in model units.
+    snap: Option<f64>,
 }
 
 /// Drags shorter than this (points) are clicks.
@@ -314,6 +316,35 @@ impl ToolController {
             || !self.punch.is_empty()
     }
 
+    /// Snaps drawing, moving and point editing to a grid of `step` model units (`None`: off).
+    pub fn set_snap(&mut self, step: Option<f64>) {
+        self.snap = step.filter(|s| *s > 0.0);
+    }
+
+    pub fn snap(&self) -> Option<f64> {
+        self.snap
+    }
+
+    /// `p` on the nearest grid crossing when snapping is on.
+    pub fn snapped(&self, p: Vec2) -> Vec2 {
+        self.snap.map_or(p, |s| snap_to_grid(p, s))
+    }
+
+    /// The move for a drag from `start` to `p`; with snapping the selection's top-left corner
+    /// lands on the grid (an axis-locked move stays on its axis).
+    fn move_by(&self, start: Vec2, p: Vec2, axis_lock: bool, ctx: &ToolContext) -> Vec2 {
+        let d = move_delta(start, p, axis_lock);
+        let (Some(step), Some(b)) = (self.snap, bounds_of(ctx.design, ctx.selection)) else {
+            return d;
+        };
+        let corner = v2(b.min_x, b.min_y);
+        let to = snap_to_grid(corner + d, step) - corner;
+        v2(
+            if d.x == 0.0 && axis_lock { 0.0 } else { to.x },
+            if d.y == 0.0 && axis_lock { 0.0 } else { to.y },
+        )
+    }
+
     pub fn set_tool(&mut self, t: Tool) {
         self.cancel();
         self.point = None;
@@ -329,8 +360,15 @@ impl ToolController {
         self.preview = None;
     }
 
-    pub fn handle(&mut self, e: PointerEvent, ctx: &ToolContext) -> Vec<ToolEffect> {
+    pub fn handle(&mut self, mut e: PointerEvent, ctx: &ToolContext) -> Vec<ToolEffect> {
         self.hover = Some(e.location);
+        // Drawing tools place every point on the grid.
+        if matches!(
+            self.tool(),
+            Tool::Rectangle | Tool::Ellipse | Tool::Polygon | Tool::Pen | Tool::Punch
+        ) {
+            e.location = self.snapped(e.location);
+        }
         match self.tool() {
             Tool::Select => self.select_tool(e, ctx),
             Tool::Rectangle | Tool::Ellipse => self.drag_shape_tool(e),
@@ -481,7 +519,7 @@ impl ToolController {
                 let edited =
                     (p.distance(start) >= DRAG_THRESHOLD * ctx.units_per_point).then(|| {
                         let d = move_delta(start, p, e.shift);
-                        with_vertex(c, point.index, c.points[point.index] + d)
+                        with_vertex(c, point.index, self.snapped(c.points[point.index] + d))
                     });
                 self.gesture = Some(Gesture::Vertex {
                     point,
@@ -505,7 +543,7 @@ impl ToolController {
                     return vec![];
                 };
                 let edited = (p.distance(start) >= DRAG_THRESHOLD * ctx.units_per_point)
-                    .then(|| with_control(c, segment, control, p));
+                    .then(|| with_control(c, segment, control, self.snapped(p)));
                 self.gesture = Some(Gesture::Control {
                     id,
                     contour,
@@ -751,7 +789,7 @@ impl ToolController {
                 self.select_tool(e, ctx)
             }
             (Phase::Dragged, Some(Gesture::Moving { start })) => {
-                let d = move_delta(start, p, e.shift);
+                let d = self.move_by(start, p, e.shift, ctx);
                 self.preview = Some(ToolPreview::Transform(Transform::translation(d.x, d.y)));
                 vec![]
             }
@@ -791,7 +829,11 @@ impl ToolController {
             (Phase::Up, Some(g)) => {
                 self.gesture = None;
                 self.preview = None;
-                finish_select(g, e, ctx)
+                let moved = match g {
+                    Gesture::Moving { start } => Some(self.move_by(start, p, e.shift, ctx)),
+                    _ => None,
+                };
+                finish_select(g, e, ctx, moved)
             }
             _ => vec![],
         }
@@ -970,12 +1012,23 @@ fn move_delta(start: Vec2, p: Vec2, axis_lock: bool) -> Vec2 {
     }
 }
 
-fn finish_select(g: Gesture, e: PointerEvent, ctx: &ToolContext) -> Vec<ToolEffect> {
+/// `p` rounded to the nearest crossing of a grid of `step` from the page origin.
+pub fn snap_to_grid(p: Vec2, step: f64) -> Vec2 {
+    v2((p.x / step).round() * step, (p.y / step).round() * step)
+}
+
+/// Ends a Select-tool gesture; `moved` is the (snapped) move of a Moving gesture.
+fn finish_select(
+    g: Gesture,
+    e: PointerEvent,
+    ctx: &ToolContext,
+    moved: Option<Vec2>,
+) -> Vec<ToolEffect> {
     let p = e.location;
     let sel = ctx.selection;
     match g {
         Gesture::Moving { start } => {
-            let d = move_delta(start, p, e.shift);
+            let d = moved.unwrap_or_else(|| move_delta(start, p, e.shift));
             if mm(d.x) == 0.0 && mm(d.y) == 0.0 {
                 return vec![];
             }

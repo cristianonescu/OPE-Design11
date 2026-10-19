@@ -58,7 +58,7 @@ pub struct Launch {
 }
 
 /// Values `--show` accepts.
-pub const SHOW: [&str; 15] = [
+pub const SHOW: [&str; 16] = [
     "realistic",
     "reference",
     "settings",
@@ -74,6 +74,7 @@ pub const SHOW: [&str; 15] = [
     "monogram",
     "namedrop",
     "templates",
+    "arrange",
 ];
 
 pub struct EditorApp {
@@ -261,6 +262,7 @@ impl EditorApp {
                     }
                 }
                 "usb" => crate::transfer_ui::open(self),
+                "arrange" => self.edit.arrange_open = true,
                 _ => {}
             }
         }
@@ -399,6 +401,7 @@ impl EditorApp {
             units_per_point: self.viewport.unwrap_or_default().units_per_point(),
             scale_takes_origin: self.scale_takes_origin,
         };
+        self.tools.set_snap(self.workspace.grid.snap_step());
         let effects = f(&mut self.tools, &ctx);
         self.apply_effects(effects);
     }
@@ -1058,6 +1061,7 @@ impl EditorApp {
                 ui.separator();
                 ui.checkbox(&mut self.workspace.rulers, "Rulers");
                 ui.checkbox(&mut self.workspace.grid.visible, "Grid");
+                ui.checkbox(&mut self.workspace.grid.snap, "Snap to grid");
                 ui.menu_button("Grid spacing", |ui| {
                     for s in openstitch_app::editor::workspace::GridSettings::SPACINGS_MM {
                         let label = if s == 25.4 {
