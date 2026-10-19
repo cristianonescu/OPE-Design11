@@ -71,13 +71,13 @@ dearest:
 
 | # | Difference | Area | Severity | Grade | Needs reference to finish? |
 |---|---|---|---|---|---|
-| 1 | Satin sewn as a square wave, not a zigzag | Stitches | 5 | Defect | No |
+| 1 | Satin sewn as a square wave, not a zigzag (**fixed**, internal regression) | Stitches | 5 | Defect | No |
 | 2 | Default PES is truncated v1 with no object section (**fixed**, internal regression; open test pending) | PES | 5 | Documented, unverified | Black-box open test |
 | 3 | Trims and jumps inside one fill or satin region; no Running Stitch Path (**fixed**, internal regression) | Stitches | 5 | Documented difference | No |
 | 4 | Trims between underlay, top stitching and outline of one object | Stitches | 4 | Documented, unverified | Single-needle policy |
 | 5 | Every design is written as one stitch group, nothing editable | PES | 5 | Documented, unverified | Yes (shapes, text) |
 | 6 | One sewing direction per text instead of per stroke | Fonts | 5 | Documented difference | Angles |
-| 7 | Auto direction is one fixed angle | Stitches | 4 | Documented difference | No |
+| 7 | Auto direction is one fixed angle (**fixed**, internal regression) | Stitches | 4 | Documented difference | No |
 | 8 | Underlay model differs; zigzag lines have no underlay | Stitches | 4 | Documented difference | Geometry |
 | 9 | PE-DESIGN-made PES files lose objects, properties and colours on re-save | PES | 4 | Documented difference | Pass-through only |
 | 10 | Hoop and Design Page fields hard-coded in PES | PES | 4 | Documented, unverified | Field encoding |
@@ -117,6 +117,8 @@ Line references are relative to `crates/`.
     ([region sewing attributes](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html)).
 - **REA:** none.
 - **Grade:** Defect.
+- **Measured after the fix (`c5f3bad`):** the same 5×2 mm rectangle sews 15 stitches of
+  2.0–2.03 mm, alternating edges, with no edge stitches.
 - **Status:** fixed, internal regression tier only (not reference verified). Region satin,
   Manual Punch columns and skeleton satin sew the first row across, then one needle point per
   row on alternate edges (`column::zigzag`, `generate::chain_satin_spans`); pull compensation
