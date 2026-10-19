@@ -24,7 +24,7 @@ const LOAD_PER_FRAME: usize = 8;
 
 /// Paths dragged from the contents onto a folder.
 #[derive(Clone, Debug)]
-struct DragPaths(Vec<PathBuf>);
+pub(crate) struct DragPaths(pub(crate) Vec<PathBuf>);
 
 /// GPU textures for thumbnails and the preview, dropped when files change.
 #[derive(Default)]
@@ -87,6 +87,12 @@ pub fn database(app: &mut EditorApp, ui: &mut egui::Ui) {
         egui::Panel::bottom("db-status").show(ui, |ui| {
             suite_chrome::status_bar(ui, app.db_chrome.hover, &app.database.status, |_| {});
         });
+    }
+    if app.database.show_writing {
+        egui::Panel::bottom("db-writing")
+            .default_size(170.0)
+            .resizable(true)
+            .show(ui, |ui| crate::database_writing::panel(app, ui));
     }
     egui::Panel::left("db-folders")
         .default_size(240.0)
@@ -189,6 +195,8 @@ pub struct Chrome {
     pub status: bool,
     pub property: bool,
     hover: Option<&'static str>,
+    /// The Writing List panel's Send To choice and pending clash.
+    pub writing: crate::database_writing::State,
 }
 
 impl Default for Chrome {
@@ -198,7 +206,16 @@ impl Default for Chrome {
             status: true,
             property: true,
             hover: None,
+            writing: Default::default(),
         }
+    }
+}
+
+/// File ▸ Print: the catalogue with the Print Setup options, through the system print dialog.
+fn print(app: &mut EditorApp) {
+    match app.database.print_catalog() {
+        Ok(pdf) => app.print_pdf(&pdf),
+        Err(e) => app.database.status = e,
     }
 }
 
@@ -217,6 +234,7 @@ impl Host<DbAction> for EditorApp {
             OpenInEditor | ImportIntoEditor | ConvertFormat | Delete | Rename | Cut | Copy => any,
             Paste => db.clipboard.is_some() && folder,
             NewFolder | Search | SelectAll | Refresh => folder,
+            Print => db.can_print(),
             ParentFolder => db.folder.as_deref().and_then(Path::parent).is_some(),
             _ => true,
         }
@@ -233,6 +251,7 @@ impl Host<DbAction> for EditorApp {
             Property => self.db_chrome.property,
             Toolbar => self.db_chrome.toolbar,
             StatusBar => self.db_chrome.status,
+            WritingBox => db.show_writing,
             _ => false,
         }
     }
@@ -257,7 +276,8 @@ impl Host<DbAction> for EditorApp {
             Delete => self.database.request_delete(),
             Rename => start_rename(self),
             Search => self.database.dialog = Dialog::Search,
-            PrintSetup | Print => catalog(self, CatalogFormat::Pdf),
+            PrintSetup => catalog(self, CatalogFormat::Pdf),
+            Print => print(self),
             PrintPreview => catalog(self, CatalogFormat::Png),
             ImageHtml => catalog(self, CatalogFormat::Html),
             Csv => catalog(self, CatalogFormat::Csv),
@@ -276,6 +296,7 @@ impl Host<DbAction> for EditorApp {
             Refresh => self.database.refresh(),
             Toolbar => self.db_chrome.toolbar ^= true,
             StatusBar => self.db_chrome.status ^= true,
+            WritingBox => self.database.show_writing ^= true,
             Manual => ctx.open_url(egui::OpenUrl::new_tab(MANUAL)),
             About => self.ui.about_open = true,
             Support => ctx.open_url(egui::OpenUrl::new_tab(SUPPORT)),
@@ -483,6 +504,10 @@ fn item_interaction(app: &mut EditorApp, ui: &egui::Ui, r: &egui::Response, p: &
         ui.separator();
         if ui.button("Convert Format…").clicked() {
             app.database.dialog = Dialog::Convert;
+        }
+        if ui.button("Add to Writing List").clicked() {
+            let sel = app.database.selected();
+            app.database.add_to_writing(&sel);
         }
     });
 }
@@ -1098,6 +1123,7 @@ fn convert_dialog(app: &mut EditorApp, ctx: &egui::Context) {
 fn catalog_dialog(app: &mut EditorApp, ctx: &egui::Context) {
     let mut open = true;
     let mut save = false;
+    let mut printing = false;
     let shown = app.database.items().len();
     let selected = app.database.selection.len();
     egui::Window::new("Catalogue")
@@ -1180,10 +1206,24 @@ fn catalog_dialog(app: &mut EditorApp, ctx: &egui::Context) {
                         .small(),
                 );
             }
-            if ui.button("Save…").clicked() {
-                save = true;
-            }
+            ui.horizontal(|ui| {
+                if c.format == CatalogFormat::Pdf
+                    && ui
+                        .button("Print…")
+                        .on_hover_text("Open the system print dialog (or the PDF viewer)")
+                        .clicked()
+                {
+                    printing = true;
+                }
+                if ui.button("Save…").clicked() {
+                    save = true;
+                }
+            });
         });
+    if printing {
+        print(app);
+        app.database.dialog = Dialog::None;
+    }
     if save {
         let f = app.database.catalog.format;
         let name = format!("catalogue.{}", f.extension());
@@ -1203,5 +1243,51 @@ fn catalog_dialog(app: &mut EditorApp, ctx: &egui::Context) {
     }
     if !open {
         app.database.dialog = Dialog::None;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used)]
+    use super::*;
+    use crate::app::Launch;
+    use openstitch_app::editor::suite::Command as _;
+    use openstitch_core::{Command, StitchPattern};
+
+    #[test]
+    fn print_needs_designs_card_reading_stays_blocked_and_the_writing_list_toggles() {
+        let dir = std::env::temp_dir().join(format!("openstitch-dbui-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut app = EditorApp::new(Launch::default());
+        app.database.show(Some(&dir));
+        let on = |app: &EditorApp, a| suite_chrome::enabled(app, a);
+        assert!(
+            !on(&app, DbAction::Print),
+            "an empty folder has nothing to print"
+        );
+        assert!(on(&app, DbAction::PrintSetup));
+
+        let mut p = StitchPattern::new();
+        p.stitch_to(0.0, 0.0);
+        p.stitch_to(100.0, 100.0);
+        p.push(Command::End);
+        std::fs::write(dir.join("a.dst"), FileType::Dst.write(&p).unwrap()).unwrap();
+        app.database.refresh();
+        assert!(on(&app, DbAction::Print));
+
+        // Card Reading needs Brother's undocumented card reader protocol.
+        assert!(!on(&app, DbAction::ReadCard));
+        let tip = DbAction::ReadCard.info().screen_tip(false);
+        assert!(tip.contains("Blocked") && tip.contains("protocol"), "{tip}");
+
+        let ctx = egui::Context::default();
+        assert!(on(&app, DbAction::WritingBox));
+        assert!(!app.active(DbAction::WritingBox));
+        app.run(DbAction::WritingBox, &ctx);
+        assert!(app.active(DbAction::WritingBox));
+        app.run(DbAction::WritingBox, &ctx);
+        assert!(!app.database.show_writing);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
