@@ -351,11 +351,79 @@ mod tests {
             app.run(C::NewLine, &egui::Context::default());
             app
         };
+        let traced = || {
+            let mut app = plain();
+            app.creator.template = Some(openstitch_app::editor::creator::Template::fitted(
+                PathBuf::from("trace.png"),
+                (200, 100),
+                &app.creator.doc,
+            ));
+            app.creator.selected = Some((0, 1));
+            app
+        };
         every_command_runs_or_is_unavailable(
             CREATOR.actions(),
-            &[C::Open, C::SaveAs],
-            &[&plain, &copied],
+            &[C::Open, C::SaveAs, C::OpenTemplate],
+            &[&plain, &copied, &traced],
         );
+    }
+
+    #[test]
+    fn creator_tools_template_and_guidelines() {
+        use CreatorAction as C;
+        use openstitch_design::patterns::RegionEffect;
+        let ctx = egui::Context::default();
+        let mut app = demo();
+        app.creator.open = true;
+        for (a, tool) in [
+            (C::RegionReset, crate::creator_ui::CreatorTool::Region(None)),
+            (
+                C::RegionEngrave,
+                crate::creator_ui::CreatorTool::Region(Some(RegionEffect::Engrave)),
+            ),
+            (
+                C::RegionEmboss,
+                crate::creator_ui::CreatorTool::Region(Some(RegionEffect::Emboss)),
+            ),
+            (C::Pan, crate::creator_ui::CreatorTool::Pan),
+        ] {
+            app.run(a, &ctx);
+            assert_eq!(app.creator.tool, tool);
+            assert!(app.active(a) && !app.active(C::DrawLine), "{a:?}");
+        }
+        // Region tools are for fill/stamp tiles; a motif drops back to Draw Line.
+        app.run(C::NewMotif, &ctx);
+        assert!(!enabled(&app, C::RegionEmboss));
+        app.run(C::RegionEmboss, &ctx);
+        assert_eq!(app.creator.tool, crate::creator_ui::CreatorTool::Pan);
+        app.run(C::NewFill, &ctx);
+        // Split at Point needs a selected inner point.
+        assert!(!enabled(&app, C::SplitAtPoint));
+        app.creator.selected = Some((0, 1));
+        app.run(C::SplitAtPoint, &ctx);
+        assert_eq!(app.creator.doc.paths.len(), 2);
+        assert_eq!(app.creator.doc.current, 1);
+        assert!(!enabled(&app, C::SplitAtPoint), "now the start of a line");
+        // Template commands wait for an image.
+        for a in [C::ModifyTemplate, C::DeleteImage, C::ImageDensity] {
+            assert!(!enabled(&app, a), "{a:?}");
+        }
+        app.creator.template = Some(openstitch_app::editor::creator::Template::fitted(
+            PathBuf::from("trace.png"),
+            (100, 100),
+            &app.creator.doc,
+        ));
+        app.run(C::ModifyTemplate, &ctx);
+        assert!(app.active(C::ModifyTemplate));
+        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+            app.menu(C::ImageDensity, ui);
+        });
+        out.textures_delta.clear();
+        app.run(C::DeleteImage, &ctx);
+        assert!(app.creator.template.is_none() && !app.active(C::ModifyTemplate));
+        assert!(!app.active(C::Guideline));
+        app.run(C::Guideline, &ctx);
+        assert!(app.active(C::Guideline));
     }
 
     #[test]

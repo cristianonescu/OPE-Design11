@@ -14,6 +14,11 @@
 //! - `fill`: paths in the unit tile [0, 1]²; programmable fill puts needle points on them.
 //! - `decorative`: paths from (0, y₀) to (1, y₀) (x in −0.5…1.5, y in 0…1), so tiles chain into rows;
 //!   rows repeat every tile height, shifted by `rowShift` tile widths. Used by decorative fill.
+//!
+//! A fill tile may also carry `regions`: embossed or engraved areas, each named by a point
+//! (`at`, in the unit tile) inside a closed area its lines enclose (the tile repeats, so lines
+//! that leave one side come back at the other). Programmable fill sews engraved areas with
+//! short stitches and drops needle points inside embossed ones ([`RegionMask`]).
 
 use crate::geometry::{Vec2, v2};
 use serde::{Deserialize, Serialize};
@@ -38,7 +43,36 @@ pub struct Pattern {
     /// Decorative rows: horizontal shift of each row, in tile widths (0…1).
     pub row_shift: f64,
     pub paths: Vec<Vec<Vec2>>,
+    /// Fill tiles: embossed and engraved areas, in the order they were applied.
+    pub regions: Vec<PatternRegion>,
 }
+
+/// The effect of an area of a fill tile.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RegionEffect {
+    /// Sewn with short stitches (sunken look).
+    Engrave,
+    /// Sewn without needle points inside (raised look).
+    Emboss,
+}
+
+/// An embossed or engraved area of a fill tile: the closed area around `at`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PatternRegion {
+    pub effect: RegionEffect,
+    pub at: Vec2,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RegionFile {
+    effect: RegionEffect,
+    at: [f64; 2],
+}
+
+/// Most `regions` in one pattern.
+pub const MAX_REGIONS: usize = 256;
 
 /// The JSON shape of an `openstitch.pattern` document.
 #[derive(Clone, Serialize, Deserialize)]
@@ -52,6 +86,8 @@ pub struct PatternFile {
     #[serde(default, skip_serializing_if = "is_zero")]
     row_shift: f64,
     paths: Vec<Vec<[f64; 2]>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    regions: Vec<RegionFile>,
 }
 
 fn is_zero(v: &f64) -> bool {
@@ -78,6 +114,14 @@ impl From<Pattern> for PatternFile {
                 .paths
                 .iter()
                 .map(|path| path.iter().map(|q| [q.x, q.y]).collect())
+                .collect(),
+            regions: p
+                .regions
+                .iter()
+                .map(|r| RegionFile {
+                    effect: r.effect,
+                    at: [r.at.x, r.at.y],
+                })
                 .collect(),
         }
     }
@@ -178,12 +222,33 @@ fn validate(f: PatternFile) -> Result<Pattern, String> {
         }
         PatternKind::Fill => {}
     }
+    if !f.regions.is_empty() && f.kind != PatternKind::Fill {
+        return Err("only fill/stamp patterns have embossed or engraved regions".into());
+    }
+    if f.regions.len() > MAX_REGIONS {
+        return Err(format!("at most {MAX_REGIONS} regions"));
+    }
+    let mut regions = Vec::new();
+    for r in &f.regions {
+        let [x, y] = r.at;
+        if !(x.is_finite() && y.is_finite())
+            || !(0.0..=1.0).contains(&x)
+            || !(0.0..=1.0).contains(&y)
+        {
+            return Err("region points must be inside the unit tile".into());
+        }
+        regions.push(PatternRegion {
+            effect: r.effect,
+            at: v2(x, y),
+        });
+    }
     Ok(Pattern {
         kind: f.kind,
         id: f.id,
         name: f.name,
         row_shift: f.row_shift,
         paths,
+        regions,
     })
 }
 
@@ -249,6 +314,144 @@ pub fn default_for(kind: PatternKind) -> &'static Pattern {
         .expect("library has every kind")
 }
 
+/// Cells across (and down) the unit tile of a [`RegionMask`].
+pub const MASK_CELLS: usize = 64;
+
+/// Why a point names no closed area of a tile.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RegionError {
+    /// The point is on a line.
+    OnLine,
+    /// The lines do not enclose an area around the point.
+    NotClosed,
+}
+
+impl std::fmt::Display for RegionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            RegionError::OnLine => "click inside an area, not on a line",
+            RegionError::NotClosed => "the lines must form a closed region around this point",
+        })
+    }
+}
+
+/// The areas a fill tile's lines enclose, on a [`MASK_CELLS`]² grid over the unit tile that
+/// wraps at the sides (the tile repeats), and the effect of each cell.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RegionMask {
+    /// Area number of each cell (row-major); `None` on a line.
+    area: Vec<Option<u32>>,
+    /// Cells of each area.
+    sizes: Vec<usize>,
+    effect: Vec<Option<RegionEffect>>,
+}
+
+impl RegionMask {
+    /// The tile's areas with `regions` applied in order (a later region of the same area
+    /// replaces an earlier one; regions on a line or in an open area are ignored).
+    pub fn new(paths: &[Vec<Vec2>], regions: &[PatternRegion]) -> Self {
+        const N: usize = MASK_CELLS;
+        let mut wall = vec![false; N * N];
+        let cell = |p: Vec2| {
+            let c = |t: f64| ((t * N as f64).floor() as i64).rem_euclid(N as i64) as usize;
+            (c(p.x), c(p.y))
+        };
+        for path in paths {
+            for seg in path.windows(2) {
+                let (a, b) = (seg[0], seg[1]);
+                let steps = (a.distance(b) * N as f64 * 4.0).ceil().max(1.0) as usize;
+                for k in 0..=steps {
+                    let (x, y) = cell(a.lerp(b, k as f64 / steps as f64));
+                    wall[y * N + x] = true;
+                }
+            }
+        }
+        let mut area = vec![None; N * N];
+        let mut sizes = Vec::new();
+        for start in 0..N * N {
+            if wall[start] || area[start].is_some() {
+                continue;
+            }
+            let id = sizes.len() as u32;
+            let mut stack = vec![start];
+            area[start] = Some(id);
+            let mut size = 0;
+            while let Some(i) = stack.pop() {
+                size += 1;
+                let (x, y) = (i % N, i / N);
+                for (nx, ny) in [
+                    ((x + 1) % N, y),
+                    ((x + N - 1) % N, y),
+                    (x, (y + 1) % N),
+                    (x, (y + N - 1) % N),
+                ] {
+                    let j = ny * N + nx;
+                    if !wall[j] && area[j].is_none() {
+                        area[j] = Some(id);
+                        stack.push(j);
+                    }
+                }
+            }
+            sizes.push(size);
+        }
+        let mut mask = RegionMask {
+            effect: vec![None; sizes.len()],
+            area,
+            sizes,
+        };
+        for r in regions {
+            if let Ok(a) = mask.area_at(r.at) {
+                mask.effect[a] = Some(r.effect);
+            }
+        }
+        mask
+    }
+
+    /// The closed area around tile point `p`.
+    pub fn area_at(&self, p: Vec2) -> Result<usize, RegionError> {
+        let n = MASK_CELLS as f64;
+        let c = |t: f64| ((t * n).floor() as i64).rem_euclid(MASK_CELLS as i64) as usize;
+        let a = self.area[c(p.y) * MASK_CELLS + c(p.x)].ok_or(RegionError::OnLine)? as usize;
+        // An area that reaches every free cell is no enclosure (it is the whole tile).
+        let free = self.area.iter().filter(|a| a.is_some()).count();
+        if self.sizes[a] == free {
+            return Err(RegionError::NotClosed);
+        }
+        Ok(a)
+    }
+
+    /// Effect at tile point `p` (wrapped into the tile).
+    pub fn effect_at(&self, p: Vec2) -> Option<RegionEffect> {
+        let n = MASK_CELLS as f64;
+        let c = |t: f64| ((t * n).floor() as i64).rem_euclid(MASK_CELLS as i64) as usize;
+        self.area[c(p.y) * MASK_CELLS + c(p.x)].and_then(|a| self.effect[a as usize])
+    }
+
+    /// Effect of cell (`x`, `y`) of the grid.
+    pub fn cell(&self, x: usize, y: usize) -> Option<RegionEffect> {
+        self.area
+            .get(y * MASK_CELLS + x)
+            .copied()
+            .flatten()
+            .and_then(|a| self.effect[a as usize])
+    }
+
+    /// True when some area has an effect.
+    pub fn any(&self) -> bool {
+        self.effect.iter().any(Option::is_some)
+    }
+}
+
+impl Pattern {
+    /// The tile's embossed and engraved areas (`None` without regions).
+    pub fn region_mask(&self) -> Option<RegionMask> {
+        if self.regions.is_empty() {
+            return None;
+        }
+        Some(RegionMask::new(&self.paths, &self.regions)).filter(RegionMask::any)
+    }
+}
+
 /// Net fill patterns: line families (angle in degrees, and for the honeycomb a wave row).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NetPattern {
@@ -285,3 +488,74 @@ pub const NET_PATTERNS: [NetPattern; 6] = [
 
 /// Zigzag net fill offers the first four net patterns.
 pub const ZIGZAG_NET_PATTERNS: usize = 4;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Two lines across the tile: two strips (the tile wraps top to bottom).
+    fn strips(regions: &str) -> String {
+        format!(
+            r#"{{"format": "openstitch.pattern", "version": 1, "kind": "fill", "id": "strips",
+            "name": "Strips", "paths": [[[0, 0.25], [1, 0.25]], [[0, 0.75], [1, 0.75]]],
+            "regions": [{regions}]}}"#
+        )
+    }
+
+    #[test]
+    fn regions_round_trip_and_are_validated() {
+        let p = parse(&strips(r#"{"effect": "emboss", "at": [0.5, 0.5]}"#)).expect("valid");
+        assert_eq!(
+            p.regions,
+            [PatternRegion {
+                effect: RegionEffect::Emboss,
+                at: v2(0.5, 0.5)
+            }]
+        );
+        assert_eq!(parse(&p.to_json()), Ok(p.clone()));
+        let plain = parse(&strips("")).expect("no regions");
+        assert!(!plain.to_json().contains("regions"), "omitted when empty");
+        for bad in [
+            r#"{"effect": "emboss", "at": [1.5, 0.5]}"#,
+            r#"{"effect": "raise", "at": [0.5, 0.5]}"#,
+            r#"{"effect": "emboss", "at": [0.5, 0.5], "x": 1}"#,
+        ] {
+            assert!(parse(&strips(bad)).is_err(), "{bad}");
+        }
+        let motif = r#"{"format": "openstitch.pattern", "version": 1, "kind": "motif",
+            "id": "m", "name": "M", "paths": [[[0, 0], [1, 0]]],
+            "regions": [{"effect": "engrave", "at": [0.5, 0.5]}]}"#;
+        assert!(parse(motif).is_err(), "only fill tiles have regions");
+    }
+
+    #[test]
+    fn the_mask_finds_closed_areas_and_their_effects() {
+        let p = parse(&strips(
+            r#"{"effect": "engrave", "at": [0.5, 0.5]}, {"effect": "emboss", "at": [0.5, 0.9]}"#,
+        ))
+        .expect("valid");
+        let m = p.region_mask().expect("effects");
+        assert_eq!(m.effect_at(v2(0.3, 0.6)), Some(RegionEffect::Engrave));
+        // The outer strip runs over the tile's top and bottom edges.
+        assert_eq!(m.effect_at(v2(0.3, 0.1)), Some(RegionEffect::Emboss));
+        assert_eq!(
+            m.effect_at(v2(0.3, 1.9)),
+            Some(RegionEffect::Emboss),
+            "wraps"
+        );
+        assert_eq!(m.area_at(v2(0.2, 0.25)), Err(RegionError::OnLine));
+        // One line alone encloses nothing.
+        let open = RegionMask::new(&p.paths[..1], &p.regions);
+        assert_eq!(open.area_at(v2(0.5, 0.5)), Err(RegionError::NotClosed));
+        assert!(!open.any(), "regions in open areas are ignored");
+        // A later region of the same area replaces the earlier one.
+        let mut q = p.clone();
+        q.regions.push(PatternRegion {
+            effect: RegionEffect::Emboss,
+            at: v2(0.1, 0.4),
+        });
+        let m = q.region_mask().expect("effects");
+        assert_eq!(m.effect_at(v2(0.5, 0.5)), Some(RegionEffect::Emboss));
+        assert!(parse(&strips("")).expect("valid").region_mask().is_none());
+    }
+}

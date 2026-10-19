@@ -8,8 +8,9 @@ use crate::generate::{self, RegionParams, RowSpan, Run, subdivide};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, v2};
 use crate::model::{RegionSewing, RegionType};
 use crate::paths::{Rng, TravelGraph, Walker, clip, join, order};
-use crate::patterns::{self, NET_PATTERNS, Pattern, PatternKind};
+use crate::patterns::{self, NET_PATTERNS, Pattern, PatternKind, RegionEffect, RegionMask};
 use crate::region::{reroute, rotated_bounds, row_positions, spans_at};
+use crate::stamp;
 
 /// Caps that keep generation bounded on huge regions or tiny spacings.
 const MAX_ROWS: usize = 20_000;
@@ -60,10 +61,14 @@ pub fn generate(
                 };
                 layers.push(region.rows(generate::fill(closed, &base, holes), base.stitch_length));
             }
-            layers.push(region.rows(
-                programmable(closed, holes, &p, &tile, r.frequency),
-                p.stitch_length,
-            ));
+            // Embossed tile areas sew stitches up to EMBOSS_MAX (`programmable` splits the
+            // others to the stitch length itself).
+            let limit = if pattern.region_mask().is_some() {
+                p.stitch_length.max(stamp::EMBOSS_MAX)
+            } else {
+                p.stitch_length
+            };
+            layers.push(region.rows(programmable(closed, holes, &p, &tile, r.frequency), limit));
             layers
         }
         RegionType::Piping => {
@@ -362,6 +367,7 @@ fn programmable(
     let f = frequency.unwrap_or(33.0) / 100.0;
     let l = p.stitch_length;
     let spans = row_spans(closed, holes, p);
+    let mask = tile.pattern.region_mask();
     generate::chain_spans(&spans, p, |span, row, forward| {
         let (a, b) = (*span.start(), *span.end());
         let marks = tile_crossings(tile, span, row_y(&spans, row), p.row_spacing, l);
@@ -377,10 +383,39 @@ fn programmable(
         );
         xs.sort_by(f64::total_cmp);
         xs.dedup_by(|x, y| (*x - *y).abs() < 2.0);
-        // No stitch longer than the stitch length.
+        let y = row_y(&spans, row);
+        let effects = mask
+            .as_ref()
+            .map(|m| effect_spans(tile, m, a, b, y))
+            .unwrap_or_default();
+        let effect = |x: f64| {
+            effects
+                .iter()
+                .find(|(s, e, _)| x > *s && x < *e)
+                .map(|&(_, _, f)| f)
+        };
+        if !effects.is_empty() {
+            // Needle points at every area edge; none inside an embossed area.
+            xs.extend(
+                effects
+                    .iter()
+                    .flat_map(|&(s, e, _)| [s, e])
+                    .filter(|&x| x > a && x < b),
+            );
+            xs.retain(|&x| effect(x) != Some(RegionEffect::Emboss));
+            xs.sort_by(f64::total_cmp);
+            xs.dedup_by(|x, y| (*x - *y).abs() < 1.0);
+        }
+        // No stitch longer than the stitch length (short in engraved areas, long in
+        // embossed ones).
         let mut out = vec![xs[0]];
         for w in xs.windows(2) {
-            let n = ((w[1] - w[0]) / l).ceil().max(1.0) as usize;
+            let max = match effect((w[0] + w[1]) / 2.0) {
+                Some(RegionEffect::Engrave) => stamp::ENGRAVE_STEP,
+                Some(RegionEffect::Emboss) => stamp::EMBOSS_MAX,
+                None => l,
+            };
+            let n = ((w[1] - w[0]) / max).ceil().max(1.0) as usize;
             out.extend((1..=n).map(|k| w[0] + (w[1] - w[0]) * k as f64 / n as f64));
         }
         if !forward {
@@ -388,6 +423,62 @@ fn programmable(
         }
         out
     })
+}
+
+/// Unit-tile coordinates of rotated point (`x`, `y`) (the inverse of the tiling in
+/// [`tile_crossings`]).
+fn tile_uv(tile: &Tile, x: f64, y: f64) -> Vec2 {
+    let (w, h) = (tile.width, tile.height);
+    let base = (x / w).floor() as i64;
+    let mut best = v2(0.0, 0.0);
+    for i in [base, base - 1] {
+        let yo = if i.rem_euclid(2) == 1 {
+            tile.column_offset * h
+        } else {
+            0.0
+        };
+        let j = ((y - yo) / h).floor();
+        let xo = if (j as i64).rem_euclid(2) == 1 {
+            tile.row_offset * w
+        } else {
+            0.0
+        };
+        let u = (x - i as f64 * w - xo) / w;
+        best = v2(u, (y - yo - j * h) / h);
+        if (0.0..1.0).contains(&u) {
+            break;
+        }
+    }
+    best
+}
+
+/// Pieces (start, end, effect) of the row a…b at rotated `y` inside embossed or engraved
+/// areas of the tile, found every 0.2 mm.
+fn effect_spans(
+    tile: &Tile,
+    mask: &RegionMask,
+    a: f64,
+    b: f64,
+    y: f64,
+) -> Vec<(f64, f64, RegionEffect)> {
+    const STEP: f64 = 2.0;
+    let mut out: Vec<(f64, f64, RegionEffect)> = Vec::new();
+    let mut open: Option<(f64, RegionEffect)> = None;
+    let n = ((b - a) / STEP).ceil().max(1.0) as usize;
+    for k in 0..=n {
+        let x = a + (b - a) * k as f64 / n as f64;
+        let e = mask.effect_at(tile_uv(tile, x, y));
+        if open.map(|o| o.1) != e {
+            if let Some((s, f)) = open.take() {
+                out.push((s, x, f));
+            }
+            open = e.map(|f| (x, f));
+        }
+    }
+    if let Some((s, f)) = open {
+        out.push((s, b, f));
+    }
+    out
 }
 
 fn row_y(spans: &[RowSpan], row: usize) -> f64 {

@@ -479,3 +479,47 @@ fn transform_moves_handles() {
     let b = c.curve(0).expect("curve");
     assert!((b.c1.x - 15.0).abs() < 1e-9);
 }
+
+#[test]
+fn programmable_fill_sews_embossed_and_engraved_tile_areas() {
+    use crate::patterns::{PatternRegion, RegionEffect, parse};
+    let tile = |regions: &[PatternRegion]| {
+        let mut p = parse(
+            r#"{"format": "openstitch.pattern", "version": 1, "kind": "fill", "id": "strips",
+            "name": "Strips", "paths": [[[0, 0.25], [1, 0.25]], [[0, 0.75], [1, 0.75]]]}"#,
+        )
+        .expect("valid");
+        p.regions = regions.to_vec();
+        p
+    };
+    let sew = |regions: &[PatternRegion]| {
+        let mut d = Design::new(
+            "t",
+            DesignPage {
+                width: 600.0,
+                height: 400.0,
+            },
+        );
+        let mut fill = RegionSewing::new(RegionType::ProgrammableFill, Thread::rgb(0));
+        fill.pattern = Some("strips".into());
+        fill.pattern_width = Some(24.0);
+        fill.pattern_height = Some(24.0);
+        fill.stitch_length = 2.0;
+        d.add(DesignObject::shape(
+            vec![Contour::rectangle(20.0, 20.0, 560.0, 360.0)],
+            Some(fill),
+            None,
+        ));
+        d.patterns.push(tile(regions));
+        Compiler::default().compile(&d).count(Command::Stitch)
+    };
+    let at = |effect| PatternRegion {
+        effect,
+        at: v2(0.5, 0.5),
+    };
+    let plain = sew(&[]);
+    let embossed = sew(&[at(RegionEffect::Emboss)]);
+    let engraved = sew(&[at(RegionEffect::Engrave)]);
+    assert!(embossed < plain * 9 / 10, "{embossed} vs {plain}");
+    assert!(engraved > plain * 11 / 10, "{engraved} vs {plain}");
+}
