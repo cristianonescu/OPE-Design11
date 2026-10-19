@@ -59,7 +59,11 @@ artifact for your system:
 |---|---|
 | `openstitch-main-<sha>-macos-universal` | `OpenStitch-…-macos-universal.zip` (the `OpenStitch.app` editor, Apple Silicon and Intel) and `openstitch-cli-…tar.gz` (`stitchtool`, `openstitch-mcp`) |
 | `openstitch-main-<sha>-windows-x86_64` | `OpenStitch-…-windows-x86_64.msi` (installer with `.osd`/`.pes` associations), a portable `.zip` of the editor, and `openstitch-cli-…zip` |
-| `openstitch-main-<sha>-linux-x86_64` | `OpenStitch-…-linux-x86_64.tar.gz` (editor with `install.sh`, desktop entry and MIME types) and `openstitch-cli-…tar.gz` |
+| `openstitch-main-<sha>-linux-x86_64` | `OpenStitch-…-linux-x86_64.AppImage` (single file: `chmod +x` and run; `--install-integration` adds the menu entry, `.osd`/`.pes` types and thumbnails), `OpenStitch-…-linux-x86_64.tar.gz` (editor with `install.sh`, desktop entry, MIME types and thumbnailer) and `openstitch-cli-…tar.gz` |
+
+A Flatpak bundle (`openstitch-flatpak-x86_64`) is built by the **Flatpak** workflow when the
+Linux packaging changes, and can be built locally from
+`packaging/flatpak/io.github.cristianonescu.OpenStitch.yml`.
 
 Details are in [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md).
 

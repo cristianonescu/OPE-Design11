@@ -50,7 +50,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
   `stitchtool serve`; loopback socket transport for the live editor (`openstitch --listen`,
   per-launch token, file roots; `stitchtool connect`, `openstitch-mcp --live`).
 - **Distribution:** per-OS packages on every merge to `main` (macOS universal `.app`, Windows
-  MSI + zip, Linux tarball with thumbnailer); tag-only draft releases.
+  MSI + zip, Linux tarball with thumbnailer, Linux AppImage with per-user desktop integration);
+  Flatpak manifest built in CI; tag-only draft releases.
 
 ## Still to do
 
@@ -62,9 +63,11 @@ for macOS, Windows and Linux. CI builds and tests all three.
 3. **Formats:** CSD export (no public writer); editable PES shapes and text (no public
    description; needs reference files and the legal opinion).
 4. **Design Database:** printing through the OS print dialog.
-5. **Distribution:** code signing (owner's certificates), macOS Apple-Event file opening,
-   AppImage/Flatpak, PES thumbnails on macOS and Windows (need `unsafe` FFI, which the workspace
-   forbids).
+5. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo
+   sources, owner's account). Blocked on `unsafe` FFI, which the workspace forbids: macOS
+   Apple-Event file opening (winit 0.30/eframe 0.37 deliver no file-open event; a delegate
+   needs objc2 `define_class!` with `unsafe` blocks, see DISTRIBUTION.md "macOS double-click")
+   and PES thumbnails on macOS and Windows.
 6. **Reference tier:** once a licensed PE-DESIGN is available (VM_PLAN.md), generate fixtures,
    calibrate defaults and estimates, and promote rows to Verified Compatible.
 

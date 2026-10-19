@@ -1,0 +1,77 @@
+#!/bin/sh
+# Entry point of the OpenStitch AppImage.
+#   OpenStitch.AppImage [FILE]                    start the editor (optionally opening FILE)
+#   OpenStitch.AppImage --thumbnailer ARGS...     run the bundled openstitch-thumbnailer
+#   OpenStitch.AppImage --install-integration     add the desktop entry, icons, .osd/.pes MIME
+#                                                 types and the thumbnailer for this user
+#   OpenStitch.AppImage --remove-integration      undo --install-integration
+# The integration points at this AppImage's current path; run it again after moving the file.
+set -eu
+here=${APPDIR:-$(cd "$(dirname "$0")" && pwd)}
+data=${XDG_DATA_HOME:-$HOME/.local/share}
+# Thumbnailers run outside the AppImage mount, so the integration keeps its own copy here.
+libdir="$data/openstitch/appimage"
+
+refresh() {
+  command -v update-mime-database >/dev/null && update-mime-database "$data/mime" || true
+  command -v update-desktop-database >/dev/null && update-desktop-database "$data/applications" || true
+  command -v gtk-update-icon-cache >/dev/null && gtk-update-icon-cache -q -t "$data/icons/hicolor" || true
+}
+
+# Quotes a path for an Exec= line of a desktop entry (Desktop Entry Specification, "Exec key").
+# shellcheck disable=SC2016 # the sed scripts are literal
+desktop_quote() {
+  printf '"%s"' "$(printf '%s' "$1" | sed -e 's/\\/\\\\\\\\/g' -e 's/"/\\\\"/g' \
+    -e 's/`/\\\\`/g' -e 's/\$/\\\\$/g' -e 's/%/%%/g')"
+}
+
+# Copies a desktop-entry style file without its Exec/TryExec lines, then appends new ones.
+# (Both files hold a single group, so appended keys belong to it.)
+rewrite_exec() { # <src> <dst> <exec line> [<tryexec path>]
+  grep -v -e '^Exec=' -e '^TryExec=' "$1" > "$2"
+  [ -n "${4:-}" ] && printf 'TryExec=%s\n' "$4" >> "$2"
+  printf 'Exec=%s\n' "$3" >> "$2"
+}
+
+case "${1:-}" in
+  --thumbnailer)
+    shift
+    exec "$here/usr/bin/openstitch-thumbnailer" "$@"
+    ;;
+  --install-integration)
+    if [ -z "${APPIMAGE:-}" ]; then
+      echo "--install-integration must be run from the .AppImage file" >&2
+      exit 1
+    fi
+    exe=$(desktop_quote "$APPIMAGE")
+    mkdir -p "$data/applications" "$data/mime/packages" "$data/thumbnailers" "$libdir"
+    rewrite_exec "$here/usr/share/applications/openstitch.desktop" \
+      "$data/applications/openstitch.desktop" "$exe %f"
+    cp "$here/usr/share/mime/packages/openstitch.xml" "$data/mime/packages/openstitch.xml"
+    for d in "$here"/usr/share/icons/hicolor/*/apps; do
+      size=$(basename "$(dirname "$d")")
+      mkdir -p "$data/icons/hicolor/$size/apps"
+      cp "$d"/* "$data/icons/hicolor/$size/apps/"
+    done
+    cp "$here/usr/bin/openstitch-thumbnailer" "$libdir/openstitch-thumbnailer"
+    chmod 755 "$libdir/openstitch-thumbnailer"
+    thumb=$(desktop_quote "$libdir/openstitch-thumbnailer")
+    rewrite_exec "$here/usr/share/thumbnailers/openstitch.thumbnailer" \
+      "$data/thumbnailers/openstitch.thumbnailer" "$thumb -s %s %i %o" "$libdir/openstitch-thumbnailer"
+    refresh
+    command -v xdg-mime >/dev/null && \
+      xdg-mime default openstitch.desktop application/x-openstitch-design application/x-pes-embroidery || true
+    echo "OpenStitch desktop integration installed in $data for $APPIMAGE"
+    exit 0
+    ;;
+  --remove-integration)
+    rm -f "$data/applications/openstitch.desktop" "$data/mime/packages/openstitch.xml" \
+      "$data/thumbnailers/openstitch.thumbnailer"
+    rm -f "$data"/icons/hicolor/*/apps/openstitch.png "$data"/icons/hicolor/*/apps/openstitch.svg
+    rm -rf "$libdir"
+    refresh
+    echo "OpenStitch desktop integration removed from $data"
+    exit 0
+    ;;
+esac
+exec "$here/usr/bin/openstitch" "$@"
