@@ -990,7 +990,7 @@ mod tests {
     #[test]
     fn snap_to_grid_places_drawing_moves_and_points_on_the_grid() {
         let mut app = EditorApp::new(Launch::default());
-        app.workspace.grid.snap = true;
+        app.toggle_snap_to_grid();
         app.workspace.grid.spacing_mm = 10.0;
         app.tools.set_tool(Tool::Rectangle);
         gesture(&mut app, v2(93.0, 104.0), v2(296.0, 212.0));
@@ -1011,7 +1011,7 @@ mod tests {
         let c = &app.session.design().objects[0].contours[0];
         assert!(c.points.contains(&v2(300.0, 100.0)), "{:?}", c.points);
         // Off: positions are taken as they are.
-        app.workspace.grid.snap = false;
+        app.toggle_snap_to_grid();
         app.tools.set_tool(Tool::Rectangle);
         gesture(&mut app, v2(503.0, 507.0), v2(611.0, 655.0));
         let b = bounds(&app, 2);

@@ -1061,7 +1061,12 @@ impl EditorApp {
                 ui.separator();
                 ui.checkbox(&mut self.workspace.rulers, "Rulers");
                 ui.checkbox(&mut self.workspace.grid.visible, "Grid");
-                ui.checkbox(&mut self.workspace.grid.snap, "Snap to grid");
+                if ui
+                    .checkbox(&mut self.workspace.grid.snap.clone(), "Snap to grid")
+                    .clicked()
+                {
+                    self.toggle_snap_to_grid();
+                }
                 ui.menu_button("Grid spacing", |ui| {
                     for s in openstitch_app::editor::workspace::GridSettings::SPACINGS_MM {
                         let label = if s == 25.4 {
@@ -1116,6 +1121,11 @@ impl EditorApp {
             done.store(true, Ordering::SeqCst);
             repaint.request_repaint();
         });
+    }
+
+    /// View ▸ Snap to grid on or off.
+    pub fn toggle_snap_to_grid(&mut self) {
+        self.workspace.grid.snap = !self.workspace.grid.snap;
     }
 
     /// Measure tool on or off; it takes over the canvas pointer while on.
