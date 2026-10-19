@@ -189,6 +189,7 @@ actions! {
     FontFilterSettings => "fontFilterSettings", "Font Filter Settings", "Choose the fonts the filter shows.", None, None, true;
     TrueTypeAttributes => "trueType", "TrueType Font Attribute Setting", "Load a TrueType or OpenType font into the design.", None, Some("fonts.loadTrueType"), true;
     EditText => "editText", "Edit Text", "Change the characters of the selected text.", None, Some("object.setText"), true;
+    EditCharacter => "editCharacter", "Edit Character", "Offset, rotation and size of the character picked with Point Edit (drag it, its rotate handle or its corners on the canvas).", None, Some("text.setCharacter"), true;
     LineColor => "lineColor", "Line color", "Thread colour of the outline.", None, Some("object.setLine"), true;
     LineSewType => "lineSewType", "Line sew type", "How the outline is sewn (running, triple, zigzag, motif…).", None, Some("object.setLine"), true;
     RegionColor => "regionColor", "Region color", "Thread colour of the region.", None, Some("object.setRegion"), true;
@@ -201,6 +202,9 @@ actions! {
     CurvedBlock => "curvedBlock", "Curved Block", "Click both ends of each sewing-direction line; the sides curve through them.", None, Some("shape.column"), true;
     Running => "running", "Running", "Running stitch between clicked points.", None, Some("shape.polygon"), true;
     Feed => "feed", "Feed", "Jump between clicked points.", None, Some("shape.feed"), true;
+    SatinSkeleton => "satinSkeleton", "Satin Skeleton", "Click (or drag for curves) the centre line of a satin column; drag the handles beside each point to set its width. Double-click or Return ends it.", None, Some("shape.skeletonSatin"), true;
+    SkeletonWidth => "skeletonWidth", "Column width", "Width of the next points the Satin Skeleton tool places.", None, Some("shape.skeletonSatin"), true;
+    DeriveSkeleton => "deriveSkeleton", "Satin Skeleton from Shape", "Sew the selected shape as satin along a centre line derived from its outline (an approximation of its medial axis).", None, Some("object.deriveSkeleton"), true;
     SplitOutline => "splitOutline", "Split Outline", "Draw a cut line that splits the selected shape.", None, Some("shape.split"), true;
     AddDirectionLine => "addDirection", "Add Direction Line", "Draw a curved sewing direction across the region.", None, Some("object.setDirectionCurve"), true;
     DeleteDirectionLine => "deleteDirection", "Delete Direction Line", "Back to a straight sewing direction.", None, Some("object.setDirectionLines"), true;
@@ -261,6 +265,8 @@ impl Action {
                 | SewingPoints
                 | EdgeRadius
                 | ChangeColor
+                | SkeletonWidth
+                | EditCharacter
         )
     }
 
@@ -307,6 +313,7 @@ impl Action {
             CurvedBlock => Tool::CurvedBlock,
             Running => Tool::Running,
             Feed => Tool::Feed,
+            SatinSkeleton => Tool::Skeleton,
             _ => return None,
         })
     }
@@ -567,7 +574,7 @@ const TEXT: &[Group] = &[
         name: "Edit",
         items: &[
             Large(A::EditText),
-            Small(&[A::FitTextToOutline]),
+            Small(&[A::FitTextToOutline, A::EditCharacter]),
             Small(&[
                 A::ConvertToBlocks,
                 A::ConvertToStitches,
@@ -605,6 +612,7 @@ const MANUAL_PUNCH: &[Group] = &[
         items: &[
             Small(&[A::StraightBlock, A::CurvedBlock]),
             Small(&[A::Running, A::Feed]),
+            Small(&[A::SatinSkeleton, A::SkeletonWidth]),
         ],
     },
     Group {
@@ -625,6 +633,7 @@ const SHAPES: &[Group] = &[
                 A::ReverseDirectionLine,
             ]),
             Small(&[A::EditPoint, A::DeletePoint, A::SplitAtPoint]),
+            Small(&[A::DeriveSkeleton]),
         ],
     },
     COLORS,
@@ -777,7 +786,9 @@ pub fn contextual_tabs(f: &Facts) -> Vec<TabId> {
             add(TabId::Outline)
         }
         Tool::Rectangle => add(TabId::OutlineRect),
-        Tool::Punch | Tool::CurvedBlock | Tool::Running | Tool::Feed => add(TabId::ManualPunch),
+        Tool::Punch | Tool::CurvedBlock | Tool::Running | Tool::Feed | Tool::Skeleton => {
+            add(TabId::ManualPunch)
+        }
         Tool::Ellipse | Tool::Point => add(TabId::Shapes),
         Tool::Select => {}
     }
@@ -921,7 +932,7 @@ mod tests {
         );
         assert_eq!(tab_for_tool(Tool::Rectangle), Some(TabId::OutlineRect));
         assert_eq!(tab_for_tool(Tool::Punch), Some(TabId::ManualPunch));
-        for t in [Tool::CurvedBlock, Tool::Running, Tool::Feed] {
+        for t in [Tool::CurvedBlock, Tool::Running, Tool::Feed, Tool::Skeleton] {
             assert_eq!(tab_for_tool(t), Some(TabId::ManualPunch), "{t:?}");
         }
         for t in [Tool::Line, Tool::Pencil, Tool::PencilOpen] {

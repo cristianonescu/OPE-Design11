@@ -24,7 +24,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
   - Paste sewing attributes; entry/exit points with draggable markers.
   - Floral pattern and original decorative frames; embossing, engraving and stamps.
   - Sewing order (`order.move`, `order.byColor`, `order.optimize`) with per-object jump trimming.
-  - Sewing direction (round fill, centre and reference points); Manual Punch.
+  - Sewing direction (round fill, centre and reference points); Manual Punch; Satin Skeleton
+    tool and skeletons derived from shapes.
   - User settings: saved attribute sets and user thread charts.
 - **Data types:** conversions between shape, text and stitch patterns, region → line, and
   stitch-pattern editing (needle points, split, connect, divide by colour).
@@ -35,7 +36,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
     radial, spiral, flexible spiral, stippling, net fill, zigzag net fill, decorative fill.
 - **Lettering:** text objects with Lato Bold and Pacifico (SIL OFL), text on a path, user
   TrueType/OpenType fonts (CJK through any font with the glyphs), shaping of right-to-left and
-  complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits,
+  complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits
+  (on the canvas with Point Edit),
   user-mapped text, monograms, Name Drop, templates and the Template Wizard, Font Creator (including
   characters traced from an image in one step).
 - **Wizards:** background fill (echo, stippling, decorative, crosshatch, stripes), appliqué,
@@ -56,11 +58,9 @@ for macOS, Windows and Linux. CI builds and tests all three.
 
 ## Still to do
 
-1. **Editing details:** an editor tool for drawing satin skeletons and deriving one from a
-   shape (the engine keeps Bézier curves through shape operations and sews variable-direction
-   satin along a skeleton).
-2. **Lettering:** editing characters on the canvas (the engine command exists); shaping
-   embroidery fonts.
+1. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
+   stroke only) and an exact medial axis instead of the grid approximation.
+2. **Lettering:** editing several characters at once on the canvas; shaping embroidery fonts.
 3. **Formats:** CSD export (no public writer); editable PES shapes and text (no public
    description; needs reference files and the legal opinion).
 4. **Design Database:** done: printing through the OS print dialog (Linux opens the PDF

@@ -380,8 +380,11 @@ fn draw_selection(app: &EditorApp, painter: &egui::Painter, vp: &Viewport) {
             );
         }
     }
-    // The Point tool shows vertices instead of the transform handles.
-    if app.tools.tool() == openstitch_app::editor::Tool::Point {
+    // The Point and Satin Skeleton tools show their own handles instead.
+    if matches!(
+        app.tools.tool(),
+        openstitch_app::editor::Tool::Point | openstitch_app::editor::Tool::Skeleton
+    ) {
         return;
     }
     let Some(bounds) = bounds_of(design, &app.selection) else {
@@ -391,7 +394,12 @@ fn draw_selection(app: &EditorApp, painter: &egui::Painter, vp: &Viewport) {
         bounds,
         units_per_point: vp.units_per_point(),
     };
-    let r = model_rect(vp, &bounds);
+    draw_box_handles(painter, vp, &h);
+}
+
+/// A dashed box with the scale handles around it and the rotate handle above.
+fn draw_box_handles(painter: &egui::Painter, vp: &Viewport, h: &SelectionHandles) {
+    let r = model_rect(vp, &h.bounds);
     painter.add(Shape::dashed_line(
         &[
             r.left_top(),
@@ -439,7 +447,39 @@ fn draw_points(app: &EditorApp, painter: &egui::Painter, vp: &Viewport) {
         handle(h);
     }
     let design = app.session.design().clone();
-    if let Some(needles) = app.tools.needle_overlay(&app.tool_context(&design)) {
+    let ctx = app.tool_context(&design);
+    if let Some(sk) = app.tools.skeleton_overlay(&ctx) {
+        // Satin Skeleton: the column, its centre line and a width handle on either side.
+        if let Some(c) = &sk.column {
+            draw_contour(
+                painter,
+                vp,
+                c,
+                Stroke::new(1.0, ACCENT.gamma_multiply(0.6)),
+                None,
+            );
+        }
+        draw_contour(painter, vp, &sk.centre, Stroke::new(1.5, ACCENT), None);
+        for (at, left, right) in sk.widths {
+            let (a, l, r) = (
+                pos(vp.to_screen(at)),
+                pos(vp.to_screen(left)),
+                pos(vp.to_screen(right)),
+            );
+            painter.line_segment([l, r], handle_stroke);
+            handle(l);
+            handle(r);
+            painter.circle_filled(a, 3.0, ACCENT);
+        }
+    }
+    if let Some(ch) = app.tools.character_overlay(&ctx) {
+        // Point Edit on a text: the selected character, its box and handles.
+        for c in &ch.outlines {
+            draw_contour(painter, vp, c, Stroke::new(1.5, ACCENT), None);
+        }
+        draw_box_handles(painter, vp, &ch.handles);
+    }
+    if let Some(needles) = app.tools.needle_overlay(&ctx) {
         // Stitch pattern: needle points as small squares (jump ends as circles), selected
         // ones filled.
         for (_, p, selected, jump) in needles.points {
@@ -459,7 +499,7 @@ fn draw_points(app: &EditorApp, painter: &egui::Painter, vp: &Viewport) {
         }
         return;
     }
-    let Some(overlay) = app.tools.point_overlay(&app.tool_context(&design)) else {
+    let Some(overlay) = app.tools.point_overlay(&ctx) else {
         return;
     };
     for (ci, c) in overlay.contours.iter().enumerate() {

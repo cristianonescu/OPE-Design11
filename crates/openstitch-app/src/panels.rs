@@ -34,13 +34,16 @@ pub fn tool_hint(tool: Tool) -> Option<&'static str> {
             "Click to add points · click the first point, double-click or Return to close · Esc cancels",
         ),
         Tool::Point => Some(
-            "Drag points or handles · double-click an edge to add a point · Delete removes it · C curve / S straight under the pointer",
+            "Drag points or handles · double-click an edge to add a point · Delete removes it · C curve / S straight under the pointer · on a text: click a character, drag it, its top handle turns it, the others resize it",
         ),
         Tool::Pen => Some(
             "Click for a corner, drag for a smooth point · click the first point to close · Return finishes open · Esc cancels",
         ),
         Tool::Punch => Some(
             "Click both ends of each sewing-direction line in turn (one side first) · double-click or Return finishes · Esc cancels",
+        ),
+        Tool::Skeleton => Some(
+            "Click for a corner, drag for a smooth point · drag the handles beside a point to set its width · double-click or Return finishes · Esc cancels",
         ),
         _ => None,
     }
