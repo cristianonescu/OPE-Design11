@@ -111,7 +111,10 @@ jobs:
           Scene 'msi-demo' $installed @('--demo')
           Scene 'msi-pes' $installed @('oracle.pes', '--ribbon', 'view')
           Scene 'msi-database' $installed @('--database', 'db', '--db-view', 'large')
-          Expand-Archive (Get-ChildItem rel\OpenStitch-*-windows-x86_64.zip).FullName portable
+          # Wildcards ignore case on Windows, so exclude the CLI archive explicitly.
+          $zip = Get-ChildItem rel\OpenStitch-*-windows-x86_64.zip | Where-Object Name -notlike 'openstitch-cli-*'
+          if (@($zip).Count -ne 1) { throw "expected one portable zip, found $(@($zip).Count)" }
+          Expand-Archive $zip.FullName portable
           $portable = (Get-ChildItem portable -Recurse -Filter openstitch.exe | Select-Object -First 1).FullName
           Scene 'portable-demo' $portable @('--demo')
           Expand-Archive (Get-ChildItem rel\openstitch-cli-*-windows-x86_64.zip).FullName cli
