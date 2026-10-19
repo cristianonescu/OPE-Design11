@@ -2,10 +2,12 @@
 //! (MIT OR Apache-2.0, pure Rust, integer-snapped and robust to self-intersections).
 //!
 //! Regions follow the model's even-odd rule across a shape's closed contours. Curved segments
-//! are flattened (to [`crate::geometry::FLATNESS`]) first, so results are straight polygons.
-//! Lengths are 0.1 mm.
+//! are flattened (to [`crate::geometry::FLATNESS`]) with provenance; afterwards, result edges
+//! that follow an input curve become exact Bézier pieces of it again (offsets: of its offset
+//! copy), and the rest stay straight. Lengths are 0.1 mm.
 
 use crate::geometry::{Contour, Vec2, v2};
+use crate::provenance::{Path, Provenance};
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::core::overlay_rule::OverlayRule;
 use i_overlay::float::simplify::SimplifyShape;
@@ -27,30 +29,14 @@ pub enum BoolOp {
 /// One connected region: an outer boundary and its holes.
 pub type Region = Vec<Contour>;
 
-type Path = Vec<[f64; 2]>;
-
-fn paths(contours: &[Contour]) -> Vec<Path> {
-    contours
-        .iter()
-        .filter(|c| c.closed)
-        .map(|c| {
-            c.outline_points()
-                .iter()
-                .map(|p| [p.x, p.y])
-                .collect::<Path>()
-        })
-        .filter(|p| p.len() >= 3)
-        .collect()
-}
-
-fn regions(shapes: Vec<Vec<Path>>) -> Vec<Region> {
+fn regions(shapes: Vec<Vec<Path>>, curves: &Provenance) -> Vec<Region> {
     shapes
         .into_iter()
         .map(|shape| {
             shape
                 .into_iter()
                 .filter(|p| p.len() >= 3)
-                .map(|p| Contour::new(p.into_iter().map(|[x, y]| v2(x, y)).collect(), true))
+                .map(|p| curves.restore(p.into_iter().map(|[x, y]| v2(x, y)).collect()))
                 .collect::<Region>()
         })
         .filter(|r| !r.is_empty() && area(&r[0]) > MIN_AREA)
@@ -83,7 +69,8 @@ pub fn region_area(r: &[Contour]) -> f64 {
 
 /// `subject op clip`, as connected regions.
 pub fn combine(subject: &[Contour], clip: &[Contour], op: BoolOp) -> Vec<Region> {
-    let (s, c) = (paths(subject), paths(clip));
+    let ((s, a), (c, b)) = (Provenance::flatten(subject), Provenance::flatten(clip));
+    let curves = a.join(b);
     if s.is_empty() && c.is_empty() {
         return Vec::new();
     }
@@ -93,7 +80,7 @@ pub fn combine(subject: &[Contour], clip: &[Contour], op: BoolOp) -> Vec<Region>
         BoolOp::Intersection => OverlayRule::Intersect,
         BoolOp::Xor => OverlayRule::Xor,
     };
-    regions(s.overlay(&c, rule, FillRule::EvenOdd))
+    regions(s.overlay(&c, rule, FillRule::EvenOdd), &curves)
 }
 
 /// Union of several objects' regions (each even-odd within itself).
@@ -108,17 +95,17 @@ pub fn union_all<'a>(objects: impl IntoIterator<Item = &'a [Contour]>) -> Vec<Re
 /// The region of `contours` cleaned up: self-intersections resolved, split into connected
 /// pieces.
 pub fn simplify(contours: &[Contour]) -> Vec<Region> {
-    let p = paths(contours);
+    let (p, curves) = Provenance::flatten(contours);
     if p.is_empty() {
         return Vec::new();
     }
-    regions(p.simplify_shape(FillRule::EvenOdd))
+    regions(p.simplify_shape(FillRule::EvenOdd), &curves)
 }
 
 /// Outline of `contours` moved `distance` outward (negative = inward), corners mitred or
 /// rounded. An inward offset larger than the region leaves nothing.
 pub fn offset(contours: &[Contour], distance: f64, rounded: bool) -> Vec<Region> {
-    let p = paths(contours);
+    let (p, curves) = Provenance::flatten(contours);
     if p.is_empty() || distance == 0.0 || !distance.is_finite() {
         return Vec::new();
     }
@@ -130,7 +117,8 @@ pub fn offset(contours: &[Contour], distance: f64, rounded: bool) -> Vec<Region>
         LineJoin::Miter(std::f64::consts::PI / 18.0)
     };
     let style = OutlineStyle::new(distance).line_join(join);
-    regions(clean.outline(&style))
+    let moved = curves.offset(contours, distance);
+    regions(clean.outline(&style), &moved)
 }
 
 /// Flattens regions into the model's contour list (even-odd keeps holes holes).
@@ -248,7 +236,7 @@ mod tests {
     }
 
     #[test]
-    fn curves_are_flattened() {
+    fn curved_regions_have_the_right_area() {
         let circle = crate::shapes::arc(
             v2(0.0, 0.0),
             100.0,
@@ -260,5 +248,87 @@ mod tests {
         let r = combine(&[circle], &[square(0.0, -200.0, 400.0)], BoolOp::Difference);
         let half = std::f64::consts::PI * 100.0 * 100.0 / 2.0;
         assert!((total(&r) - half).abs() < half * 0.01);
+    }
+
+    fn circle(r: f64) -> Contour {
+        crate::shapes::arc(v2(0.0, 0.0), r, r, 0.0, 360.0, crate::shapes::ArcMode::Arc)
+    }
+
+    /// Curved segments of the result, as (start, end, mid-curve point).
+    fn curved(r: &[Region]) -> Vec<(Vec2, Vec2, Vec2)> {
+        let mut out = Vec::new();
+        for c in r.iter().flatten() {
+            for i in 0..c.segment_count() {
+                if let Some(b) = c.curve(i) {
+                    let (a, d) = c.segment_ends(i);
+                    let mid = (a + d) * 0.125 + (b.c1 + b.c2) * 0.375;
+                    out.push((a, d, mid));
+                }
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn merging_keeps_the_untouched_arcs_curved() {
+        // A circle (four quarter curves) merged with a rectangle over its right side.
+        let r = combine(
+            &[circle(100.0)],
+            &[Contour::rectangle(50.0, -30.0, 150.0, 60.0)],
+            BoolOp::Union,
+        );
+        assert_eq!(r.len(), 1);
+        let c = &r[0][0];
+        assert!(c.has_curves(), "curves restored: {c:?}");
+        // Far fewer vertices than the flattened polygon.
+        assert!(c.points.len() < 16, "{} vertices", c.points.len());
+        let curves = curved(&r);
+        // The left half is two whole quarter curves; the cut ones become partial curves.
+        assert!(curves.len() >= 4, "{curves:?}");
+        for (a, d, mid) in &curves {
+            for p in [a, d, mid] {
+                assert!((p.length() - 100.0).abs() < 0.5, "{p:?} on the circle");
+            }
+        }
+        let whole = |from: Vec2, to: Vec2| {
+            curves.iter().any(|(a, d, _)| {
+                (a.distance(from) < 0.01 && d.distance(to) < 0.01)
+                    || (a.distance(to) < 0.01 && d.distance(from) < 0.01)
+            })
+        };
+        assert!(whole(v2(0.0, 100.0), v2(-100.0, 0.0)));
+        assert!(whole(v2(-100.0, 0.0), v2(0.0, -100.0)));
+        // Straight rectangle edges stay straight; area matches the flattened result.
+        let expected = std::f64::consts::PI * 100.0 * 100.0;
+        assert!(total(&r) > expected, "{}", total(&r));
+    }
+
+    #[test]
+    fn differences_and_offsets_keep_curves() {
+        let r = combine(
+            &[circle(100.0)],
+            &[square(0.0, -200.0, 400.0)],
+            BoolOp::Difference,
+        );
+        assert!(curved(&r).len() >= 2);
+        let grown = offset(&[circle(100.0)], 20.0, false);
+        let curves = curved(&grown);
+        assert!(curves.len() >= 4, "{curves:?}");
+        for (a, d, mid) in &curves {
+            for p in [a, d, mid] {
+                assert!(
+                    (p.length() - 120.0).abs() < 1.5,
+                    "{p:?} on the offset circle"
+                );
+            }
+        }
+        let shrunk = offset(&[circle(100.0)], -30.0, true);
+        for (_, _, mid) in curved(&shrunk) {
+            assert!((mid.length() - 70.0).abs() < 1.5, "{mid:?}");
+        }
+        assert!(!curved(&shrunk).is_empty());
+        // Union of the result with itself is stable.
+        let again = union_all([&contours(&r)[..]]);
+        assert!(curved(&again).len() >= curved(&r).len().min(2));
     }
 }

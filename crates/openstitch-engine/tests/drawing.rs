@@ -940,3 +940,39 @@ fn bad_entry_exit_parameters_fail_cleanly() {
         assert_eq!(s.design(), &before, "{cmd} changed the design");
     }
 }
+
+#[test]
+fn shape_operations_keep_bezier_curves() {
+    let mut s = Session::new(std::env::temp_dir());
+    // A 10 mm circle of four quarter curves.
+    let k = 5.5228;
+    run(
+        &mut s,
+        "shape.path",
+        json!({
+            "points": [[10, 0], [0, 10], [-10, 0], [0, -10]],
+            "curves": [
+                [[10, k], [k, 10]],
+                [[-k, 10], [-10, k]],
+                [[-10, -k], [-k, -10]],
+                [[k, -10], [10, -k]]
+            ]
+        }),
+    );
+    assert!(s.design().objects[0].contours[0].has_curves());
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 5, "y": -3, "width": 15, "height": 6}),
+    );
+    run(&mut s, "shape.merge", json!({"ids": [1, 2]}));
+    let c = &s.design().objects[0].contours[0];
+    assert!(c.has_curves(), "{c:?}");
+    assert!(c.points.len() < 16, "{} vertices", c.points.len());
+    run(&mut s, "shape.offsetLines", json!({"id": 2, "spacing": 2}));
+    let offset = &s.design().objects[1].contours[0];
+    assert!(
+        offset.has_curves() && offset.points.len() < 20,
+        "{offset:?}"
+    );
+}
