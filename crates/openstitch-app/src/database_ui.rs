@@ -1,13 +1,17 @@
-//! The Design Database mode (File ▸ Design Database…): a folder tree, the folder's designs as
+//! The Design Database (Options ▸ Design Database): a window of its own with the guide's menu
+//! bar (File, Edit, Display, Option, Help), toolbar and status bar
+//! ([`openstitch_app::editor::suite::DATABASE`]), a folder tree, the folder's designs as
 //! thumbnails or details, a preview with file information, and the Search, Convert Format,
 //! catalogue, new folder, rename and delete dialogs. State and file actions live in
 //! [`openstitch_app::editor::database`]; this module only draws them.
 
-use crate::app::{CMD, EditorApp};
+use crate::app::EditorApp;
+use crate::suite_chrome::{self, Host};
 use eframe::egui::{self, Color32, RichText, Sense};
 use openstitch_app::editor::database::{
     CatalogFormat, Dialog, View, display_path, file_name, format_time, roots, size_text,
 };
+use openstitch_app::editor::suite::{DATABASE, DbAction};
 use openstitch_formats::FileType;
 use openstitch_library::catalog::{ColorList, Paper, Style, Units};
 use openstitch_library::info::{PROPERTY_KEYS, thread_label};
@@ -73,23 +77,28 @@ pub fn database(app: &mut EditorApp, ui: &mut egui::Ui) {
     if app.database.load_some(&order, LOAD_PER_FRAME) > 0 {
         ctx.request_repaint();
     }
-    egui::Panel::top("db-menu").show(ui, |ui| menu_bar(app, ui));
-    egui::Panel::top("db-toolbar").show(ui, |ui| toolbar(app, ui));
-    egui::Panel::bottom("db-status").show(ui, |ui| {
-        ui.horizontal(|ui| {
-            ui.label(&app.database.status);
+    app.db_chrome.hover = None;
+    egui::Panel::top("db-menu").show(ui, |ui| suite_chrome::menu_bar(app, ui, &DATABASE));
+    if app.db_chrome.toolbar {
+        egui::Panel::top("db-toolbar")
+            .show(ui, |ui| suite_chrome::toolbar(app, ui, &DATABASE, labelled));
+    }
+    if app.db_chrome.status {
+        egui::Panel::bottom("db-status").show(ui, |ui| {
+            suite_chrome::status_bar(ui, app.db_chrome.hover, &app.database.status, |_| {});
         });
-    });
+    }
     egui::Panel::left("db-folders")
         .default_size(240.0)
         .show(ui, |ui| folder_tree(app, ui));
-    if app.database.show_preview {
+    if app.database.show_preview || app.db_chrome.property {
         egui::Panel::right("db-preview")
             .default_size(300.0)
             .show(ui, |ui| preview(app, ui));
     }
     egui::CentralPanel::default().show(ui, |ui| contents(app, ui));
     dialogs(app, &ctx);
+    crate::panes::about_window(app, &ctx);
 }
 
 fn shortcuts(app: &mut EditorApp, ctx: &egui::Context) {
@@ -174,189 +183,146 @@ fn import_into_editor(app: &mut EditorApp, paths: &[PathBuf]) {
     app.status = format!("Imported {n} design(s) from the Design Database");
 }
 
-fn menu_bar(app: &mut EditorApp, ui: &mut egui::Ui) {
-    egui::MenuBar::new().ui(ui, |ui| {
-        let any = !app.database.selection.is_empty();
-        let has_folder = app.database.folder.is_some();
-        ui.menu_button("File", |ui| {
-            if ui
-                .add_enabled(any, egui::Button::new("Open in Layout & Editing"))
-                .clicked()
-                && let Some(p) = app.database.focused().cloned()
-            {
-                open_in_editor(app, &p);
-            }
-            if ui
-                .add_enabled(any, egui::Button::new("Import Into Layout & Editing"))
-                .clicked()
-            {
-                let sel = app.database.selected();
-                import_into_editor(app, &sel);
-            }
-            ui.separator();
-            if ui
-                .add_enabled(has_folder, egui::Button::new("Create New Folder…"))
-                .clicked()
-            {
-                app.database.dialog = Dialog::NewFolder("New Folder".into());
-            }
-            if ui
-                .add_enabled(any, egui::Button::new("Convert Format…"))
-                .clicked()
-            {
-                app.database.dialog = Dialog::Convert;
-            }
-            if ui.add_enabled(any, egui::Button::new("Delete…")).clicked() {
-                app.database.request_delete();
-            }
-            if ui
-                .add_enabled(any, egui::Button::new("Rename…  F2"))
-                .clicked()
-            {
-                start_rename(app);
-            }
-            if ui
-                .add_enabled(has_folder, egui::Button::new("Search…"))
-                .clicked()
-            {
-                app.database.dialog = Dialog::Search;
-            }
-            ui.separator();
-            for f in CatalogFormat::ALL {
-                if ui.button(format!("Catalogue: {}…", f.label())).clicked() {
-                    app.database.catalog.format = f;
-                    app.database.dialog = Dialog::Catalog;
-                }
-            }
-            ui.separator();
-            if ui.button("Back to Layout & Editing").clicked() {
-                app.database.open = false;
-            }
-        });
-        ui.menu_button("Edit", |ui| {
-            if ui
-                .add_enabled(any, egui::Button::new(format!("Cut  {CMD}X")))
-                .clicked()
-            {
-                app.database.cut();
-            }
-            if ui
-                .add_enabled(any, egui::Button::new(format!("Copy  {CMD}C")))
-                .clicked()
-            {
-                app.database.copy();
-            }
-            let can_paste = app.database.clipboard.is_some() && has_folder;
-            if ui
-                .add_enabled(can_paste, egui::Button::new(format!("Paste  {CMD}V")))
-                .clicked()
-            {
-                app.database.paste();
-            }
-            if ui.button(format!("Select All  {CMD}A")).clicked() {
-                app.database.select_all();
-            }
-        });
-        ui.menu_button("Display", |ui| {
-            for v in View::ALL {
-                ui.radio_value(&mut app.database.view, v, v.label());
-            }
-            ui.separator();
-            ui.checkbox(&mut app.database.show_preview, "Preview and Property");
-            ui.menu_button("Colour list", |ui| {
-                ui.radio_value(
-                    &mut app.database.color_list,
-                    ColorList::Changes,
-                    "Color changes",
-                );
-                ui.radio_value(
-                    &mut app.database.color_list,
-                    ColorList::Totals,
-                    "Total colors",
-                );
-            });
-            if ui.button("Refresh").clicked() {
-                app.database.refresh();
-            }
-        });
-        ui.menu_button("Option", |ui| {
-            ui.label("System unit");
-            ui.radio_value(&mut app.database.units, Units::Mm, "mm");
-            ui.radio_value(&mut app.database.units, Units::Inch, "inch");
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label("DST: jumps per trim");
-                ui.add(egui::DragValue::new(&mut app.database.convert.dst_trim_jumps).range(1..=8));
-            });
-        });
-    });
+/// Display ▸ Toolbar, Status Bar and Property, and the ScreenTip under the pointer.
+pub struct Chrome {
+    pub toolbar: bool,
+    pub status: bool,
+    pub property: bool,
+    hover: Option<&'static str>,
 }
 
-fn toolbar(app: &mut EditorApp, ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
-        if ui
-            .button("◀ Layout & Editing")
-            .on_hover_text("Back to the editor")
-            .clicked()
-        {
-            app.database.open = false;
+impl Default for Chrome {
+    fn default() -> Self {
+        Chrome {
+            toolbar: true,
+            status: true,
+            property: true,
+            hover: None,
         }
-        ui.separator();
-        if ui
-            .button("⬆")
-            .on_hover_text("Parent folder (Alt+↑)")
-            .clicked()
-        {
-            go_up(app);
+    }
+}
+
+fn catalog(app: &mut EditorApp, f: CatalogFormat) {
+    app.database.catalog.format = f;
+    app.database.dialog = Dialog::Catalog;
+}
+
+impl Host<DbAction> for EditorApp {
+    fn enabled(&self, a: DbAction) -> bool {
+        use DbAction::*;
+        let db = &self.database;
+        let any = !db.selection.is_empty();
+        let folder = db.folder.is_some();
+        match a {
+            OpenInEditor | ImportIntoEditor | ConvertFormat | Delete | Rename | Cut | Copy => any,
+            Paste => db.clipboard.is_some() && folder,
+            NewFolder | Search | SelectAll | Refresh => folder,
+            ParentFolder => db.folder.as_deref().and_then(Path::parent).is_some(),
+            _ => true,
         }
-        if ui.button("⟳").on_hover_text("Refresh").clicked() {
-            app.database.refresh();
+    }
+
+    fn active(&self, a: DbAction) -> bool {
+        use DbAction::*;
+        let db = &self.database;
+        match a {
+            LargeThumbnails => db.view == View::Large,
+            SmallThumbnails => db.view == View::Small,
+            Details => db.view == View::Details,
+            Preview => db.show_preview,
+            Property => self.db_chrome.property,
+            Toolbar => self.db_chrome.toolbar,
+            StatusBar => self.db_chrome.status,
+            _ => false,
         }
-        if ui.button("Choose folder…").clicked()
-            && let Some(f) = rfd::FileDialog::new().pick_folder()
-        {
-            app.database.navigate(&f);
+    }
+
+    fn run(&mut self, a: DbAction, ctx: &egui::Context) {
+        use DbAction::*;
+        if !suite_chrome::enabled(self, a) {
+            return;
         }
-        ui.separator();
-        let any = !app.database.selection.is_empty();
-        if ui.button("New folder").clicked() && app.database.folder.is_some() {
-            app.database.dialog = Dialog::NewFolder("New Folder".into());
+        match a {
+            OpenInEditor => {
+                if let Some(p) = self.database.focused().cloned() {
+                    open_in_editor(self, &p);
+                }
+            }
+            ImportIntoEditor => {
+                let sel = self.database.selected();
+                import_into_editor(self, &sel);
+            }
+            NewFolder => self.database.dialog = Dialog::NewFolder("New Folder".into()),
+            ConvertFormat => self.database.dialog = Dialog::Convert,
+            Delete => self.database.request_delete(),
+            Rename => start_rename(self),
+            Search => self.database.dialog = Dialog::Search,
+            PrintSetup | Print => catalog(self, CatalogFormat::Pdf),
+            PrintPreview => catalog(self, CatalogFormat::Png),
+            ImageHtml => catalog(self, CatalogFormat::Html),
+            Csv => catalog(self, CatalogFormat::Csv),
+            Exit => self.database.open = false,
+            Cut => self.database.cut(),
+            Copy => self.database.copy(),
+            Paste => {
+                self.database.paste();
+            }
+            SelectAll => self.database.select_all(),
+            LargeThumbnails => self.database.view = View::Large,
+            SmallThumbnails => self.database.view = View::Small,
+            Details => self.database.view = View::Details,
+            Preview => self.database.show_preview ^= true,
+            Property => self.db_chrome.property ^= true,
+            Refresh => self.database.refresh(),
+            Toolbar => self.db_chrome.toolbar ^= true,
+            StatusBar => self.db_chrome.status ^= true,
+            Manual => ctx.open_url(egui::OpenUrl::new_tab(MANUAL)),
+            About => self.ui.about_open = true,
+            Support => ctx.open_url(egui::OpenUrl::new_tab(SUPPORT)),
+            ParentFolder => go_up(self),
+            ChooseFolder => {
+                if let Some(f) = rfd::FileDialog::new().pick_folder() {
+                    self.database.navigate(&f);
+                }
+            }
+            _ => {}
         }
-        if ui.add_enabled(any, egui::Button::new("Delete")).clicked() {
-            app.database.request_delete();
+    }
+
+    fn menu(&mut self, a: DbAction, ui: &mut egui::Ui) {
+        use DbAction::*;
+        let db = &mut self.database;
+        match a {
+            SystemUnit => {
+                ui.radio_value(&mut db.units, Units::Mm, "mm");
+                ui.radio_value(&mut db.units, Units::Inch, "inch");
+            }
+            ApplicationColor => suite_chrome::theme_menu(self, ui),
+            DstSettings => {
+                ui.horizontal(|ui| {
+                    ui.label("Jumps that make a trim");
+                    ui.add(egui::DragValue::new(&mut db.convert.dst_trim_jumps).range(1..=8));
+                });
+            }
+            _ => {}
         }
-        ui.separator();
-        if ui.button("🔍 Search").clicked() && app.database.folder.is_some() {
-            app.database.dialog = Dialog::Search;
-        }
-        if ui.add_enabled(any, egui::Button::new("Convert…")).clicked() {
-            app.database.dialog = Dialog::Convert;
-        }
-        if ui.button("Catalogue…").clicked() {
-            app.database.dialog = Dialog::Catalog;
-        }
-        ui.separator();
-        if ui
-            .add_enabled(any, egui::Button::new("Open"))
-            .on_hover_text("Open in Layout & Editing (Enter)")
-            .clicked()
-            && let Some(p) = app.database.focused().cloned()
-        {
-            open_in_editor(app, &p);
-        }
-        if ui
-            .add_enabled(any, egui::Button::new("Import"))
-            .on_hover_text("Import into the current design")
-            .clicked()
-        {
-            let sel = app.database.selected();
-            import_into_editor(app, &sel);
-        }
-        ui.separator();
-        for v in View::ALL {
-            ui.selectable_value(&mut app.database.view, v, v.label());
-        }
-    });
+    }
+
+    fn set_hover(&mut self, tip: &'static str) {
+        self.db_chrome.hover = Some(tip);
+    }
+}
+
+const MANUAL: &str = "https://github.com/cristianonescu/OPE-Design11#readme";
+const SUPPORT: &str = "https://github.com/cristianonescu/OPE-Design11/issues";
+
+/// Toolbar buttons that show their label (the others are icons, as in the guide's toolbar).
+fn labelled(a: DbAction) -> bool {
+    use DbAction::*;
+    !matches!(
+        a,
+        Cut | Copy | Paste | LargeThumbnails | SmallThumbnails | Details | Preview | Property
+    )
 }
 
 // MARK: folders
@@ -688,7 +654,10 @@ fn details(app: &mut EditorApp, ui: &mut egui::Ui) {
 // MARK: preview and property
 
 fn preview(app: &mut EditorApp, ui: &mut egui::Ui) {
-    ui.heading("Preview");
+    let show_image = app.database.show_preview;
+    if show_image {
+        ui.heading("Preview");
+    }
     let Some(p) = app.database.focused().cloned() else {
         ui.label(RichText::new("Select a design to see it and its information.").weak());
         return;
@@ -698,7 +667,7 @@ fn preview(app: &mut EditorApp, ui: &mut egui::Ui) {
         return;
     };
     let side = (ui.available_width() - 8.0).clamp(120.0, 420.0);
-    if let Some(pattern) = &loaded.pattern {
+    if show_image && let Some(pattern) = &loaded.pattern {
         let stale =
             app.db_textures.preview.as_ref().is_none_or(|(q, _)| {
                 *q != p || app.db_textures.generation != app.database.generation
@@ -712,7 +681,12 @@ fn preview(app: &mut EditorApp, ui: &mut egui::Ui) {
             ui.add(egui::Image::new(t).fit_to_exact_size(egui::vec2(side, side)));
         }
     }
-    ui.separator();
+    if !app.db_chrome.property {
+        return;
+    }
+    if show_image {
+        ui.separator();
+    }
     ui.heading("Property");
     let info = &loaded.info;
     let units = app.database.units;

@@ -127,7 +127,9 @@ fn background_image(
     }
     let data =
         std::fs::read(&path).map_err(|_| p.failed(format!("cannot read {}", path.display())))?;
-    let r = openstitch_digitize::Raster::decode(&data).map_err(|e| p.failed(e.to_string()))?;
+    let r = openstitch_digitize::Raster::decode(&data)
+        .map_err(|e| p.failed(e.to_string()))?
+        .with_adjust(&bg.adjust);
     let (w, h) = (r.width(), r.height());
     let mut rgb = Vec::with_capacity((w * h * 3) as usize);
     for y in 0..h {

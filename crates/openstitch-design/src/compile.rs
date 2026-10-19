@@ -83,6 +83,14 @@ impl Writer {
         self.position = Some(p);
     }
 
+    /// Feed (Manual Punch): the frame moves to `p` with a jump stitch; the thread is not cut.
+    fn feed(&mut self, p: Vec2) {
+        if self.position != Some(p) {
+            self.push(p, Command::Jump);
+            self.position = Some(p);
+        }
+    }
+
     fn sew(&mut self, element: Element) {
         let runs: Vec<Run> = element.runs.into_iter().filter(|r| !r.is_empty()).collect();
         if runs.is_empty() {
@@ -196,6 +204,13 @@ fn sew_object(w: &mut Writer, object: &DesignObject, design: &Design) {
 
 /// Sews fixed needle points: runs split at jumps and trims, one element per colour block.
 fn sew_block(w: &mut Writer, block: &StitchBlock) {
+    // A feed pattern is jumps only: sewn as the jumps themselves.
+    if !block.stitches.is_empty() && block.stitches.iter().all(|s| s.command == Command::Jump) {
+        for s in &block.stitches {
+            w.feed(v2(s.x, s.y));
+        }
+        return;
+    }
     let mut block_index = 0;
     let mut pending: Vec<Run> = vec![Vec::new()];
     let thread_for = |i: usize| {

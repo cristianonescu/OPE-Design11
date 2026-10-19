@@ -34,6 +34,46 @@ Commands OpenStitch does not implement yet are shown disabled, with a ScreenTip 
 `ribbon::tests` check that every button runs an existing action or is marked unavailable, that
 each engine command named exists, and that the contextual tabs follow the tool and selection.
 
+## View, Image and Text commands
+
+Behaviour follows the guide's pages
+[Changing the display of the embroidery design](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_2051337.html),
+[Specifying Basic Display Settings](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/03_1246217.html),
+[Changing the size, angle and position of the image](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/06_1804142.html),
+[Saving the image data](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/06_1804194.html),
+[Setting text attributes](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/05_1810676.html) (Font Filter) and
+[Using Fabric Selector](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/03_1246198.html).
+
+- **Solid View** draws every stitch 0.7 mm wide without shading, so the rows of a region merge
+  into flat areas of thread colour. Solid, Stitch and Realistic are exclusive (ribbon and status
+  bar).
+- **Realistic View Settings**: thread width (0.2–1 mm, default 0.4), contrast and brightness
+  (−100–100), shown at once and kept in `ui.json`; Default restores them.
+- **Show Grid with Axes**: on, the grid is drawn with solid lines; off, dotted.
+- **Guideline** (also turns the rulers on): click or drag on the top ruler for a vertical
+  guideline, on the left ruler for a horizontal one; drag its marker in the ruler to move it,
+  click the × beside the marker (or drop it outside the canvas) to delete it. With Show Grid and
+  Snap to Grid on, guidelines move in grid steps. The status bar shows the position while
+  dragging. Up to 100 per ruler; they are saved in the `.osd` (`guides.set`, one Undo per
+  change) and hidden when Ruler or Guideline is off.
+- **Save Image** ▸ to File… writes the background image as shown (turned, cropped, colours
+  adjusted) as PNG, BMP or JPEG (`background.save`); ▸ to Clipboard copies it.
+- **Modify Image** opens a window with the image's position and width (the height keeps its
+  proportions), a crop of each side (the kept part stays where it was, at the same scale),
+  brightness, contrast and saturation; the image is outlined in red while the window is open.
+  Each change is one `background.modify` (one Undo); the image file is never changed.
+- **Rotate Right / Left** turn the background image 90° about its centre (`background.rotate`).
+- **Font Filter Settings** lists the built-in fonts and the fonts in the design with check
+  boxes (All / None per group, Default shows every font); OK turns the filter on. **Font
+  Filter** switches filtering on and off; it applies to every font list. A filter that would
+  hide every font is ignored. Both are kept in `ui.json`.
+- **Fabric Selector** (Application menu): pick a fabric type to read a description and advice
+  and see the recommended settings; OK applies them to every shape and text pattern on the
+  Design Page, or, with the check box cleared, to the selected ones (`fabric.apply`, one Undo).
+  It sets the density, stitch length, pull compensation and underlay of fill, programmable
+  fill and satin regions; colours and sew types stay. The values are OpenStitch's own
+  approximations (`openstitch_engine::fabric::FABRICS`), not PE-DESIGN's.
+
 ## Where the previous menus went
 
 | Previous menu item | Now |
@@ -71,7 +111,7 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Select | Point Edit | `A` | `Action::PointTool` | `object.setPoint` | yes |
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
 | Clipboard | Paste | `Ctrl+V` | `Action::Paste` | `object.duplicate` | yes |
-| Clipboard | Cut | `Ctrl+X` | `Action::Cut` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Clipboard | Cut | `Ctrl+X` | `Action::Cut` | `object.delete`, then `object.paste` on Paste | yes |
 | Clipboard | Copy | `Ctrl+C` | `Action::Copy` | view/UI only | yes |
 | Clipboard | Duplicate | `Ctrl+D` | `Action::Duplicate` | `object.duplicate` | yes |
 | Clipboard | Delete | `Delete` | `Action::Delete` | `object.delete` | yes |
@@ -106,11 +146,11 @@ each engine command named exists, and that the contextual tabs follow the tool a
 |---|---|---|---|---|---|
 | Image | Open Image |  | `Action::OpenImage` | `background.set` | yes |
 | Image | Paste Image |  | `Action::PasteImage` | `background.set` | yes |
-| Image | Save Image |  | `Action::SaveImage` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Image | Modify Image |  | `Action::ModifyImage` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Image | Save Image |  | `Action::SaveImage` | `background.save` | yes |
+| Image | Modify Image |  | `Action::ModifyImage` | `background.modify` | yes |
 | Image | Background Image Density |  | `Action::ImageDensity` | `background.show` | yes |
-| Image | Rotate Right |  | `Action::ImageRotateRight` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Image | Rotate Left |  | `Action::ImageRotateLeft` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Image | Rotate Right |  | `Action::ImageRotateRight` | `background.rotate` | yes |
+| Image | Rotate Left |  | `Action::ImageRotateLeft` | `background.rotate` | yes |
 | Image | Delete Image |  | `Action::DeleteImage` | `background.clear` | yes |
 | Image to Stitch | Auto Punch Wizard |  | `Action::AutoPunch` | `digitize.autoPunch` | yes |
 | Image to Stitch | Cross Stitch Wizard |  | `Action::CrossStitch` | `digitize.crossStitch` | yes |
@@ -122,22 +162,22 @@ each engine command named exists, and that the contextual tabs follow the tool a
 
 | Group | Command | Shortcut | OpenStitch action | Engine command | Available |
 |---|---|---|---|---|---|
-| View | Solid View |  | `Action::SolidView` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| View | Solid View |  | `Action::SolidView` | view/UI only | yes |
 | View | Stitch View |  | `Action::StitchView` | view/UI only | yes |
 | View | Realistic View |  | `Action::RealisticView` | view/UI only | yes |
 | View | View Thread Trimming |  | `Action::ViewThreadTrimming` | view/UI only | yes |
-| View | Realistic View Settings |  | `Action::RealisticSettings` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| View | Realistic View Settings |  | `Action::RealisticSettings` | view/UI only | yes |
 | Show/Hide | Sewing Order |  | `Action::PaneSewingOrder` | view/UI only | yes |
 | Show/Hide | Stitch Simulator |  | `Action::PaneSimulator` | view/UI only | yes |
 | Show/Hide | Attributes Setting |  | `Action::PaneAttributes` | view/UI only | yes |
 | Show/Hide | Import Pane |  | `Action::PaneImport` | view/UI only | yes |
 | Show/Hide | Reference Window |  | `Action::ReferenceWindow` | view/UI only | yes |
 | Grid | Show Grid |  | `Action::ShowGrid` | view/UI only | yes |
-| Grid | Show Grid with Axes |  | `Action::GridAxes` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Grid | Show Grid with Axes |  | `Action::GridAxes` | view/UI only | yes |
 | Grid | Snap to Grid |  | `Action::SnapToGrid` | view/UI only | yes |
 | Grid | Grid Spacing |  | `Action::GridSpacing` | view/UI only | yes |
 | Ruler | Ruler |  | `Action::Ruler` | view/UI only | yes |
-| Guideline | Guideline |  | `Action::Guideline` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Guideline | Guideline |  | `Action::Guideline` | `guides.set` | yes |
 
 ### Text (contextual: text selected)
 
@@ -149,8 +189,8 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Text | Text |  | `Action::TextTools` | `text.add` | yes |
 | Text | Font |  | `Action::Font` | `object.setText` | yes |
 | Text | Text Size |  | `Action::TextSize` | `object.setText` | yes |
-| Text | Font Filter |  | `Action::FontFilter` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Text | Font Filter Settings |  | `Action::FontFilterSettings` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Text | Font Filter |  | `Action::FontFilter` | view/UI only | yes |
+| Text | Font Filter Settings |  | `Action::FontFilterSettings` | view/UI only | yes |
 | Text | TrueType Font Attribute Setting |  | `Action::TrueTypeAttributes` | `fonts.loadTrueType` | yes |
 | Color / Sew Type | Line color |  | `Action::LineColor` | `object.setLine` | yes |
 | Color / Sew Type | Line sew type |  | `Action::LineSewType` | `object.setLine` | yes |
@@ -162,7 +202,7 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Edit | Convert to Stitches |  | `Action::ConvertToStitches` | `object.toStitches` | yes |
 | Edit | Convert to Outline |  | `Action::ConvertToOutline` | `object.toShapes` | yes |
 
-### Outline — Shapes (Outline) (contextual: Closed Straight Line / Closed Curve tool)
+### Outline — Shapes (Outline) (contextual: an Outline tool: straight line, curve or pencil)
 
 | Group | Command | Shortcut | OpenStitch action | Engine command | Available |
 |---|---|---|---|---|---|
@@ -171,10 +211,10 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
 | Shapes | Closed Straight Line | `P` | `Action::ClosedStraight` | `shape.polygon` | yes |
 | Shapes | Closed Curve | `B` | `Action::ClosedCurve` | `shape.path` | yes |
-| Shapes | Pencil (Closed Curve) |  | `Action::PencilClosed` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Shapes | Open Straight Line |  | `Action::OpenStraight` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Shapes | Pencil (Closed Curve) |  | `Action::PencilClosed` | `shape.freehand` | yes |
+| Shapes | Open Straight Line | `L` | `Action::OpenStraight` | `shape.polygon` (`closed: false`) | yes |
 | Shapes | Open Curve |  | `Action::OpenCurve` | `shape.path` | yes |
-| Shapes | Pencil (Open Curve) |  | `Action::PencilOpen` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Shapes | Pencil (Open Curve) |  | `Action::PencilOpen` | `shape.freehand` (`closed: false`) | yes |
 | Color / Sew Type | Line color |  | `Action::LineColor` | `object.setLine` | yes |
 | Color / Sew Type | Line sew type |  | `Action::LineSewType` | `object.setLine` | yes |
 | Color / Sew Type | Region color |  | `Action::RegionColor` | `object.setRegion` | yes |
@@ -188,13 +228,13 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Select | Point Edit | `A` | `Action::PointTool` | `object.setPoint` | yes |
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
 | Shapes | Rectangle | `R` | `Action::Rectangle` | `shape.rectangle` | yes |
-| Shapes | Edge radius |  | `Action::EdgeRadius` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Shapes | Edge radius |  | `Action::EdgeRadius` | `shape.rectangle` (`cornerRadius`) | yes |
 | Color / Sew Type | Line color |  | `Action::LineColor` | `object.setLine` | yes |
 | Color / Sew Type | Line sew type |  | `Action::LineSewType` | `object.setLine` | yes |
 | Color / Sew Type | Region color |  | `Action::RegionColor` | `object.setRegion` | yes |
 | Color / Sew Type | Region sew type |  | `Action::RegionSewType` | `object.setRegion` | yes |
 
-### Manual Punch (contextual: Manual Punch tool)
+### Manual Punch (contextual: a Manual Punch tool)
 
 | Group | Command | Shortcut | OpenStitch action | Engine command | Available |
 |---|---|---|---|---|---|
@@ -202,9 +242,9 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Select | Point Edit | `A` | `Action::PointTool` | `object.setPoint` | yes |
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
 | Manual Punch | Straight Block | `U` | `Action::StraightBlock` | `shape.column` | yes |
-| Manual Punch | Curved Block |  | `Action::CurvedBlock` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Manual Punch | Running |  | `Action::Running` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Manual Punch | Feed |  | `Action::Feed` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Manual Punch | Curved Block |  | `Action::CurvedBlock` | `shape.column` (`curved: true`) | yes |
+| Manual Punch | Running |  | `Action::Running` | `shape.polygon` (`closed: false`) | yes |
+| Manual Punch | Feed |  | `Action::Feed` | `shape.feed` | yes |
 | Color / Sew Type | Region color |  | `Action::RegionColor` | `object.setRegion` | yes |
 | Color / Sew Type | Region sew type |  | `Action::RegionSewType` | `object.setRegion` | yes |
 
@@ -218,7 +258,7 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Edit Outline | Split Outline |  | `Action::SplitOutline` | `shape.split` | yes |
 | Edit Outline | Add Direction Line |  | `Action::AddDirectionLine` | `object.setDirectionCurve` | yes |
 | Edit Outline | Delete Direction Line |  | `Action::DeleteDirectionLine` | `object.setDirectionLines` | yes |
-| Edit Outline | Reverse Direction Line |  | `Action::ReverseDirectionLine` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Edit Outline | Reverse Direction Line |  | `Action::ReverseDirectionLine` | `object.reverseDirection` | yes |
 | Edit Outline | Edit Point | `A` | `Action::EditPoint` | `object.setPoint` | yes |
 | Edit Outline | Delete Point | `Delete` | `Action::DeletePoint` | `object.deletePoint` | yes |
 | Edit Outline | Split at Point |  | `Action::SplitAtPoint` | `stitches.splitAt` | yes |
@@ -241,7 +281,7 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Select | Point Edit | `A` | `Action::PointTool` | `object.setPoint` | yes |
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
 | Edit | Split Stitch Data |  | `Action::SplitStitchData` | `stitches.splitArea` | yes |
-| Edit | Change Color |  | `Action::ChangeColor` | `threads.remap` | **not yet** (disabled, ScreenTip says so) |
+| Edit | Change Color |  | `Action::ChangeColor` | `stitches.setThread` | yes |
 | Edit | Divide by Color |  | `Action::DivideByColor` | `stitches.divideByColor` | yes |
 | Edit | Split at Point |  | `Action::SplitAtPoint` | `stitches.splitAt` | yes |
 | Edit | Connect |  | `Action::Connect` | `stitches.connect` | yes |
@@ -256,9 +296,36 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Select | Select | `V` | `Action::SelectTool` | view/UI only | yes |
 | Select | Point Edit | `A` | `Action::PointTool` | `object.setPoint` | yes |
 | Select | Select All | `Ctrl+A` | `Action::SelectAll` | view/UI only | yes |
-| Hoop Settings | Move Sections |  | `Action::MoveSections` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Hoop Settings | Move Sections |  | `Action::MoveSections` | `sections.set` (`splitsX` / `splitsY`) | yes |
 | Hoop Settings | Design Settings |  | `Action::DesignSettings` | `machine.set` | yes |
 | Hoop Settings | Export Sections |  | `Action::ExportSections` | `sections.export` | yes |
+
+### How the drawing and editing commands work
+
+Behaviour follows the guide pages
+[Drawing outlines](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_1835552.html),
+[Using Manual Punch Tool](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/07_1892457.html),
+[Specifying the straight sewing direction](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_1869360.html)
+and [Adjusting the split positions](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/07_1925948.html).
+
+- **Cut** removes the selection (one Undo) and keeps it; **Paste** adds it back where it was
+  (`object.paste`). After Copy, Paste duplicates the copied objects as before.
+- **Open Straight Line** (`L`): click the points; double-click or Return ends the line (it never
+  closes on the first point). **Pencil**: press and drag; releasing ends the stroke. The trail
+  is simplified to within about 1.5 screen points and smoothed into Bézier curves; turns
+  sharper than 75° stay corners (`shape.freehand`, `tolerance`).
+- **Edge radius** sets the corner radius of the rectangles drawn next with the Rectangle tool.
+- **Curved Block** is clicked like Straight Block (both ends of each direction line); the sides
+  curve through the ends and the stitching follows them. **Running** and **Feed**: click the
+  points, double-click or Return ends; Running makes a running-stitch line, Feed a pattern of
+  jump stitches only (the frame moves, the thread is not cut). Each Manual Punch part is its
+  own pattern; switching tools ends the part (the guide switches within one input).
+- **Reverse Direction Line** reverses every direction line of the selected shape (or turns a
+  single sewing direction by 180°).
+- **Change Color** lists the selected stitch pattern's threads; pick one and its new colour.
+- **Move Sections** (on/off) lets you drag the red split lines of a split design; releasing
+  sets the new split position. Positions that would make a section larger than the hoop
+  allows are refused and the status bar says why.
 
 ### Application menu
 
@@ -271,7 +338,7 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Print |  | `Action::Print` | `design.print` | yes |
 | Design Property |  | `Action::DesignProperty` | `design.info` | yes |
 | Design Settings |  | `Action::DesignSettings` | `machine.set` | yes |
-| Fabric Selector |  | `Action::FabricSelector` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Fabric Selector |  | `Action::FabricSelector` | `fabric.apply` | yes |
 | Select Color Palette |  | `Action::SelectColorPalette` | `threads.charts` | yes |
 | Wizard |  | `Action::Wizard` | view/UI only | yes |
 | Export |  | `Action::Export` | `design.export` | yes |
@@ -298,3 +365,292 @@ each engine command named exists, and that the contextual tabs follow the tool a
 | Redo | `Ctrl+Y` | `Action::Redo` | `history.redo` | yes |
 | Zoom | `Ctrl+0` | `Action::OtherZoom` | view/UI only | yes |
 | Help |  | `Action::Help` | view/UI only | yes |
+
+
+## Other suite windows
+
+Design Database, Programmable Stitch Creator and Stitch Design Factory are separate programs in
+the suite OpenStitch is compatible with. OpenStitch opens each from the Option button
+(**Options ▾**) and shows it in place of Layout & Editing until its **Exit** (Application menu or
+toolbar) returns there; the window title names the program. Their commands follow the guide
+pages linked under each heading and are the model in
+`crates/openstitch-app/src/editor/suite.rs`; the binary draws them with the same ribbon code as
+the editor (`ribbon::button`, `ribbon::group`, `ribbon::body`, `suite_chrome.rs`). As in the
+editor, commands OpenStitch lacks are shown disabled with a "Not yet available in OpenStitch"
+ScreenTip. `suite::tests` check every command has a place, a ScreenTip and an existing engine
+command; the binary's `suite_chrome::tests` run every command (or draw its list) or check it is
+marked unavailable. Group names are OpenStitch's where the guide shows the ribbon only as a
+picture.
+
+### Programmable Stitch Creator
+
+Guide: [Programmable Stitch Creator Window](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/12_1155973.html),
+[Application button menu](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/12_1170101.html),
+[Ribbon menu tabs](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/12_1170222.html).
+
+![Programmable Stitch Creator](images/rust-editor-stitch-creator.png)
+
+| Guide element | OpenStitch |
+|---|---|
+| Application button | **File**: New Fill/Stamp Pattern, New Motif Pattern, New Decorative Fill Pattern, Open, Save (to the user library folder), Save As (an `openstitch.pattern` file), Exit |
+| Ribbon | Home and View tabs below |
+| Quick Access Toolbar | Open, Save, Add to Design |
+| Help button | **Help ▾** at the top right |
+| Design Page, work area | The tile (or motif cell) with its grid and the neighbouring repeats; Kind, Id, Name (and Row shift) above it |
+| Preview window | Right: the pattern sewn in a region (View ▸ Show/Hide Preview window) |
+| Status bar | Tool hint or the ScreenTip under the pointer; kind, lines, points, zoom |
+
+OpenStitch additions: **New Line** (Home ▸ Draw) starts another line of a fill or decorative
+pattern; **Add to Design** (Home ▸ Design) puts the pattern in the open design in one Undo step,
+where the Sewing Attributes pane offers it; the **User library** pane at the left lists saved
+patterns (Edit, Add to Design, Delete file). Cut, Copy, Paste, Duplicate, Delete and the flips
+work on the current line.
+
+#### Home
+
+| Group | Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|---|
+| Select | Select Tool |  | `CreatorAction::SelectTool` | view/UI only | yes |
+| Select | Edit Point Tool |  | `CreatorAction::EditPoint` | view/UI only | yes |
+| Draw | Draw Line Tool |  | `CreatorAction::DrawLine` | view/UI only | yes |
+| Draw | New Line |  | `CreatorAction::NewLine` | view/UI only | yes |
+| Draw | Region (Reset) Tool |  | `CreatorAction::RegionReset` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Draw | Region (Engrave) Tool |  | `CreatorAction::RegionEngrave` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Draw | Region (Emboss) Tool |  | `CreatorAction::RegionEmboss` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Zoom | Zoom In | `Ctrl+=` | `CreatorAction::ZoomIn` | view/UI only | yes |
+| Zoom | Zoom Out | `Ctrl+-` | `CreatorAction::ZoomOut` | view/UI only | yes |
+| Zoom | Other Zoom Tools |  | `CreatorAction::OtherZoom` | view/UI only | yes |
+| Zoom | Pan |  | `CreatorAction::Pan` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Clipboard | Paste | `Ctrl+V` | `CreatorAction::Paste` | view/UI only | yes |
+| Clipboard | Cut | `Ctrl+X` | `CreatorAction::Cut` | view/UI only | yes |
+| Clipboard | Copy | `Ctrl+C` | `CreatorAction::Copy` | view/UI only | yes |
+| Clipboard | Duplicate | `Ctrl+D` | `CreatorAction::Duplicate` | view/UI only | yes |
+| Clipboard | Delete | `Delete` | `CreatorAction::Delete` | view/UI only | yes |
+| Edit | Flip vertically |  | `CreatorAction::FlipVertical` | view/UI only | yes |
+| Edit | Flip horizontally |  | `CreatorAction::FlipHorizontal` | view/UI only | yes |
+| Edit | Split at Point |  | `CreatorAction::SplitAtPoint` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Design | Add to Design |  | `CreatorAction::AddToDesign` | `pattern.define` | yes |
+
+#### View
+
+| Group | Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|---|
+| Template | Open Template |  | `CreatorAction::OpenTemplate` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Template | Modify Template |  | `CreatorAction::ModifyTemplate` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Template | Delete Image |  | `CreatorAction::DeleteImage` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Template | Background Image Density |  | `CreatorAction::ImageDensity` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Show/Hide | Show/Hide Preview window |  | `CreatorAction::PreviewWindow` | view/UI only | yes |
+| Show/Hide | Show/Hide Status Bar |  | `CreatorAction::StatusBar` | view/UI only | yes |
+| Grid | Show Grid with Axes |  | `CreatorAction::GridAxes` | view/UI only | yes |
+| Grid | Grid interval |  | `CreatorAction::GridInterval` | view/UI only | yes |
+| Guideline | Guideline |  | `CreatorAction::Guideline` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+
+#### Application menu
+
+| Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|
+| New Fill/Stamp Pattern |  | `CreatorAction::NewFill` | view/UI only | yes |
+| New Motif Pattern |  | `CreatorAction::NewMotif` | view/UI only | yes |
+| New Decorative Fill Pattern |  | `CreatorAction::NewDecorative` | view/UI only | yes |
+| Open | `Ctrl+O` | `CreatorAction::Open` | `pattern.import` | yes |
+| Save | `Ctrl+S` | `CreatorAction::Save` | view/UI only | yes |
+| Save As | `Ctrl+Shift+S` | `CreatorAction::SaveAs` | `pattern.export` | yes |
+| Exit |  | `CreatorAction::Exit` | view/UI only | yes |
+
+#### Quick Access Toolbar and buttons
+
+| Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|
+| Open | `Ctrl+O` | `CreatorAction::Open` | `pattern.import` | yes |
+| Save | `Ctrl+S` | `CreatorAction::Save` | view/UI only | yes |
+| Add to Design |  | `CreatorAction::AddToDesign` | `pattern.define` | yes |
+| Help |  | `CreatorAction::Help` | view/UI only | yes |
+
+### Stitch Design Factory
+
+Guide: [Stitch Design Factory Window](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/14_1181468.html),
+[Application button menu](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/14_1209830.html),
+[Ribbon menu tabs](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/14_1207694.html).
+
+![Stitch Design Factory](images/rust-editor-stitch-design-factory.png)
+
+| Guide element | OpenStitch |
+|---|---|
+| Application button | **File**: New ▸ (decorative, satin, decorative satin, cross), Open and Save As (`openstitch.sewing` files), Save (into the project, one Undo), Export (JSON, SVG, experimental PMV), Exit |
+| Ribbon | Home and View tabs below |
+| Quick Access Toolbar | Open, Save, Export |
+| Options button | **Options ▾**: colour theme |
+| Help button | **Help ▾** |
+| Import pane | Left: the patterns kept in the project (Edit, Delete) |
+| Preview pane | Bottom: the pattern repeated along a seam |
+| Design area | The pattern with its width band, 1 mm grid, the end of the first repeat and two more repeats; Kind, Id, Name, Width and the kind's settings above it |
+| Status bar | Tool hint or the ScreenTip under the pointer; needle points, length, width, zoom |
+
+Single Stitch and Triple Stitch apply to cross patterns (each diagonal once or three times).
+Delete removes the selected point (Select Point tool, or the last point clicked).
+
+#### Home
+
+| Group | Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|---|
+| Select | Select Object |  | `FactoryAction::SelectObject` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Select | Select Point |  | `FactoryAction::SelectPoint` | view/UI only | yes |
+| Draw | Line Tool |  | `FactoryAction::LineTool` | view/UI only | yes |
+| Draw | Pen Tool |  | `FactoryAction::PenTool` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Zoom | Zoom in | `Ctrl+=` | `FactoryAction::ZoomIn` | view/UI only | yes |
+| Zoom | Zoom Out | `Ctrl+-` | `FactoryAction::ZoomOut` | view/UI only | yes |
+| Zoom | Selected object zoom |  | `FactoryAction::SelectedZoom` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Zoom | Pan |  | `FactoryAction::Pan` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Stitch | Single Stitch |  | `FactoryAction::SingleStitch` | view/UI only | yes |
+| Stitch | Triple Stitch |  | `FactoryAction::TripleStitch` | view/UI only | yes |
+| Stitch | Swap |  | `FactoryAction::Swap` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Edit | Flip Vertical |  | `FactoryAction::FlipVertical` | view/UI only | yes |
+| Edit | Flip Horizontal |  | `FactoryAction::FlipHorizontal` | view/UI only | yes |
+| Edit | Duplicate | `Ctrl+D` | `FactoryAction::Duplicate` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Edit | Delete | `Delete` | `FactoryAction::Delete` | view/UI only | yes |
+
+#### View
+
+| Group | Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|---|
+| Template | Open Template |  | `FactoryAction::OpenTemplate` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Template | Modify Template |  | `FactoryAction::ModifyTemplate` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Template | Delete Image |  | `FactoryAction::DeleteImage` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Template | Template Density |  | `FactoryAction::TemplateDensity` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Display | Needle Drop Point |  | `FactoryAction::NeedleDropPoint` | view/UI only | yes |
+| Display | Horizontal Orientation |  | `FactoryAction::HorizontalOrientation` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Show/Hide | Import Pane |  | `FactoryAction::ImportPane` | `sewing.list` | yes |
+| Show/Hide | Preview Window |  | `FactoryAction::PreviewWindow` | view/UI only | yes |
+| Show/Hide | Status Bar |  | `FactoryAction::StatusBar` | view/UI only | yes |
+| Grid | Show Grid |  | `FactoryAction::ShowGrid` | view/UI only | yes |
+| Grid | Snap to Grid |  | `FactoryAction::SnapToGrid` | view/UI only | yes |
+| Grid | Grid Spacing |  | `FactoryAction::GridSpacing` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Simulator | Stitch Simulator |  | `FactoryAction::StitchSimulator` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+
+#### Application menu
+
+| Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|
+| New |  | `FactoryAction::New` | view/UI only | yes |
+| Open | `Ctrl+O` | `FactoryAction::Open` | `sewing.import` | yes |
+| Save | `Ctrl+S` | `FactoryAction::Save` | `sewing.define` | yes |
+| Save As | `Ctrl+Shift+S` | `FactoryAction::SaveAs` | view/UI only | yes |
+| Export |  | `FactoryAction::Export` | `sewing.export` | yes |
+| Exit |  | `FactoryAction::Exit` | view/UI only | yes |
+
+#### Quick Access Toolbar and buttons
+
+| Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|
+| Open | `Ctrl+O` | `FactoryAction::Open` | `sewing.import` | yes |
+| Save | `Ctrl+S` | `FactoryAction::Save` | `sewing.define` | yes |
+| Export |  | `FactoryAction::Export` | `sewing.export` | yes |
+| Help |  | `FactoryAction::Help` | view/UI only | yes |
+| Options |  | `FactoryAction::Options` | view/UI only | yes |
+
+### Design Database
+
+Guide: [Design Database Window](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/11_1142905.html), [List of menus](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/11_1142946.html).
+
+The guide gives the Design Database a classic menu bar and toolbar rather than a ribbon, so
+OpenStitch does the same: menus File, Edit, Display, Option, Help in the guide's order, a toolbar
+with the guide's icon buttons (Cut, Copy, Paste, Large Thumbnails, Small Thumbnails, Details,
+Preview, Property) plus labelled ones, and a status bar.
+
+![Design Database](images/database-browse.png)
+
+| Guide element | OpenStitch |
+|---|---|
+| Toolbar | Exit, Parent Folder, Choose Folder · Cut, Copy, Paste · Large/Small Thumbnails, Details · Preview, Property · Search, Convert Format, Open in / Import Into Layout & Editing · Card Reading, Writing List (not yet) |
+| Folder pane | Left: folder tree; drop files on a folder to move them there |
+| Contents pane | Thumbnails or details of the folder; double-click opens in Layout & Editing |
+| Preview and Property | Right; each shown or hidden from Display |
+| Card reading, Writing list, Send to selector | Not yet available (Card Reading and Writing List are disabled in the toolbar) |
+| Status bar | Folder summary or the ScreenTip under the pointer |
+
+OpenStitch differences: File ▸ Print Setup and Print open the catalogue dialog for printable PDF
+pages (print them from the PDF viewer) and Print Preview for page images; File ▸ Rename (F2)
+renames in every view; Option ▸ Application Color offers OpenStitch's Light, Dark and System
+themes instead of Blue, Black, Silver and Aqua; Help ▸ Customer Support opens the project's issue
+tracker.
+
+#### File menu
+
+| Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|
+| Open in Layout & Editing | `Enter` | `DbAction::OpenInEditor` | `project.open` | yes |
+| Import Into Layout & Editing |  | `DbAction::ImportIntoEditor` | `stitches.import` | yes |
+| Create New Folder |  | `DbAction::NewFolder` | view/UI only | yes |
+| Convert Format |  | `DbAction::ConvertFormat` | `library.convert` | yes |
+| Delete | `Delete` | `DbAction::Delete` | view/UI only | yes |
+| Rename | `F2` | `DbAction::Rename` | view/UI only | yes |
+| Search |  | `DbAction::Search` | `library.search` | yes |
+| Print Setup |  | `DbAction::PrintSetup` | view/UI only | yes |
+| Print Preview |  | `DbAction::PrintPreview` | view/UI only | yes |
+| Print |  | `DbAction::Print` | `library.catalog` | yes |
+| Create Image File and HTML |  | `DbAction::ImageHtml` | `library.catalog` | yes |
+| Create CSV |  | `DbAction::Csv` | `library.catalog` | yes |
+| Exit |  | `DbAction::Exit` | view/UI only | yes |
+
+#### Edit menu
+
+| Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|
+| Cut | `Ctrl+X` | `DbAction::Cut` | view/UI only | yes |
+| Copy | `Ctrl+C` | `DbAction::Copy` | view/UI only | yes |
+| Paste | `Ctrl+V` | `DbAction::Paste` | view/UI only | yes |
+| Select All | `Ctrl+A` | `DbAction::SelectAll` | view/UI only | yes |
+
+#### Display menu
+
+| Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|
+| Large Thumbnails |  | `DbAction::LargeThumbnails` | view/UI only | yes |
+| Small Thumbnails |  | `DbAction::SmallThumbnails` | view/UI only | yes |
+| Details |  | `DbAction::Details` | view/UI only | yes |
+| Preview |  | `DbAction::Preview` | view/UI only | yes |
+| Property |  | `DbAction::Property` | view/UI only | yes |
+| Refresh |  | `DbAction::Refresh` | view/UI only | yes |
+| Toolbar |  | `DbAction::Toolbar` | view/UI only | yes |
+| Status Bar |  | `DbAction::StatusBar` | view/UI only | yes |
+
+#### Option menu
+
+| Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|
+| Select System Unit |  | `DbAction::SystemUnit` | view/UI only | yes |
+| Application Color |  | `DbAction::ApplicationColor` | view/UI only | yes |
+| USB Link |  | `DbAction::UsbLink` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Wireless Link |  | `DbAction::WirelessLink` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| DST Settings |  | `DbAction::DstSettings` | view/UI only | yes |
+| Network Machine Settings |  | `DbAction::NetworkMachines` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+
+#### Help menu
+
+| Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|
+| Online Instruction Manual |  | `DbAction::Manual` | view/UI only | yes |
+| About Design Database |  | `DbAction::About` | view/UI only | yes |
+| Customer Support |  | `DbAction::Support` | view/UI only | yes |
+
+#### Toolbar
+
+| Command | Shortcut | OpenStitch action | Engine command | Available |
+|---|---|---|---|---|
+| Exit |  | `DbAction::Exit` | view/UI only | yes |
+| Parent Folder | `Alt+Up` | `DbAction::ParentFolder` | view/UI only | yes |
+| Choose Folder |  | `DbAction::ChooseFolder` | view/UI only | yes |
+| Cut | `Ctrl+X` | `DbAction::Cut` | view/UI only | yes |
+| Copy | `Ctrl+C` | `DbAction::Copy` | view/UI only | yes |
+| Paste | `Ctrl+V` | `DbAction::Paste` | view/UI only | yes |
+| Large Thumbnails |  | `DbAction::LargeThumbnails` | view/UI only | yes |
+| Small Thumbnails |  | `DbAction::SmallThumbnails` | view/UI only | yes |
+| Details |  | `DbAction::Details` | view/UI only | yes |
+| Preview |  | `DbAction::Preview` | view/UI only | yes |
+| Property |  | `DbAction::Property` | view/UI only | yes |
+| Search |  | `DbAction::Search` | `library.search` | yes |
+| Convert Format |  | `DbAction::ConvertFormat` | `library.convert` | yes |
+| Open in Layout & Editing | `Enter` | `DbAction::OpenInEditor` | `project.open` | yes |
+| Import Into Layout & Editing |  | `DbAction::ImportIntoEditor` | `stitches.import` | yes |
+| Card Reading |  | `DbAction::ReadCard` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Writing List |  | `DbAction::WritingBox` | view/UI only | **not yet** (disabled, ScreenTip says so) |

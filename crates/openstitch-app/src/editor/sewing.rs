@@ -209,6 +209,47 @@ impl SewingEditor {
         }
     }
 
+    /// Mirrors the pattern along the feed (`horizontal`: start and end swap, sewing order
+    /// reversed) or across it.
+    pub fn flip(&mut self, horizontal: bool) {
+        let d = &mut self.doc;
+        let xs = || {
+            d.points
+                .iter()
+                .chain(&d.outline)
+                .map(|p| p.x)
+                .chain(d.profile.iter().map(|s| s[0]))
+        };
+        // Mirrored about the middle of what is drawn, so flipping twice restores it.
+        let span = xs().fold(f64::INFINITY, f64::min) + xs().fold(f64::NEG_INFINITY, f64::max);
+        if horizontal {
+            for p in d.points.iter_mut().chain(d.outline.iter_mut()) {
+                p.x = span - p.x;
+            }
+            d.points.reverse();
+            d.outline.reverse();
+            for s in &mut d.profile {
+                s[0] = span - s[0];
+            }
+            d.profile.reverse();
+            let cols = d.cells.iter().map(|c| c[0]);
+            let cols = cols.clone().min().unwrap_or(0) + cols.max().unwrap_or(0);
+            for c in &mut d.cells {
+                c[0] = cols - c[0];
+            }
+        } else {
+            for p in d.points.iter_mut().chain(d.outline.iter_mut()) {
+                p.y = -p.y;
+            }
+            for s in &mut d.profile {
+                *s = [s[0], -s[2], -s[1]];
+            }
+            for c in &mut d.cells {
+                c[1] = d.rows.saturating_sub(1).saturating_sub(c[1]);
+            }
+        }
+    }
+
     fn document(&self) -> Value {
         serde_json::from_str(&self.doc.to_json(false)).unwrap_or_default()
     }
@@ -318,6 +359,24 @@ mod tests {
         assert!(e.delete(Handle::Vertex(1)));
         e.doc.outline.truncate(3);
         assert!(!e.delete(Handle::Vertex(0)), "a triangle stays");
+    }
+
+    #[test]
+    fn flips_keep_every_kind_valid() {
+        for kind in SewingKind::ALL {
+            let mut e = SewingEditor::new(kind);
+            let before = e.doc.clone();
+            for horizontal in [true, false] {
+                e.flip(horizontal);
+                assert!(e.doc.validate().is_ok(), "{kind:?} {horizontal}");
+                e.flip(horizontal);
+                assert_eq!(e.doc, before, "{kind:?}: flipping twice restores it");
+            }
+        }
+        let mut e = SewingEditor::new(SewingKind::Decorative);
+        let first = e.doc.points[0];
+        e.flip(false);
+        assert_eq!(e.doc.points[0], v2(first.x, -first.y));
     }
 
     #[test]

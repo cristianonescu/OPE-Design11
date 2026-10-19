@@ -24,10 +24,22 @@ pub enum Tool {
     Pen,
     /// Manual Punch: click the two ends of each sewing-direction line in turn.
     Punch,
+    /// Open Straight Line: click the points of an open line.
+    Line,
+    /// Pencil (Closed Curve): drag to draw a closed outline freehand.
+    Pencil,
+    /// Pencil (Open Curve): drag to draw an open line freehand.
+    PencilOpen,
+    /// Manual Punch Curved Block: like [`Tool::Punch`], the sides curve through the line ends.
+    CurvedBlock,
+    /// Manual Punch Running: click the points of a running-stitch line.
+    Running,
+    /// Manual Punch Feed: click the points the frame jumps through without sewing.
+    Feed,
 }
 
 impl Tool {
-    pub const ALL: [Tool; 7] = [
+    pub const ALL: [Tool; 13] = [
         Tool::Select,
         Tool::Point,
         Tool::Rectangle,
@@ -35,6 +47,12 @@ impl Tool {
         Tool::Polygon,
         Tool::Pen,
         Tool::Punch,
+        Tool::Line,
+        Tool::Pencil,
+        Tool::PencilOpen,
+        Tool::CurvedBlock,
+        Tool::Running,
+        Tool::Feed,
     ];
 
     pub fn label(self) -> &'static str {
@@ -46,12 +64,18 @@ impl Tool {
             Tool::Point => "Point",
             Tool::Pen => "Pen",
             Tool::Punch => "Punch",
+            Tool::Line => "Line",
+            Tool::Pencil => "Pencil",
+            Tool::PencilOpen => "OpenPencil",
+            Tool::CurvedBlock => "CurvedBlock",
+            Tool::Running => "Running",
+            Tool::Feed => "Feed",
         }
     }
 
-    /// Single-key shortcut on the canvas.
-    pub fn shortcut(self) -> char {
-        match self {
+    /// Single-key shortcut on the canvas, if the tool has one.
+    pub fn shortcut(self) -> Option<char> {
+        Some(match self {
             Tool::Select => 'v',
             Tool::Rectangle => 'r',
             Tool::Ellipse => 'e',
@@ -59,13 +83,28 @@ impl Tool {
             Tool::Point => 'a',
             Tool::Pen => 'b',
             Tool::Punch => 'u',
-        }
+            Tool::Line => 'l',
+            _ => return None,
+        })
     }
 
     pub fn from_shortcut(c: char) -> Option<Tool> {
         Self::ALL
             .into_iter()
-            .find(|t| t.shortcut() == c.to_ascii_lowercase())
+            .find(|t| t.shortcut() == Some(c.to_ascii_lowercase()))
+    }
+
+    /// The Manual Punch tools (they share the Manual Punch tab).
+    pub fn is_punch(self) -> bool {
+        matches!(
+            self,
+            Tool::Punch | Tool::CurvedBlock | Tool::Running | Tool::Feed
+        )
+    }
+
+    /// The freehand Pencil tools.
+    pub fn is_pencil(self) -> bool {
+        matches!(self, Tool::Pencil | Tool::PencilOpen)
     }
 }
 
@@ -274,8 +313,13 @@ pub struct ToolController {
     gesture: Option<Gesture>,
     polygon: Vec<Vec2>,
     pen: Vec<PenNode>,
-    /// Manual Punch: direction-line ends clicked so far (left, right, left, right, …).
+    /// Manual Punch: direction-line ends clicked so far (left, right, left, right, …), or
+    /// the points of a running line or feed.
     punch: Vec<Vec2>,
+    /// Pencil: the pointer trail of the stroke being drawn.
+    pencil: Vec<Vec2>,
+    /// Edge radius (mm) of the rectangles the Rectangle tool draws.
+    corner_radius: f64,
     /// Point tool: the selected vertex.
     point: Option<PointRef>,
     /// Last pointer location (for the Point tool's segment shortcuts).
@@ -314,6 +358,20 @@ impl ToolController {
             || !self.polygon.is_empty()
             || !self.pen.is_empty()
             || !self.punch.is_empty()
+            || !self.pencil.is_empty()
+    }
+
+    /// Edge radius (mm) for new rectangles; 0 = square corners.
+    pub fn corner_radius(&self) -> f64 {
+        self.corner_radius
+    }
+
+    pub fn set_corner_radius(&mut self, mm: f64) {
+        self.corner_radius = if mm.is_finite() {
+            mm.clamp(0.0, 1000.0)
+        } else {
+            0.0
+        };
     }
 
     /// Snaps drawing, moving and point editing to a grid of `step` model units (`None`: off).
@@ -357,25 +415,24 @@ impl ToolController {
         self.polygon.clear();
         self.pen.clear();
         self.punch.clear();
+        self.pencil.clear();
         self.preview = None;
     }
 
     pub fn handle(&mut self, mut e: PointerEvent, ctx: &ToolContext) -> Vec<ToolEffect> {
         self.hover = Some(e.location);
         // Drawing tools place every point on the grid.
-        if matches!(
-            self.tool(),
-            Tool::Rectangle | Tool::Ellipse | Tool::Polygon | Tool::Pen | Tool::Punch
-        ) {
+        if !matches!(self.tool(), Tool::Select | Tool::Point) && !self.tool().is_pencil() {
             e.location = self.snapped(e.location);
         }
         match self.tool() {
             Tool::Select => self.select_tool(e, ctx),
             Tool::Rectangle | Tool::Ellipse => self.drag_shape_tool(e),
-            Tool::Polygon => self.polygon_tool(e, ctx),
+            Tool::Polygon | Tool::Line => self.polygon_tool(e, ctx),
             Tool::Point => self.point_tool(e, ctx),
             Tool::Pen => self.pen_tool(e, ctx),
-            Tool::Punch => self.punch_tool(e, ctx),
+            Tool::Pencil | Tool::PencilOpen => self.pencil_tool(e, ctx),
+            Tool::Punch | Tool::CurvedBlock | Tool::Running | Tool::Feed => self.punch_tool(e, ctx),
         }
     }
 
@@ -383,9 +440,9 @@ impl ToolController {
     /// path open.
     pub fn finish(&mut self) -> Vec<ToolEffect> {
         match self.tool() {
-            Tool::Polygon => self.finish_polygon(),
+            Tool::Polygon | Tool::Line => self.finish_polygon(),
             Tool::Pen => self.finish_pen(false),
-            Tool::Punch => self.finish_punch(),
+            t if t.is_punch() => self.finish_punch(),
             _ => vec![],
         }
     }
@@ -868,10 +925,11 @@ impl ToolController {
                         json!({ "cx": mm(c.x), "cy": mm(c.y), "rx": mm(r.width() / 2.0), "ry": mm(r.height() / 2.0), "name": "Ellipse" }),
                     )
                 } else {
-                    CommandRequest::new(
-                        "shape.rectangle",
-                        json!({ "x": mm(r.min_x), "y": mm(r.min_y), "width": mm(r.width()), "height": mm(r.height()), "name": "Rectangle" }),
-                    )
+                    let mut params = json!({ "x": mm(r.min_x), "y": mm(r.min_y), "width": mm(r.width()), "height": mm(r.height()), "name": "Rectangle" });
+                    if self.corner_radius > 0.0 {
+                        params["cornerRadius"] = json!(self.corner_radius);
+                    }
+                    CommandRequest::new("shape.rectangle", params)
                 };
                 vec![ToolEffect::run(request, true)]
             }
@@ -879,11 +937,13 @@ impl ToolController {
         }
     }
 
-    /// Click to add vertices; click the first vertex, double-click or press Return to close.
+    /// Click to add vertices; click the first vertex, double-click or press Return to close
+    /// (Open Straight Line: double-click or Return ends the open line).
     fn polygon_tool(&mut self, e: PointerEvent, ctx: &ToolContext) -> Vec<ToolEffect> {
         match e.phase {
             Phase::Down => {
-                let closes_on_first = self.polygon.len() >= 3
+                let closes_on_first = self.tool() == Tool::Polygon
+                    && self.polygon.len() >= 3
                     && e.location.distance(self.polygon[0]) <= 2.0 * ctx.tolerance();
                 if e.clicks >= 2 || closes_on_first {
                     return self.finish_polygon();
@@ -930,13 +990,12 @@ impl ToolController {
                     return vec![];
                 }
                 self.punch.push(e.location);
-                self.preview = Some(ToolPreview::Outline(ladder(&self.punch, None)));
+                self.preview = Some(ToolPreview::Outline(self.punch_preview(None)));
                 vec![]
             }
             Phase::Moved | Phase::Dragged => {
                 if !self.punch.is_empty() {
-                    self.preview =
-                        Some(ToolPreview::Outline(ladder(&self.punch, Some(e.location))));
+                    self.preview = Some(ToolPreview::Outline(self.punch_preview(Some(e.location))));
                 }
                 vec![]
             }
@@ -948,13 +1007,45 @@ impl ToolController {
         &self.punch
     }
 
-    /// Ends the Manual Punch shape: complete line pairs become one `shape.column`; an unpaired
-    /// last click is dropped; fewer than two lines make nothing.
+    /// Blocks show the ladder of direction lines; Running and Feed the line through the points.
+    fn punch_preview(&self, hover: Option<Vec2>) -> Contour {
+        match self.tool() {
+            Tool::Running | Tool::Feed => {
+                let mut pts = self.punch.clone();
+                pts.extend(hover);
+                Contour::new(pts, false)
+            }
+            _ => ladder(&self.punch, hover),
+        }
+    }
+
+    /// Ends the Manual Punch shape: complete line pairs become one `shape.column` (curved for
+    /// Curved Block); an unpaired last click is dropped; fewer than two lines make nothing.
+    /// Running makes an open running line, Feed a `shape.feed`; both need two points.
     pub fn finish_punch(&mut self) -> Vec<ToolEffect> {
         let pts = std::mem::take(&mut self.punch);
         self.preview = None;
-        if self.tool() != Tool::Punch || pts.len() < 4 {
-            return vec![];
+        let points = || -> Vec<serde_json::Value> {
+            pts.iter().map(|p| json!([mm(p.x), mm(p.y)])).collect()
+        };
+        match self.tool() {
+            Tool::Running if pts.len() >= 2 => {
+                return vec![ToolEffect::run(
+                    CommandRequest::new(
+                        "shape.polygon",
+                        json!({ "points": points(), "closed": false, "name": "Running" }),
+                    ),
+                    true,
+                )];
+            }
+            Tool::Feed if pts.len() >= 2 => {
+                return vec![ToolEffect::run(
+                    CommandRequest::new("shape.feed", json!({ "points": points() })),
+                    true,
+                )];
+            }
+            Tool::Punch | Tool::CurvedBlock if pts.len() >= 4 => {}
+            _ => return vec![],
         }
         let lines: Vec<_> = pts
             .as_chunks::<2>()
@@ -962,27 +1053,96 @@ impl ToolController {
             .iter()
             .map(|w| json!([[mm(w[0].x), mm(w[0].y)], [mm(w[1].x), mm(w[1].y)]]))
             .collect();
+        let mut params = json!({ "lines": lines });
+        if self.tool() == Tool::CurvedBlock {
+            params["curved"] = json!(true);
+        }
         vec![ToolEffect::run(
-            CommandRequest::new("shape.column", json!({ "lines": lines })),
+            CommandRequest::new("shape.column", params),
             true,
         )]
     }
 
-    /// Closes the polygon in progress (Return). Fewer than three vertices are discarded.
+    /// Closes the polygon in progress (Return). Fewer than three vertices are discarded; an
+    /// open line needs two.
     pub fn finish_polygon(&mut self) -> Vec<ToolEffect> {
         let pts = std::mem::take(&mut self.polygon);
         self.preview = None;
-        if self.tool() != Tool::Polygon || pts.len() < 3 {
+        let closed = match self.tool() {
+            Tool::Polygon => true,
+            Tool::Line => false,
+            _ => return vec![],
+        };
+        if pts.len() < if closed { 3 } else { 2 } {
             return vec![];
         }
         let points: Vec<_> = pts.iter().map(|p| json!([mm(p.x), mm(p.y)])).collect();
+        let name = if closed { "Polygon" } else { "Line" };
         vec![ToolEffect::run(
             CommandRequest::new(
                 "shape.polygon",
-                json!({ "points": points, "closed": true, "name": "Polygon" }),
+                json!({ "points": points, "closed": closed, "name": name }),
             ),
             true,
         )]
+    }
+
+    /// Pencil: press and drag to trace; releasing ends the stroke as one `shape.freehand`,
+    /// simplified to within about a screen point and a half.
+    fn pencil_tool(&mut self, e: PointerEvent, ctx: &ToolContext) -> Vec<ToolEffect> {
+        let p = e.location;
+        match e.phase {
+            Phase::Down => {
+                self.pencil = vec![p];
+                self.preview = None;
+                vec![]
+            }
+            Phase::Dragged if !self.pencil.is_empty() => {
+                if self
+                    .pencil
+                    .last()
+                    .is_some_and(|q| q.distance(p) >= ctx.units_per_point)
+                    && self.pencil.len() < openstitch_design::freehand::MAX_POINTS
+                {
+                    self.pencil.push(p);
+                }
+                self.preview = Some(ToolPreview::Outline(Contour::new(
+                    self.pencil.clone(),
+                    false,
+                )));
+                vec![]
+            }
+            Phase::Up if !self.pencil.is_empty() => {
+                let mut trail = std::mem::take(&mut self.pencil);
+                self.preview = None;
+                if trail.last() != Some(&p) && trail.len() < openstitch_design::freehand::MAX_POINTS
+                {
+                    trail.push(p);
+                }
+                let closed = self.tool() == Tool::Pencil;
+                let size = Rect::enclosing(trail.iter().copied())
+                    .map_or(0.0, |r| r.width().max(r.height()));
+                if size < MINIMUM_SIZE {
+                    return vec![];
+                }
+                let tolerance = (1.5 * ctx.units_per_point / 10.0).clamp(0.05, 2.0);
+                let points: Vec<_> = trail.iter().map(|q| json!([mm(q.x), mm(q.y)])).collect();
+                let name = if closed { "Freehand" } else { "Freehand line" };
+                vec![ToolEffect::run(
+                    CommandRequest::new(
+                        "shape.freehand",
+                        json!({ "points": points, "closed": closed, "tolerance": (tolerance * 100.0).round() / 100.0, "name": name }),
+                    ),
+                    true,
+                )]
+            }
+            _ => vec![],
+        }
+    }
+
+    /// The Pencil trail being drawn.
+    pub fn pencil(&self) -> &[Vec2] {
+        &self.pencil
     }
 }
 

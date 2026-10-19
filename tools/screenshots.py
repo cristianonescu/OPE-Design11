@@ -47,10 +47,22 @@ SCENES = {
                  [("docs/images/readme/monogram.png", 1280)]),
     "auto-punch": (["--image", "badge.png", "--convert", "autopunch", "--ribbon", "image"],
                    [("docs/images/readme/auto-punch.png", 1280)]),
-    "design-database": (["--database", "home/Embroidery", "--db-view", "large"],
-                        [("docs/images/readme/design-database.png", 1280)]),
+    "design-database": (["--database", "home/Embroidery/oracle.pes", "--db-view", "large"],
+                        [("docs/images/database-browse.png", 1600),
+                         ("docs/images/readme/design-database.png", 1280)]),
+    "database-details": (["--database", "home/Embroidery/oracle.pes", "--db-view", "details"],
+                         [("docs/images/database-details.png", 1600)]),
+    "database-search": (["--database", "home/Embroidery", "--db-dialog", "search"],
+                        [("docs/images/database-search.png", 1600)]),
+    "database-convert": (["--database", "home/Embroidery/oracle.pes", "--db-dialog", "convert"],
+                         [("docs/images/database-convert.png", 1600)]),
+    "database-catalogue": (["--database", "home/Embroidery", "--db-dialog", "catalog"],
+                           [("docs/images/database-catalogue.png", 1600)]),
     "stitch-creator": (["user-patterns.osd", "--pattern", "tulip.json"],
-                       [("docs/images/readme/stitch-creator.png", 1280)]),
+                       [("docs/images/rust-editor-stitch-creator.png", 1600),
+                        ("docs/images/readme/stitch-creator.png", 1280)]),
+    "stitch-factory": (["sewing-stitches.osd", "--show", "sdf"],
+                       [("docs/images/rust-editor-stitch-design-factory.png", 1600)]),
 }
 
 
@@ -80,7 +92,8 @@ def build_project(work, example, name):
 
 def prepare(work):
     for example, name in [("drawing.json", "drawing"), ("monograms.json", "monograms"),
-                          ("user-patterns.json", "user-patterns")]:
+                          ("user-patterns.json", "user-patterns"),
+                          ("sewing-stitches.json", "sewing-stitches")]:
         build_project(work, example, name)
     patterns = json.loads((ROOT / "examples" / "user-patterns.json").read_text())
     tulip = next(s["params"]["pattern"] for s in patterns

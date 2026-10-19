@@ -37,6 +37,9 @@ pub struct Design {
     /// project (never sewn by the embroidery compiler). Omitted when empty.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub sewing: Vec<SewingStitch>,
+    /// Guidelines (view aid, never sewn). Omitted while empty.
+    #[serde(default, skip_serializing_if = "Guides::is_empty")]
+    pub guides: Guides,
 }
 
 /// A raster image placed on the Design Page as a tracing reference (PE-DESIGN's background
@@ -56,6 +59,50 @@ pub struct BackgroundImage {
     /// 0 (invisible) to 1 (opaque).
     pub opacity: f64,
     pub visible: bool,
+    /// Rotation, crop and colour changes applied to the file's pixels (Image ▸ Rotate Right /
+    /// Left, Modify Image); the file itself is never changed. Omitted while unchanged.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub adjust: ImageAdjust,
+}
+
+/// How the background image is shown, applied in this order: turned, cropped, then colours.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ImageAdjust {
+    /// Quarter turns clockwise, 0–3.
+    pub rotation: u8,
+    /// Cut off the turned image: left, top, right, bottom, each a fraction of its side.
+    pub crop: [f64; 4],
+    /// −100 to 100; 0 = as in the file.
+    pub brightness: f64,
+    pub contrast: f64,
+    pub saturation: f64,
+}
+
+impl ImageAdjust {
+    /// Largest crop on one side, and the smallest part of the image a crop keeps.
+    pub const MAX_CROP: f64 = 0.9;
+    pub const MIN_KEPT: f64 = 0.05;
+}
+
+/// Guidelines dragged out of the rulers (View ▸ Guideline), saved with the design; 0.1 mm
+/// from the Design Page origin. Omitted while there are none.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Guides {
+    /// x of the vertical guidelines (dragged from the top ruler).
+    pub vertical: Vec<f64>,
+    /// y of the horizontal guidelines (dragged from the left ruler).
+    pub horizontal: Vec<f64>,
+}
+
+impl Guides {
+    /// At most this many guidelines in each direction.
+    pub const MAX: usize = 100;
+
+    pub fn is_empty(&self) -> bool {
+        self.vertical.is_empty() && self.horizontal.is_empty()
+    }
 }
 
 impl Default for Design {
@@ -76,6 +123,7 @@ impl Design {
             fonts: Vec::new(),
             patterns: Vec::new(),
             sewing: Vec::new(),
+            guides: Guides::default(),
         }
     }
 
@@ -695,6 +743,10 @@ pub struct RegionSewing {
     /// column sewn along them (satin and fill). Each is [left end, right end].
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub direction_lines: Vec<[Vec2; 2]>,
+    /// Curved Block (Manual Punch): the column's sides are smooth curves through the ends of
+    /// [`RegionSewing::direction_lines`] instead of straight lines between them.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub curved_lines: bool,
     /// Satin along a centre line with a width at each point: the stitch direction follows
     /// the line (variable-direction satin). Takes precedence over the other direction options.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -746,6 +798,7 @@ impl RegionSewing {
             direction_curve: None,
             stamps: Vec::new(),
             direction_lines: Vec::new(),
+            curved_lines: false,
             skeleton: None,
         }
     }

@@ -7,6 +7,7 @@ pub mod column;
 pub mod compile;
 pub mod direction;
 pub mod fonts;
+pub mod freehand;
 pub mod generate;
 pub mod geometry;
 pub mod lines;
@@ -38,7 +39,8 @@ pub use machine::{
 };
 pub use model::{
     Arrange, BackgroundImage, ChainShape, Design, DesignObject, DesignPage, Feather, FeatherSide,
-    LineSewing, LineType, ObjectKind, RegionSewing, RegionType, StitchBlock, UnderlayStyle,
+    Guides, ImageAdjust, LineSewing, LineType, ObjectKind, RegionSewing, RegionType, StitchBlock,
+    UnderlayStyle,
 };
 pub use text::{CharEdit, FONTS, FontInfo, Layout, TextAlign, TextDirection, TextError, TextSpec};
 

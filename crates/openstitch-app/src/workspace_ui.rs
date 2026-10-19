@@ -4,9 +4,7 @@
 
 use crate::app::EditorApp;
 use eframe::egui::{self, Color32, Pos2, Sense, Shape, Stroke};
-use openstitch_app::editor::workspace::{
-    GridSettings, MeasureTool, ReferenceMap, THREAD_WIDTH_MM, ruler_ticks, thread_shades,
-};
+use openstitch_app::editor::workspace::{GridSettings, MeasureTool, ReferenceMap, ruler_ticks};
 use openstitch_app::editor::{CommandRequest, ScreenRect, Viewport};
 use openstitch_design::{BROTHER_HOOPS, Estimate, MachineType, Rect, SewingArea, Vec2, v2};
 use serde_json::json;
@@ -19,7 +17,15 @@ pub struct Workspace {
     pub rulers: bool,
     pub reference: bool,
     pub realistic: bool,
+    /// Solid View (never on together with `realistic`).
+    pub solid: bool,
+    /// View ▸ Guideline: guidelines shown and added from the rulers.
+    pub guides: bool,
+    /// View, Image and Text dialogs and the guideline being dragged.
+    pub view: crate::view_ui::ViewState,
     pub measure: MeasureTool,
+    /// Hoop Settings ▸ Move Sections.
+    pub sections: openstitch_app::editor::sections::SectionMover,
     pub settings_open: bool,
     user_hoop: (f64, f64, String),
     /// Thread length and sewing time of the compiled design.
@@ -37,7 +43,11 @@ impl Default for Workspace {
             rulers: true,
             reference: false,
             realistic: false,
+            solid: false,
+            guides: false,
+            view: Default::default(),
             measure: MeasureTool::default(),
+            sections: Default::default(),
             settings_open: false,
             user_hoop: (100.0, 100.0, String::new()),
             estimate: None,
@@ -129,37 +139,44 @@ pub fn draw_rulers(painter: &egui::Painter, rect: egui::Rect, vp: &Viewport, hov
     }
 }
 
-/// Grid lines on the Design Page from the grid settings.
+/// Grid lines on the Design Page from the grid settings: solid with axes, else dotted.
 pub fn draw_grid(painter: &egui::Painter, vp: &Viewport, page: &Rect, grid: &GridSettings) {
     let colors = crate::theme::canvas(painter.ctx());
     let (minor, major) = (colors.grid_minor, colors.grid_major);
+    let line = |a: Pos2, b: Pos2, m: bool| {
+        let c = if m { major } else { minor };
+        if grid.axes {
+            painter.line_segment([a, b], Stroke::new(1.0, c));
+        } else {
+            painter.extend(Shape::dotted_line(&[a, b], c, 4.0, 0.8));
+        }
+    };
     for (x, m) in grid.lines(page.max_x, vp.scale, 6.0) {
-        painter.line_segment(
-            [
-                pos(vp.to_screen(v2(x, 0.0))),
-                pos(vp.to_screen(v2(x, page.max_y))),
-            ],
-            Stroke::new(1.0, if m { major } else { minor }),
+        line(
+            pos(vp.to_screen(v2(x, 0.0))),
+            pos(vp.to_screen(v2(x, page.max_y))),
+            m,
         );
     }
     for (y, m) in grid.lines(page.max_y, vp.scale, 6.0) {
-        painter.line_segment(
-            [
-                pos(vp.to_screen(v2(0.0, y))),
-                pos(vp.to_screen(v2(page.max_x, y))),
-            ],
-            Stroke::new(1.0, if m { major } else { minor }),
+        line(
+            pos(vp.to_screen(v2(0.0, y))),
+            pos(vp.to_screen(v2(page.max_x, y))),
+            m,
         );
     }
 }
 
 /// Stitches drawn as thread: true width, a dark edge, the colour and a highlight, so rows read
-/// like sewn thread rather than lines.
+/// like sewn thread rather than lines (width, contrast and brightness from Realistic View
+/// Settings).
 pub fn draw_realistic(app: &EditorApp, painter: &egui::Painter, vp: &Viewport) {
-    let w = (THREAD_WIDTH_MM * 10.0 * vp.scale).max(0.8) as f32;
+    let settings = app.ui.prefs.realistic;
+    let w = (settings.thread_width_mm * 10.0 * vp.scale).max(0.8) as f32;
     for layer in &app.render.layers {
-        let [edge, body, light] =
-            thread_shades(layer.rgb).map(|c| Color32::from_rgb(c[0], c[1], c[2]));
+        let [edge, body, light] = settings
+            .shades(layer.rgb)
+            .map(|c| Color32::from_rgb(c[0], c[1], c[2]));
         for s in &layer.strokes {
             for pair in s.windows(2) {
                 let (a, b) = (pos(vp.to_screen(pair[0])), pos(vp.to_screen(pair[1])));

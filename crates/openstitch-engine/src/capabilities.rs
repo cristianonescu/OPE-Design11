@@ -72,6 +72,7 @@ pub const FILE_READING_COMMANDS: &[&str] = &[
     "digitize.designCenter",
     "import.svg",
     "background.set",
+    "background.save",
     "fonts.loadTrueType",
     "design.print",
     "pattern.import",

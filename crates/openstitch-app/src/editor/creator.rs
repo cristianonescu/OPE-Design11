@@ -193,6 +193,46 @@ impl Creator {
         true
     }
 
+    /// Adds `path` as a new line and makes it current (Paste, Duplicate; not for a motif).
+    pub fn paste_path(&mut self, path: &[Vec2]) -> bool {
+        if self.kind == PatternKind::Motif
+            || path.len() < 2
+            || self.paths.len() >= patterns::MAX_PATHS
+            || self.point_count() + path.len() > MAX_POINTS
+        {
+            return false;
+        }
+        let path = path.iter().map(|&p| self.clamp(p)).collect();
+        self.paths.push(path);
+        self.current = self.paths.len() - 1;
+        true
+    }
+
+    /// Mirrors the current line inside the unit box, left to right (`horizontal`, the line is
+    /// reversed so motif and decorative ends stay anchors) or top to bottom.
+    pub fn flip(&mut self, horizontal: bool) {
+        let (x0, y0, x1, y1) = self.unit_box();
+        let snap = std::mem::replace(&mut self.snap, false);
+        if let Some(path) = self.paths.get(self.current) {
+            let mut pts: Vec<Vec2> = path
+                .iter()
+                .map(|p| {
+                    if horizontal {
+                        v2(x0 + x1 - p.x, p.y)
+                    } else {
+                        v2(p.x, y0 + y1 - p.y)
+                    }
+                })
+                .collect();
+            if horizontal {
+                pts.reverse();
+            }
+            let pts = pts.into_iter().map(|p| self.clamp(p)).collect();
+            self.paths[self.current] = pts;
+        }
+        self.snap = snap;
+    }
+
     /// The pattern as an `openstitch.pattern` document.
     pub fn document(&self) -> Value {
         let mut doc = json!({
@@ -555,5 +595,42 @@ mod tests {
         let ok: Vec<&Pattern> = lib.iter().filter_map(|e| e.pattern.as_ref().ok()).collect();
         assert_eq!(ok, vec![&a, &b]);
         assert!(load_library(&dir.join("missing")).is_empty());
+    }
+
+    #[test]
+    fn lines_flip_and_paste_and_stay_valid() {
+        for (kind, _) in KINDS {
+            let mut c = Creator::new(kind);
+            let before = c.paths[0].clone();
+            for horizontal in [true, false] {
+                c.flip(horizontal);
+                assert!(c.pattern().is_ok(), "{kind:?} {horizontal}");
+                c.flip(horizontal);
+                let same = c.paths[0].len() == before.len()
+                    && c.paths[0]
+                        .iter()
+                        .zip(&before)
+                        .all(|(a, b)| a.distance(*b) < 1e-9);
+                assert!(same, "{kind:?}: twice restores it");
+            }
+            let pasted = c.paste_path(&before);
+            assert_eq!(pasted, kind != PatternKind::Motif, "{kind:?}");
+            assert!(c.pattern().is_ok());
+        }
+        let mut c = Creator::new(PatternKind::Motif);
+        c.flip(true);
+        assert_eq!(
+            c.paths[0][0],
+            v2(0.0, 0.0),
+            "the motif still starts at its anchor"
+        );
+        let mut c = Creator::new(PatternKind::Fill);
+        assert!(c.paste_path(&[v2(0.1, 0.1), v2(2.0, 0.9)]));
+        assert_eq!(c.current, 1);
+        assert_eq!(
+            c.paths[1][1],
+            v2(1.0, 0.875),
+            "pasted points stay in the tile"
+        );
     }
 }

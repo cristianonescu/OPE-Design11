@@ -1,12 +1,18 @@
 //! Manual Punch: shapes made of several sewing-direction lines (PE-DESIGN's "Using Manual
 //! Punch Tool" and "Specifying the straight sewing direction" with more than one line), and
-//! satin columns along a skeleton (centre line with per-point width).
+//! satin columns along a skeleton (centre line with per-point width). Curved Block columns,
+//! Feed patterns and Reverse Direction Line.
 
-use crate::commands::{CommandSpec, Effect, default_fill, opt, req, spec, thread};
+use crate::commands::{
+    CommandSpec, Effect, IDS, default_fill, default_line, indexes, opt, req, spec, thread,
+};
 use crate::params::{CommandError, Params};
+use openstitch_core::{Command, Stitch};
 use openstitch_design::column::{self, RungError};
 use openstitch_design::skeleton::{self, Skeleton, SkeletonError};
-use openstitch_design::{DesignObject, LineSewing, LineType, RegionSewing, RegionType, Vec2};
+use openstitch_design::{
+    DesignObject, LineSewing, LineType, RegionSewing, RegionType, StitchBlock, Vec2,
+};
 use serde_json::json;
 
 /// Most direction lines per shape.
@@ -76,6 +82,24 @@ fn skeleton_param(p: &Params) -> Result<Skeleton, CommandError> {
     Ok(s)
 }
 
+/// The open curve `c` from its other end.
+fn reversed(c: &openstitch_design::Contour) -> openstitch_design::Contour {
+    let mut points = c.points.clone();
+    points.reverse();
+    let mut out = openstitch_design::Contour::new(points, c.closed);
+    if c.has_curves() {
+        let n = c.segment_count();
+        out.curves = (0..n)
+            .rev()
+            .map(|i| {
+                c.curve(i)
+                    .map(|z| openstitch_design::Bezier { c1: z.c2, c2: z.c1 })
+            })
+            .collect();
+    }
+    out
+}
+
 fn kind(p: &Params) -> Result<RegionType, CommandError> {
     match p.string("type", Some("satin"))?.as_str() {
         "satin" => Ok(RegionType::Satin),
@@ -97,6 +121,11 @@ pub fn commands() -> Vec<CommandSpec> {
                     "Direction lines in order (2-1000); first ends make one side, second ends the other",
                 ),
                 opt("type", "satin|fill", "Region sew type (default satin)"),
+                opt(
+                    "curved",
+                    "bool",
+                    "Curved Block: the sides curve through the line ends (default false, Straight Block)",
+                ),
                 opt("fill", "color", "Region thread (default Brother Blue)"),
                 opt(
                     "outline",
@@ -107,13 +136,25 @@ pub fn commands() -> Vec<CommandSpec> {
             ],
             |s, p| {
                 let lines = rungs(p)?;
+                let curved = p.bool("curved", Some(false))?;
+                if curved && column::validate(&column::curved_rungs(&lines)).is_err() {
+                    return Err(p.invalid("lines", "the curved sides cross"));
+                }
                 let mut region =
                     RegionSewing::new(kind(p)?, thread(p, "fill")?.unwrap_or_else(default_fill));
                 region.direction_lines = lines.clone();
+                region.curved_lines = curved;
                 let line = thread(p, "outline")?.map(|t| LineSewing::new(LineType::Running, t));
-                let mut o = DesignObject::shape(vec![column::outline(&lines)], Some(region), line);
+                let outline = if curved {
+                    column::curved_outline(&lines)
+                } else {
+                    column::outline(&lines)
+                };
+                let mut o = DesignObject::shape(vec![outline], Some(region), line);
                 o.name = Some(if p.has("name") {
                     p.string("name", None)?
+                } else if curved {
+                    "Curved block".into()
                 } else {
                     "Manual punch".into()
                 });
@@ -158,7 +199,69 @@ pub fn commands() -> Vec<CommandSpec> {
                         "object {id}: direction lines work with satin and fill"
                     )));
                 }
+                if lines.is_empty() {
+                    r.curved_lines = false;
+                } else if r.curved_lines && column::validate(&column::curved_rungs(&lines)).is_err()
+                {
+                    return Err(p.invalid("lines", "the curved sides cross"));
+                }
                 r.direction_lines = lines;
+                Ok(json!(null))
+            },
+        ),
+        spec(
+            "shape.feed",
+            "Add a Manual Punch feed: jump stitches through the points, nothing sewn (moves the frame without cutting the thread)",
+            Effect::Edit,
+            vec![
+                req("points", "[[x, y]] mm", "Points in order (2-1000)"),
+                opt("name", "string", "Object name"),
+            ],
+            |s, p| {
+                let points = p.points("points", 2)?;
+                if points.len() > MAX_LINES {
+                    return Err(p.invalid("points", format!("at most {MAX_LINES} points")));
+                }
+                if points.windows(2).all(|w| w[0] == w[1]) {
+                    return Err(p.invalid("points", "needs two different points"));
+                }
+                let block = StitchBlock {
+                    stitches: points
+                        .iter()
+                        .map(|q| Stitch::new(q.x, q.y, Command::Jump))
+                        .collect(),
+                    threads: vec![default_line()],
+                };
+                let mut o = DesignObject::stitches(block);
+                o.name = Some(if p.has("name") {
+                    p.string("name", None)?
+                } else {
+                    "Feed".into()
+                });
+                Ok(json!({ "id": s.design.add(o) }))
+            },
+        ),
+        spec(
+            "object.reverseDirection",
+            "Reverse Direction Line: sew the region's sewing direction the other way (every direction line, the curved direction, or the angle turned 180°)",
+            Effect::Edit,
+            vec![IDS],
+            |s, p| {
+                let idx = indexes(p, &s.design)?;
+                if let Some(&i) = idx.iter().find(|&&i| s.design.objects[i].region.is_none()) {
+                    let id = s.design.objects[i].id;
+                    return Err(p.failed(format!("object {id} has no region sewing")));
+                }
+                for i in idx {
+                    let r = s.design.objects[i].region.as_mut().expect("checked");
+                    for l in &mut r.direction_lines {
+                        l.swap(0, 1);
+                    }
+                    if let Some(c) = &mut r.direction_curve {
+                        *c = reversed(c);
+                    }
+                    r.angle = (r.angle + 180.0).rem_euclid(360.0);
+                }
                 Ok(json!(null))
             },
         ),

@@ -85,7 +85,7 @@ actions! {
     Print => "print", "Print", "Print the design to a PDF with its colour list.", None, Some("design.print"), true;
     DesignProperty => "designProperty", "Design Property", "Sewing information of the design: size, stitches, colours, thread and time.", None, Some("design.info"), true;
     DesignSettings => "designSettings", "Design Settings", "Machine, hoop and Design Page size.", None, Some("machine.set"), true;
-    FabricSelector => "fabricSelector", "Fabric Selector", "Suggested sewing attributes for a fabric type.", None, None, false;
+    FabricSelector => "fabricSelector", "Fabric Selector", "Sewing attributes suited to a fabric type, for all shape and text patterns or the selection.", None, Some("fabric.apply"), true;
     SelectColorPalette => "colorPalette", "Select Color Palette", "Choose or edit the thread colour charts.", None, Some("threads.charts"), true;
     Wizard => "wizard", "Wizard", "Create a design step by step: templates or an image.", None, None, true;
     Export => "export", "Export", "Write the design as a machine embroidery file.", None, Some("design.export"), true;
@@ -107,7 +107,7 @@ actions! {
     PointTool => "point", "Point Edit", "Move, add and delete points of the selected outline.", Some("A"), Some("object.setPoint"), true;
     SelectAll => "selectAll", "Select All", "Select every visible object.", Some("Ctrl+A"), None, true;
     // Home ▸ Clipboard.
-    Cut => "cut", "Cut", "Move the selection to the clipboard. Use Copy, then Delete.", Some("Ctrl+X"), None, false;
+    Cut => "cut", "Cut", "Move the selection to the clipboard; Paste puts it back.", Some("Ctrl+X"), Some("object.paste"), true;
     Copy => "copy", "Copy", "Copy the selection; Paste adds a copy of it.", Some("Ctrl+C"), None, true;
     Paste => "paste", "Paste", "Add a copy of the copied objects.", Some("Ctrl+V"), Some("object.duplicate"), true;
     Duplicate => "duplicate", "Duplicate", "Add a copy of the selection, slightly offset.", Some("Ctrl+D"), Some("object.duplicate"), true;
@@ -122,10 +122,10 @@ actions! {
     Ellipse => "ellipse", "Circle / Ellipse", "Drag to draw an ellipse.", Some("E"), Some("shape.ellipse"), true;
     ClosedStraight => "polygon", "Closed Straight Line", "Click the corners of a closed outline.", Some("P"), Some("shape.polygon"), true;
     ClosedCurve => "pen", "Closed Curve", "Click for corners, drag for curves; click the first point to close.", Some("B"), Some("shape.path"), true;
-    PencilClosed => "pencilClosed", "Pencil (Closed Curve)", "Draw a closed outline freehand.", None, None, false;
-    OpenStraight => "openStraight", "Open Straight Line", "Click the points of an open line.", None, None, false;
+    PencilClosed => "pencilClosed", "Pencil (Closed Curve)", "Drag to draw a closed outline freehand.", None, Some("shape.freehand"), true;
+    OpenStraight => "openStraight", "Open Straight Line", "Click the points of an open line; double-click or Return ends it.", Some("L"), Some("shape.polygon"), true;
     OpenCurve => "openCurve", "Open Curve", "Pen tool: Return finishes the curve open.", None, Some("shape.path"), true;
-    PencilOpen => "pencilOpen", "Pencil (Open Curve)", "Draw an open line freehand.", None, None, false;
+    PencilOpen => "pencilOpen", "Pencil (Open Curve)", "Drag to draw an open line freehand.", None, Some("shape.freehand"), true;
     ZoomIn => "zoomIn", "Zoom In", "Magnify the view.", Some("Ctrl+="), None, true;
     ZoomOut => "zoomOut", "Zoom Out", "Reduce the view.", Some("Ctrl+-"), None, true;
     OtherZoom => "zoom", "Zoom", "Fit the Design Page, the selection, or 100 %.", Some("Ctrl+0"), None, true;
@@ -154,11 +154,11 @@ actions! {
     // Image tab.
     OpenImage => "openImage", "Open Image", "Show an image behind the design (PNG, JPEG, BMP).", None, Some("background.set"), true;
     PasteImage => "pasteImage", "Paste Image", "Use the image on the clipboard as the background.", None, Some("background.set"), true;
-    SaveImage => "saveImage", "Save Image", "Save the background image to a file.", None, None, false;
-    ModifyImage => "modifyImage", "Modify Image", "Crop or adjust the background image.", None, None, false;
+    SaveImage => "saveImage", "Save Image", "Save the background image as shown to a file, or copy it to the clipboard.", None, Some("background.save"), true;
+    ModifyImage => "modifyImage", "Modify Image", "Move, scale, crop or adjust the colours of the background image.", None, Some("background.modify"), true;
     ImageDensity => "imageDensity", "Background Image Density", "Show, hide or fade the background image.", None, Some("background.show"), true;
-    ImageRotateRight => "imageRotateRight", "Rotate Right", "Turn the background image 90° clockwise.", None, None, false;
-    ImageRotateLeft => "imageRotateLeft", "Rotate Left", "Turn the background image 90° anticlockwise.", None, None, false;
+    ImageRotateRight => "imageRotateRight", "Rotate Right", "Turn the background image 90° clockwise.", None, Some("background.rotate"), true;
+    ImageRotateLeft => "imageRotateLeft", "Rotate Left", "Turn the background image 90° anticlockwise.", None, Some("background.rotate"), true;
     DeleteImage => "deleteImage", "Delete Image", "Remove the background image.", None, Some("background.clear"), true;
     AutoPunch => "autoPunch", "Auto Punch Wizard", "Regions and outlines traced from an image.", None, Some("digitize.autoPunch"), true;
     CrossStitch => "crossStitch", "Cross Stitch Wizard", "Cross stitches in the image's colours.", None, Some("digitize.crossStitch"), true;
@@ -166,27 +166,27 @@ actions! {
     PhotoStitch2 => "photoStitch2", "Photo Stitch 2 Wizard", "A photo as zigzag lines.", None, Some("digitize.lineImage"), true;
     DesignCenter => "designCenter", "Import to Design Center", "Trace a line drawing into outlines and regions.", None, Some("digitize.designCenter"), true;
     // View tab.
-    SolidView => "solidView", "Solid View", "Stitches drawn as solid colour areas.", None, None, false;
+    SolidView => "solidView", "Solid View", "Stitches drawn as solid colour areas.", None, None, true;
     StitchView => "stitchView", "Stitch View", "Stitches drawn as lines.", None, None, true;
     RealisticView => "realisticView", "Realistic View", "Stitches drawn as thread with shading.", None, None, true;
     ViewThreadTrimming => "viewTrimming", "View Thread Trimming", "Show the jumps between stitched areas.", None, None, true;
-    RealisticSettings => "realisticSettings", "Realistic View Settings", "Brightness and contrast of the realistic view.", None, None, false;
+    RealisticSettings => "realisticSettings", "Realistic View Settings", "Thread width, contrast and brightness of the realistic view.", None, None, true;
     PaneSewingOrder => "paneSewingOrder", "Sewing Order", "Show or hide the Sewing Order pane.", None, None, true;
     PaneSimulator => "paneSimulator", "Stitch Simulator", "Show or hide the Stitch Simulator pane.", None, None, true;
     PaneAttributes => "paneAttributes", "Attributes Setting", "Show or hide the Color / Sewing Attributes / Text Attributes pane.", None, None, true;
     PaneImport => "paneImport", "Import Pane", "Show the Import pane.", None, None, true;
     ReferenceWindow => "reference", "Reference Window", "An overview of the Design Page; click to move the view.", None, None, true;
     ShowGrid => "showGrid", "Show Grid", "Show the grid on the Design Page.", None, None, true;
-    GridAxes => "gridAxes", "Show Grid with Axes", "Grid with axes through the centre of the Design Page.", None, None, false;
+    GridAxes => "gridAxes", "Show Grid with Axes", "Grid drawn as solid lines; off, it is dotted.", None, None, true;
     SnapToGrid => "snapToGrid", "Snap to Grid", "Objects move and draw in grid steps.", None, None, true;
     GridSpacing => "gridSpacing", "Grid Spacing", "Distance between grid lines.", None, None, true;
     Ruler => "ruler", "Ruler", "Show rulers along the work area.", None, None, true;
-    Guideline => "guideline", "Guideline", "Guidelines dragged out of the rulers.", None, None, false;
+    Guideline => "guideline", "Guideline", "Click a ruler to add a guideline; drag its marker to move it, click × to delete. Saved with the design.", None, Some("guides.set"), true;
     // Contextual tabs.
     Font => "font", "Font", "Font of the selected text.", None, Some("object.setText"), true;
     TextSize => "textSize", "Text Size", "Size of the selected text.", None, Some("object.setText"), true;
-    FontFilter => "fontFilter", "Font Filter", "Show only fonts of a kind.", None, None, false;
-    FontFilterSettings => "fontFilterSettings", "Font Filter Settings", "Choose the font kinds the filter shows.", None, None, false;
+    FontFilter => "fontFilter", "Font Filter", "Show only the fonts chosen in Font Filter Settings.", None, None, true;
+    FontFilterSettings => "fontFilterSettings", "Font Filter Settings", "Choose the fonts the filter shows.", None, None, true;
     TrueTypeAttributes => "trueType", "TrueType Font Attribute Setting", "Load a TrueType or OpenType font into the design.", None, Some("fonts.loadTrueType"), true;
     EditText => "editText", "Edit Text", "Change the characters of the selected text.", None, Some("object.setText"), true;
     LineColor => "lineColor", "Line color", "Thread colour of the outline.", None, Some("object.setLine"), true;
@@ -196,15 +196,15 @@ actions! {
     ConvertToBlocks => "toBlocks", "Convert to Blocks", "Turn the stitch pattern into editable regions.", None, Some("object.toShapes"), true;
     ConvertToStitches => "toStitches", "Convert to Stitches", "Turn the selection into a stitch pattern.", None, Some("object.toStitches"), true;
     ConvertToOutline => "toOutline", "Convert to Outline", "Text: one shape per character. Stitches: their outline.", None, Some("object.toShapes"), true;
-    EdgeRadius => "edgeRadius", "Edge radius", "Round the corners of the rectangle.", None, None, false;
+    EdgeRadius => "edgeRadius", "Edge radius", "Round the corners of the rectangles you draw.", None, Some("shape.rectangle"), true;
     StraightBlock => "punch", "Straight Block", "Click both ends of each sewing-direction line.", Some("U"), Some("shape.column"), true;
-    CurvedBlock => "curvedBlock", "Curved Block", "Blocks with curved sides.", None, None, false;
-    Running => "running", "Running", "Running stitch between clicked points.", None, None, false;
-    Feed => "feed", "Feed", "Jump between clicked points.", None, None, false;
+    CurvedBlock => "curvedBlock", "Curved Block", "Click both ends of each sewing-direction line; the sides curve through them.", None, Some("shape.column"), true;
+    Running => "running", "Running", "Running stitch between clicked points.", None, Some("shape.polygon"), true;
+    Feed => "feed", "Feed", "Jump between clicked points.", None, Some("shape.feed"), true;
     SplitOutline => "splitOutline", "Split Outline", "Draw a cut line that splits the selected shape.", None, Some("shape.split"), true;
     AddDirectionLine => "addDirection", "Add Direction Line", "Draw a curved sewing direction across the region.", None, Some("object.setDirectionCurve"), true;
     DeleteDirectionLine => "deleteDirection", "Delete Direction Line", "Back to a straight sewing direction.", None, Some("object.setDirectionLines"), true;
-    ReverseDirectionLine => "reverseDirection", "Reverse Direction Line", "Sew the direction line the other way.", None, None, false;
+    ReverseDirectionLine => "reverseDirection", "Reverse Direction Line", "Sew the direction line the other way.", None, Some("object.reverseDirection"), true;
     EditPoint => "editPoint", "Edit Point", "Move the points of the outline.", Some("A"), Some("object.setPoint"), true;
     DeletePoint => "deletePoint", "Delete Point", "Delete the selected point.", Some("Delete"), Some("object.deletePoint"), true;
     SplitAtPoint => "splitAtPoint", "Split at Point", "Split the stitch pattern at the selected needle point.", None, Some("stitches.splitAt"), true;
@@ -214,11 +214,11 @@ actions! {
     EntryExit => "entryExit", "Entry/Exit Points", "Where the region and line start and end.", None, Some("object.setEntryExit"), true;
     SewingPoints => "sewingPoints", "Center/Reference Point", "Centre point of radial fills and the reference point of stitch patterns.", None, Some("object.setCenterPoint"), true;
     SplitStitchData => "splitStitchData", "Split Stitch Data", "Draw around stitches to split them off.", None, Some("stitches.splitArea"), true;
-    ChangeColor => "changeColor", "Change Color", "Change a thread colour of the stitch pattern.", None, Some("threads.remap"), false;
+    ChangeColor => "changeColor", "Change Color", "Change a thread colour of the stitch pattern.", None, Some("stitches.setThread"), true;
     DivideByColor => "divideByColor", "Divide by Color", "One stitch pattern per thread colour.", None, Some("stitches.divideByColor"), true;
     Connect => "connect", "Connect", "The pattern sewn later starts where the earlier one ends.", None, Some("stitches.connect"), true;
     ConvertToOutlines => "toOutlines", "Convert to Outlines", "One outline per thread colour of the stitches.", None, Some("object.toShapes"), true;
-    MoveSections => "moveSections", "Move Sections", "Move the hooping sections of a large design.", None, None, false;
+    MoveSections => "moveSections", "Move Sections", "Drag the split lines of a split design to move its sections.", None, Some("sections.set"), true;
     ExportSections => "exportSections", "Export Sections", "One file per hooping of a design larger than the hoop.", None, Some("sections.export"), true;
 }
 
@@ -247,6 +247,7 @@ impl Action {
                 | ModifyOverlap
                 | DecorativeFrame
                 | SendEmbroidery
+                | SaveImage
                 | ImageDensity
                 | GridSpacing
                 | Font
@@ -258,6 +259,8 @@ impl Action {
                 | RegionSewType
                 | EntryExit
                 | SewingPoints
+                | EdgeRadius
+                | ChangeColor
         )
     }
 
@@ -280,8 +283,10 @@ impl Action {
                 | SnapToGrid
                 | Ruler
                 | Guideline
+                | FontFilter
                 | Pan
                 | Measure
+                | MoveSections
         )
     }
 
@@ -296,6 +301,12 @@ impl Action {
             ClosedStraight => Tool::Polygon,
             ClosedCurve | OpenCurve => Tool::Pen,
             StraightBlock => Tool::Punch,
+            OpenStraight => Tool::Line,
+            PencilClosed => Tool::Pencil,
+            PencilOpen => Tool::PencilOpen,
+            CurvedBlock => Tool::CurvedBlock,
+            Running => Tool::Running,
+            Feed => Tool::Feed,
             _ => return None,
         })
     }
@@ -395,22 +406,23 @@ impl TabId {
     }
 }
 
-/// One column of a ribbon group: a large button, or up to three small ones stacked.
+/// One column of a ribbon group: a large button, or up to three small ones stacked. `A` is
+/// the window's command type (the suite windows have their own, see [`super::suite`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Item {
-    Large(Action),
-    Small(&'static [Action]),
+pub enum Item<A: 'static = Action> {
+    Large(A),
+    Small(&'static [A]),
 }
 
 /// A ribbon group: its buttons and the caption under them.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Group {
+pub struct Group<A: 'static = Action> {
     pub name: &'static str,
-    pub items: &'static [Item],
+    pub items: &'static [Item<A>],
 }
 
-impl Group {
-    pub fn actions(&self) -> impl Iterator<Item = Action> + '_ {
+impl<A: Copy> Group<A> {
+    pub fn actions(&self) -> impl Iterator<Item = A> + '_ {
         self.items
             .iter()
             .flat_map(|i| match i {
@@ -761,9 +773,11 @@ pub fn contextual_tabs(f: &Facts) -> Vec<TabId> {
         }
     };
     match f.tool {
-        Tool::Polygon | Tool::Pen => add(TabId::Outline),
+        Tool::Polygon | Tool::Pen | Tool::Line | Tool::Pencil | Tool::PencilOpen => {
+            add(TabId::Outline)
+        }
         Tool::Rectangle => add(TabId::OutlineRect),
-        Tool::Punch => add(TabId::ManualPunch),
+        Tool::Punch | Tool::CurvedBlock | Tool::Running | Tool::Feed => add(TabId::ManualPunch),
         Tool::Ellipse | Tool::Point => add(TabId::Shapes),
         Tool::Select => {}
     }
@@ -907,6 +921,12 @@ mod tests {
         );
         assert_eq!(tab_for_tool(Tool::Rectangle), Some(TabId::OutlineRect));
         assert_eq!(tab_for_tool(Tool::Punch), Some(TabId::ManualPunch));
+        for t in [Tool::CurvedBlock, Tool::Running, Tool::Feed] {
+            assert_eq!(tab_for_tool(t), Some(TabId::ManualPunch), "{t:?}");
+        }
+        for t in [Tool::Line, Tool::Pencil, Tool::PencilOpen] {
+            assert_eq!(tab_for_tool(t), Some(TabId::Outline), "{t:?}");
+        }
         assert_eq!(tab_for_tool(Tool::Ellipse), Some(TabId::Shapes));
         assert_eq!(tab_for_tool(Tool::Select), None);
         assert_eq!(

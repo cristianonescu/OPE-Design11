@@ -8,7 +8,7 @@ use crate::{convert_ui, edit_ui, icons, panels};
 use eframe::egui::{self, Color32, CornerRadius, RichText, Sense, Stroke, StrokeKind, vec2};
 use openstitch_app::editor::prefs::{Theme, UiPrefs};
 use openstitch_app::editor::ribbon::{
-    self, APPLICATION_MENU, Action, Facts, Item, OPTION_MENU, TabId,
+    self, APPLICATION_MENU, Action, Facts, Info, Item, OPTION_MENU, TabId,
 };
 use openstitch_app::editor::{CommandRequest, Tool, objects};
 use openstitch_design::ObjectKind;
@@ -17,7 +17,7 @@ use serde_json::json;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
-const MAC: bool = cfg!(target_os = "macos");
+pub const MAC: bool = cfg!(target_os = "macos");
 /// Height of the button area of a ribbon group (the caption goes under it).
 const BODY: f32 = 68.0;
 const LARGE_ICON: f32 = 30.0;
@@ -76,6 +76,8 @@ pub struct RibbonState {
     last_tool: Tool,
     /// Objects Copy remembered; Paste duplicates the ones still in the design.
     pub clipboard: BTreeSet<u64>,
+    /// Objects Cut took out of the design (`object.get` data); Paste adds them back.
+    pub cut: Vec<serde_json::Value>,
     /// Pan: the primary button drags the view.
     pub pan: bool,
     pub property_open: bool,
@@ -98,6 +100,7 @@ impl Default for RibbonState {
             open_app_menu: false,
             last_tool: Tool::Select,
             clipboard: BTreeSet::new(),
+            cut: Vec::new(),
             pan: false,
             property_open: false,
             shortcuts_open: false,
@@ -199,10 +202,9 @@ pub fn enabled(app: &EditorApp, a: Action) -> bool {
     match a {
         Undo => app.session.can_undo(),
         Redo => app.session.can_redo(),
-        Copy | Duplicate | Delete | ArrangeCopy | Arrange | RotateFlip | Size | DecorativeFrame => {
-            any
-        }
-        Paste => !clipboard_ids(app).is_empty(),
+        Cut | Copy | Duplicate | Delete | ArrangeCopy | Arrange | RotateFlip | Size
+        | DecorativeFrame => any,
+        Paste => !clipboard_ids(app).is_empty() || !app.ui.cut.is_empty(),
         CopyAttributes => edit_ui::copy_attributes_source(app).is_some(),
         PasteAttributes => edit_ui::paste_attributes_source(app).is_some(),
         Group => many,
@@ -213,6 +215,7 @@ pub fn enabled(app: &EditorApp, a: Action) -> bool {
         Export | Print | SendEmbroidery => drawn,
         ExportSections => crate::sections_ui::has_sections(app),
         ImageDensity | DeleteImage => background,
+        SaveImage | ModifyImage | ImageRotateRight | ImageRotateLeft => background,
         Font | TextSize | EditText => texts,
         LineColor | LineSewType | RegionColor | RegionSewType => outline,
         ConvertToBlocks | ConvertToOutlines => stitches,
@@ -220,7 +223,7 @@ pub fn enabled(app: &EditorApp, a: Action) -> bool {
         ConvertToStitches => outline,
         ConvertRegionToLine => region,
         SplitOutline | EntryExit => edit_ui::single_shape(app).is_some(),
-        AddDirectionLine | DeleteDirectionLine | SewingPoints => {
+        AddDirectionLine | DeleteDirectionLine | ReverseDirectionLine | SewingPoints => {
             edit_ui::single_region(app).is_some()
         }
         OffsetLines | FloralPattern => edit_ui::single_outline(app).is_some(),
@@ -231,6 +234,8 @@ pub fn enabled(app: &EditorApp, a: Action) -> bool {
         }
         SplitStitchData => convert_ui::stitch_selection(app).1.is_some(),
         DivideByColor => stitches,
+        ChangeColor => convert_ui::stitch_selection(app).1.is_some(),
+        MoveSections => openstitch_app::editor::sections::can_move(app.session.design()),
         Connect => convert_ui::stitch_selection(app).0.len() == 2,
         _ => true,
     }
@@ -244,8 +249,12 @@ pub fn active(app: &EditorApp, a: Action) -> bool {
         return app.tools.tool() == t && !app.workspace.measure.active && !app.ui.pan;
     }
     match a {
-        StitchView => !app.workspace.realistic,
+        StitchView => !app.workspace.realistic && !app.workspace.solid,
         RealisticView => app.workspace.realistic,
+        SolidView => app.workspace.solid && !app.workspace.realistic,
+        GridAxes => app.workspace.grid.axes,
+        Guideline => app.workspace.guides,
+        FontFilter => app.ui.prefs.font_filter.on,
         ViewThreadTrimming => app.show_travel,
         PaneSewingOrder => panes.sewing_order.visible,
         PaneSimulator => panes.simulator.visible,
@@ -257,6 +266,7 @@ pub fn active(app: &EditorApp, a: Action) -> bool {
         Ruler => app.workspace.rulers,
         Pan => app.ui.pan,
         Measure => app.workspace.measure.active,
+        MoveSections => app.workspace.sections.active,
         _ => false,
     }
 }
@@ -297,7 +307,37 @@ fn zoom_to_selection(app: &mut EditorApp) {
     }
 }
 
+/// Cut: the selection leaves the design (one Undo) and waits on the clipboard.
+fn cut(app: &mut EditorApp) {
+    let d = app.session.design();
+    let objects: Vec<serde_json::Value> = d
+        .objects
+        .iter()
+        .filter(|o| app.selection.contains(&o.id))
+        .filter_map(|o| serde_json::to_value(o).ok())
+        .collect();
+    if objects.is_empty() {
+        return;
+    }
+    let n = objects.len();
+    let request = CommandRequest::delete(&app.selection);
+    if app.execute(&request).is_some() {
+        app.ui.cut = objects;
+        app.ui.clipboard.clear();
+        app.selection.clear();
+        app.status = format!("{n} objects cut");
+    }
+}
+
 fn paste(app: &mut EditorApp) {
+    if !app.ui.cut.is_empty() {
+        let r = CommandRequest::new("object.paste", json!({ "objects": app.ui.cut }));
+        if let Some(result) = app.execute(&r) {
+            app.selection = CommandRequest::created_ids(&result);
+            app.status = "Pasted".into();
+        }
+        return;
+    }
     let ids = clipboard_ids(app);
     if ids.is_empty() {
         return;
@@ -371,7 +411,9 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
         FontCreator => app.lettering.fonts.open = true,
         AttributeSets => app.settings.sets_open = true,
         SelectAll => app.select_all(),
+        Cut => cut(app),
         Copy => {
+            app.ui.cut.clear();
             app.ui.clipboard = app.selection.clone();
             app.status = format!("{} objects copied", app.ui.clipboard.len());
         }
@@ -420,8 +462,25 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
         PhotoStitch1 => image_wizard(app, Method::PhotoFill),
         PhotoStitch2 => image_wizard(app, Method::PhotoLines),
         DesignCenter => image_wizard(app, Method::DesignCenter),
-        StitchView => app.workspace.realistic = false,
-        RealisticView => app.workspace.realistic = true,
+        StitchView => (app.workspace.realistic, app.workspace.solid) = (false, false),
+        RealisticView => (app.workspace.realistic, app.workspace.solid) = (true, false),
+        SolidView => (app.workspace.realistic, app.workspace.solid) = (false, true),
+        RealisticSettings => app.workspace.view.realistic_open = true,
+        GridAxes => app.workspace.grid.axes ^= true,
+        Guideline => {
+            app.workspace.guides ^= true;
+            // Guidelines come out of the rulers.
+            app.workspace.rulers |= app.workspace.guides;
+        }
+        ModifyImage => app.workspace.view.image_open = true,
+        ImageRotateRight => crate::view_ui::rotate_image(app, "right"),
+        ImageRotateLeft => crate::view_ui::rotate_image(app, "left"),
+        FontFilter => {
+            app.ui.prefs.font_filter.on ^= true;
+            app.ui.save_prefs();
+        }
+        FontFilterSettings => app.workspace.view.fonts_open = true,
+        FabricSelector => app.workspace.view.fabric_open = true,
         ViewThreadTrimming => app.show_travel = !app.show_travel,
         PaneSewingOrder => toggle_pane(app, |p| p.sewing_order.visible ^= true),
         PaneSimulator => toggle_pane(app, |p| p.simulator.visible ^= true),
@@ -456,18 +515,29 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
         SplitStitchData => convert_ui::split_off_area(app),
         DivideByColor => convert_ui::divide_by_color(app),
         Connect => convert_ui::connect(app),
+        ReverseDirectionLine => {
+            if let Some(id) = edit_ui::single_region(app) {
+                app.execute(&CommandRequest::new(
+                    "object.reverseDirection",
+                    json!({ "ids": [id] }),
+                ));
+            }
+        }
+        MoveSections => {
+            app.workspace.sections.toggle();
+            app.workspace.measure.active = false;
+            app.ui.pan = false;
+        }
         ExportSections => crate::sections_ui::export_sections(app),
         // Tools are handled above; menus open their list; the rest are not available yet.
         SelectTool | PointTool | Rectangle | Ellipse | ClosedStraight | ClosedCurve | OpenCurve
-        | StraightBlock | EditPoint => {}
+        | StraightBlock | EditPoint | PencilClosed | OpenStraight | PencilOpen | CurvedBlock
+        | Running | Feed => {}
         Print | Wizard | Export | Options | Help | TextTools | ShapesTools | OtherZoom
         | Arrange | RotateFlip | Size | StampEmboss | ModifyOverlap | DecorativeFrame
-        | SendEmbroidery | ImageDensity | GridSpacing | Font | TextSize | EditText | LineColor
-        | LineSewType | RegionColor | RegionSewType | EntryExit | SewingPoints => {}
-        FabricSelector | Cut | PencilClosed | OpenStraight | PencilOpen | SaveImage
-        | ModifyImage | ImageRotateRight | ImageRotateLeft | SolidView | RealisticSettings
-        | GridAxes | Guideline | FontFilter | FontFilterSettings | EdgeRadius | CurvedBlock
-        | Running | Feed | ReverseDirectionLine | ChangeColor | MoveSections => {}
+        | SendEmbroidery | SaveImage | ImageDensity | GridSpacing | Font | TextSize | EditText
+        | LineColor | LineSewType | RegionColor | RegionSewType | EntryExit | SewingPoints
+        | EdgeRadius | ChangeColor => {}
     }
 }
 
@@ -644,6 +714,7 @@ pub fn menu(app: &mut EditorApp, a: Action, ui: &mut egui::Ui) {
         ModifyOverlap => edit_ui::overlap_menu(app, ui),
         DecorativeFrame => edit_ui::decorative_menu(app, ui),
         ImageDensity => image_density_menu(app, ui),
+        SaveImage => crate::view_ui::save_image_menu(app, ui),
         GridSpacing => {
             for s in openstitch_app::editor::workspace::GridSettings::SPACINGS_MM {
                 let label = if s == 25.4 {
@@ -747,7 +818,59 @@ pub fn menu(app: &mut EditorApp, a: Action, ui: &mut egui::Ui) {
         }
         EntryExit => edit_ui::entry_exit_menu(app, ui),
         SewingPoints => edit_ui::sewing_points_menu(app, ui),
+        EdgeRadius => edge_radius_menu(app, ui),
+        ChangeColor => change_color_menu(app, ui),
         _ => {}
+    }
+}
+
+/// Shapes (Rectangle) ▸ Edge radius: the corner radius of the rectangles drawn next.
+fn edge_radius_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let mut r = app.tools.corner_radius();
+    ui.horizontal(|ui| {
+        ui.label("Edge radius");
+        ui.add(
+            egui::DragValue::new(&mut r)
+                .range(0.0..=100.0)
+                .speed(0.1)
+                .suffix(" mm"),
+        );
+    });
+    for mm in [0.0, 2.0, 5.0, 10.0] {
+        if ui.selectable_label(r == mm, format!("{mm} mm")).clicked() {
+            r = mm;
+        }
+    }
+    app.tools.set_corner_radius(r);
+}
+
+/// Stitches ▸ Change Color: each thread of the selected stitch pattern, with the PEC chart to
+/// pick its new colour.
+fn change_color_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let Some(id) = convert_ui::stitch_selection(app).1 else {
+        return;
+    };
+    let d = app.session.design();
+    let threads = d
+        .index_of(id)
+        .and_then(|i| d.objects[i].stitch_block.as_ref())
+        .map(|b| b.threads.clone())
+        .unwrap_or_default();
+    for (k, t) in threads.iter().enumerate() {
+        let name = t.name.as_deref().unwrap_or("Thread").to_string();
+        let (r, g, b) = (t.red, t.green, t.blue);
+        ui.menu_button(
+            RichText::new(format!("■ {}. {name}", k + 1)).color(Color32::from_rgb(r, g, b)),
+            |ui| {
+                if let Some(i) = panels::pec_grid(ui, &format!("change-color-{k}"), Some(t)) {
+                    app.execute(&CommandRequest::new(
+                        "stitches.setThread",
+                        json!({ "id": id, "index": k, "color": i }),
+                    ));
+                    ui.close();
+                }
+            },
+        );
     }
 }
 
@@ -807,7 +930,7 @@ pub fn image_density_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
     }
 }
 
-fn options_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+pub fn options_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
     for a in OPTION_MENU {
         menu_item(app, ui, a);
     }
@@ -831,7 +954,7 @@ fn options_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
     }
 }
 
-fn help_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+pub fn help_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
     if ui.button("Instruction Manual").clicked() {
         ui.ctx().open_url(egui::OpenUrl::new_tab(
             "https://github.com/cristianonescu/OPE-Design11#readme",
@@ -851,14 +974,37 @@ fn help_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
 fn command(app: &mut EditorApp, ui: &mut egui::Ui, a: Action, large: bool) {
     let info = a.info();
     let on = enabled(app, a);
-    let pressed = active(app, a);
+    let menu = a.is_menu();
+    let resp = button(ui, &info, a, large, on, active(app, a), menu);
+    if resp.hovered() {
+        app.ui.hover = Some(info.tip);
+    }
+    if menu {
+        if on {
+            egui::Popup::menu(&resp).show(|ui| self::menu(app, a, ui));
+        }
+    } else if resp.clicked() && on {
+        run(app, a, ui.ctx());
+    }
+}
+
+/// Draws a ribbon button of any window (`icon`: the editor command whose glyph it shows) and
+/// returns its response with the ScreenTip attached.
+pub fn button(
+    ui: &mut egui::Ui,
+    info: &Info,
+    icon_of: Action,
+    large: bool,
+    on: bool,
+    pressed: bool,
+    menu: bool,
+) -> egui::Response {
     let visuals = ui.visuals().clone();
     let fg = if on {
         visuals.text_color()
     } else {
         visuals.weak_text_color()
     };
-    let menu = a.is_menu();
     let font = egui::FontId::proportional(11.0);
     let (size, galley) = if large {
         let g = ui.painter().layout(info.label.to_string(), font, fg, 62.0);
@@ -892,7 +1038,7 @@ fn command(app: &mut EditorApp, ui: &mut egui::Ui, a: Action, large: bool) {
             egui::pos2(rect.center().x, rect.min.y + 4.0 + LARGE_ICON / 2.0),
             vec2(LARGE_ICON, LARGE_ICON),
         );
-        icons::paint(ui.painter(), icon, a, icon_fg, on);
+        icons::paint(ui.painter(), icon, icon_of, icon_fg, on);
         let text_pos = egui::pos2(rect.center().x - galley.size().x / 2.0, icon.max.y + 2.0);
         let bottom = text_pos.y + galley.size().y;
         ui.painter().galley(text_pos, galley, fg);
@@ -904,7 +1050,7 @@ fn command(app: &mut EditorApp, ui: &mut egui::Ui, a: Action, large: bool) {
             egui::pos2(rect.min.x + 3.0, rect.center().y - SMALL_ICON / 2.0),
             vec2(SMALL_ICON, SMALL_ICON),
         );
-        icons::paint(ui.painter(), icon, a, icon_fg, on);
+        icons::paint(ui.painter(), icon, icon_of, icon_fg, on);
         let y = rect.center().y - galley.size().y / 2.0;
         let x = icon.max.x + 4.0;
         let end = x + galley.size().x;
@@ -913,18 +1059,7 @@ fn command(app: &mut EditorApp, ui: &mut egui::Ui, a: Action, large: bool) {
             arrow(ui, egui::pos2(end + 7.0, rect.center().y), fg);
         }
     }
-    let tip = info.screen_tip(MAC);
-    let resp = resp.on_hover_text(tip);
-    if resp.hovered() {
-        app.ui.hover = Some(info.tip);
-    }
-    if menu {
-        if on {
-            egui::Popup::menu(&resp).show(|ui| self::menu(app, a, ui));
-        }
-    } else if resp.clicked() && on {
-        run(app, a, ui.ctx());
-    }
+    resp.on_hover_text(info.screen_tip(MAC))
 }
 
 fn arrow(ui: &egui::Ui, c: egui::Pos2, color: Color32) {
@@ -939,7 +1074,13 @@ fn arrow(ui: &egui::Ui, c: egui::Pos2, color: Color32) {
     ));
 }
 
-fn group(app: &mut EditorApp, ui: &mut egui::Ui, g: &ribbon::Group) {
+/// A ribbon group of any window: its columns, drawn by `draw(ui, command, large)`, and the
+/// caption under them.
+pub fn group<A: Copy>(
+    ui: &mut egui::Ui,
+    g: &ribbon::Group<A>,
+    mut draw: impl FnMut(&mut egui::Ui, A, bool),
+) {
     ui.vertical(|ui| {
         ui.set_height(BODY + 16.0);
         ui.horizontal(|ui| {
@@ -947,12 +1088,12 @@ fn group(app: &mut EditorApp, ui: &mut egui::Ui, g: &ribbon::Group) {
             ui.spacing_mut().item_spacing.x = 2.0;
             for item in g.items {
                 match item {
-                    Item::Large(a) => command(app, ui, *a, true),
+                    Item::Large(a) => draw(ui, *a, true),
                     Item::Small(list) => {
                         ui.vertical(|ui| {
                             ui.spacing_mut().item_spacing.y = 1.0;
                             for &a in *list {
-                                command(app, ui, a, false);
+                                draw(ui, a, false);
                             }
                         });
                     }
@@ -993,12 +1134,9 @@ fn tab_strip(app: &mut EditorApp, ui: &mut egui::Ui, ctx_tabs: &[TabId]) {
         tabs.extend_from_slice(ctx_tabs);
         for t in tabs {
             let selected = app.ui.tab == t;
-            let mut text = RichText::new(t.label()).size(13.0);
+            let mut text = tab_text(t.label(), selected);
             if t.context().is_some() {
                 text = text.color(CONTEXT);
-            }
-            if selected {
-                text = text.strong();
             }
             let r = ui.add(egui::Button::selectable(selected, text));
             if let Some(c) = t.context() {
@@ -1024,7 +1162,32 @@ fn tab_strip(app: &mut EditorApp, ui: &mut egui::Ui, ctx_tabs: &[TabId]) {
     });
 }
 
+/// Text of a ribbon tab.
+pub fn tab_text(label: &str, selected: bool) -> RichText {
+    let text = RichText::new(label).size(13.0);
+    if selected { text.strong() } else { text }
+}
+
 fn app_button(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let resp = app_button_widget(ui)
+        .on_hover_text("Application menu: new, open, save, print, export, recent files");
+    let force = std::mem::take(&mut app.ui.open_app_menu);
+    let cmd = if resp.clicked() {
+        Some(egui::SetOpenCommand::Toggle)
+    } else if force {
+        Some(egui::SetOpenCommand::Bool(true))
+    } else {
+        None
+    };
+    egui::Popup::menu(&resp)
+        .open_memory(cmd)
+        .layout(egui::Layout::top_down(egui::Align::Min))
+        .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+        .show(|ui| application_menu(app, ui));
+}
+
+/// The blue Application button at the left of the tab row (every ribbon window).
+pub fn app_button_widget(ui: &mut egui::Ui) -> egui::Response {
     let (rect, resp) = ui.allocate_exact_size(vec2(64.0, 24.0), Sense::click());
     let bg = if resp.hovered() {
         APP_BLUE.gamma_multiply(1.2)
@@ -1044,20 +1207,7 @@ fn app_button(app: &mut EditorApp, ui: &mut egui::Ui) {
         egui::FontId::proportional(13.0),
         Color32::WHITE,
     );
-    let resp = resp.on_hover_text("Application menu: new, open, save, print, export, recent files");
-    let force = std::mem::take(&mut app.ui.open_app_menu);
-    let cmd = if resp.clicked() {
-        Some(egui::SetOpenCommand::Toggle)
-    } else if force {
-        Some(egui::SetOpenCommand::Bool(true))
-    } else {
-        None
-    };
-    egui::Popup::menu(&resp)
-        .open_memory(cmd)
-        .layout(egui::Layout::top_down(egui::Align::Min))
-        .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
-        .show(|ui| application_menu(app, ui));
+    resp
 }
 
 fn application_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
@@ -1144,29 +1294,49 @@ fn app_menu_row(app: &mut EditorApp, ui: &mut egui::Ui, a: Action) {
     });
 }
 
+/// A small icon button of a Quick Access Toolbar (or the Design Database toolbar), drawn
+/// pressed while `pressed`.
+pub fn qat_button(
+    ui: &mut egui::Ui,
+    info: &Info,
+    icon_of: Action,
+    on: bool,
+    pressed: bool,
+) -> egui::Response {
+    let (r, resp) = ui.allocate_exact_size(vec2(22.0, 20.0), Sense::click());
+    let visuals = ui.visuals();
+    if pressed {
+        ui.painter().rect(
+            r,
+            CornerRadius::same(3),
+            visuals.selection.bg_fill.gamma_multiply(0.35),
+            Stroke::new(1.0, visuals.selection.bg_fill.gamma_multiply(0.6)),
+            StrokeKind::Inside,
+        );
+    } else if resp.hovered() && on {
+        ui.painter().rect_filled(
+            r,
+            CornerRadius::same(3),
+            visuals.widgets.hovered.weak_bg_fill,
+        );
+    }
+    icons::paint(
+        ui.painter(),
+        egui::Rect::from_center_size(r.center(), vec2(16.0, 16.0)),
+        icon_of,
+        ui.visuals().strong_text_color(),
+        on,
+    );
+    resp.on_hover_text(info.screen_tip(MAC))
+}
+
 /// Quick Access Toolbar: small icon buttons and the customise list.
 pub fn quick_access(app: &mut EditorApp, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 2.0;
         for a in app.ui.prefs.qat.clone() {
-            let info = a.info();
             let on = enabled(app, a);
-            let (r, resp) = ui.allocate_exact_size(vec2(22.0, 20.0), Sense::click());
-            if resp.hovered() && on {
-                ui.painter().rect_filled(
-                    r,
-                    CornerRadius::same(3),
-                    ui.visuals().widgets.hovered.weak_bg_fill,
-                );
-            }
-            icons::paint(
-                ui.painter(),
-                egui::Rect::from_center_size(r.center(), vec2(16.0, 16.0)),
-                a,
-                ui.visuals().strong_text_color(),
-                on,
-            );
-            let resp = resp.on_hover_text(info.screen_tip(MAC));
+            let resp = qat_button(ui, &a.info(), a, on, false);
             if a.is_menu() {
                 if on {
                     egui::Popup::menu(&resp).show(|ui| menu(app, a, ui));
@@ -1210,6 +1380,20 @@ pub fn ribbon(app: &mut EditorApp, ui: &mut egui::Ui) {
         quick_access(app, ui);
     }
     tab_strip(app, ui, &ctx_tabs);
+    body(ui, app.ui.tab.groups(), |ui, a, large| {
+        command(app, ui, a, large)
+    });
+    if app.ui.prefs.qat_below {
+        quick_access(app, ui);
+    }
+}
+
+/// The groups of the active tab, divided by separators (every ribbon window).
+pub fn body<A: Copy>(
+    ui: &mut egui::Ui,
+    groups: &[ribbon::Group<A>],
+    mut draw: impl FnMut(&mut egui::Ui, A, bool),
+) {
     let fill = ui.visuals().extreme_bg_color;
     egui::Frame::new()
         .fill(fill)
@@ -1222,9 +1406,8 @@ pub fn ribbon(app: &mut EditorApp, ui: &mut egui::Ui) {
                 .show(ui, |ui| {
                     ui.horizontal(|ui| {
                         ui.spacing_mut().item_spacing.x = 3.0;
-                        let groups = app.ui.tab.groups();
                         for (k, g) in groups.iter().enumerate() {
-                            group(app, ui, g);
+                            group(ui, g, &mut draw);
                             if k + 1 < groups.len() {
                                 ui.add(egui::Separator::default().spacing(4.0));
                             }
@@ -1232,9 +1415,6 @@ pub fn ribbon(app: &mut EditorApp, ui: &mut egui::Ui) {
                     });
                 });
         });
-    if app.ui.prefs.qat_below {
-        quick_access(app, ui);
-    }
 }
 
 #[cfg(test)]
@@ -1328,8 +1508,172 @@ mod tests {
         assert!(app.pattern_wizards.open.is_some());
         run(&mut app, Action::CrossStitch, &ctx);
         assert!(app.wizard.open);
-        run(&mut app, Action::Cut, &ctx); // unavailable: nothing happens
-        assert_eq!(app.session.design().objects.len(), n + 1);
+    }
+
+    #[test]
+    fn view_image_text_and_fabric_commands() {
+        let ctx = egui::Context::default();
+        let mut app = demo();
+        // View modes are exclusive.
+        run(&mut app, Action::SolidView, &ctx);
+        assert!(active(&app, Action::SolidView) && !active(&app, Action::StitchView));
+        run(&mut app, Action::RealisticView, &ctx);
+        assert!(!active(&app, Action::SolidView) && active(&app, Action::RealisticView));
+        run(&mut app, Action::StitchView, &ctx);
+        assert!(active(&app, Action::StitchView));
+        run(&mut app, Action::GridAxes, &ctx);
+        assert!(!app.workspace.grid.axes);
+        app.workspace.rulers = false;
+        run(&mut app, Action::Guideline, &ctx);
+        assert!(active(&app, Action::Guideline) && app.workspace.rulers);
+        run(&mut app, Action::FontFilter, &ctx);
+        assert!(active(&app, Action::FontFilter));
+
+        // Image commands need a background image.
+        assert!(!enabled(&app, Action::ImageRotateRight));
+        let dir = std::env::temp_dir().join(format!("openstitch-view-ui-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let png = dir.join("bg.png");
+        let raster =
+            openstitch_digitize::Raster::from_fn(40, 20, |x, _| [x as u8 * 6, 90, 30, 255])
+                .expect("raster");
+        std::fs::write(&png, raster.encode_png().expect("png")).expect("write");
+        app.execute(&CommandRequest::new(
+            "background.set",
+            json!({ "path": png.display().to_string(), "width": 40 }),
+        ));
+        for a in [
+            Action::SaveImage,
+            Action::ModifyImage,
+            Action::ImageRotateLeft,
+        ] {
+            assert!(enabled(&app, a), "{a:?}");
+        }
+        run(&mut app, Action::ImageRotateRight, &ctx);
+        let b = app.session.design().background.clone().expect("background");
+        assert_eq!((b.adjust.rotation, b.width, b.height), (1, 200.0, 400.0));
+        let shown = crate::view_ui::shown_image(&app).expect("image");
+        assert_eq!((shown.width(), shown.height()), (20, 40));
+
+        // Every new window draws without panicking.
+        for a in [
+            Action::RealisticSettings,
+            Action::ModifyImage,
+            Action::FontFilterSettings,
+            Action::FabricSelector,
+        ] {
+            run(&mut app, a, &ctx);
+        }
+        let v = &app.workspace.view;
+        assert!(v.realistic_open && v.image_open && v.fonts_open && v.fabric_open);
+        app.workspace.solid = true;
+        for _ in 0..2 {
+            let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+                crate::view_ui::windows(&mut app, ui.ctx());
+                crate::canvas::canvas(&mut app, ui);
+            });
+            out.textures_delta.clear();
+        }
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn cut_and_paste_put_the_objects_back() {
+        let ctx = egui::Context::default();
+        let mut app = demo();
+        let n = app.session.design().objects.len();
+        assert!(!enabled(&app, Action::Cut));
+        app.selection = BTreeSet::from([1]);
+        let before = app.session.design().objects[0].clone();
+        run(&mut app, Action::Cut, &ctx);
+        assert_eq!(app.session.design().objects.len(), n - 1);
+        assert!(app.selection.is_empty() && enabled(&app, Action::Paste));
+        run(&mut app, Action::Paste, &ctx);
+        let d = app.session.design();
+        assert_eq!(d.objects.len(), n);
+        let pasted = d.objects.last().expect("pasted");
+        assert_eq!(app.selection, BTreeSet::from([pasted.id]));
+        assert_eq!(pasted.contours, before.contours, "back where it was");
+        // Cut is one Undo; Copy forgets the cut objects.
+        run(&mut app, Action::Undo, &ctx);
+        run(&mut app, Action::Undo, &ctx);
+        assert_eq!(app.session.design().objects.len(), n);
+        app.selection = BTreeSet::from([2]);
+        run(&mut app, Action::Copy, &ctx);
+        assert!(app.ui.cut.is_empty());
+    }
+
+    #[test]
+    fn drawing_and_editing_commands() {
+        let ctx = egui::Context::default();
+        let mut app = demo();
+        for (a, t) in [
+            (Action::OpenStraight, Tool::Line),
+            (Action::PencilClosed, Tool::Pencil),
+            (Action::PencilOpen, Tool::PencilOpen),
+            (Action::CurvedBlock, Tool::CurvedBlock),
+            (Action::Running, Tool::Running),
+            (Action::Feed, Tool::Feed),
+        ] {
+            run(&mut app, a, &ctx);
+            assert_eq!(app.tools.tool(), t);
+            assert!(active(&app, a) && !active(&app, Action::StraightBlock));
+        }
+        assert_eq!(update_tab(&mut app), [TabId::ManualPunch]);
+        // Reverse Direction Line on a region.
+        app.tools.set_tool(Tool::Select);
+        let id = app
+            .session
+            .design()
+            .objects
+            .iter()
+            .find(|o| o.region.is_some())
+            .expect("region")
+            .id;
+        app.selection = BTreeSet::from([id]);
+        let angle = |app: &EditorApp| {
+            let d = app.session.design();
+            d.objects[d.index_of(id).expect("o")]
+                .region
+                .as_ref()
+                .expect("r")
+                .angle
+        };
+        let a0 = angle(&app);
+        assert!(enabled(&app, Action::ReverseDirectionLine));
+        run(&mut app, Action::ReverseDirectionLine, &ctx);
+        assert_eq!(angle(&app), (a0 + 180.0).rem_euclid(360.0));
+        // Change Color needs one stitch pattern.
+        assert!(!enabled(&app, Action::ChangeColor));
+        run(&mut app, Action::ConvertToStitches, &ctx);
+        let st = *app.selection.first().expect("converted");
+        app.selection = BTreeSet::from([st]);
+        assert!(enabled(&app, Action::ChangeColor));
+        app.execute(&CommandRequest::new(
+            "stitches.setThread",
+            json!({ "id": st, "index": 0, "color": "#123456" }),
+        ));
+        let d = app.session.design();
+        let b = d.objects[d.index_of(st).expect("st")]
+            .stitch_block
+            .as_ref()
+            .expect("b");
+        assert_eq!(b.threads[0].hex(), "#123456");
+        // Move Sections needs a split design.
+        assert!(!enabled(&app, Action::MoveSections));
+        app.execute(&CommandRequest::new(
+            "design.new",
+            json!({ "name": "Banner", "width": 230, "height": 160 }),
+        ));
+        app.execute(&CommandRequest::new(
+            "sections.set",
+            json!({ "hoop": "130x180" }),
+        ));
+        assert!(enabled(&app, Action::MoveSections));
+        run(&mut app, Action::MoveSections, &ctx);
+        assert!(active(&app, Action::MoveSections));
+        run(&mut app, Action::MoveSections, &ctx);
+        assert!(!active(&app, Action::MoveSections));
     }
 
     #[test]

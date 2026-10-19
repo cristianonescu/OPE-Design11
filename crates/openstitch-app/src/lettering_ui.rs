@@ -21,10 +21,13 @@ pub struct LetteringState {
 
 /// The fonts `fonts.list` reports for the open design.
 pub fn fonts(app: &mut EditorApp) -> Vec<FontChoice> {
-    app.session
+    let all = app
+        .session
         .execute("fonts.list", Some(&json!({})))
         .map(|v| lettering::font_choices(&v))
-        .unwrap_or_default()
+        .unwrap_or_default();
+    // Text ▸ Font Filter.
+    app.ui.prefs.font_filter.apply(all)
 }
 
 /// Home ▸ Tools ▸ Text: text, monogram, name drop, templates and fonts.

@@ -65,8 +65,10 @@ pub struct Launch {
 }
 
 /// Values `--show` accepts.
-pub const SHOW: [&str; 20] = [
+pub const SHOW: [&str; 22] = [
     "realistic",
+    "solid",
+    "fabric",
     "reference",
     "settings",
     "measure",
@@ -144,11 +146,17 @@ pub struct EditorApp {
     pub pattern_wizards: openstitch_app::editor::pattern_wizards::PatternWizards,
     /// Attribute sets and user thread charts windows.
     pub settings: crate::settings_ui::SettingsState,
-    /// The decoded background image, keyed by its path (`None` when it cannot be read).
-    pub background_texture: Option<(String, Option<eframe::egui::TextureHandle>)>,
+    /// The background image as shown, keyed by its path and adjustments (`None` when it
+    /// cannot be read).
+    pub background_texture: Option<(
+        String,
+        openstitch_design::ImageAdjust,
+        Option<eframe::egui::TextureHandle>,
+    )>,
     /// Design Database mode (File ▸ Design Database…).
     pub database: openstitch_app::editor::database::Database,
     pub db_textures: crate::database_ui::Textures,
+    pub db_chrome: crate::database_ui::Chrome,
     /// Loopback automation socket; its requests run in [`EditorApp::serve_remote`].
     pub remote: Option<openstitch_remote::Server>,
     /// Ribbon, Quick Access Toolbar, panes and window preferences.
@@ -218,6 +226,7 @@ impl EditorApp {
             background_texture: None,
             database: Default::default(),
             db_textures: Default::default(),
+            db_chrome: Default::default(),
             remote: None,
             ui: Default::default(),
         };
@@ -270,6 +279,8 @@ impl EditorApp {
         for v in &l.show {
             match v.as_str() {
                 "realistic" => self.workspace.realistic = true,
+                "solid" => self.workspace.solid = true,
+                "fabric" => self.workspace.view.fabric_open = true,
                 "reference" => self.workspace.reference = true,
                 "settings" => self.workspace.settings_open = true,
                 "attributes" => self.settings.sets_open = true,
@@ -291,7 +302,12 @@ impl EditorApp {
                 }
                 "usb" => crate::transfer_ui::open(self),
                 "arrange" => self.edit.arrange_open = true,
-                "appmenu" => self.ui.open_app_menu = true,
+                "appmenu" => {
+                    // Whichever window shows: the editor's or a suite window's.
+                    self.ui.open_app_menu = true;
+                    self.creator.open_app_menu = true;
+                    self.sewing.open_app_menu = true;
+                }
                 "property" => self.ui.property_open = true,
                 "shortcuts" => self.ui.shortcuts_open = true,
                 "floating" => {
@@ -809,11 +825,23 @@ impl EditorApp {
             || self.session.design().name.clone(),
             |n| n.to_string_lossy().into_owned(),
         );
-        let title = format!(
-            "{}{} — OpenStitch",
-            name,
-            if self.is_dirty() { " •" } else { "" }
-        );
+        let program = if self.database.open {
+            Some(openstitch_app::editor::suite::DATABASE.title)
+        } else if self.creator.open {
+            Some(openstitch_app::editor::suite::CREATOR.title)
+        } else if self.sewing.open {
+            Some(openstitch_app::editor::suite::FACTORY.title)
+        } else {
+            None
+        };
+        let title = match program {
+            Some(p) => format!("{p} — OpenStitch"),
+            None => format!(
+                "{}{} — OpenStitch",
+                name,
+                if self.is_dirty() { " •" } else { "" }
+            ),
+        };
         if title != self.title {
             ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
             self.title = title;
@@ -857,13 +885,17 @@ impl EditorApp {
             return;
         }
         let take = |s: KeyboardShortcut| ctx.input_mut(|i| i.consume_shortcut(&s));
-        // Copy and Paste arrive as clipboard events, not key presses.
-        let (copy, paste) = ctx.input(|i| {
+        // Cut, Copy and Paste arrive as clipboard events, not key presses.
+        let (cut, copy, paste) = ctx.input(|i| {
             (
+                i.events.iter().any(|e| matches!(e, egui::Event::Cut)),
                 i.events.iter().any(|e| matches!(e, egui::Event::Copy)),
                 i.events.iter().any(|e| matches!(e, egui::Event::Paste(_))),
             )
         });
+        if cut {
+            crate::ribbon::run(self, openstitch_app::editor::ribbon::Action::Cut, ctx);
+        }
         if copy {
             crate::ribbon::run(self, openstitch_app::editor::ribbon::Action::Copy, ctx);
         }
@@ -902,6 +934,8 @@ impl EditorApp {
             } else if self.workspace.measure.active {
                 self.workspace.measure.active = false;
                 self.workspace.measure.clear();
+            } else if self.workspace.sections.active {
+                self.workspace.sections.toggle();
             } else if self.tools.is_busy() {
                 self.tools.cancel();
             } else {
@@ -1048,9 +1082,16 @@ impl eframe::App for EditorApp {
         let ctx = ui.ctx().clone();
         self.ui.apply_theme(&ctx);
         self.serve_remote();
-        if self.database.open {
+        if self.database.open || self.creator.open || self.sewing.open {
+            // The other suite windows take the whole window, as separate programs do.
             self.update_title(&ctx);
-            crate::database_ui::database(self, ui);
+            if self.database.open {
+                crate::database_ui::database(self, ui);
+            } else if self.creator.open {
+                crate::creator_ui::creator(self, ui);
+            } else {
+                crate::sewing_ui::factory(self, ui);
+            }
             self.screenshot_step(&ctx);
             return;
         }
@@ -1072,9 +1113,8 @@ impl eframe::App for EditorApp {
         crate::settings_ui::windows(self, &ctx);
         crate::wizard_ui::image_wizard_window(self, &ctx);
         crate::lettering_ui::windows(self, &ctx);
-        crate::creator_ui::creator_window(self, &ctx);
-        crate::sewing_ui::sewing_window(self, &ctx);
         crate::pattern_wizard_ui::windows(self, &ctx);
+        crate::view_ui::windows(self, &ctx);
         let canvas = self.workspace.canvas;
         crate::workspace_ui::reference_window(self, &ctx, canvas);
         self.screenshot_step(&ctx);
