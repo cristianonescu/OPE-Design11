@@ -86,6 +86,15 @@ pub fn validate(d: &Design) -> Result<(), String> {
                     .all(|v| v.is_finite())
         })
     });
+    let skeletons_ok = d.objects.iter().all(|o| {
+        o.region
+            .as_ref()
+            .and_then(|r| r.skeleton.as_ref())
+            .is_none_or(|s| s.validate().is_ok())
+    });
+    if !skeletons_ok {
+        return Err("invalid satin skeleton".into());
+    }
     if !finite || !text_ok || !(d.page.width > 0.0 && d.page.height > 0.0) {
         return Err("invalid coordinates".into());
     }

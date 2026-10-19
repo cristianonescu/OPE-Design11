@@ -480,7 +480,11 @@ Security model (`crates/openstitch-remote`):
 - **Limits.** Request lines over 1 MiB get an error and the connection is closed (the reader
   never buffers more); a connection idle for 5 minutes is closed; at most 4 connections at once
   (more get "too many connections"); a request that waits more than 30 s for the UI thread gets
-  a timeout error and is skipped if still queued. Clients cap replies at 64 MiB.
+  a timeout error and is skipped if still queued. Clients cap replies at 64 MiB. Every early
+  close (refused connection, wrong token, oversized line) writes the error, half-closes and
+  drains the client's unread bytes (at most 1 s / 4 MiB) before dropping the socket: closing
+  with unread data sends a TCP reset, which on Windows discards the reply before the client
+  reads it.
 - **One thread owns the session.** Connection threads never touch the `Session`; they queue a
   `Job` on an mpsc channel and wake egui (`request_repaint`), and `EditorApp::serve_remote`
   drains the queue at the start of each frame. A client's edit is one Undo step in the Edit
@@ -605,8 +609,9 @@ openstitch_app::editor (lib, no egui, unit-tested)
   Its dependencies (`i_float`, `i_shape`, `i_tree`, `i_key_sort`) are by the same author under
   the same licence. `geo` itself was not used: it would add the whole GIS type stack for the same
   engine. `clipper2` bindings were rejected (C++ through FFI). Writing a clipper in-house was
-  rejected as a large correctness risk. Curved segments are flattened before clipping (results
-  are straight polygons); the crate needs Rust 1.88, set as `openstitch-design`'s `rust-version` (the workspace keeps 1.85).
+  rejected as a large correctness risk. Curved segments are flattened with provenance before
+  clipping; afterwards result edges that follow an input curve are restored as exact Bézier
+  pieces of it (offsets: of the curve's offset copy), the rest stay straight; the crate needs Rust 1.88, set as `openstitch-design`'s `rust-version` (the workspace keeps 1.85).
   `openstitch_design::boolean` wraps it, so a different engine can replace it in one file.
 - **User settings outside designs (2026-10-19).** Attribute sets and user thread charts live in
   one JSON file per user (`openstitch.user` format), loaded by the front end that wants them

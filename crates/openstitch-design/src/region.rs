@@ -27,6 +27,22 @@ pub fn layers_with(
     holes: &[Contour],
     user: &[Pattern],
 ) -> Vec<Vec<Run>> {
+    // Skeleton: the top stitching is a satin column along the centre line.
+    if let Some(skeleton) = &r.skeleton
+        && r.kind == RegionType::Satin
+    {
+        let mut plain = r.clone();
+        plain.skeleton = None;
+        let mut out = layers_with(closed, &plain, holes, user);
+        out.pop();
+        let spacing = 10.0 / r.density.max(0.1);
+        out.push(vec![crate::skeleton::satin(
+            skeleton,
+            spacing,
+            r.pull_compensation * 10.0,
+        )]);
+        return out;
+    }
     // Curved direction: sew the straightened region with horizontal rows, then bend back.
     if let Some(curve) = &r.direction_curve
         && direction::CURVE_TYPES.contains(&r.kind)
