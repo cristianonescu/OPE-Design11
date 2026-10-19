@@ -5,7 +5,7 @@ use openstitch_core::{PEC_CHART, Thread, nearest_index};
 use openstitch_design::patterns::{self, Pattern, PatternKind};
 use openstitch_design::{
     Arrange, ChainShape, Design, Feather, FeatherSide, LineSewing, LineType, RegionSewing,
-    RegionType, UnderlayStyle,
+    RegionType, RunningStitchPath, UnderlayStyle,
 };
 use serde_json::{Value, json};
 use std::collections::BTreeSet;
@@ -90,13 +90,18 @@ pub enum Control {
 }
 
 impl Control {
-    /// The command parameters for a new value of this control.
-    pub fn params(&self, value: Value) -> Value {
-        let param = match self {
+    /// The command parameter this control sets.
+    pub fn param(&self) -> &'static str {
+        match self {
             Control::Number { param, .. }
             | Control::Choice { param, .. }
-            | Control::Toggle { param, .. } => *param,
-        };
+            | Control::Toggle { param, .. } => param,
+        }
+    }
+
+    /// The command parameters for a new value of this control.
+    pub fn params(&self, value: Value) -> Value {
+        let param = self.param();
         let value = match (self, value.as_f64()) {
             (Control::Number { integer: true, .. }, Some(v)) => json!(v.round() as i64),
             _ => value,
@@ -366,11 +371,32 @@ pub fn region_controls_with(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> 
         }
     }
     v.extend(region_type_controls(r, user));
-    // PE-DESIGN offers no Running Stitch Path with Auto satin.
-    if !(r.auto_direction && r.kind == RegionType::Satin) {
-        v.push(toggle("Travel inside", "travel", r.travel));
-    }
+    v.extend(travel_control(r));
     v
+}
+
+/// Running Stitch Path for fill and satin where the guide offers it (Inside not with
+/// gradation; nothing with Auto direction or a feathered edge); a travel on/off toggle for
+/// the other types and for fill and satin that jump (designs saved before the attribute).
+fn travel_control(r: &RegionSewing) -> Option<Control> {
+    match r.running_stitch_path {
+        Some(_) if r.running_stitch_path_available() => Some(Control::Choice {
+            label: "Running stitch path",
+            param: "runningStitchPath",
+            value: r.travel_path().unwrap_or_default().id().into(),
+            options: [
+                (RunningStitchPath::Inside, "Inside of region"),
+                (RunningStitchPath::AlongOutline, "Along outline"),
+                (RunningStitchPath::OnOutline, "On outline"),
+            ]
+            .into_iter()
+            .filter(|(p, _)| r.gradation.is_none() || *p != RunningStitchPath::Inside)
+            .map(|(p, l)| (p.id().to_string(), l.to_string()))
+            .collect(),
+        }),
+        Some(_) if matches!(r.kind, RegionType::Fill | RegionType::Satin) => None,
+        travel => Some(toggle("Travel inside", "travel", travel.is_some())),
+    }
 }
 
 /// Net patterns as choice options (zigzag net offers the first four).
@@ -453,7 +479,15 @@ fn region_type_controls(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> {
     };
     let mut v = Vec::new();
     match r.kind {
-        RegionType::Fill | RegionType::Satin => {}
+        RegionType::Fill => v.push(percent(
+            "Frequency",
+            "region.frequency",
+            "frequency",
+            r.frequency,
+            33.0,
+            50.0,
+        )),
+        RegionType::Satin => {}
         RegionType::ProgrammableFill => {
             v.push(pattern(PatternKind::Fill));
             v.extend(size());
@@ -479,7 +513,7 @@ fn region_type_controls(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> {
                 "frequency",
                 r.frequency,
                 33.0,
-                100.0,
+                50.0,
             ));
             v.push(toggle("Base sewing", "baseSewing", r.base_sewing));
         }
@@ -505,7 +539,7 @@ fn region_type_controls(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> {
                 "frequency",
                 r.frequency,
                 33.0,
-                100.0,
+                50.0,
             ));
         }
         RegionType::CrossStitch => {

@@ -12,7 +12,7 @@ use openstitch_design::text::{self, TextAlign, TextDirection, TextSpec};
 use openstitch_design::{
     Arrange, Bezier, ChainShape, Compiler, Contour, Design, DesignObject, DesignPage, Feather,
     FeatherSide, Layout, LineSewing, LineType, ObjectKind, Rect, RegionSewing, RegionType,
-    Transform, UnderlayStyle, v2,
+    RunningStitchPath, Transform, UnderlayStyle, v2,
 };
 use serde_json::{Value, json};
 
@@ -1071,9 +1071,14 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     "Satin: split stitches longer than this, 2-12 (0 turns splitting off)",
                 ),
                 opt(
+                    "runningStitchPath",
+                    "inside|alongOutline|onOutline",
+                    "Fill and satin: running stitches between separate parts (default inside; not with Auto direction, a feathered edge or text; inside not with gradation)",
+                ),
+                opt(
                     "travel",
                     "bool",
-                    "Travel between parts inside the region instead of jumping",
+                    "Travel between parts with running stitches (true) or jump (false)",
                 ),
                 opt(
                     "pattern",
@@ -1099,7 +1104,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 opt(
                     "frequency",
                     "percent",
-                    "Piping / programmable fill: needle shift per row, 0-100",
+                    "Fill, piping, programmable fill: needle shift per row, % of a stitch, 0-50 (fill default 33)",
                 ),
                 opt(
                     "rowOffset",
@@ -1165,10 +1170,13 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         o.region = None;
                         continue;
                     }
-                    let mut r = o
-                        .region
-                        .clone()
-                        .unwrap_or_else(|| RegionSewing::new(RegionType::Fill, default_fill()));
+                    // A new region starts with the requested type's defaults.
+                    let mut r = o.region.clone().unwrap_or_else(|| {
+                        RegionSewing::new(
+                            kind.flatten().unwrap_or(RegionType::Fill),
+                            default_fill(),
+                        )
+                    });
                     if let Some(Some(k)) = kind
                         && r.kind != k
                     {
@@ -1238,7 +1246,39 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         }
                         r.split_length = (l > 0.0).then_some(l);
                     }
-                    r.travel = p.bool("travel", Some(r.travel))?;
+                    if p.has("travel") {
+                        r.running_stitch_path = if p.bool("travel", None)? {
+                            r.running_stitch_path.or(Some(RunningStitchPath::Inside))
+                        } else {
+                            None
+                        };
+                    }
+                    if p.has("runningStitchPath") {
+                        let id = p.string("runningStitchPath", None)?;
+                        let path = RunningStitchPath::from_id(&id).ok_or_else(|| {
+                            p.invalid(
+                                "runningStitchPath",
+                                "must be inside, alongOutline or onOutline",
+                            )
+                        })?;
+                        let unavailable = if o.kind == ObjectKind::Text {
+                            Some("is not available for text")
+                        } else if !matches!(r.kind, RegionType::Fill | RegionType::Satin) {
+                            Some("is only for fill and satin")
+                        } else if r.auto_direction {
+                            Some("is not available with Auto direction")
+                        } else if r.feather.is_some() {
+                            Some("is not available with a feathered edge")
+                        } else if path == RunningStitchPath::Inside && r.gradation.is_some() {
+                            Some("inside is not available with gradation")
+                        } else {
+                            None
+                        };
+                        if let Some(reason) = unavailable {
+                            return Err(p.invalid("runningStitchPath", reason));
+                        }
+                        r.running_stitch_path = Some(path);
+                    }
                     if p.has("pattern") {
                         let id = p.string("pattern", None)?;
                         if !region_pattern_exists(r.kind, &id, &user_patterns) {
@@ -1270,7 +1310,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         r.run_pitch = Some(p.req("runPitch", 1.0, 10.0)?);
                     }
                     if p.has("frequency") {
-                        r.frequency = Some(p.req("frequency", 0.0, 100.0)?);
+                        r.frequency = Some(p.req("frequency", 0.0, 50.0)?);
                     }
                     if p.has("rowOffset") {
                         r.row_offset = Some(p.req("rowOffset", 0.0, 100.0)?);
@@ -1310,7 +1350,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 opt(
                     "runTimes",
                     "int 1-6",
-                    "Running passes (1-5); chain, E/V passes (1-6)",
+                    "Running and E/V passes (1-5); chain passes (1-6)",
                 ),
                 opt(
                     "width",
@@ -1424,14 +1464,8 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         l.thread = c.clone();
                     }
                     l.pitch = p.opt("pitch", l.pitch, 1.0, 10.0)?;
-                    let max_times = if matches!(
-                        l.kind,
-                        LineType::Chain | LineType::EStitch | LineType::VStitch
-                    ) {
-                        6
-                    } else {
-                        5
-                    };
+                    // Guide: run times 1-5, Chain Time 1-6.
+                    let max_times = if l.kind == LineType::Chain { 6 } else { 5 };
                     l.run_times = p.int(
                         "runTimes",
                         Some(i64::from(l.run_times.min(max_times))),

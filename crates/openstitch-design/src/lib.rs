@@ -41,7 +41,7 @@ pub use machine::{
 pub use model::{
     Arrange, BackgroundImage, ChainShape, Design, DesignObject, DesignPage, DesignProperties,
     Feather, FeatherSide, Guides, ImageAdjust, LineSewing, LineType, ObjectKind, RegionSewing,
-    RegionType, StitchBlock, UnderlayStyle,
+    RegionType, RunningStitchPath, StitchBlock, UnderlayStyle,
 };
 pub use text::{CharEdit, FONTS, FontInfo, Layout, TextAlign, TextDirection, TextError, TextSpec};
 

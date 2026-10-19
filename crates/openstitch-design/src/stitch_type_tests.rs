@@ -502,9 +502,10 @@ fn travel_stays_inside_instead_of_jumping() {
     // A ring: the fill splits into parts on either side of the hole.
     let ring = vec![circle(), Contour::ellipse(v2(200.0, 200.0), 80.0, 80.0, 48)];
     let mut r = region(RegionType::Fill);
+    r.running_stitch_path = None;
     let plain = crate::region::layers(&ring, &r, &[]).pop().expect("top");
     assert!(plain.len() > 1, "fill without travel jumps between parts");
-    r.travel = true;
+    r.running_stitch_path = Some(crate::model::RunningStitchPath::Inside);
     let travelled = crate::region::layers(&ring, &r, &[]).pop().expect("top");
     assert_eq!(travelled.len(), 1);
     // The travel stitches (points not in the plain fill) stay inside the ring. (Fill rows
@@ -523,7 +524,7 @@ fn travel_stays_inside_instead_of_jumping() {
     d.add(DesignObject::shape(ring.clone(), Some(r.clone()), None));
     let p = Compiler::default().compile(&d);
     assert_eq!(p.count(Command::Jump), 1, "only the initial move");
-    r.travel = false;
+    r.running_stitch_path = None;
     d.objects[0].region = Some(r);
     assert!(Compiler::default().compile(&d).count(Command::Jump) > 1);
 }
@@ -549,6 +550,60 @@ fn travel_graph_routes_around_a_notch() {
     let len: f64 = path.windows(2).map(|w| w[0].distance(w[1])).sum();
     assert!(len > 2.0 * 190.0 && len < 2.0 * 190.0 + 200.0, "{len}");
     for w in path.windows(2) {
+        for k in 0..=10 {
+            assert!(inside_or_on(w[0].lerp(w[1], k as f64 / 10.0), &u, 0.6));
+        }
+    }
+}
+
+#[test]
+fn outline_travel_walks_on_or_just_inside_the_outline() {
+    use crate::paths::{OutlineTravel, TravelGraph};
+    // The U of travel_graph_routes_around_a_notch; both ends on its bottom edges.
+    let u = [Contour::new(
+        vec![
+            v2(0.0, 0.0),
+            v2(60.0, 0.0),
+            v2(60.0, 200.0),
+            v2(140.0, 200.0),
+            v2(140.0, 0.0),
+            v2(200.0, 0.0),
+            v2(200.0, 260.0),
+            v2(0.0, 260.0),
+        ],
+        true,
+    )];
+    let (a, b) = (v2(30.0, 0.0), v2(170.0, 0.0));
+    let mut g = TravelGraph::new(&u, &[]);
+    g.outline = Some(OutlineTravel::On);
+    let on = g.path(a, b).expect("on outline");
+    let edges = u[0].edges();
+    let to_outline = |p: Vec2| {
+        edges
+            .iter()
+            .map(|&(e0, e1)| {
+                let d = e1 - e0;
+                let t = (((p - e0).x * d.x + (p - e0).y * d.y) / (d.x * d.x + d.y * d.y))
+                    .clamp(0.0, 1.0);
+                p.distance(e0 + d * t)
+            })
+            .fold(f64::INFINITY, f64::min)
+    };
+    // The short way round the notch: up, across, down, every point on the outline.
+    assert!(on.iter().all(|&p| to_outline(p) < 1e-6), "{on:?}");
+    assert!(on.iter().any(|p| (p.y - 200.0).abs() < 1e-6));
+    g.outline = Some(OutlineTravel::Inset(5.0));
+    let along = g.path(a, b).expect("along outline");
+    let interior = &along[1..along.len() - 1];
+    assert!(!interior.is_empty());
+    // 0.5 mm inside along the edges; miter points at the reflex corners are up to √2 further.
+    assert!(
+        interior
+            .iter()
+            .all(|&p| (4.9..=5.0 * std::f64::consts::SQRT_2 + 0.1).contains(&to_outline(p))),
+        "{along:?}"
+    );
+    for w in along.windows(2) {
         for k in 0..=10 {
             assert!(inside_or_on(w[0].lerp(w[1], k as f64 / 10.0), &u, 0.6));
         }
@@ -664,7 +719,7 @@ fn region_types_without_travel_jump_between_parts() {
         RegionType::MotifFill,
     ] {
         let mut r = region(kind);
-        r.travel = false;
+        r.running_stitch_path = None;
         let runs = crate::region::layers(&region_contours, &r, &[])
             .pop()
             .expect("top");
@@ -743,7 +798,8 @@ fn programmable_fill_puts_needle_points_on_the_pattern() {
     let c = vec![Contour::rectangle(0.0, 0.0, 400.0, 400.0)];
     let mut r = region(RegionType::ProgrammableFill);
     r.pattern = Some("diamonds".into());
-    r.travel = false;
+    r.angle = 0.0;
+    r.running_stitch_path = None;
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     // Diamond lines in an 8 mm tile: |x mod 80 - 40| + |y mod 80 - 40|·… = 40, i.e. points
     // where x' + y' = 40 within the tile. Count needle points within 0.3 mm of a line.
@@ -755,7 +811,7 @@ fn programmable_fill_puts_needle_points_on_the_pattern() {
     let pts: Vec<&Vec2> = runs.iter().flatten().collect();
     let share = pts.iter().filter(|p| on_line(p)).count() as f64 / pts.len() as f64;
     let mut plain = region(RegionType::Fill);
-    plain.travel = false;
+    plain.running_stitch_path = None;
     let fill = crate::region::layers(&c, &plain, &[]).pop().expect("fill");
     let fpts: Vec<&Vec2> = fill.iter().flatten().collect();
     let fill_share = fpts.iter().filter(|p| on_line(p)).count() as f64 / fpts.len() as f64;
@@ -773,7 +829,7 @@ fn piping_rows_shift_by_the_frequency() {
     let c = vec![Contour::rectangle(0.0, 0.0, 300.0, 100.0)];
     let mut r = region(RegionType::Piping);
     r.frequency = Some(50.0);
-    r.travel = false;
+    r.running_stitch_path = None;
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     let row = |y_lo: f64, y_hi: f64| -> Vec<f64> {
         let mut xs: Vec<f64> = runs
@@ -795,7 +851,7 @@ fn piping_rows_shift_by_the_frequency() {
 fn cross_stitch_sews_an_x_in_every_cell() {
     let c = vec![Contour::rectangle(0.0, 0.0, 100.0, 100.0)];
     let mut r = region(RegionType::CrossStitch);
-    r.travel = false;
+    r.running_stitch_path = None;
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     assert_eq!(runs.len(), 4, "one run per row of cells");
     let diagonals = |runs: &[Run]| {
@@ -879,7 +935,7 @@ fn radial_lines_thin_out_towards_the_centre() {
 fn stippling_is_a_closed_path_that_never_crosses_itself() {
     let c = vec![Contour::ellipse(v2(150.0, 150.0), 120.0, 90.0, 48)];
     let mut r = region(RegionType::Stippling);
-    r.travel = false;
+    r.running_stitch_path = None;
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     assert_eq!(runs.len(), 1, "one connected part, one loop");
     let run = &runs[0];
@@ -909,7 +965,7 @@ fn stippling_is_a_closed_path_that_never_crosses_itself() {
 fn square_net_lines_are_straight_and_axis_aligned() {
     let c = vec![Contour::rectangle(0.0, 0.0, 200.0, 200.0)];
     let mut r = region(RegionType::NetFill);
-    r.travel = false;
+    r.running_stitch_path = None;
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     for run in &runs {
         for w in run.windows(2) {
@@ -934,7 +990,7 @@ fn motif_fill_repeats_the_motif_in_rows() {
     let c = vec![Contour::rectangle(0.0, 0.0, 300.0, 200.0)];
     let mut r = region(RegionType::MotifFill);
     r.pattern = Some("peak".into());
-    r.travel = false;
+    r.running_stitch_path = None;
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     let pts: Vec<&Vec2> = runs.iter().flatten().collect();
     // Peaks are 3 mm (0.9 of the height) above each row baseline: rows every 4 mm.

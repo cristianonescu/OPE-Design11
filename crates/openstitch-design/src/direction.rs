@@ -266,7 +266,9 @@ mod tests {
     #[test]
     fn reference_point_moves_the_pattern_grid() {
         let square = Contour::rectangle(3.3, 7.1, 300.7, 290.3);
-        let r0 = sewing(RegionType::ProgrammableFill);
+        let mut r0 = sewing(RegionType::ProgrammableFill);
+        // The tile grid lines up with the region's axes at 0°.
+        r0.angle = 0.0;
         let (pw, ph) = r0.pattern_size_mm();
         let mut whole = r0.clone();
         whole.reference = Some(v2(pw * 20.0, ph * 20.0));

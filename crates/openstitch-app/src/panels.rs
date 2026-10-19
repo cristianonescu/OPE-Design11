@@ -7,7 +7,7 @@ use openstitch_app::editor::inspector::{self, Common, Control, InspectorModel};
 use openstitch_app::editor::render::color_at;
 use openstitch_app::editor::{CommandRequest, Tool, objects};
 use openstitch_core::Thread;
-use openstitch_design::{LineType, RegionType};
+use openstitch_design::{LineType, ObjectKind, RegionType};
 use serde_json::{Value, json};
 use std::collections::BTreeSet;
 
@@ -461,7 +461,17 @@ pub fn region_section(
             }
             ui.end_row();
             let user = app.session.design().patterns.clone();
+            // Text has no Running Stitch Path (guide).
+            let text = app
+                .session
+                .design()
+                .objects
+                .iter()
+                .any(|o| m.shapes.contains(&o.id) && o.kind == ObjectKind::Text);
             for c in inspector::region_controls_with(&r, &user) {
+                if text && c.param() == "runningStitchPath" {
+                    continue;
+                }
                 if let Some(v) = control(app, ui, &c) {
                     out.push(m.set_region(c.params(v)));
                 }

@@ -6,8 +6,8 @@
 use crate::direction;
 use crate::generate::{self, RegionParams, RowSpan, Run};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, subtract, v2};
-use crate::model::{FeatherSide, RegionSewing, RegionType, UnderlayStyle};
-use crate::paths::{Rng, TravelGraph, join};
+use crate::model::{FeatherSide, RegionSewing, RegionType, RunningStitchPath, UnderlayStyle};
+use crate::paths::{OutlineTravel, Rng, TravelGraph, join};
 use crate::patterns::Pattern;
 use crate::regions;
 
@@ -175,13 +175,14 @@ pub fn layers_with(
         return out;
     }
     let mut runs = match r.kind {
-        RegionType::Fill if !shaped => generate::fill(closed, &params, holes),
+        RegionType::Fill if !shaped => {
+            generate::fill_shifted(closed, &params, holes, r.fill_shift())
+        }
         RegionType::Satin if !shaped => generate::satin(closed, &params, holes),
         _ => shaped_rows(closed, r, &params, holes),
     };
-    // No Running Stitch Path with Auto satin, as in PE-DESIGN.
-    if r.travel && !(r.auto_direction && r.kind == RegionType::Satin) {
-        runs = reroute(runs, closed, holes);
+    if let Some(path) = r.travel_path() {
+        runs = reroute_with(runs, closed, holes, path, params.pull_compensation);
     }
     out.push(runs);
     out
@@ -190,11 +191,32 @@ pub fn layers_with(
 /// Row connections that cut across a gap (a hole, a notch) are split off, then every gap is
 /// bridged by a running path inside the region.
 pub fn reroute(runs: Vec<Run>, closed: &[Contour], holes: &[Contour]) -> Vec<Run> {
+    reroute_with(runs, closed, holes, RunningStitchPath::Inside, 0.0)
+}
+
+/// Inset of Along outline travel from the outline (0.1 mm). A placeholder until measured.
+pub const ALONG_OUTLINE_INSET: f64 = 5.0;
+
+/// [`reroute`] with the travel of `path`. Row ends stand `pull` (0.1 mm) beyond the outline,
+/// and still count as on it for the outline variants.
+pub fn reroute_with(
+    runs: Vec<Run>,
+    closed: &[Contour],
+    holes: &[Contour],
+    path: RunningStitchPath,
+    pull: f64,
+) -> Vec<Run> {
     let pieces: Vec<Run> = runs
         .into_iter()
         .flat_map(|run| split_outside(run, closed, holes))
         .collect();
     let mut graph = TravelGraph::new(closed, holes);
+    graph.outline = match path {
+        RunningStitchPath::Inside => None,
+        RunningStitchPath::AlongOutline => Some(OutlineTravel::Inset(ALONG_OUTLINE_INSET)),
+        RunningStitchPath::OnOutline => Some(OutlineTravel::On),
+    };
+    graph.outline_tolerance = pull.max(0.0) + 1.0;
     join(pieces, Some(&mut graph), 25.0)
 }
 
@@ -334,6 +356,7 @@ fn shaped_rows(
     let split = r.split_length.map(|s| s * 10.0);
     let satin = r.kind == RegionType::Satin;
     let feather = r.feather;
+    let shift = r.fill_shift();
     // Rows are ordered on their full spans; feathering then shortens the ends, so the
     // sewing order does not depend on the random ends.
     let chain = if satin {
@@ -358,7 +381,7 @@ fn shaped_rows(
         let mut xs = if satin {
             satin_points(&span, row, split)
         } else {
-            tatami_points(&span, row, l)
+            tatami_points(&span, row, l, shift)
         };
         if !forward {
             xs.reverse();
@@ -388,8 +411,8 @@ fn satin_points(span: &Span, row: usize, split: Option<f64>) -> Vec<f64> {
 }
 
 /// Tatami needle positions, as [`generate::fill`] places them.
-fn tatami_points(span: &Span, row: usize, l: f64) -> Vec<f64> {
-    let phase = (row % 3) as f64 / 3.0 * l;
+fn tatami_points(span: &Span, row: usize, l: f64, shift: Option<f64>) -> Vec<f64> {
+    let phase = generate::row_phase(row, shift) * l;
     let mut xs = vec![*span.start()];
     let mut k = ((span.start() - phase) / l).floor() + 1.0;
     while phase + k * l < *span.end() {
