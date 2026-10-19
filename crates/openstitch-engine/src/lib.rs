@@ -9,6 +9,8 @@ mod convert;
 mod digitize;
 mod drawing;
 pub mod fabric;
+#[cfg(feature = "digitize")]
+mod font_images;
 pub mod fonts;
 mod guides;
 #[cfg(feature = "formats")]

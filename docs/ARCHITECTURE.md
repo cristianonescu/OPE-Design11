@@ -133,6 +133,16 @@ No image codec is added: `--screenshot` writes PNG with a 100-line stored-deflat
   edits, `fonts.setGlyph` with the same `x`, `y` stores the selected outlines back (the
   width is kept unless `advance` is given). Glyphs are drawn at the standard height:
   changing it with `fonts.setMetrics` rescales how text sizes them, not the drawings.
+- Characters from an image (`font_images.rs`, digitize feature): the image is thresholded
+  (inverted when ink fills most of the border), split into 4-connected components
+  (`regions::components`) and specks under `minArea` dropped. Split mode groups components
+  into rows (a component joins the row whose extent holds its centre) and, within a row,
+  merges components overlapping horizontally by half the narrower one (dots, accents, "=");
+  each row's baseline is the median bottom of its characters. Fitted characters share one
+  scale (the tallest character, or `capPixels`, spans the standard height) with a 4 % left
+  bearing and width = outline + 8 %; whole mode on the background image with `x`, `y` uses
+  the image where it is placed, like `fonts.setGlyph`. Tracing is `regions::trace_mask`, as
+  Auto Punch. `fonts.traceImage` is the read-only preview the editor shows for assignment.
 - Monograms (`openstitch_design::monogram`): one group per monogram, the frame sewn first.
   Block and Script letters are text objects placed side by side, with the middle letter full
   height, the sides at 70 % and Script overlapping. Diamond and Circle letters are glyph

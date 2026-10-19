@@ -221,6 +221,8 @@ pub fn all() -> Vec<CommandSpec> {
     v.extend(transform_commands());
     v.extend(text_commands());
     v.extend(crate::fonts::commands());
+    #[cfg(feature = "digitize")]
+    v.extend(crate::font_images::commands());
     v.extend(crate::lettering::commands());
     v.extend(crate::templates::commands());
     v.extend(crate::drawing::commands());

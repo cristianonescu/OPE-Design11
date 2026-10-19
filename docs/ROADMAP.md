@@ -36,7 +36,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
 - **Lettering:** text objects with Lato Bold and Pacifico (SIL OFL), text on a path, user
   TrueType/OpenType fonts (CJK through any font with the glyphs), shaping of right-to-left and
   complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits,
-  user-mapped text, monograms, Name Drop, templates and the Template Wizard, Font Creator.
+  user-mapped text, monograms, Name Drop, templates and the Template Wizard, Font Creator (including
+  characters traced from an image in one step).
 - **Wizards:** background fill (echo, stippling, decorative, crosshatch, stripes), appliqué,
   embroidered patch, cutwork.
 - **Suite programs:** Programmable Stitch Creator (`openstitch.pattern`), Stitch Design Factory
@@ -58,8 +59,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
 1. **Editing details:** an editor tool for drawing satin skeletons and deriving one from a
    shape (the engine keeps Bézier curves through shape operations and sews variable-direction
    satin along a skeleton).
-2. **Lettering:** Font Creator characters from background images in one step; editing
-   characters on the canvas (the engine command exists); shaping embroidery fonts.
+2. **Lettering:** editing characters on the canvas (the engine command exists); shaping
+   embroidery fonts.
 3. **Formats:** CSD export (no public writer); editable PES shapes and text (no public
    description; needs reference files and the legal opinion).
 4. **Design Database:** done: printing through the OS print dialog (Linux opens the PDF

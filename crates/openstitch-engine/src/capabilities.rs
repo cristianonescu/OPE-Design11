@@ -82,6 +82,8 @@ pub const FILE_READING_COMMANDS: &[&str] = &[
     "fonts.mapCharacter",
     "fonts.mapFiles",
     "fonts.open",
+    "fonts.traceImage",
+    "fonts.fromImage",
     "nameDrop.readCsv",
     "nameDrop.writeCsv",
     "nameDrop.export",

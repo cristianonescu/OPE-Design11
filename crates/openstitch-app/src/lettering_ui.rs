@@ -99,6 +99,9 @@ enum FontAction {
     Convert,
     EditGlyph,
     SetGlyph,
+    ChooseImage,
+    TraceImage,
+    FromImage,
     MapSelection(u64),
     MapFiles,
     Save,
@@ -126,6 +129,7 @@ fn fonts_window(app: &mut EditorApp, ctx: &egui::Context) {
         .then(|| app.selection.iter().next().copied())
         .flatten();
     let any_selected = !app.selection.is_empty();
+    let has_background = app.session.design().background.is_some();
     let truetype: Vec<FontChoice> = {
         let embroidery: Vec<&str> = rows
             .iter()
@@ -237,6 +241,8 @@ fn fonts_window(app: &mut EditorApp, ctx: &egui::Context) {
                     }
                 });
                 ui.separator();
+                image_characters(ui, f, has_background, &mut action);
+                ui.separator();
                 if ui.button("Save font as…").clicked() {
                     action = Some(FontAction::Save);
                 }
@@ -277,6 +283,35 @@ fn fonts_window(app: &mut EditorApp, ctx: &egui::Context) {
             let ids = app.selection.clone();
             if let Some(r) = app.execute(&f.set_glyph(&ids)) {
                 app.status = format!("Stored '{}' ({} mm wide)", f.character, r["advanceMM"]);
+            }
+        }
+        Some(FontAction::ChooseImage) => {
+            if let Some(p) = rfd::FileDialog::new()
+                .add_filter("Images", &["png", "jpg", "jpeg", "bmp"])
+                .pick_file()
+            {
+                app.lettering.fonts.image.path = Some(p);
+                app.lettering.fonts.image.found.clear();
+            }
+        }
+        Some(FontAction::TraceImage) => {
+            if let Some(r) = app.execute(&f.trace_image()) {
+                app.lettering.fonts.set_found(&r);
+                app.status = format!(
+                    "Found {} character(s) in {} row(s); check the characters, then Create characters",
+                    app.lettering.fonts.image.found.len(),
+                    r["rows"]
+                );
+            }
+        }
+        Some(FontAction::FromImage) => {
+            if let Some(r) = f.from_image().and_then(|req| app.execute(&req)) {
+                app.status = format!(
+                    "Created {} from the image ({} skipped)",
+                    r["created"].as_str().unwrap_or_default(),
+                    r["skipped"]
+                );
+                app.lettering.fonts.image.found.clear();
             }
         }
         Some(FontAction::MapSelection(id)) => {
@@ -320,6 +355,143 @@ fn fonts_window(app: &mut EditorApp, ctx: &egui::Context) {
             app.execute(&FontsForm::remove(&id));
         }
         None => {}
+    }
+}
+
+/// Font Creator ▸ Characters from image: read the image, check and assign the characters
+/// found, then create them in one step.
+fn image_characters(
+    ui: &mut egui::Ui,
+    f: &mut FontsForm,
+    has_background: bool,
+    action: &mut Option<FontAction>,
+) {
+    ui.label(egui::RichText::new("Characters from image").strong());
+    let i = &mut f.image;
+    ui.horizontal(|ui| {
+        let name = i.path.as_ref().map_or_else(
+            || {
+                if has_background {
+                    "Background image".to_string()
+                } else {
+                    "No image".to_string()
+                }
+            },
+            |p| {
+                p.file_name()
+                    .map_or_else(String::new, |n| n.to_string_lossy().into_owned())
+            },
+        );
+        ui.label(name);
+        if ui.button("Choose image…").clicked() {
+            *action = Some(FontAction::ChooseImage);
+        }
+        if i.path.is_some()
+            && has_background
+            && ui
+                .button("Use background")
+                .on_hover_text("Read the background image as it is shown on the Design Page")
+                .clicked()
+        {
+            i.path = None;
+            i.found.clear();
+        }
+    });
+    ui.horizontal(|ui| {
+        if ui
+            .radio_value(&mut i.whole, false, "Split into characters")
+            .changed()
+            | ui.radio_value(&mut i.whole, true, "Whole image is the character")
+                .changed()
+        {
+            i.found.clear();
+        }
+    });
+    ui.horizontal(|ui| {
+        ui.label("Ink darker than");
+        ui.add(egui::DragValue::new(&mut i.threshold).range(1..=254));
+        if i.whole {
+            ui.add_enabled(
+                i.path.is_none() && has_background,
+                egui::Checkbox::new(&mut i.as_placed, "As placed, from the set line and baseline"),
+            )
+            .on_hover_text("Use the background image where it lies instead of fitting it to the standard height");
+        }
+    });
+    if !i.whole {
+        ui.horizontal(|ui| {
+            ui.label("Assign in order");
+            ui.text_edit_singleline(&mut i.order);
+        });
+    }
+    let ready = i.path.is_some() || has_background;
+    if ui
+        .add_enabled(ready, egui::Button::new("Find characters"))
+        .clicked()
+    {
+        *action = Some(FontAction::TraceImage);
+    }
+    if i.found.is_empty() {
+        return;
+    }
+    ui.weak("Type the character each outline becomes; leave a box empty to skip it.");
+    egui::ScrollArea::vertical()
+        .max_height(220.0)
+        .show(ui, |ui| {
+            ui.horizontal_wrapped(|ui| {
+                for c in &mut i.found {
+                    ui.vertical(|ui| {
+                        let (rect, _) =
+                            ui.allocate_exact_size(egui::vec2(44.0, 44.0), egui::Sense::hover());
+                        draw_outline(ui, rect, &c.outline);
+                        ui.add(egui::TextEdit::singleline(&mut c.assigned).desired_width(44.0))
+                            .on_hover_text(format!("Row {}", c.row + 1));
+                    });
+                }
+            });
+        });
+    if ui.button("Create characters").clicked() {
+        *action = Some(FontAction::FromImage);
+    }
+}
+
+/// A found character's outline, fitted into `rect`.
+fn draw_outline(ui: &egui::Ui, rect: egui::Rect, outline: &[Vec<[f64; 2]>]) {
+    let painter = ui.painter_at(rect);
+    painter.rect_stroke(
+        rect,
+        2.0,
+        ui.visuals().widgets.noninteractive.bg_stroke,
+        egui::StrokeKind::Inside,
+    );
+    let pts = outline.iter().flatten();
+    let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+    for q in pts {
+        (x0, y0, x1, y1) = (x0.min(q[0]), y0.min(q[1]), x1.max(q[0]), y1.max(q[1]));
+    }
+    if x0 > x1 {
+        return;
+    }
+    let side = (x1 - x0).max(y1 - y0).max(1e-6);
+    let scale = f64::from(rect.width() - 8.0) / side;
+    let offset = egui::vec2(
+        ((f64::from(rect.width()) - (x1 - x0) * scale) / 2.0) as f32,
+        ((f64::from(rect.height()) - (y1 - y0) * scale) / 2.0) as f32,
+    );
+    let stroke = egui::Stroke::new(1.0, ui.visuals().text_color());
+    for line in outline {
+        let mut points: Vec<egui::Pos2> = line
+            .iter()
+            .map(|q| {
+                rect.min
+                    + offset
+                    + egui::vec2(((q[0] - x0) * scale) as f32, ((q[1] - y0) * scale) as f32)
+            })
+            .collect();
+        if let Some(&first) = points.first() {
+            points.push(first);
+        }
+        painter.add(egui::Shape::line(points, stroke));
     }
 }
 
