@@ -366,7 +366,10 @@ pub fn region_controls_with(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> 
         }
     }
     v.extend(region_type_controls(r, user));
-    v.push(toggle("Travel inside", "travel", r.travel));
+    // PE-DESIGN offers no Running Stitch Path with Auto satin.
+    if !(r.auto_direction && r.kind == RegionType::Satin) {
+        v.push(toggle("Travel inside", "travel", r.travel));
+    }
     v
 }
 

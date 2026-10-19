@@ -134,19 +134,30 @@ fn rungs_at(rungs: &[[Vec2; 2]], spacing: f64) -> Vec<[Vec2; 2]> {
     out
 }
 
-/// Satin across the column: left, right, left… `spacing` apart, each stitch lengthened by
-/// `pull` at both ends.
+/// Satin across the column: one needle point per rung, `spacing` apart, on alternate sides
+/// (see [`zigzag`]), each rung lengthened by `pull` at both ends.
 pub fn satin(rungs: &[[Vec2; 2]], spacing: f64, pull: f64) -> Run {
-    rungs_at(rungs, spacing)
-        .into_iter()
-        .enumerate()
-        .flat_map(|(k, [l, r])| {
-            let len = l.distance(r).max(1e-9);
-            let d = (r - l) * (pull / len);
-            let (l, r) = (l - d, r + d);
-            if k % 2 == 0 { [l, r] } else { [r, l] }
-        })
-        .collect()
+    zigzag(rungs_at(rungs, spacing).into_iter().map(|[l, r]| {
+        let len = l.distance(r).max(1e-9);
+        let d = (r - l) * (pull / len);
+        [l - d, r + d]
+    }))
+}
+
+/// Satin needle points from rungs [left, right] in sewing order: the first rung is sewn
+/// across (left, right), then each later rung gives one needle point, left on odd rungs and
+/// right on even ones. Consecutive points are on opposite sides, so every stitch crosses the
+/// column and none runs along its edge.
+pub fn zigzag(rungs: impl IntoIterator<Item = [Vec2; 2]>) -> Run {
+    let mut run = Vec::new();
+    for (k, [l, r]) in rungs.into_iter().enumerate() {
+        match k {
+            0 => run.extend([l, r]),
+            _ if k % 2 == 1 => run.push(l),
+            _ => run.push(r),
+        }
+    }
+    run
 }
 
 /// Fill: rows along the interpolated rungs, `spacing` apart, needle points at most
@@ -232,19 +243,28 @@ mod tests {
     #[test]
     fn satin_alternates_rails_and_follows_the_turn() {
         let run = satin(&bend(), 4.0, 0.0);
-        assert!(run.len() > 40);
-        // Every other point on the left rail, the others on the right.
-        let o = outline(&bend());
-        for p in &run {
-            let n = o.nearest(*p).expect("n");
-            assert!(n.point.distance(*p) < 1e-6, "{p:?} is on the outline");
+        assert!(run.len() > 20);
+        // The first rung is sewn across, then one needle point per rung on alternate rails:
+        // every stitch crosses the column, none runs along a rail.
+        let on = |side: usize, p: Vec2| {
+            let rail = Contour::new(bend().iter().map(|r| r[side]).collect(), false);
+            rail.nearest(p).expect("n").point.distance(p) < 1e-6
+        };
+        let rail = |p: Vec2| {
+            assert!(on(0, p) != on(1, p), "{p:?} is on exactly one rail");
+            usize::from(on(1, p))
+        };
+        assert_eq!(run[0], bend()[0][0]);
+        assert_eq!(run[1], bend()[0][1]);
+        for w in run.windows(2).skip(1) {
+            assert_ne!(rail(w[0]), rail(w[1]), "{:?} runs along a rail", w);
         }
-        // Stitches are rung-like: the last one is the last rung.
-        let k = run.len();
-        let last = [run[k - 2], run[k - 1]];
-        assert!(last.contains(&v2(140.0, 80.0)) && last.contains(&v2(100.0, 80.0)));
-        // Pull compensation lengthens each stitch.
+        // The last needle point is on the last rung.
+        let last = run[run.len() - 1];
+        assert!(last == v2(140.0, 80.0) || last == v2(100.0, 80.0));
+        // Pull compensation lengthens each rung at both ends.
         let pulled = satin(&bend(), 4.0, 3.0);
+        assert_eq!(pulled.len(), run.len());
         assert!(pulled[0].distance(pulled[1]) > run[0].distance(run[1]) + 5.0);
     }
 

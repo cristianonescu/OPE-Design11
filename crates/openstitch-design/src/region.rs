@@ -101,6 +101,23 @@ pub fn layers_with(
         }]);
         return out;
     }
+    // Auto direction, satin: the rows follow a skeleton derived from the region, so they stay
+    // across the local axis on curved and bent regions. Travel (Running Stitch Path) does not
+    // apply with Auto satin. The fixed direction across the narrow side remains for fill, for
+    // regions with holes or several parts, with gradation, feathered edges or split stitches,
+    // and where the skeleton column does not cover the region (a branch, a blob).
+    if r.auto_direction
+        && r.kind == RegionType::Satin
+        && let Some(top) = auto_satin(closed, r, holes)
+    {
+        let mut plain = r.clone();
+        plain.auto_direction = false;
+        plain.angle = auto_angle(closed);
+        let mut out = layers_with(closed, &plain, holes, user);
+        out.pop();
+        out.push(vec![top]);
+        return out;
+    }
     let mut out = Vec::new();
     let angle = if r.auto_direction {
         auto_angle(closed)
@@ -162,7 +179,8 @@ pub fn layers_with(
         RegionType::Satin if !shaped => generate::satin(closed, &params, holes),
         _ => shaped_rows(closed, r, &params, holes),
     };
-    if r.travel {
+    // No Running Stitch Path with Auto satin, as in PE-DESIGN.
+    if r.travel && !(r.auto_direction && r.kind == RegionType::Satin) {
         runs = reroute(runs, closed, holes);
     }
     out.push(runs);
@@ -215,6 +233,43 @@ fn split_outside(run: Run, closed: &[Contour], holes: &[Contour]) -> Vec<Run> {
     out.push(current);
     out.retain(|r| !r.is_empty());
     out
+}
+
+/// Least share of the region a derived skeleton's column must cover for Auto satin to follow
+/// it.
+const AUTO_COVERAGE: f64 = 0.85;
+
+/// Auto-direction satin along a skeleton derived from the single closed contour `closed`;
+/// `None` where it does not apply (see [`layers_with`]).
+fn auto_satin(closed: &[Contour], r: &RegionSewing, holes: &[Contour]) -> Option<Run> {
+    let shaped = r.gradation.is_some() || r.feather.is_some() || r.split_length.is_some();
+    if closed.len() != 1 || !holes.is_empty() || shaped {
+        return None;
+    }
+    let s = crate::skeleton::derive(closed).filter(|s| s.validate().is_ok())?;
+    let spacing = 10.0 / r.density.max(0.1);
+    let rungs = crate::skeleton::rungs_within(&s, closed, spacing, r.pull_compensation * 10.0);
+    let mut column: Vec<Vec2> = rungs.iter().map(|r| r[0]).collect();
+    column.extend(rungs.iter().rev().map(|r| r[1]));
+    if area(&column) < AUTO_COVERAGE * area(&closed[0].outline_points()) {
+        return None;
+    }
+    let mut run = crate::column::zigzag(rungs);
+    run.dedup_by(|a, b| a.distance(*b) < 1e-9);
+    Some(run)
+}
+
+/// Area enclosed by the polygon `pts` (shoelace, unsigned).
+fn area(pts: &[Vec2]) -> f64 {
+    let n = pts.len();
+    (0..n)
+        .map(|i| {
+            let (a, b) = (pts[i], pts[(i + 1) % n]);
+            a.x * b.y - b.x * a.y
+        })
+        .sum::<f64>()
+        .abs()
+        / 2.0
 }
 
 /// Direction (degrees) whose rows run across the region's narrow side: perpendicular to the
@@ -281,7 +336,12 @@ fn shaped_rows(
     let feather = r.feather;
     // Rows are ordered on their full spans; feathering then shortens the ends, so the
     // sewing order does not depend on the random ends.
-    generate::chain_spans(&spans, p, |span, row, forward| {
+    let chain = if satin {
+        generate::chain_satin_spans
+    } else {
+        generate::chain_spans
+    };
+    chain(&spans, p, &|span: &Span, row: usize, forward: bool| {
         let (mut lo, mut hi) = (*span.start(), *span.end());
         if let Some(f) = feather {
             let mut rng =
