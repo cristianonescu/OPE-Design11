@@ -82,7 +82,7 @@ actions! {
     Open => "open", "Open", "Open an OpenStitch design, or an embroidery file as a new design.", Some("Ctrl+O"), Some("project.open"), true;
     Save => "save", "Save", "Save the design.", Some("Ctrl+S"), Some("project.save"), true;
     SaveAs => "saveAs", "Save As", "Save the design under a new name.", Some("Ctrl+Shift+S"), Some("project.save"), true;
-    Print => "print", "Print", "Print the design to a PDF with its colour list.", None, Some("design.print"), true;
+    Print => "print", "Print", "Print the design with its colour list through the system print dialog, or save it as a PDF.", None, Some("design.print"), true;
     DesignProperty => "designProperty", "Design Property", "Sewing information of the design: size, stitches, colours, thread and time.", None, Some("design.info"), true;
     DesignSettings => "designSettings", "Design Settings", "Machine, hoop and Design Page size.", None, Some("machine.set"), true;
     FabricSelector => "fabricSelector", "Fabric Selector", "Sewing attributes suited to a fabric type, for all shape and text patterns or the selection.", None, Some("fabric.apply"), true;
