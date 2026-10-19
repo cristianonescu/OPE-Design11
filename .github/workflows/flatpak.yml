@@ -39,8 +39,9 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder appstream desktop-file-utils elfutils
-          # elfutils: flatpak-builder strips debug info with eu-strip.
+          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder appstream desktop-file-utils elfutils librsvg2-common
+          # elfutils: flatpak-builder strips debug info with eu-strip. librsvg2-common: the SVG
+          # loader appstreamcli compose needs to read the scalable icon.
           # Ubuntu restricts unprivileged user namespaces, which bubblewrap needs.
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
