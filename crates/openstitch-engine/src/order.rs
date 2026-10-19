@@ -4,7 +4,7 @@
 
 use crate::commands::{CommandSpec, Effect, indexes, opt, req, spec};
 use openstitch_design::boolean::{self, BoolOp};
-use openstitch_design::{Design, DesignObject, Rect};
+use openstitch_design::{Design, DesignObject, ObjectKind, Rect, Vec2};
 use serde_json::json;
 
 pub fn commands() -> Vec<CommandSpec> {
@@ -97,7 +97,7 @@ pub fn commands() -> Vec<CommandSpec> {
         ),
         spec(
             "order.optimize",
-            "Optimise the sewing order: same colours together, nearest object next, but an object never moves before one it overlaps that was sewn earlier",
+            "Optimise the sewing order: same colours together, nearest object next, but an object never moves before one it overlaps that was sewn earlier; then each shape's entry and exit points move to where it comes closest to the shapes sewn before and after it",
             Effect::Edit,
             vec![],
             |s, _| {
@@ -108,6 +108,8 @@ pub fn commands() -> Vec<CommandSpec> {
                     .iter()
                     .map(|&i| slots[i].take().expect("each index once"))
                     .collect();
+                let n = s.design.objects.len();
+                link_entry_exit(&mut s.design, 0..n);
                 Ok(json!({ "order": ids(&s.design) }))
             },
         ),
@@ -215,4 +217,175 @@ pub fn optimized(d: &Design) -> Vec<usize> {
         out.push(next);
     }
     out
+}
+
+/// Where a shape can be entered and left: outline segments (each a pair of points), and
+/// whether its exit can be chosen freely. A region can be left anywhere on its outline (its
+/// exit point, R2, and the start of an outline sewn after it); a line alone ends where its
+/// entry point (L1) puts the end. `None` for text, stitch patterns and hidden objects.
+struct Ends {
+    edges: Vec<(Vec2, Vec2)>,
+    free_exit: bool,
+}
+
+fn ends(o: &DesignObject) -> Option<Ends> {
+    if o.kind != ObjectKind::Shape || !o.visible {
+        return None;
+    }
+    if o.region.is_some() && o.has_closed_contour() {
+        let edges = o
+            .contours
+            .iter()
+            .filter(|c| c.closed)
+            .flat_map(|c| c.edges())
+            .collect();
+        return Some(Ends {
+            edges,
+            free_exit: true,
+        });
+    }
+    o.line.as_ref()?;
+    // An open line is entered at one of its ends.
+    let edges = o
+        .contours
+        .iter()
+        .flat_map(|c| {
+            if c.closed {
+                c.edges()
+            } else {
+                let p = c.path();
+                match (p.first(), p.last()) {
+                    (Some(&a), Some(&b)) => vec![(a, a), (b, b)],
+                    _ => Vec::new(),
+                }
+            }
+        })
+        .collect();
+    Some(Ends {
+        edges,
+        free_exit: false,
+    })
+}
+
+fn nearest_on(p: Vec2, (a, b): (Vec2, Vec2)) -> Vec2 {
+    let ab = b - a;
+    let len2 = ab.x * ab.x + ab.y * ab.y;
+    if len2 == 0.0 {
+        return a;
+    }
+    let t = (((p.x - a.x) * ab.x + (p.y - a.y) * ab.y) / len2).clamp(0.0, 1.0);
+    a.lerp(b, t)
+}
+
+/// Where segments `a` and `b` cross, if they do.
+fn crossing((a, b): (Vec2, Vec2), (c, d): (Vec2, Vec2)) -> Option<Vec2> {
+    let (r, s) = (b - a, d - c);
+    let den = r.x * s.y - r.y * s.x;
+    if den == 0.0 {
+        return None;
+    }
+    let (ca_x, ca_y) = (c.x - a.x, c.y - a.y);
+    let t = (ca_x * s.y - ca_y * s.x) / den;
+    let u = (ca_x * r.y - ca_y * r.x) / den;
+    ((0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u)).then(|| a.lerp(b, t))
+}
+
+/// The closest pair of points between two sets of segments: (on `a`, on `b`).
+fn closest_pair(a: &[(Vec2, Vec2)], b: &[(Vec2, Vec2)]) -> Option<(Vec2, Vec2)> {
+    let mut best: Option<(f64, Vec2, Vec2)> = None;
+    let mut consider = |pa: Vec2, pb: Vec2| {
+        let d = pa.distance(pb);
+        if best.is_none_or(|(e, _, _)| d < e) {
+            best = Some((d, pa, pb));
+        }
+    };
+    for &ea in a {
+        for &eb in b {
+            if let Some(x) = crossing(ea, eb) {
+                consider(x, x);
+                continue;
+            }
+            consider(ea.0, nearest_on(ea.0, eb));
+            consider(ea.1, nearest_on(ea.1, eb));
+            consider(nearest_on(eb.0, ea), eb.0);
+            consider(nearest_on(eb.1, ea), eb.1);
+        }
+    }
+    best.map(|(_, pa, pb)| (pa, pb))
+}
+
+/// The point of `edges` nearest to `p`.
+fn nearest_point(edges: &[(Vec2, Vec2)], p: Vec2) -> Option<Vec2> {
+    edges
+        .iter()
+        .map(|&e| nearest_on(p, e))
+        .min_by(|a, b| a.distance(p).total_cmp(&b.distance(p)))
+}
+
+/// Where a line-only shape ends: a closed outline where it starts, an open line at the end
+/// away from its entry point.
+fn line_end(o: &DesignObject) -> Option<Vec2> {
+    let entry = o.line.as_ref()?.entry;
+    let c = o.contours.last()?;
+    let p = c.path();
+    let (first, last) = (*p.first()?, *p.last()?);
+    if c.closed {
+        return Some(entry.and_then(|e| c.nearest(e)).map_or(first, |n| n.point));
+    }
+    Some(match entry {
+        Some(e) if last.distance(e) < first.distance(e) => first,
+        _ => last,
+    })
+}
+
+fn set_entry(o: &mut DesignObject, p: Vec2) {
+    match (&mut o.region, &mut o.line) {
+        (Some(r), _) => r.entry = Some(p),
+        (None, Some(l)) => l.entry = Some(p),
+        (None, None) => {}
+    }
+}
+
+/// A region's exit point; an outline sewn after the region starts (and ends) there too.
+fn set_exit(o: &mut DesignObject, p: Vec2) {
+    if let Some(r) = &mut o.region {
+        r.exit = Some(p);
+    }
+    if let Some(l) = &mut o.line {
+        l.entry = Some(p);
+    }
+}
+
+/// PE-DESIGN's optimised entry and exit points: for each object `k` in `pairs` and the one
+/// sewn after it, the exit of `k` and the entry of the next move to where the two outlines
+/// come closest, so the travel between them is the gap between their outlines. Text, stitch
+/// patterns and hidden objects are left alone.
+pub fn link_entry_exit(d: &mut Design, pairs: std::ops::Range<usize>) {
+    let n = d.objects.len();
+    for k in pairs {
+        if k + 1 >= n {
+            break;
+        }
+        let (Some(a), Some(b)) = (ends(&d.objects[k]), ends(&d.objects[k + 1])) else {
+            continue;
+        };
+        let (exit, entry) = if a.free_exit {
+            match closest_pair(&a.edges, &b.edges) {
+                Some(pair) => pair,
+                None => continue,
+            }
+        } else {
+            let Some(end) = line_end(&d.objects[k]) else {
+                continue;
+            };
+            match nearest_point(&b.edges, end) {
+                Some(entry) => (end, entry),
+                None => continue,
+            }
+        };
+        if a.free_exit {
+            set_exit(&mut d.objects[k], exit);
+        }
+        set_entry(&mut d.objects[k + 1], entry);
+    }
 }

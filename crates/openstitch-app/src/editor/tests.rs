@@ -521,6 +521,14 @@ fn inspector_summarises_mixed_selection_and_edits_through_engine() {
         &mut s,
         &m.set_line_type(Some(openstitch_design::LineType::Zigzag)),
     );
+    // Hole sewing pairs the rectangle with a region inside it.
+    run(
+        &mut s,
+        &CommandRequest::new(
+            "shape.rectangle",
+            json!({ "x": 15, "y": 12, "width": 4, "height": 4 }),
+        ),
+    );
     let hole = m.set_hole_sewing(s.design(), true).expect("has region");
     run(&mut s, &hole);
     let o = &s.design().objects[0];

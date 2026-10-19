@@ -1190,10 +1190,13 @@ pub fn demo_design() -> Vec<CommandRequest> {
             "object.setRegion",
             json!({ "id": 1, "angle": 30, "density": 3 }),
         ),
-        c("object.setHoleSewing", json!({ "id": 1, "enabled": true })),
         c(
             "shape.polygon",
             json!({ "name": "Star", "fill": "#f0c419", "points": star(50.0, 47.0, 22.0, 9.5) }),
+        ),
+        c(
+            "object.setHoleSewing",
+            json!({ "ids": [1, 2], "enabled": true }),
         ),
         c(
             "object.setRegion",

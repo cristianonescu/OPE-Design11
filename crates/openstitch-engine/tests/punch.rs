@@ -113,8 +113,13 @@ fn bad_punch_parameters_fail_cleanly() {
     );
     run(
         &mut s,
+        "shape.rectangle",
+        json!({"x": 3, "y": 54, "width": 4, "height": 2}),
+    );
+    run(
+        &mut s,
         "object.setHoleSewing",
-        json!({"id": 3, "enabled": true}),
+        json!({"ids": [3, 4], "enabled": true}),
     );
     let good = json!([[[0, 0], [0, 10]], [[20, 0], [20, 10]]]);
     let before = s.design().clone();
@@ -260,8 +265,13 @@ fn bad_skeleton_parameters_fail_cleanly() {
     );
     run(
         &mut s,
+        "shape.rectangle",
+        json!({"x": 3, "y": 54, "width": 4, "height": 2}),
+    );
+    run(
+        &mut s,
         "object.setHoleSewing",
-        json!({"id": 2, "enabled": true}),
+        json!({"ids": [2, 3], "enabled": true}),
     );
     let good = json!([[0, 0], [20, 0]]);
     let before = s.design().clone();
@@ -358,11 +368,6 @@ fn deriving_a_skeleton_fails_cleanly() {
     );
     run(
         &mut s,
-        "object.setHoleSewing",
-        json!({"id": 1, "enabled": true}),
-    );
-    run(
-        &mut s,
         "shape.polygon",
         json!({"points": [[0, 50], [30, 50], [30, 60]], "closed": false}),
     );
@@ -370,6 +375,16 @@ fn deriving_a_skeleton_fails_cleanly() {
         &mut s,
         "text.add",
         json!({"text": "A", "x": 50, "y": 50, "size": 10}),
+    );
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 10, "y": 4, "width": 4, "height": 2}),
+    );
+    run(
+        &mut s,
+        "object.setHoleSewing",
+        json!({"ids": [1, 4], "enabled": true}),
     );
     let before = s.design().clone();
     for params in [

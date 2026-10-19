@@ -10,6 +10,7 @@ pub mod fonts;
 pub mod freehand;
 pub mod generate;
 pub mod geometry;
+pub mod holes;
 pub mod lines;
 pub mod machine;
 pub mod model;

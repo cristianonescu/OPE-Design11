@@ -978,6 +978,18 @@ pub fn options_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
         menu_item(app, ui, a);
     }
     ui.separator();
+    let mut optimize = app.session.user_settings().optimize_entry_exit;
+    if ui
+        .checkbox(&mut optimize, "Optimize Entry/Exit Points")
+        .on_hover_text("New shapes are entered where they come closest to the shape sewn before")
+        .changed()
+    {
+        app.execute(&CommandRequest::new(
+            "options.set",
+            json!({ "optimizeEntryExit": optimize }),
+        ));
+    }
+    ui.separator();
     ui.label(RichText::new("Theme").weak());
     let mut changed = false;
     for t in Theme::ALL {

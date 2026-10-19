@@ -88,6 +88,7 @@ fn to_stitches() -> CommandSpec {
                         o.line = None;
                         o.text = None;
                         o.hole_sewing = false;
+                        o.hole_inner = None;
                         done.push(id);
                     }
                     None => {

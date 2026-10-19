@@ -477,6 +477,77 @@ fn object_name(p: &Params) -> Result<Option<String>, CommandError> {
     }
 }
 
+/// Whether object `i` can be one of a hole-sewing pair: a region whose outline does not cross
+/// itself, with at most one sewing-direction line and no feathered edges (the guide's limits).
+fn hole_member(d: &Design, p: &Params, i: usize) -> Result<(), CommandError> {
+    let o = &d.objects[i];
+    let Some(r) = o
+        .region
+        .as_ref()
+        .filter(|_| openstitch_design::holes::region_contours(o).is_some())
+    else {
+        return Err(p.failed(format!("object {} has no region sewing", o.id)));
+    };
+    if o.contours
+        .iter()
+        .filter(|c| c.closed)
+        .any(|c| crate::shape_ops::self_crossing(&c.outline_points()))
+    {
+        return Err(p.failed(format!(
+            "object {} has an outline that crosses itself",
+            o.id
+        )));
+    }
+    if r.direction_lines.len() >= 2 {
+        return Err(p.failed(format!(
+            "object {} has several sewing-direction lines",
+            o.id
+        )));
+    }
+    if r.feather.is_some() {
+        return Err(p.failed(format!("object {} has feathered edges", o.id)));
+    }
+    Ok(())
+}
+
+/// The (outer, inner) indexes of a hole-sewing pair: two regions where one fully encloses
+/// the other, or one region and the region it encloses (the first sewn after it, else the
+/// first before it).
+fn hole_pair(s: &EngineState, p: &Params, idx: &[usize]) -> Result<(usize, usize), CommandError> {
+    use openstitch_design::holes::object_encloses;
+    let d = &s.design;
+    for &i in idx {
+        hole_member(d, p, i)?;
+    }
+    let (outer, inner) = match idx {
+        [a] => {
+            let found = (0..d.objects.len())
+                .filter(|&j| j != *a && d.objects[j].visible)
+                .filter(|&j| object_encloses(&d.objects[*a], &d.objects[j]))
+                .min_by_key(|&j| (j < *a, j));
+            let Some(j) = found else {
+                return Err(p.failed(format!(
+                    "object {} encloses no other region",
+                    d.objects[*a].id
+                )));
+            };
+            hole_member(d, p, j)?;
+            (*a, j)
+        }
+        [a, b] => {
+            if object_encloses(&d.objects[*a], &d.objects[*b]) {
+                (*a, *b)
+            } else if object_encloses(&d.objects[*b], &d.objects[*a]) {
+                (*b, *a)
+            } else {
+                return Err(p.failed("hole sewing needs one region fully inside the other"));
+            }
+        }
+        _ => return Err(p.invalid("ids", "hole sewing pairs exactly two regions")),
+    };
+    Ok((outer, inner))
+}
+
 fn add_shape(s: &mut EngineState, p: &Params, contour: Contour) -> CommandResult {
     let (region, line) = sewing(p, contour.closed)?;
     let mut object = DesignObject::shape(vec![contour], region, line);
@@ -1078,6 +1149,13 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 };
                 let color = thread(p, "color")?;
                 let user_patterns = s.design.patterns.clone();
+                let hole_inners: Vec<u64> = s
+                    .design
+                    .objects
+                    .iter()
+                    .filter(|o| o.hole_sewing)
+                    .filter_map(|o| o.hole_inner)
+                    .collect();
                 for i in idx {
                     let o = &mut s.design.objects[i];
                     if !o.is_outline() || !o.has_closed_contour() {
@@ -1137,6 +1215,12 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         ],
                     )?;
                     if p.has("featherWidth") || side.is_some() {
+                        if o.hole_sewing || hole_inners.contains(&o.id) {
+                            return Err(p.failed(format!(
+                                "object {} uses hole sewing: feathered edges are unavailable",
+                                o.id
+                            )));
+                        }
                         let current = r.feather.unwrap_or(Feather {
                             side: FeatherSide::Start,
                             width: 1.0,
@@ -1388,19 +1472,30 @@ fn attribute_commands() -> Vec<CommandSpec> {
         ),
         spec(
             "object.setHoleSewing",
-            "Skip the areas of shapes sewn on top of these regions (PE-DESIGN hole sewing)",
+            "Hole sewing (PE-DESIGN): of two regions where one fully encloses the other, the outer one is sewn around the inner shape. With one id the region it encloses is found; off clears the pair",
             Effect::Edit,
             vec![IDS, req("enabled", "bool", "Hole sewing on/off")],
             |s, p| {
                 let on = p.bool("enabled", None)?;
-                for i in indexes(p, &s.design)? {
-                    let o = &mut s.design.objects[i];
-                    if o.region.is_none() {
-                        return Err(p.failed(format!("object {} has no region sewing", o.id)));
+                let mut idx = indexes(p, &s.design)?;
+                idx.sort_unstable();
+                idx.dedup();
+                if !on {
+                    let ids: Vec<u64> = idx.iter().map(|&i| s.design.objects[i].id).collect();
+                    for o in &mut s.design.objects {
+                        if ids.contains(&o.id) || o.hole_inner.is_some_and(|h| ids.contains(&h)) {
+                            o.hole_sewing = false;
+                            o.hole_inner = None;
+                        }
                     }
-                    o.hole_sewing = on;
+                    return Ok(Value::Null);
                 }
-                Ok(Value::Null)
+                let (outer, inner) = hole_pair(s, p, &idx)?;
+                let inner = s.design.objects[inner].id;
+                let o = &mut s.design.objects[outer];
+                o.hole_sewing = true;
+                o.hole_inner = Some(inner);
+                Ok(json!({ "outer": o.id, "inner": inner }))
             },
         ),
         spec(
@@ -1991,6 +2086,7 @@ fn text_commands() -> Vec<CommandSpec> {
                             DesignObject::shape(group.to_vec(), o.region.clone(), o.line.clone());
                         shape.visible = o.visible;
                         shape.hole_sewing = o.hole_sewing;
+                        shape.hole_inner = o.hole_inner;
                         shape.name = Some(match chars.get(k) {
                             Some(c) if chars.len() == groups.len() => format!("{base} '{c}'"),
                             _ => format!("{base} {}", k + 1),

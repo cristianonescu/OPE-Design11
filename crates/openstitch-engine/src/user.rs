@@ -49,6 +49,10 @@ pub struct UserSettings {
     pub attribute_sets: Vec<AttributeSet>,
     #[serde(default)]
     pub thread_charts: Vec<ThreadChart>,
+    /// Options ▸ "Optimize Entry/Exit Points": a shape added to the design is entered where it
+    /// comes closest to the shape sewn before it, which leaves at that place.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub optimize_entry_exit: bool,
 }
 
 /// File format marker of the settings file.
@@ -224,7 +228,40 @@ fn describe_thread(t: &Thread) -> Value {
 pub fn commands() -> Vec<CommandSpec> {
     let mut v = attribute_commands();
     v.extend(chart_commands());
+    v.extend(option_commands());
     v
+}
+
+fn options_json(u: &UserSettings) -> Value {
+    json!({ "optimizeEntryExit": u.optimize_entry_exit })
+}
+
+/// Persistent options (PE-DESIGN's Options dialog) kept in the user settings.
+fn option_commands() -> Vec<CommandSpec> {
+    vec![
+        spec(
+            "options.get",
+            "The persistent user options",
+            Effect::Read,
+            vec![],
+            |s, _| Ok(options_json(&s.user)),
+        ),
+        spec(
+            "options.set",
+            "Change persistent user options (user settings)",
+            Effect::Settings,
+            vec![opt(
+                "optimizeEntryExit",
+                "bool",
+                "Optimize Entry/Exit Points: shapes added later are entered where they come closest to the shape sewn before (default off)",
+            )],
+            |s, p| {
+                let u = &mut s.user;
+                u.optimize_entry_exit = p.bool("optimizeEntryExit", Some(u.optimize_entry_exit))?;
+                Ok(options_json(u))
+            },
+        ),
+    ]
 }
 
 fn attribute_commands() -> Vec<CommandSpec> {
@@ -338,6 +375,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         });
                         if o.region.is_none() {
                             o.hole_sewing = false;
+                            o.hole_inner = None;
                         }
                     }
                     let old = o.line.clone();

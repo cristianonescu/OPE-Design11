@@ -377,9 +377,13 @@ pub struct DesignObject {
     pub line: Option<LineSewing>,
     #[serde(default = "yes")]
     pub visible: bool,
-    /// Hole sewing: the region skips areas covered by visible regions sewn after this one.
+    /// Hole sewing: the region is sewn around its paired inner shape ([`Self::hole_inner`]).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub hole_sewing: bool,
+    /// Hole sewing: the inner object of the pair, whose shape this region is sewn around
+    /// (`None` in designs saved before pairs were stored; see [`crate::holes::paired_inner`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hole_inner: Option<u64>,
     /// Text objects only: what the contours were laid out from.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<TextSpec>,
@@ -418,6 +422,7 @@ impl DesignObject {
             line,
             visible: true,
             hole_sewing: false,
+            hole_inner: None,
             text: None,
             group: None,
             trim_jumps: None,
@@ -436,6 +441,7 @@ impl DesignObject {
             line: None,
             visible: true,
             hole_sewing: false,
+            hole_inner: None,
             text: None,
             group: None,
             trim_jumps: None,
