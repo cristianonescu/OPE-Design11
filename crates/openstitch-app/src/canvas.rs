@@ -71,6 +71,7 @@ pub fn canvas(app: &mut EditorApp, ui: &mut egui::Ui) {
     draw_selection(app, &painter, &vp);
     draw_preview(app, &painter, &vp);
     draw_points(app, &painter, &vp);
+    crate::edit_ui::draw_arrange_preview(app, &painter, &vp);
     crate::edit_ui::draw_markers(app, &painter, &vp);
     crate::sections_ui::draw_sections(app, &painter, &vp);
     crate::workspace_ui::draw_measure(&painter, &vp, &app.workspace.measure);
@@ -192,6 +193,9 @@ fn pointer(app: &mut EditorApp, ui: &egui::Ui, response: &egui::Response, vp: Vi
         return;
     }
     if matches!(phase, Phase::Down) && crate::edit_ui::pick(app, model) {
+        return;
+    }
+    if crate::edit_ui::drag(app, phase, model) {
         return;
     }
     let mut e = PointerEvent::new(phase, model);

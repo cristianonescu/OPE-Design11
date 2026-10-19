@@ -18,9 +18,10 @@ for macOS, Windows and Linux. CI builds and tests all three.
 ## Done (2026-10-19)
 
 - **Drawing and editing:**
-  - Bézier outlines and point editing; arcs and preset shapes; group/ungroup; arrange copies.
+  - Bézier outlines and point editing; arcs and preset shapes; group/ungroup; arrange copies
+    with a canvas preview and drag placement; snap to grid.
   - Merge, remove overlap, boolean combine, split, offset lines (`i_overlay`).
-  - Paste sewing attributes; entry/exit points.
+  - Paste sewing attributes; entry/exit points with draggable markers.
   - Floral pattern and original decorative frames; embossing, engraving and stamps.
   - Sewing order (`order.move`, `order.byColor`, `order.optimize`) with per-object jump trimming.
   - Sewing direction (round fill, centre and reference points); Manual Punch.
@@ -51,9 +52,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
 
 ## Still to do
 
-1. **Editing details:** interactive placement for arrange copies, dragging entry/exit markers,
-   keeping Bézier curves through shape operations, snap to grid, variable-direction satin along
-   a skeleton.
+1. **Editing details:** keeping Bézier curves through shape operations, variable-direction
+   satin along a skeleton.
 2. **Lettering:** a shaping engine for right-to-left and complex scripts, vertical CJK text,
    kerning, per-character edits, Font Creator characters from background images in one step.
 3. **Formats:** CSD export (no public writer); editable PES shapes and text (no public

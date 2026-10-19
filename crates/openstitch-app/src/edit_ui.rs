@@ -8,9 +8,11 @@ use eframe::egui::{self, Color32, Pos2, Stroke};
 use openstitch_app::editor::edit_ops::{
     self, ArrangeForm, ArrangeMode, EntryExit, FloralForm, OffsetForm, Pick,
 };
+use openstitch_app::editor::hit::bounds_of;
 use openstitch_app::editor::objects;
-use openstitch_app::editor::{CommandRequest, Tool, ToolEffect, Viewport};
-use openstitch_design::{MachineType, ObjectKind, Vec2};
+use openstitch_app::editor::tools::snap_to_grid;
+use openstitch_app::editor::{CommandRequest, Phase, SelectionHandles, Tool, ToolEffect, Viewport};
+use openstitch_design::{Contour, MachineType, ObjectKind, Vec2};
 use std::collections::BTreeSet;
 
 /// Editor state for these operations.
@@ -41,6 +43,10 @@ pub struct EditState {
     pub alt: bool,
     /// Sewing-order pane shows one frame per same-colour run.
     pub by_colour: bool,
+    /// The Arrange Copies handle is being dragged on the canvas.
+    pub arrange_drag: bool,
+    /// An entry/exit marker being dragged: object, which marker, where it is now.
+    pub marker_drag: Option<(u64, EntryExit, Vec2)>,
 }
 
 impl EditState {
@@ -106,6 +112,7 @@ pub fn edit_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
         .clicked()
     {
         app.edit.arrange_open = true;
+        app.edit.arrange.center = None;
     }
     ui.separator();
     let source = single(app).filter(|&id| kind_of(app, id) != Some(ObjectKind::Stitches));
@@ -341,6 +348,65 @@ pub fn pick(app: &mut EditorApp, at: Vec2) -> bool {
     true
 }
 
+/// Canvas drags the editor handles before the tools: the Arrange Copies handle while the
+/// dialog is open, and the entry/exit markers of the selected shape (Select tool). A marker
+/// drag ends in one `object.setEntryExit`, so one Undo. Whether the event was consumed.
+pub fn drag(app: &mut EditorApp, phase: Phase, at: Vec2) -> bool {
+    let radius =
+        SelectionHandles::RADIUS * 1.4 * app.viewport.unwrap_or_default().units_per_point();
+    let snapped = app
+        .workspace
+        .grid
+        .snap_step()
+        .map_or(at, |s| snap_to_grid(at, s));
+    let bounds = bounds_of(app.session.design(), &app.selection);
+    if app.edit.arrange_drag {
+        if let (Phase::Dragged | Phase::Up, Some(b)) = (phase, bounds) {
+            app.edit.arrange.drag_handle(&b, snapped);
+        }
+        app.edit.arrange_drag = matches!(phase, Phase::Dragged | Phase::Moved);
+        return true;
+    }
+    if let Some((id, which, _)) = app.edit.marker_drag {
+        match phase {
+            Phase::Dragged | Phase::Moved => app.edit.marker_drag = Some((id, which, at)),
+            Phase::Up => {
+                app.edit.marker_drag = None;
+                let moved = edit_ops::entry_exit_markers(app.session.design(), id)
+                    .into_iter()
+                    .any(|(w, p)| w == which && p.distance(at) > radius / 2.0);
+                if moved && app.execute(&which.set(id, at)).is_some() {
+                    app.status = format!("{} moved", which.label());
+                }
+            }
+            Phase::Down => app.edit.marker_drag = None,
+        }
+        return true;
+    }
+    if phase != Phase::Down {
+        return false;
+    }
+    if app.edit.arrange_open
+        && let Some(b) = bounds
+        && app
+            .edit
+            .arrange
+            .handle(&b)
+            .is_some_and(|h| h.distance(at) <= radius)
+    {
+        app.edit.arrange_drag = true;
+        return true;
+    }
+    if app.tools.tool() == Tool::Select
+        && let Some(id) = single(app)
+        && let Some((which, p)) = edit_ops::entry_exit_at(app.session.design(), id, at, radius)
+    {
+        app.edit.marker_drag = Some((id, which, p));
+        return true;
+    }
+    false
+}
+
 /// Tool effects with the editor's own rules: selections take whole groups (unless Alt), and a
 /// polygon drawn for Split with Outline becomes the split.
 pub fn filter_effect(app: &mut EditorApp, e: ToolEffect) -> ToolEffect {
@@ -410,6 +476,7 @@ pub fn windows(app: &mut EditorApp, ctx: &egui::Context) {
 fn arrange_window(app: &mut EditorApp, ctx: &egui::Context) {
     let mut open = app.edit.arrange_open;
     let mut apply = false;
+    let bounds = bounds_of(app.session.design(), &app.selection);
     egui::Window::new("Arrange Copies")
         .open(&mut open)
         .resizable(false)
@@ -431,11 +498,17 @@ fn arrange_window(app: &mut EditorApp, ctx: &egui::Context) {
                         ui.add(egui::DragValue::new(&mut f.count).range(2..=360));
                         ui.end_row();
                         ui.label("Radius");
-                        ui.add(
-                            egui::DragValue::new(&mut f.radius)
-                                .range(0.0..=1000.0)
-                                .suffix(" mm"),
-                        );
+                        if ui
+                            .add(
+                                egui::DragValue::new(&mut f.radius)
+                                    .range(0.0..=1000.0)
+                                    .suffix(" mm"),
+                            )
+                            .changed()
+                            && let Some(b) = bounds
+                        {
+                            f.radius_changed(&b);
+                        }
                         ui.end_row();
                         ui.label("");
                         ui.checkbox(&mut f.rotate, "Turn copies");
@@ -473,6 +546,7 @@ fn arrange_window(app: &mut EditorApp, ctx: &egui::Context) {
                         ui.end_row();
                     }
                 });
+            ui.weak("Drag the handle on the canvas to set the spacing or circle centre.");
             ui.checkbox(&mut f.merge, "Merge overlapping shapes");
             ui.checkbox(&mut f.optimize, "Optimize sewing order");
             apply = ui
@@ -707,6 +781,10 @@ pub fn draw_markers(app: &EditorApp, painter: &egui::Painter, vp: &Viewport) {
         }
     }
     for (which, p) in edit_ops::entry_exit_markers(d, id) {
+        let p = match app.edit.marker_drag {
+            Some((i, w, at)) if i == id && w == which => at,
+            _ => p,
+        };
         let s = vp.to_screen(p);
         let c = Pos2::new(s.x as f32, s.y as f32);
         let colour = match which {
@@ -725,11 +803,55 @@ pub fn draw_markers(app: &EditorApp, painter: &egui::Painter, vp: &Viewport) {
     }
 }
 
+/// While Arrange Copies is open: the copies it would make, faded, and its drag handle.
+pub fn draw_arrange_preview(app: &EditorApp, painter: &egui::Painter, vp: &Viewport) {
+    if !app.edit.arrange_open {
+        return;
+    }
+    let d = app.session.design();
+    let Some(b) = bounds_of(d, &app.selection) else {
+        return;
+    };
+    let screen = |p: Vec2| {
+        let s = vp.to_screen(p);
+        Pos2::new(s.x as f32, s.y as f32)
+    };
+    let accent = Color32::from_rgb(0x1e, 0x88, 0xe5);
+    let stroke = Stroke::new(1.2, accent.gamma_multiply(0.75));
+    let selected: Vec<_> = d
+        .objects
+        .iter()
+        .filter(|o| app.selection.contains(&o.id))
+        .collect();
+    for t in app.edit.arrange.transforms(&b) {
+        for o in &selected {
+            let paths: Vec<Vec<Vec2>> = match o.kind {
+                ObjectKind::Stitches => o
+                    .bounds()
+                    .map(|r| Contour::rectangle(r.min_x, r.min_y, r.width(), r.height()).path())
+                    .into_iter()
+                    .collect(),
+                _ => o.contours.iter().map(|c| c.path()).collect(),
+            };
+            for path in paths {
+                let pts: Vec<Pos2> = path.into_iter().map(|p| screen(t.apply(p))).collect();
+                painter.add(egui::Shape::dashed_line(&pts, stroke, 5.0, 3.0));
+            }
+        }
+    }
+    if let Some(h) = app.edit.arrange.handle(&b).map(screen) {
+        let r = SelectionHandles::RADIUS as f32;
+        painter.circle(h, r, Color32::WHITE, Stroke::new(1.5, accent));
+        painter.line_segment([h - egui::vec2(r, 0.0), h + egui::vec2(r, 0.0)], stroke);
+        painter.line_segment([h - egui::vec2(0.0, r), h + egui::vec2(0.0, r)], stroke);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::app::Launch;
-    use openstitch_app::editor::{Phase, PointerEvent};
+    use openstitch_app::editor::PointerEvent;
     use openstitch_design::v2;
     use serde_json::json;
 
@@ -850,5 +972,180 @@ mod tests {
             .expect("region");
         assert_eq!(r.stamps.len(), 1);
         assert!(app.edit.stamp_pick.is_none());
+    }
+
+    fn gesture(app: &mut EditorApp, from: Vec2, to: Vec2) {
+        for (phase, at) in [(Phase::Down, from), (Phase::Dragged, to), (Phase::Up, to)] {
+            app.with_tools(|t, c| t.handle(PointerEvent::new(phase, at), c));
+        }
+    }
+
+    fn bounds(app: &EditorApp, id: u64) -> openstitch_design::Rect {
+        let d = app.session.design();
+        d.objects[d.index_of(id).expect("object")]
+            .bounds()
+            .expect("bounds")
+    }
+
+    #[test]
+    fn snap_to_grid_places_drawing_moves_and_points_on_the_grid() {
+        let mut app = EditorApp::new(Launch::default());
+        app.toggle_snap_to_grid();
+        app.workspace.grid.spacing_mm = 10.0;
+        app.tools.set_tool(Tool::Rectangle);
+        gesture(&mut app, v2(93.0, 104.0), v2(296.0, 212.0));
+        let b = bounds(&app, 1);
+        assert_eq!(
+            (b.min_x, b.min_y, b.max_x, b.max_y),
+            (100.0, 100.0, 300.0, 200.0)
+        );
+        // A move the grid rounds away does nothing; a longer one lands on the next line.
+        app.tools.set_tool(Tool::Select);
+        gesture(&mut app, v2(150.0, 150.0), v2(183.0, 160.0));
+        assert_eq!(bounds(&app, 1).min_x, 100.0);
+        gesture(&mut app, v2(150.0, 150.0), v2(214.0, 163.0));
+        let b = bounds(&app, 1);
+        assert_eq!((b.min_x, b.min_y), (200.0, 100.0));
+        app.tools.set_tool(Tool::Point);
+        gesture(&mut app, v2(200.0, 100.0), v2(288.0, 113.0));
+        let c = &app.session.design().objects[0].contours[0];
+        assert!(c.points.contains(&v2(300.0, 100.0)), "{:?}", c.points);
+        // Off: positions are taken as they are.
+        app.toggle_snap_to_grid();
+        app.tools.set_tool(Tool::Rectangle);
+        gesture(&mut app, v2(503.0, 507.0), v2(611.0, 655.0));
+        let b = bounds(&app, 2);
+        assert_eq!((b.min_x, b.min_y), (503.0, 507.0));
+    }
+
+    #[test]
+    fn dragging_an_entry_marker_is_one_undo() {
+        let mut app = EditorApp::new(Launch::default());
+        rect(&mut app, 10.0);
+        app.selection = BTreeSet::from([1]);
+        app.edit.pick = Some((1, Pick::Point(EntryExit::RegionEntry)));
+        assert!(pick(&mut app, v2(90.0, 200.0)));
+        let entry = |app: &EditorApp| {
+            app.session.design().objects[0]
+                .region
+                .as_ref()
+                .and_then(|r| r.entry)
+        };
+        assert_eq!(entry(&app), Some(v2(100.0, 200.0)));
+        assert!(
+            !drag(&mut app, Phase::Down, v2(200.0, 200.0)),
+            "not on a marker"
+        );
+        assert!(drag(&mut app, Phase::Down, v2(102.0, 203.0)));
+        assert!(drag(&mut app, Phase::Dragged, v2(210.0, 320.0)));
+        assert_eq!(
+            entry(&app),
+            Some(v2(100.0, 200.0)),
+            "unchanged until released"
+        );
+        assert!(drag(&mut app, Phase::Up, v2(210.0, 320.0)));
+        assert!(app.edit.marker_drag.is_none());
+        let moved = entry(&app).expect("entry");
+        assert_eq!(moved.y, 300.0, "on the outline: {moved:?}");
+        app.undo();
+        assert_eq!(entry(&app), Some(v2(100.0, 200.0)));
+    }
+
+    fn preview_bounds(app: &EditorApp) -> Vec<[i64; 4]> {
+        let b = bounds(app, 1);
+        let mut out: Vec<[i64; 4]> = app
+            .edit
+            .arrange
+            .transforms(&b)
+            .iter()
+            .map(|t| {
+                let corners = [
+                    v2(b.min_x, b.min_y),
+                    v2(b.max_x, b.min_y),
+                    v2(b.max_x, b.max_y),
+                    v2(b.min_x, b.max_y),
+                ]
+                .map(|p| t.apply(p));
+                let r = openstitch_design::Rect::enclosing(corners).expect("rect");
+                [r.min_x, r.min_y, r.max_x, r.max_y].map(|v| v.round() as i64)
+            })
+            .collect();
+        out.sort();
+        out
+    }
+
+    /// Runs the arrangement and returns the copies' bounds; undoes it again.
+    fn applied_bounds(app: &mut EditorApp) -> Vec<[i64; 4]> {
+        let result = app
+            .execute(&app.edit.arrange.request(&app.selection))
+            .expect("arranged");
+        let mut out: Vec<[i64; 4]> = CommandRequest::created_ids(&result)
+            .into_iter()
+            .map(|id| {
+                let r = bounds(app, id);
+                [r.min_x, r.min_y, r.max_x, r.max_y].map(|v| v.round() as i64)
+            })
+            .collect();
+        out.sort();
+        app.undo();
+        out
+    }
+
+    #[test]
+    fn arrange_preview_matches_the_copies_and_its_handle_drags() {
+        let mut app = EditorApp::new(Launch::default());
+        rect(&mut app, 10.0);
+        app.selection = BTreeSet::from([1]);
+        app.edit.arrange_open = true;
+        // Mirror: the handle is the mirror axis; dragging it 5 mm right makes a 10 mm gap.
+        app.edit.arrange.mode = ArrangeMode::MirrorHorizontal;
+        let b = bounds(&app, 1);
+        assert_eq!(app.edit.arrange.handle(&b), Some(v2(300.0, 200.0)));
+        assert!(drag(&mut app, Phase::Down, v2(302.0, 199.0)));
+        assert!(drag(&mut app, Phase::Dragged, v2(350.0, 230.0)));
+        assert!(drag(&mut app, Phase::Up, v2(350.0, 230.0)));
+        assert!(!app.edit.arrange_drag);
+        assert_eq!(app.edit.arrange.spacing, 10.0);
+        assert_eq!(preview_bounds(&app), vec![[400, 100, 600, 300]]);
+        assert_eq!(preview_bounds(&app), applied_bounds(&mut app));
+        assert_eq!(
+            app.session.design().objects.len(),
+            1,
+            "dragging adds nothing"
+        );
+        // Circle: the handle is the centre; the radius follows it.
+        app.edit.arrange.mode = ArrangeMode::Circle;
+        app.edit.arrange.count = 4;
+        assert!(drag(&mut app, Phase::Down, v2(200.0, 500.0)));
+        assert!(drag(&mut app, Phase::Up, v2(200.0, 600.0)));
+        assert_eq!(app.edit.arrange.radius, 40.0);
+        assert_eq!(app.edit.arrange.center, Some(v2(20.0, 60.0)));
+        assert_eq!(preview_bounds(&app).len(), 3);
+        assert_eq!(preview_bounds(&app), applied_bounds(&mut app));
+        app.edit.arrange.radius = 20.0;
+        app.edit.arrange.radius_changed(&bounds(&app, 1));
+        assert_eq!(app.edit.arrange.center, Some(v2(20.0, 40.0)));
+        // Matrix: the handle is the last copy's corner; dragging sets the gap, never a stack.
+        app.edit.arrange.mode = ArrangeMode::Matrix;
+        app.edit.arrange.rows = 1;
+        app.edit.arrange.columns = 3;
+        assert_eq!(
+            app.edit.arrange.handle(&bounds(&app, 1)),
+            Some(v2(540.0, 100.0))
+        );
+        assert!(drag(&mut app, Phase::Down, v2(540.0, 100.0)));
+        assert!(drag(&mut app, Phase::Up, v2(600.0, 100.0)));
+        assert_eq!(app.edit.arrange.spacing_x, 5.0);
+        assert_eq!(preview_bounds(&app), applied_bounds(&mut app));
+        app.edit.arrange.drag_handle(&bounds(&app, 1), v2(0.0, 0.0));
+        assert!(app.edit.arrange.spacing_x > -20.0);
+        assert!(
+            app.execute(&app.edit.arrange.request(&app.selection))
+                .is_some()
+        );
+        // Closed: no handle to grab.
+        app.undo();
+        app.edit.arrange_open = false;
+        assert!(!drag(&mut app, Phase::Down, v2(110.0, 100.0)));
     }
 }
