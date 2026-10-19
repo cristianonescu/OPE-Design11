@@ -310,34 +310,34 @@ commands! {
         Exit => "exit", "Exit", "Close the Stitch Design Factory and return to Layout & Editing.", None, None, Exit, Button, true;
         Options => "options", "Options", "Colour theme.", None, None, Options, Menu, true;
         Help => "help", "Help", "Instruction manual and information about OpenStitch.", None, None, Help, Menu, true;
-        SelectObject => "selectObject", "Select Object", "Select whole stitch objects.", None, None, SelectTool, Toggle, false;
+        SelectObject => "selectObject", "Select Object", "Click the pattern to select it; drag or the arrow keys move it (Shift: straight).", None, None, SelectTool, Toggle, true;
         SelectPoint => "selectPoint", "Select Point", "Drag points to move them; right-click deletes one.", None, None, PointTool, Toggle, true;
         LineTool => "line", "Line Tool", "Click to add needle points, satin stations, outline points or cross cells.", None, None, OpenStraight, Toggle, true;
-        PenTool => "pen", "Pen Tool", "Draw curves that are sewn as stitches.", None, None, ClosedCurve, Toggle, false;
+        PenTool => "pen", "Pen Tool", "Drag to draw: needle points, satin stations or cross cells along the stroke, or a new decorative satin outline.", None, None, ClosedCurve, Toggle, true;
         ZoomIn => "zoomIn", "Zoom in", "Magnify the design area.", Some("Ctrl+="), None, ZoomIn, Button, true;
         ZoomOut => "zoomOut", "Zoom Out", "Reduce the design area.", Some("Ctrl+-"), None, ZoomOut, Button, true;
-        SelectedZoom => "selectedZoom", "Selected object zoom", "Zoom to the selected object.", None, None, OtherZoom, Button, false;
-        Pan => "pan", "Pan", "Drag the magnified Design Page to scroll it.", None, None, Pan, Toggle, true;
+        SelectedZoom => "selectedZoom", "Selected object zoom", "Zoom so the pattern fills the design area.", None, None, OtherZoom, Button, true;
+        Pan => "pan", "Pan", "Drag the design area to scroll it.", None, None, Pan, Toggle, true;
         SingleStitch => "single", "Single Stitch", "Cross stitches sew each diagonal once.", None, None, OpenStraight, Toggle, true;
         TripleStitch => "triple", "Triple Stitch", "Cross stitches sew each diagonal three times.", None, None, Running, Toggle, true;
-        Swap => "swap", "Swap", "Swap the start and end of the selected stitches.", None, None, Connect, Button, false;
+        Swap => "swap", "Swap", "Swap the start (blue) and end (red) points: the pattern is sewn in reverse order.", None, None, Connect, Button, true;
         FlipVertical => "flipVertical", "Flip Vertical", "Mirror the pattern across the feed.", None, None, RotateFlip, Button, true;
         FlipHorizontal => "flipHorizontal", "Flip Horizontal", "Mirror the pattern along the feed.", None, None, RotateFlip, Button, true;
-        Duplicate => "duplicate", "Duplicate", "Add a copy of the selected stitches.", Some("Ctrl+D"), None, Duplicate, Button, false;
+        Duplicate => "duplicate", "Duplicate", "Add a copy of the pattern where it ends (not decorative satin).", Some("Ctrl+D"), None, Duplicate, Button, true;
         Delete => "delete", "Delete", "Delete the selected point (each kind keeps its minimum).", Some("Delete"), None, Delete, Button, true;
-        OpenTemplate => "openTemplate", "Open Template", "Show a PNG, JPEG or BMP image of your own behind the pattern to trace (one at a time).", None, None, OpenImage, Button, true;
-        ModifyTemplate => "modifyTemplate", "Modify Template", "Drag inside the red frame to move the template image, its corner to scale it; click outside to finish.", None, None, ModifyImage, Toggle, true;
+        OpenTemplate => "openTemplate", "Open Template", "Show an image of your own behind the pattern to trace (replaces the open one).", None, None, OpenImage, Button, true;
+        ModifyTemplate => "modifyTemplate", "Modify Template", "Drag inside the red frame to move the template, its corner to scale it; click outside to finish.", None, None, ModifyImage, Toggle, true;
         DeleteImage => "deleteImage", "Delete Image", "Remove the template image.", None, None, DeleteImage, Button, true;
-        TemplateDensity => "templateDensity", "Template Density", "Fade the template image.", None, None, ImageDensity, Menu, false;
+        TemplateDensity => "templateDensity", "Template Density", "Fade the template image; at 0 % it is hidden (F6 steps through).", Some("F6"), None, ImageDensity, Menu, true;
         NeedleDropPoint => "needleDrops", "Needle Drop Point", "Show the needle drop points.", None, None, SewingPoints, Toggle, true;
-        HorizontalOrientation => "horizontal", "Horizontal Orientation", "Turn the design area to sew upwards instead of to the right.", None, None, ImageRotateRight, Toggle, false;
+        HorizontalOrientation => "horizontal", "Horizontal Orientation", "Lay the design page landscape, the feed running to the right; off, it runs upwards.", None, None, ImageRotateRight, Toggle, true;
         ImportPane => "importPane", "Import Pane", "The patterns kept in the project; Edit loads one.", None, Some("sewing.list"), PaneImport, Toggle, true;
         PreviewWindow => "previewWindow", "Preview Window", "The pattern repeated as the machine sews it.", None, None, PaneSimulator, Toggle, true;
         StatusBar => "statusBar", "Status Bar", "Show the status bar.", None, None, PaneAttributes, Toggle, true;
-        ShowGrid => "showGrid", "Show Grid", "Show a 1 mm grid.", None, None, ShowGrid, Toggle, true;
-        SnapToGrid => "snapToGrid", "Snap to Grid", "Points snap to 0.25 mm.", None, None, SnapToGrid, Toggle, true;
-        GridSpacing => "gridSpacing", "Grid Spacing", "Distance between grid lines.", None, None, GridSpacing, Menu, false;
-        StitchSimulator => "simulator", "Stitch Simulator", "Play the stitching needle by needle.", None, None, PaneSimulator, Toggle, false;
+        ShowGrid => "showGrid", "Show Grid", "Show the grid.", None, None, ShowGrid, Toggle, true;
+        SnapToGrid => "snapToGrid", "Snap to Grid", "Points snap to the grid, shown or not.", None, None, SnapToGrid, Toggle, true;
+        GridSpacing => "gridSpacing", "Grid Spacing", "Distance between grid lines: 0.25-5 mm.", None, None, GridSpacing, Menu, true;
+        StitchSimulator => "simulator", "Stitch Simulator", "Play the stitching needle by needle over three repeats.", None, None, PaneSimulator, Toggle, true;
     }
 }
 

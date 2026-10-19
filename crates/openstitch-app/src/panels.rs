@@ -593,15 +593,22 @@ fn control(app: &mut EditorApp, ui: &mut egui::Ui, c: &Control) -> Option<Value>
 
 // MARK: simulator
 
-pub fn simulator(app: &mut EditorApp, ui: &mut egui::Ui) {
-    let total = app.stats.stitches;
-    ui.add_space(4.0);
+/// The simulator's transport: Play/Pause, start, previous and next stitch, end, a slider, the
+/// position and the speed. `pos` is the stitch reached (`None`: all sewn). Shared by the
+/// editor's Stitch Simulator pane and the Stitch Design Factory's simulator.
+pub fn sim_controls(
+    ui: &mut egui::Ui,
+    playing: &mut bool,
+    pos: &mut Option<usize>,
+    speed: &mut f64,
+    total: usize,
+) {
     ui.horizontal(|ui| {
-        let play = if app.playing { "Pause" } else { "Play" };
+        let play = if *playing { "Pause" } else { "Play" };
         if ui.add_enabled(total > 0, egui::Button::new(play)).clicked() {
-            app.playing = !app.playing;
-            if app.playing && app.simulate.is_none() {
-                app.simulate = Some(0);
+            *playing = !*playing;
+            if *playing && pos.is_none() {
+                *pos = Some(0);
             }
         }
         if ui
@@ -609,49 +616,64 @@ pub fn simulator(app: &mut EditorApp, ui: &mut egui::Ui) {
             .on_hover_text("Start")
             .clicked()
         {
-            app.simulate = Some(0);
+            *pos = Some(0);
         }
         if ui
             .add_enabled(total > 0, egui::Button::new("<"))
             .on_hover_text("Previous stitch")
             .clicked()
         {
-            app.simulate = Some(app.simulate.unwrap_or(total).saturating_sub(1));
+            *pos = Some(pos.unwrap_or(total).saturating_sub(1));
         }
         if ui
             .add_enabled(total > 0, egui::Button::new(">"))
             .on_hover_text("Next stitch")
             .clicked()
         {
-            let n = app.simulate.map_or(total, |n| n + 1);
-            app.simulate = (n < total).then_some(n);
+            let n = pos.map_or(total, |n| n + 1);
+            *pos = (n < total).then_some(n);
         }
         if ui
             .add_enabled(total > 0, egui::Button::new(">|"))
             .on_hover_text("End")
             .clicked()
         {
-            app.simulate = None;
-            app.playing = false;
+            *pos = None;
+            *playing = false;
         }
-        let mut n = app.simulate.unwrap_or(total);
+        let mut n = pos.unwrap_or(total);
         let slider = egui::Slider::new(&mut n, 0..=total.max(1)).show_value(false);
         let width = (ui.available_width() - 260.0).max(120.0);
         ui.spacing_mut().slider_width = width;
         if ui.add_enabled(total > 0, slider).changed() {
-            app.simulate = (n < total).then_some(n);
-            app.playing = false;
+            *pos = (n < total).then_some(n);
+            *playing = false;
         }
-        ui.label(format!("{} / {}", app.simulate.unwrap_or(total), total));
+        ui.label(format!("{} / {}", pos.unwrap_or(total), total));
         egui::ComboBox::from_id_salt("speed")
-            .selected_text(format!("{:.0}/s", app.play_speed))
+            .selected_text(format!("{:.0}/s", *speed))
             .width(70.0)
             .show_ui(ui, |ui| {
-                for s in [50.0, 200.0, 400.0, 1000.0, 4000.0] {
-                    ui.selectable_value(&mut app.play_speed, s, format!("{s:.0}/s"));
+                for s in SIM_SPEEDS {
+                    ui.selectable_value(speed, s, format!("{s:.0}/s"));
                 }
             });
     });
+}
+
+/// Simulator speeds (stitches per second).
+pub const SIM_SPEEDS: [f64; 5] = [50.0, 200.0, 400.0, 1000.0, 4000.0];
+
+pub fn simulator(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let total = app.stats.stitches;
+    ui.add_space(4.0);
+    sim_controls(
+        ui,
+        &mut app.playing,
+        &mut app.simulate,
+        &mut app.play_speed,
+        total,
+    );
     ui.horizontal(|ui| {
         let s = &app.stats;
         ui.label(format!(

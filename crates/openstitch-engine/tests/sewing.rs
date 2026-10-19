@@ -142,6 +142,10 @@ fn hostile_sewing_input_fails_cleanly() {
             json!({"id": "my-decorative", "path": "x.svg", "repeats": 50}),
         ),
         ("sewing.import", json!({"path": "missing.json"})),
+        ("sewing.swap", json!({"id": "nope"})),
+        ("sewing.swap", json!({})),
+        ("sewing.duplicate", json!({"id": "nope"})),
+        ("sewing.duplicate", json!({"id": 7})),
     ];
     for (id, params) in cases {
         assert!(s.execute(id, Some(&params)).is_err(), "{id} {params}");
@@ -185,4 +189,38 @@ fn hostile_sewing_input_fails_cleanly() {
     let first = v["design"]["sewing"][0].clone();
     v["design"]["sewing"] = json!([first.clone(), first]);
     assert!(project::decode(&serde_json::to_vec(&v).expect("bytes")).is_err());
+}
+
+#[test]
+fn swap_and_duplicate_edit_project_patterns_with_one_undo_each() {
+    let mut s = Session::sandboxed(temp_dir());
+    for kind in SewingKind::ALL {
+        run(&mut s, "sewing.define", json!({ "stitch": doc(kind) }));
+    }
+    let r = run(&mut s, "sewing.swap", json!({"id": "my-decorative"}));
+    assert_eq!(r["swapped"], true);
+    let got = run(&mut s, "sewing.get", json!({"id": "my-decorative"}));
+    assert_eq!(got["swapped"], true);
+    assert_eq!(
+        got["needles"][0],
+        json!([8.0, 0.0]),
+        "starts at the old end"
+    );
+
+    let r = run(&mut s, "sewing.duplicate", json!({"id": "my-satin"}));
+    assert_eq!(r["lengthMM"], 16.0);
+    let before = s.design().clone();
+    assert!(
+        s.execute(
+            "sewing.duplicate",
+            Some(&json!({"id": "my-decorativesatin"}))
+        )
+        .is_err(),
+        "one outline holds no copy"
+    );
+    assert_eq!(s.design(), &before);
+    run(&mut s, "history.undo", json!({}));
+    assert_eq!(s.design().sewing[1], SewingStitch::new(SewingKind::Satin));
+    run(&mut s, "history.undo", json!({}));
+    assert!(!s.design().sewing[0].swapped);
 }

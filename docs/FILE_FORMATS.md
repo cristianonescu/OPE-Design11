@@ -509,7 +509,9 @@ The Stitch Design Factory's own documented format for sewing-machine stitch patt
 | `decorativeSatin` | `outline`: 3–500 points enclosing an area; `density` 1–10 /mm |
 | `cross` | `cellSize` 0.5–5 mm, `rows` (rows × cell ≤ width), `cells`: 1–500 `[column, row]`; `triple` |
 
-Common: `id` (1–64 `a-z 0-9 -`), `name` (1–128 bytes), `width` 1–9 mm. Exports add a
+Common: `id` (1–64 `a-z 0-9 -`), `name` (1–128 bytes), `width` 1–9 mm, optional
+`swapped: true` (Swap: start and end exchanged, the needle points sewn in reverse order;
+written only when on). Exports add a
 `needles` array (the generated needle points, rounded to 0.001 mm) that readers ignore and
 regenerate. Unknown fields are refused. Projects keep their patterns in `design.sewing`.
 
