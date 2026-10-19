@@ -1,0 +1,136 @@
+name: Release smoke test
+
+# Launches the packages of a published release on clean Windows and Linux runners:
+# - installs the MSI and runs the portable zip;
+# - runs the AppImage and the tarball;
+# - renders the demo, a PES file and the Design Database headless;
+# - runs the CLI.
+# Screenshots and logs are uploaded for review. Run it from the Actions tab with the tag. It also
+# runs on pull requests that change this file, against the tag below.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to test
+        required: true
+        default: v0.1.0-alpha.1
+  pull_request:
+    paths: [.github/workflows/release-smoke.yml]
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ inputs.tag || 'v0.1.0-alpha.1' }}
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: crates/openstitch-formats/tests/fixtures
+      - name: Download the Linux packages
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*linux-x86_64*' --dir rel
+      - name: Software rendering and X server
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -yq xvfb mesa-vulkan-drivers libgl1-mesa-dri libegl1 \
+            libxkbcommon-x11-0 libxcursor1 libxrandr2 libxi6
+      - name: Launch the AppImage, the tarball and the CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out db
+          cp crates/openstitch-formats/tests/fixtures/oracle.pes . && cp oracle.pes db/
+          image=$(ls rel/OpenStitch-*-linux-x86_64.AppImage); chmod +x "$image"
+          scene() { # <name> <program> <args...>
+            local name=$1; shift
+            if xvfb-run -a -s "-screen 0 1600x1000x24" timeout 120 "$@" --screenshot "out/$name.png" \
+                > "out/$name.log" 2>&1 && test -s "out/$name.png"; then
+              echo "ok: $name"
+            else
+              echo "FAIL: $name"; cat "out/$name.log"; return 1
+            fi
+          }
+          scene appimage-demo "$image" --appimage-extract-and-run --demo
+          scene appimage-pes "$image" --appimage-extract-and-run oracle.pes --ribbon view
+          scene appimage-database "$image" --appimage-extract-and-run --database db --db-view large
+          mkdir tarball && tar -xzf rel/OpenStitch-*-linux-x86_64.tar.gz -C tarball
+          bin=$(find tarball -path '*bin/openstitch' -type f | head -1)
+          scene tarball-demo "$bin" --demo
+          mkdir cli && tar -xzf rel/openstitch-cli-*-linux-x86_64.tar.gz -C cli
+          tool=$(find cli -name stitchtool -type f | head -1)
+          printf '%s' '[{"command":"design.new","params":{"name":"smoke","width":50,"height":50}},
+            {"command":"shape.rectangle","params":{"x":10,"y":10,"width":20,"height":10,"fill":"Red"}},
+            {"command":"design.export","params":{"path":"smoke.pes"}},
+            {"command":"design.export","params":{"path":"smoke.dst"}}]' > smoke.json
+          "$tool" exec smoke.json > /dev/null
+          test "$(head -c 8 smoke.pes)" = "#PES0060" && test -s smoke.dst && echo "ok: CLI writes PES v6 and DST"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-linux
+          path: out/
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: crates/openstitch-formats/tests/fixtures
+      - name: Download the Windows packages
+        shell: bash
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*windows-x86_64*' --dir rel
+      - name: Install the MSI, launch it and the portable zip, run the CLI
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force out, db | Out-Null
+          Copy-Item crates\openstitch-formats\tests\fixtures\oracle.pes .
+          Copy-Item oracle.pes db\
+          $msi = (Get-ChildItem rel\OpenStitch-*-windows-x86_64.msi).FullName
+          $p = Start-Process msiexec.exe -ArgumentList '/i', "`"$msi`"", '/qn', '/l*v', 'out\install.log' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "MSI install failed: $($p.ExitCode)" }
+          $installed = Join-Path $env:ProgramFiles 'OpenStitch\openstitch.exe'
+          if (-not (Test-Path $installed)) { throw "not installed at $installed" }
+          'ok: MSI installed'
+          function Scene($name, $exe, [string[]]$args2) {
+            $all = $args2 + @('--screenshot', "out\$name.png")
+            $proc = Start-Process $exe -ArgumentList $all -PassThru -NoNewWindow `
+              -RedirectStandardOutput "out\$name.out.log" -RedirectStandardError "out\$name.err.log"
+            if (-not $proc.WaitForExit(120000)) { $proc.Kill(); throw "${name}: did not exit within 120 s" }
+            if ($proc.ExitCode -ne 0 -or -not (Test-Path "out\$name.png")) {
+              Get-Content "out\$name.err.log" -ErrorAction SilentlyContinue
+              throw "${name}: exit $($proc.ExitCode)"
+            }
+            "ok: $name"
+          }
+          Scene 'msi-demo' $installed @('--demo')
+          Scene 'msi-pes' $installed @('oracle.pes', '--ribbon', 'view')
+          Scene 'msi-database' $installed @('--database', 'db', '--db-view', 'large')
+          # Wildcards ignore case on Windows, so exclude the CLI archive explicitly.
+          $zip = Get-ChildItem rel\OpenStitch-*-windows-x86_64.zip | Where-Object Name -notlike 'openstitch-cli-*'
+          if (@($zip).Count -ne 1) { throw "expected one portable zip, found $(@($zip).Count)" }
+          Expand-Archive $zip.FullName portable
+          $portable = (Get-ChildItem portable -Recurse -Filter openstitch.exe | Select-Object -First 1).FullName
+          Scene 'portable-demo' $portable @('--demo')
+          Expand-Archive (Get-ChildItem rel\openstitch-cli-*-windows-x86_64.zip).FullName cli
+          $tool = (Get-ChildItem cli -Recurse -Filter stitchtool.exe | Select-Object -First 1).FullName
+          Set-Content smoke.json '[{"command":"design.new","params":{"name":"smoke","width":50,"height":50}},{"command":"shape.rectangle","params":{"x":10,"y":10,"width":20,"height":10,"fill":"Red"}},{"command":"design.export","params":{"path":"smoke.pes"}},{"command":"design.export","params":{"path":"smoke.dst"}}]'
+          & $tool exec smoke.json | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "stitchtool exec failed" }
+          $head = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes('smoke.pes')[0..7])
+          if ($head -ne '#PES0060' -or (Get-Item smoke.dst).Length -eq 0) { throw "CLI output wrong: $head" }
+          'ok: CLI writes PES v6 and DST'
+          $p = Start-Process msiexec.exe -ArgumentList '/x', "`"$msi`"", '/qn' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "MSI uninstall failed: $($p.ExitCode)" }
+          if (Test-Path $installed) { throw "uninstall left $installed" }
+          'ok: MSI uninstalled'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-windows
+          path: out/
