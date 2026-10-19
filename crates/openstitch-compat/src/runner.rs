@@ -34,7 +34,8 @@ pub struct Config {
     pub machine_root: PathBuf,
     /// Scratch space: one fresh sub-directory per spec.
     pub work_dir: PathBuf,
-    /// Run only specs whose id contains this.
+    /// Run only specs whose `area/id` contains this (an id, part of one, `area/id` or `area/`).
+    /// Matching no spec is an error, so a typo never looks like a passing run.
     pub only: Option<String>,
 }
 
@@ -64,19 +65,26 @@ struct Exported {
 pub fn run(config: &Config) -> Result<Report, String> {
     let loaded = spec::load_dir(&config.specs_dir)?;
     let manifest = provenance::load_manifest(&config.reference_root)?;
+    let selected = |path: &str| {
+        let name = path.strip_suffix(".json").unwrap_or(path);
+        config
+            .only
+            .as_ref()
+            .is_none_or(|o| name.contains(o.as_str()))
+    };
+    if let Some(only) = &config.only
+        && !loaded.iter().any(|l| selected(&l.path))
+    {
+        return Err(no_match(only, &loaded));
+    }
     let mut results = Vec::new();
     let mut invalid = Vec::new();
     for l in loaded {
         match l.spec {
             Ok(s) => {
-                if config
-                    .only
-                    .as_ref()
-                    .is_some_and(|o| !s.id.contains(o.as_str()))
-                {
-                    continue;
+                if selected(&l.path) {
+                    results.push(run_spec(&s, &l.path, config, &manifest));
                 }
-                results.push(run_spec(&s, &l.path, config, &manifest));
             }
             Err(problems) => invalid.push(InvalidSpec {
                 path: l.path,
@@ -85,6 +93,48 @@ pub fn run(config: &Config) -> Result<Report, String> {
         }
     }
     Ok(Report::new(results, invalid))
+}
+
+/// The error for an `--only` that selects nothing: the closest spec names, or all of them.
+fn no_match(only: &str, loaded: &[spec::Loaded]) -> String {
+    let names: Vec<&str> = loaded
+        .iter()
+        .map(|l| l.path.strip_suffix(".json").unwrap_or(&l.path))
+        .collect();
+    let words: Vec<&str> = only
+        .split(['/', '-', '_', '.', ' '])
+        .filter(|w| w.len() >= 3)
+        .collect();
+    // The same id under another area first, then the most matched characters.
+    let last = only.rsplit('/').next().unwrap_or(only);
+    let mut close: Vec<(usize, &str)> = names
+        .iter()
+        .map(|n| {
+            let same_id = n.rsplit('/').next() == Some(last);
+            let shared: usize = words
+                .iter()
+                .filter(|w| n.contains(**w))
+                .map(|w| w.len())
+                .sum();
+            (usize::from(same_id) * 1000 + shared, *n)
+        })
+        .filter(|(score, _)| *score > 0)
+        .collect();
+    close.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(b.1)));
+    let (label, list): (&str, Vec<&str>) = if close.is_empty() {
+        ("Specs", names.clone())
+    } else {
+        ("Close matches", close.iter().take(8).map(|c| c.1).collect())
+    };
+    format!(
+        "--only {only:?} matches no spec. --only takes an id, part of one, area/id or area/ \
+         (the files are <specs>/<area>/<id>.json). {label}: {}",
+        if list.is_empty() {
+            "none (the specs directory is empty)".to_string()
+        } else {
+            list.join(", ")
+        }
+    )
 }
 
 pub fn run_spec(spec: &Spec, path: &str, config: &Config, manifest: &Manifest) -> SpecResult {

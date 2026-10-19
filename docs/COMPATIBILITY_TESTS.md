@@ -24,7 +24,7 @@ The command writes `target/compat/report.json` (every check, value and differenc
 | `--matrix FILE` | `docs/FEATURE_MATRIX.md` | Every row a spec names must exist exactly once. |
 | `--status FILE` | — | Writes the generated tier table. |
 | `--check-status FILE` | — | Fails if FILE differs from the table this run generates (CI). |
-| `--only TEXT` | — | Runs only specs whose id contains TEXT. |
+| `--only TEXT` | — | Runs only specs whose `area/id` contains TEXT: an id, part of one, `area/id` as the summary shows it, or `area/`. Matching no spec is an error that lists the closest spec names. |
 
 CI runs `compat --check-status docs/COMPATIBILITY_STATUS.md` on the ubuntu-latest job. It adds
 the summary to the job page and uploads the report as the `compat-report` artifact.

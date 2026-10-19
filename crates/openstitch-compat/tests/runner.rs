@@ -489,3 +489,41 @@ fn feature_matrix_rows_must_exist_and_the_status_check_catches_stale_tables() {
     assert!(openstitch_compat::cli::parse(&["--bogus"]).is_err());
     assert!(openstitch_compat::cli::parse(&["--specs"]).is_err());
 }
+
+#[test]
+fn only_selects_by_id_or_area_and_a_typo_is_an_error() {
+    let root = temp_root("only");
+    write_spec(&root, &satin("satin-j"));
+    write_spec(&root, &satin("satin-k"));
+    let mut pes = satin("pes-like");
+    pes["area"] = json!("pes");
+    write_spec(&root, &pes);
+    let ids = |only: &str| -> Result<Vec<String>, String> {
+        let c = Config {
+            only: Some(only.into()),
+            ..config(&root)
+        };
+        run(&c).map(|r| r.specs.iter().map(|s| s.id.clone()).collect())
+    };
+    assert_eq!(ids("satin-j").expect("id"), ["satin-j"]);
+    assert_eq!(ids("stitches/satin-k").expect("area/id"), ["satin-k"]);
+    assert_eq!(ids("pes/").expect("area"), ["pes-like"]);
+    assert_eq!(ids("satin").expect("part").len(), 2);
+
+    // The summary's `area/id` with the wrong area, and an unrelated word.
+    let e = ids("pes/satin-j").expect_err("no spec");
+    assert!(e.contains("matches no spec"), "{e}");
+    assert!(e.contains("Close matches: stitches/satin-j"), "{e}");
+    let e = ids("zzz").expect_err("no spec");
+    assert!(
+        e.contains("Specs: pes/pes-like, stitches/satin-j, stitches/satin-k"),
+        "{e}"
+    );
+
+    // Through the CLI: an error, so `stitchtool compat` exits non-zero.
+    let specs = root.join("specs").to_string_lossy().into_owned();
+    let work = root.join("work").to_string_lossy().into_owned();
+    let o = openstitch_compat::cli::parse(&["--specs", &specs, "--work", &work, "--only", "nope"])
+        .expect("parse");
+    assert!(openstitch_compat::cli::run(&o).is_err());
+}

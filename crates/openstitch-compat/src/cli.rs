@@ -6,7 +6,7 @@ use crate::runner::{Config, run_with_matrix};
 use std::path::{Path, PathBuf};
 
 pub const USAGE: &str = "usage: stitchtool compat [--specs DIR] [--reference DIR] [--machine DIR] \
-[--work DIR] [--report FILE] [--summary FILE] [--matrix FILE] [--status FILE] [--check-status FILE] [--only ID]";
+[--work DIR] [--report FILE] [--summary FILE] [--matrix FILE] [--status FILE] [--check-status FILE] [--only ID|AREA/ID]";
 
 #[derive(Debug, PartialEq)]
 pub struct Options {
