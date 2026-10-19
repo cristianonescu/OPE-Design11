@@ -437,6 +437,7 @@ impl DesignObject {
             for l in &mut r.direction_lines {
                 *l = [t.apply(l[0]), t.apply(l[1])];
             }
+            r.skeleton = r.skeleton.as_ref().map(|s| s.transformed(t));
         }
         if let Some(l) = &mut self.line {
             l.entry = l.entry.map(|p| t.apply(p));
@@ -694,6 +695,10 @@ pub struct RegionSewing {
     /// column sewn along them (satin and fill). Each is [left end, right end].
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub direction_lines: Vec<[Vec2; 2]>,
+    /// Satin along a centre line with a width at each point: the stitch direction follows
+    /// the line (variable-direction satin). Takes precedence over the other direction options.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub skeleton: Option<crate::skeleton::Skeleton>,
 }
 
 impl RegionSewing {
@@ -741,6 +746,7 @@ impl RegionSewing {
             direction_curve: None,
             stamps: Vec::new(),
             direction_lines: Vec::new(),
+            skeleton: None,
         }
     }
 

@@ -53,8 +53,9 @@ for macOS, Windows and Linux. CI builds and tests all three.
 
 ## Still to do
 
-1. **Editing details:** keeping Bézier curves through shape operations, variable-direction
-   satin along a skeleton.
+1. **Editing details:** an editor tool for drawing satin skeletons and deriving one from a
+   shape (the engine keeps Bézier curves through shape operations and sews variable-direction
+   satin along a skeleton).
 2. **Lettering:** a shaping engine for right-to-left and complex scripts, vertical CJK text,
    kerning, per-character edits, Font Creator characters from background images in one step.
 3. **Formats:** CSD export (no public writer); editable PES shapes and text (no public

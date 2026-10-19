@@ -592,8 +592,9 @@ openstitch_app::editor (lib, no egui, unit-tested)
   Its dependencies (`i_float`, `i_shape`, `i_tree`, `i_key_sort`) are by the same author under
   the same licence. `geo` itself was not used: it would add the whole GIS type stack for the same
   engine. `clipper2` bindings were rejected (C++ through FFI). Writing a clipper in-house was
-  rejected as a large correctness risk. Curved segments are flattened before clipping (results
-  are straight polygons); the crate needs Rust 1.88, set as `openstitch-design`'s `rust-version` (the workspace keeps 1.85).
+  rejected as a large correctness risk. Curved segments are flattened with provenance before
+  clipping; afterwards result edges that follow an input curve are restored as exact Bézier
+  pieces of it (offsets: of the curve's offset copy), the rest stay straight; the crate needs Rust 1.88, set as `openstitch-design`'s `rust-version` (the workspace keeps 1.85).
   `openstitch_design::boolean` wraps it, so a different engine can replace it in one file.
 - **User settings outside designs (2026-10-19).** Attribute sets and user thread charts live in
   one JSON file per user (`openstitch.user` format), loaded by the front end that wants them
