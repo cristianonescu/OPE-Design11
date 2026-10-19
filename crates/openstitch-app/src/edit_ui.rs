@@ -3,7 +3,7 @@
 //! markers. Requests come from `openstitch_app::editor::edit_ops`; each action is one command,
 //! so one Undo.
 
-use crate::app::{CMD, EditorApp};
+use crate::app::EditorApp;
 use eframe::egui::{self, Color32, Pos2, Stroke};
 use openstitch_app::editor::edit_ops::{
     self, ArrangeForm, ArrangeMode, EntryExit, FloralForm, OffsetForm, Pick,
@@ -80,58 +80,27 @@ fn run_and_select(app: &mut EditorApp, r: CommandRequest) {
     }
 }
 
-/// Edit menu: group, ungroup, arrange copies, copy/paste attributes.
-pub fn edit_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
-    ui.separator();
-    let d = app.session.design();
-    let many = app.selection.len() >= 2;
-    let grouped = edit_ops::any_grouped(d, &app.selection);
-    if ui
-        .add_enabled(
-            many,
-            egui::Button::new("Group").shortcut_text(format!("{CMD}G")),
-        )
-        .clicked()
-    {
-        group(app);
-    }
-    if ui
-        .add_enabled(
-            grouped,
-            egui::Button::new("Ungroup").shortcut_text(format!("{CMD}Shift+G")),
-        )
-        .clicked()
-    {
-        ungroup(app);
-    }
-    if ui
-        .add_enabled(
-            !app.selection.is_empty(),
-            egui::Button::new("Arrange Copies…"),
-        )
-        .clicked()
-    {
-        app.edit.arrange_open = true;
-        app.edit.arrange.center = None;
-    }
-    ui.separator();
-    let source = single(app).filter(|&id| kind_of(app, id) != Some(ObjectKind::Stitches));
-    if ui
-        .add_enabled(source.is_some(), egui::Button::new("Copy Attributes"))
-        .clicked()
-    {
-        app.edit.attributes_from = source;
+/// Copy Attributes: remembers the single selected shape or text.
+pub fn copy_attributes_source(app: &EditorApp) -> Option<u64> {
+    single(app).filter(|&id| kind_of(app, id) != Some(ObjectKind::Stitches))
+}
+
+pub fn copy_attributes(app: &mut EditorApp) {
+    if let Some(source) = copy_attributes_source(app) {
+        app.edit.attributes_from = Some(source);
         app.status = "Sewing attributes copied; select the targets and Paste Attributes".into();
     }
-    let paste = app
-        .edit
+}
+
+/// The object whose attributes Paste Attributes would give the selection.
+pub fn paste_attributes_source(app: &EditorApp) -> Option<u64> {
+    app.edit
         .attributes_from
-        .filter(|f| app.selection.iter().any(|id| id != f));
-    if ui
-        .add_enabled(paste.is_some(), egui::Button::new("Paste Attributes"))
-        .clicked()
-        && let Some(from) = paste
-    {
+        .filter(|f| app.selection.iter().any(|id| id != f))
+}
+
+pub fn paste_attributes(app: &mut EditorApp) {
+    if let Some(from) = paste_attributes_source(app) {
         let r = edit_ops::paste_attributes(from, &app.selection);
         app.execute(&r);
     }
@@ -151,182 +120,188 @@ pub fn ungroup(app: &mut EditorApp) {
     }
 }
 
-/// The Shapes menu.
-pub fn shapes_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
-    ui.menu_button("Shapes", |ui| {
-        ui.menu_button("Insert", |ui| {
-            for (label, kind) in edit_ops::PRESETS {
-                if ui.button(label).clicked() {
-                    let center = app.session.design().page.center();
-                    run_and_select(app, edit_ops::insert_preset(kind, center, 30.0));
-                }
-            }
-        });
-        ui.separator();
-        let many = app.selection.len() >= 2;
-        if ui.add_enabled(many, egui::Button::new("Merge")).clicked() {
-            let r = edit_ops::merge(&app.selection);
+pub fn can_ungroup(app: &EditorApp) -> bool {
+    edit_ops::any_grouped(app.session.design(), &app.selection)
+}
+
+/// The single selected shape object.
+pub fn single_shape(app: &EditorApp) -> Option<u64> {
+    single(app).filter(|&id| kind_of(app, id) == Some(ObjectKind::Shape))
+}
+
+/// The single selected shape or text (Offset Lines, Floral Pattern).
+pub fn single_outline(app: &EditorApp) -> Option<u64> {
+    single(app).filter(|&id| matches!(kind_of(app, id), Some(ObjectKind::Shape | ObjectKind::Text)))
+}
+
+/// The single selected shape with region sewing (sewing direction, centre point).
+pub fn single_region(app: &EditorApp) -> Option<u64> {
+    single_shape(app).filter(|&id| {
+        let d = app.session.design();
+        d.index_of(id)
+            .is_some_and(|i| d.objects[i].region.is_some())
+    })
+}
+
+/// Shapes ▸ Insert: preset shapes placed in the middle of the Design Page.
+pub fn insert_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    for (label, kind) in edit_ops::PRESETS {
+        if ui.button(label).clicked() {
+            let center = app.session.design().page.center();
+            run_and_select(app, edit_ops::insert_preset(kind, center, 30.0));
+        }
+    }
+}
+
+/// Modify Overlap: merge, remove overlap, combine.
+pub fn overlap_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let many = app.selection.len() >= 2;
+    if ui.add_enabled(many, egui::Button::new("Merge")).clicked() {
+        let r = edit_ops::merge(&app.selection);
+        run_and_select(app, r);
+    }
+    if ui
+        .add_enabled(many, egui::Button::new("Remove Overlap"))
+        .clicked()
+    {
+        let r = edit_ops::remove_overlap(&app.selection);
+        app.execute(&r);
+    }
+    ui.separator();
+    for (label, op) in [
+        ("Union", "union"),
+        ("Subtract from first", "difference"),
+        ("Intersect", "intersection"),
+        ("Exclude overlap", "xor"),
+    ] {
+        if ui.add_enabled(many, egui::Button::new(label)).clicked() {
+            let r = edit_ops::combine(app.session.design(), &app.selection, op);
             run_and_select(app, r);
         }
-        if ui
-            .add_enabled(many, egui::Button::new("Remove Overlap"))
-            .clicked()
-        {
-            let r = edit_ops::remove_overlap(&app.selection);
-            app.execute(&r);
+    }
+}
+
+/// Split Outline: the next polygon drawn cuts the selected shape.
+pub fn split_outline(app: &mut EditorApp) {
+    if let Some(shape) = single_shape(app) {
+        app.edit.split_target = Some(shape);
+        app.tools.set_tool(Tool::Polygon);
+        app.status = "Draw the cut outline; Return or double-click splits, Esc cancels".into();
+    }
+}
+
+pub fn decorative_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    ui.checkbox(&mut app.edit.frame_keep_aspect, "Maintain aspect ratio");
+    ui.separator();
+    for (label, kind) in edit_ops::FRAMES {
+        if ui.button(label).clicked() {
+            let r = edit_ops::decorative(kind, &app.selection, app.edit.frame_keep_aspect);
+            run_and_select(app, r);
         }
-        ui.add_enabled_ui(many, |ui| {
-            ui.menu_button("Combine", |ui| {
-                for (label, op) in [
-                    ("Union", "union"),
-                    ("Subtract from first", "difference"),
-                    ("Intersect", "intersection"),
-                    ("Exclude overlap", "xor"),
-                ] {
-                    if ui.button(label).clicked() {
-                        let r = edit_ops::combine(app.session.design(), &app.selection, op);
-                        run_and_select(app, r);
-                    }
+    }
+}
+
+/// Stamp/Emboss: emboss/engrave with a second shape, or place stamp patterns.
+pub fn stamp_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let shape = single_shape(app);
+    let two = app.selection.len() == 2;
+    for (label, effect) in edit_ops::EMBOSS {
+        if ui
+            .add_enabled(two, egui::Button::new(label))
+            .on_hover_text("Select the shape and the shape on top that gives the outline")
+            .clicked()
+            && let Some(r) = edit_ops::emboss(app.session.design(), &app.selection, effect)
+        {
+            run_and_select(app, r);
+        }
+    }
+    ui.separator();
+    ui.add_enabled_ui(shape.is_some(), |ui| {
+        egui::ComboBox::from_label("Stamp")
+            .selected_text(openstitch_design::stamp::PATTERNS[app.edit.stamp_pattern])
+            .show_ui(ui, |ui| {
+                for (k, p) in openstitch_design::stamp::PATTERNS.iter().enumerate() {
+                    ui.selectable_value(&mut app.edit.stamp_pattern, k, *p);
                 }
             });
-        });
-        let one = single(app);
-        let shape = one.filter(|&id| kind_of(app, id) == Some(ObjectKind::Shape));
-        if ui
-            .add_enabled(shape.is_some(), egui::Button::new("Split with Outline"))
-            .clicked()
-        {
-            app.edit.split_target = shape;
-            app.tools.set_tool(Tool::Polygon);
-            app.status = "Draw the cut outline; Return or double-click splits, Esc cancels".into();
-        }
-        let outline = one
-            .filter(|&id| matches!(kind_of(app, id), Some(ObjectKind::Shape | ObjectKind::Text)));
-        if ui
-            .add_enabled(outline.is_some(), egui::Button::new("Offset Lines…"))
-            .clicked()
-        {
-            app.edit.offset_open = true;
-        }
-        if ui
-            .add_enabled(outline.is_some(), egui::Button::new("Floral Pattern…"))
-            .clicked()
-        {
-            app.edit.floral_open = true;
-        }
-        ui.menu_button("Decorative Frame", |ui| {
-            ui.checkbox(&mut app.edit.frame_keep_aspect, "Maintain aspect ratio");
-            ui.separator();
-            for (label, kind) in edit_ops::FRAMES {
-                if ui.button(label).clicked() {
-                    let r = edit_ops::decorative(kind, &app.selection, app.edit.frame_keep_aspect);
-                    run_and_select(app, r);
-                }
-            }
-        });
-        ui.separator();
-        ui.menu_button("Stamp/Emboss", |ui| {
-            let two = app.selection.len() == 2;
-            for (label, effect) in edit_ops::EMBOSS {
-                if ui
-                    .add_enabled(two, egui::Button::new(label))
-                    .on_hover_text("Select the shape and the shape on top that gives the outline")
-                    .clicked()
-                    && let Some(r) = edit_ops::emboss(app.session.design(), &app.selection, effect)
-                {
-                    run_and_select(app, r);
-                }
-            }
-            ui.separator();
-            let one = shape.is_some();
-            ui.add_enabled_ui(one, |ui| {
-                egui::ComboBox::from_label("Stamp")
-                    .selected_text(openstitch_design::stamp::PATTERNS[app.edit.stamp_pattern])
-                    .show_ui(ui, |ui| {
-                        for (k, p) in openstitch_design::stamp::PATTERNS.iter().enumerate() {
-                            ui.selectable_value(&mut app.edit.stamp_pattern, k, *p);
-                        }
-                    });
-                egui::ComboBox::from_label("Effect")
-                    .selected_text(edit_ops::EMBOSS[app.edit.stamp_effect].0)
-                    .show_ui(ui, |ui| {
-                        for (k, (label, _)) in edit_ops::EMBOSS.iter().enumerate() {
-                            ui.selectable_value(&mut app.edit.stamp_effect, k, *label);
-                        }
-                    });
-                if ui.button("Place stamp (click in the shape)").clicked()
-                    && let Some(id) = shape
-                {
-                    app.edit.stamp_pick = Some((
-                        id,
-                        openstitch_design::stamp::PATTERNS[app.edit.stamp_pattern],
-                        edit_ops::EMBOSS[app.edit.stamp_effect].1,
-                    ));
-                    app.status = "Click inside the shape to place the stamp; Esc cancels".into();
-                }
-                if ui.button("Remove stamps").clicked()
-                    && let Some(id) = shape
-                {
-                    app.execute(&edit_ops::clear_stamps(id));
+        egui::ComboBox::from_label("Effect")
+            .selected_text(edit_ops::EMBOSS[app.edit.stamp_effect].0)
+            .show_ui(ui, |ui| {
+                for (k, (label, _)) in edit_ops::EMBOSS.iter().enumerate() {
+                    ui.selectable_value(&mut app.edit.stamp_effect, k, *label);
                 }
             });
-        });
-        ui.separator();
-        ui.add_enabled_ui(shape.is_some(), |ui| {
-            ui.menu_button("Entry/Exit Points", |ui| {
-                for (label, which) in [
-                    ("Set region entry (R1)", EntryExit::RegionEntry),
-                    ("Set region exit (R2)", EntryExit::RegionExit),
-                    ("Set line entry (L1)", EntryExit::LineEntry),
-                ] {
-                    if ui.button(label).clicked()
-                        && let Some(id) = shape
-                    {
-                        app.edit.pick = Some((id, Pick::Point(which)));
-                        app.status = format!(
-                            "Click the outline where {} should be; Esc cancels",
-                            which.label()
-                        );
-                    }
-                }
-                if ui.button("Reset to automatic").clicked()
-                    && let Some(id) = shape
-                {
-                    app.execute(&edit_ops::clear_entry_exit(id));
-                }
-            });
-        });
-        let region = shape.filter(|&id| {
-            let d = app.session.design();
-            d.index_of(id)
-                .is_some_and(|i| d.objects[i].region.is_some())
-        });
-        ui.add_enabled_ui(region.is_some(), |ui| {
-            ui.menu_button("Sewing Direction", |ui| {
-                let id = region.unwrap_or_default();
-                if ui.button("Draw curved direction (Pen)").clicked() {
-                    app.edit.curve_target = Some(id);
-                    app.tools.set_tool(Tool::Pen);
-                    app.status =
-                        "Draw an open curve across the shape; Return finishes, Esc cancels".into();
-                }
-                if ui.button("Straight direction").clicked() {
-                    app.execute(&edit_ops::straight_direction(id));
-                }
-                ui.separator();
-                for (label, which) in [
-                    ("Set centre point", Pick::Center),
-                    ("Set reference point", Pick::Reference),
-                ] {
-                    if ui.button(label).clicked() {
-                        app.edit.pick = Some((id, which));
-                        app.status =
-                            format!("Click where {} should be; Esc cancels", which.label());
-                    }
-                }
-            });
-        });
+        if ui.button("Place stamp (click in the shape)").clicked()
+            && let Some(id) = shape
+        {
+            app.edit.stamp_pick = Some((
+                id,
+                openstitch_design::stamp::PATTERNS[app.edit.stamp_pattern],
+                edit_ops::EMBOSS[app.edit.stamp_effect].1,
+            ));
+            app.status = "Click inside the shape to place the stamp; Esc cancels".into();
+        }
+        if ui.button("Remove stamps").clicked()
+            && let Some(id) = shape
+        {
+            app.execute(&edit_ops::clear_stamps(id));
+        }
     });
+}
+
+pub fn entry_exit_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let Some(id) = single_shape(app) else {
+        ui.label("Select one shape");
+        return;
+    };
+    for (label, which) in [
+        ("Set region entry (R1)", EntryExit::RegionEntry),
+        ("Set region exit (R2)", EntryExit::RegionExit),
+        ("Set line entry (L1)", EntryExit::LineEntry),
+    ] {
+        if ui.button(label).clicked() {
+            app.edit.pick = Some((id, Pick::Point(which)));
+            app.status = format!(
+                "Click the outline where {} should be; Esc cancels",
+                which.label()
+            );
+        }
+    }
+    if ui.button("Reset to automatic").clicked() {
+        app.execute(&edit_ops::clear_entry_exit(id));
+    }
+}
+
+/// Add Direction Line: the next open Pen path becomes the region's curved direction.
+pub fn add_direction(app: &mut EditorApp) {
+    if let Some(id) = single_region(app) {
+        app.edit.curve_target = Some(id);
+        app.tools.set_tool(Tool::Pen);
+        app.status = "Draw an open curve across the shape; Return finishes, Esc cancels".into();
+    }
+}
+
+pub fn delete_direction(app: &mut EditorApp) {
+    if let Some(id) = single_region(app) {
+        app.execute(&edit_ops::straight_direction(id));
+    }
+}
+
+/// Centre point and reference point of the region's stitch pattern.
+pub fn sewing_points_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    let Some(id) = single_region(app) else {
+        ui.label("Select one shape with region sewing");
+        return;
+    };
+    for (label, which) in [
+        ("Set centre point", Pick::Center),
+        ("Set reference point", Pick::Reference),
+    ] {
+        if ui.button(label).clicked() {
+            app.edit.pick = Some((id, which));
+            app.status = format!("Click where {} should be; Esc cancels", which.label());
+        }
+    }
 }
 
 /// A canvas click while a point is being picked; whether it was consumed.
@@ -625,7 +600,7 @@ fn floral_window(app: &mut EditorApp, ctx: &egui::Context) {
     app.edit.floral_open = open;
 }
 
-/// Buttons under the sewing-order list: move the selection, sort, optimise, and jump-stitch
+/// Buttons at the top of the Sewing Order pane: move the selection, sort, optimise, and jump-stitch
 /// trimming for the selection (multi-needle machines).
 pub fn order_controls(app: &mut EditorApp, ui: &mut egui::Ui) -> Option<CommandRequest> {
     let mut out = None;
@@ -694,7 +669,6 @@ pub fn colour_frames(app: &mut EditorApp, ui: &mut egui::Ui) {
     let mut select = None;
     egui::ScrollArea::vertical()
         .auto_shrink([false, false])
-        .max_height(ui.available_height() - 80.0)
         .show(ui, |ui| {
             for (k, frame) in frames.iter().enumerate() {
                 let first = rows.iter().find(|r| r.id == frame[0]);
@@ -724,7 +698,7 @@ pub fn colour_frames(app: &mut EditorApp, ui: &mut egui::Ui) {
     if let Some(ids) = select {
         app.selection = ids.into_iter().collect();
     }
-    if let Some(r) = order_controls(app, ui).or(pending) {
+    if let Some(r) = pending {
         app.execute(&r);
     }
 }

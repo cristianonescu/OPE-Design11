@@ -10,8 +10,6 @@ use openstitch_app::editor::{
 };
 use openstitch_design::{Contour, ObjectKind, Rect, Transform, Vec2, v2};
 
-const BACKGROUND: Color32 = Color32::from_rgb(0x3a, 0x3d, 0x42);
-const PAGE: Color32 = Color32::from_rgb(0xf6, 0xf3, 0xec);
 const ACCENT: Color32 = Color32::from_rgb(0x1e, 0x88, 0xe5);
 
 fn pos(p: Vec2) -> Pos2 {
@@ -50,15 +48,18 @@ pub fn canvas(app: &mut EditorApp, ui: &mut egui::Ui) {
     }
     let mut vp = app.viewport.unwrap_or_default();
 
-    navigate(ui, &response, rect, &mut vp);
+    navigate(ui, &response, rect, &mut vp, app.ui.pan);
     app.viewport = Some(vp);
-    pointer(app, ui, &response, vp);
+    if !app.ui.pan {
+        pointer(app, ui, &response, vp);
+    }
     app.ensure_render_model();
 
     app.workspace.canvas = Some(rect);
     let painter = ui.painter_at(rect);
-    painter.rect_filled(rect, CornerRadius::ZERO, BACKGROUND);
-    draw_page(&painter, &vp, &page_rect);
+    let colors = crate::theme::canvas(ui.ctx());
+    painter.rect_filled(rect, CornerRadius::ZERO, colors.work_area);
+    draw_page(&painter, &vp, &page_rect, colors.page);
     draw_background(app, ui.ctx(), &painter, &vp);
     crate::workspace_ui::draw_grid(&painter, &vp, &page_rect, &app.workspace.grid);
     if app.workspace.realistic {
@@ -104,13 +105,14 @@ pub fn canvas(app: &mut EditorApp, ui: &mut egui::Ui) {
             egui::Align2::RIGHT_BOTTOM,
             text,
             egui::FontId::monospace(11.0),
-            Color32::from_gray(220),
+            colors.overlay_text,
         );
     }
     if app.workspace.rulers {
         crate::workspace_ui::draw_rulers(&painter, rect, &vp, response.hover_pos());
     }
     let cursor = match app.tools.tool() {
+        _ if app.ui.pan => egui::CursorIcon::Grab,
         _ if app.workspace.measure.active => egui::CursorIcon::Crosshair,
         openstitch_app::editor::Tool::Select | openstitch_app::editor::Tool::Point => {
             egui::CursorIcon::Default
@@ -123,7 +125,13 @@ pub fn canvas(app: &mut EditorApp, ui: &mut egui::Ui) {
 }
 
 /// Scroll pans, pinch / Ctrl+scroll zooms at the pointer, middle-drag or Space+drag pans.
-fn navigate(ui: &egui::Ui, response: &egui::Response, rect: egui::Rect, vp: &mut Viewport) {
+fn navigate(
+    ui: &egui::Ui,
+    response: &egui::Response,
+    rect: egui::Rect,
+    vp: &mut Viewport,
+    pan_tool: bool,
+) {
     if let Some(h) = response.hover_pos() {
         let (scroll, zoom) = ui.input(|i| (i.smooth_scroll_delta(), i.zoom_delta()));
         if zoom != 1.0 {
@@ -132,7 +140,7 @@ fn navigate(ui: &egui::Ui, response: &egui::Response, rect: egui::Rect, vp: &mut
             vp.pan(f64::from(scroll.x), f64::from(scroll.y));
         }
     }
-    let space = ui.input(|i| i.key_down(egui::Key::Space));
+    let space = pan_tool || ui.input(|i| i.key_down(egui::Key::Space));
     if response.dragged_by(egui::PointerButton::Middle)
         || (space && response.dragged_by(egui::PointerButton::Primary))
     {
@@ -204,14 +212,14 @@ fn pointer(app: &mut EditorApp, ui: &egui::Ui, response: &egui::Response, vp: Vi
     app.with_tools(|t, ctx| t.handle(e, ctx));
 }
 
-fn draw_page(painter: &egui::Painter, vp: &Viewport, page: &Rect) {
+fn draw_page(painter: &egui::Painter, vp: &Viewport, page: &Rect, fill: Color32) {
     let r = model_rect(vp, page);
     painter.rect_filled(
         r.translate(egui::vec2(3.0, 4.0)),
         CornerRadius::ZERO,
         Color32::from_black_alpha(70),
     );
-    painter.rect_filled(r, CornerRadius::ZERO, PAGE);
+    painter.rect_filled(r, CornerRadius::ZERO, fill);
     painter.rect_stroke(
         r,
         CornerRadius::ZERO,

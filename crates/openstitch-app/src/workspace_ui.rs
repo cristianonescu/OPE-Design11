@@ -65,8 +65,8 @@ pub fn screen_rect(r: egui::Rect) -> ScreenRect {
 /// Rulers along the top and left edge of the canvas, in mm from the Design Page origin, with
 /// the pointer position marked.
 pub fn draw_rulers(painter: &egui::Painter, rect: egui::Rect, vp: &Viewport, hover: Option<Pos2>) {
-    let bg = Color32::from_rgb(0x2b, 0x2d, 0x31);
-    let fg = Color32::from_gray(190);
+    let colors = crate::theme::canvas(painter.ctx());
+    let (bg, fg) = (colors.ruler_bg, colors.ruler_fg);
     let top = egui::Rect::from_min_max(rect.min, Pos2::new(rect.max.x, rect.min.y + RULER));
     let left = egui::Rect::from_min_max(rect.min, Pos2::new(rect.min.x + RULER, rect.max.y));
     painter.rect_filled(top, 0.0, bg);
@@ -131,8 +131,8 @@ pub fn draw_rulers(painter: &egui::Painter, rect: egui::Rect, vp: &Viewport, hov
 
 /// Grid lines on the Design Page from the grid settings.
 pub fn draw_grid(painter: &egui::Painter, vp: &Viewport, page: &Rect, grid: &GridSettings) {
-    let minor = Color32::from_rgb(0xe2, 0xde, 0xd4);
-    let major = Color32::from_rgb(0xcf, 0xca, 0xbe);
+    let colors = crate::theme::canvas(painter.ctx());
+    let (minor, major) = (colors.grid_minor, colors.grid_major);
     for (x, m) in grid.lines(page.max_x, vp.scale, 6.0) {
         painter.line_segment(
             [
@@ -228,7 +228,8 @@ pub fn reference_window(app: &mut EditorApp, ctx: &egui::Context, canvas: Option
             };
             let map = ReferenceMap::new(page_rect, screen_rect(rect));
             let painter = ui.painter_at(rect);
-            painter.rect_filled(rect, 0.0, Color32::from_rgb(0x3a, 0x3d, 0x42));
+            let colors = crate::theme::canvas(ui.ctx());
+            painter.rect_filled(rect, 0.0, colors.work_area);
             let p = &map.thumb;
             painter.rect_filled(
                 egui::Rect::from_two_pos(
@@ -236,7 +237,7 @@ pub fn reference_window(app: &mut EditorApp, ctx: &egui::Context, canvas: Option
                     pos(p.to_screen(v2(page.width, page.height))),
                 ),
                 0.0,
-                Color32::from_rgb(0xf6, 0xf3, 0xec),
+                colors.page,
             );
             app.ensure_render_model();
             for layer in &app.render.layers {
