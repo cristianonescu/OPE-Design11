@@ -395,22 +395,23 @@ impl TabId {
     }
 }
 
-/// One column of a ribbon group: a large button, or up to three small ones stacked.
+/// One column of a ribbon group: a large button, or up to three small ones stacked. `A` is
+/// the window's command type (the suite windows have their own, see [`super::suite`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Item {
-    Large(Action),
-    Small(&'static [Action]),
+pub enum Item<A: 'static = Action> {
+    Large(A),
+    Small(&'static [A]),
 }
 
 /// A ribbon group: its buttons and the caption under them.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Group {
+pub struct Group<A: 'static = Action> {
     pub name: &'static str,
-    pub items: &'static [Item],
+    pub items: &'static [Item<A>],
 }
 
-impl Group {
-    pub fn actions(&self) -> impl Iterator<Item = Action> + '_ {
+impl<A: Copy> Group<A> {
+    pub fn actions(&self) -> impl Iterator<Item = A> + '_ {
         self.items
             .iter()
             .flat_map(|i| match i {

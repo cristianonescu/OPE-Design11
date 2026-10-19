@@ -273,7 +273,7 @@ Verified Compatible).
   undo step. Tests: `crates/openstitch-digitize/tests/*.rs` (synthetic images, exact region
   and cell counts, colours, contours inside bounds, hostile images) and
   `crates/openstitch-engine/tests/digitize.rs` (undo, sandbox, `bad_digitize_parameters_fail_cleanly`).
-- **Programmable Stitch Creator.** Tools → Programmable Stitch Creator… (`creator_ui.rs`, model
+- **Programmable Stitch Creator.** Options ▸ Programmable Stitch Creator, a full window (`creator_ui.rs`, model
   `openstitch_app::editor::creator`): edits an `openstitch.pattern` (fill/stamp tile, motif or
   decorative row) on its unit box with snapping; motif ends stay at (0, 0) and (1, 0) and
   decorative row ends move together, so every edit stays valid. The preview compiles a small
@@ -282,7 +282,7 @@ Verified Compatible).
   library folder (`$OPENSTITCH_PATTERNS`, else the per-user data folder), which is listed with
   per-file errors. `--pattern FILE` opens the window on a pattern for screenshots:
   [rust-editor-stitch-creator.png](images/rust-editor-stitch-creator.png).
-- **Stitch Design Factory.** Tools → Stitch Design Factory… (`sewing_ui.rs`, model
+- **Stitch Design Factory.** Options ▸ Stitch Design Factory, a full window (`sewing_ui.rs`, model
   `openstitch_app::editor::sewing`, format `openstitch_design::sewing`): sewing-machine stitch
   patterns (decorative needle points, satin stations, decorative-satin outline, cross cells)
   drawn along the feed with two faint repeats; satin stations keep their order and left ≤
