@@ -206,6 +206,25 @@ fn pointer(app: &mut EditorApp, ui: &egui::Ui, response: &egui::Response, vp: Vi
         }
         return;
     }
+    if app.workspace.sections.active {
+        let tolerance = 6.0 * vp.units_per_point();
+        let design = app.session.design().clone();
+        let s = &mut app.workspace.sections;
+        match phase {
+            Phase::Down if s.press(&design, model, tolerance) => return,
+            Phase::Dragged if s.is_dragging() => {
+                s.drag(&design, model);
+                return;
+            }
+            Phase::Up if s.is_dragging() => {
+                if let Some(r) = s.release(&design, model) {
+                    app.execute(&r);
+                }
+                return;
+            }
+            _ => {}
+        }
+    }
     if matches!(phase, Phase::Down) && crate::edit_ui::pick(app, model) {
         return;
     }

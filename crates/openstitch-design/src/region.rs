@@ -90,9 +90,14 @@ pub fn layers_with(
         out.pop();
         let spacing = 10.0 / r.density.max(0.1);
         let pull = r.pull_compensation * 10.0;
+        let lines = if r.curved_lines {
+            crate::column::curved_rungs(&r.direction_lines)
+        } else {
+            r.direction_lines.clone()
+        };
         out.push(vec![match r.kind {
-            RegionType::Satin => crate::column::satin(&r.direction_lines, spacing, pull),
-            _ => crate::column::fill(&r.direction_lines, spacing, r.stitch_length * 10.0, pull),
+            RegionType::Satin => crate::column::satin(&lines, spacing, pull),
+            _ => crate::column::fill(&lines, spacing, r.stitch_length * 10.0, pull),
         }]);
         return out;
     }

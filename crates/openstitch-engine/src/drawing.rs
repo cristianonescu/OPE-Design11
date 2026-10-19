@@ -1,11 +1,12 @@
-//! Drawing and editing commands beyond single shapes: grouping, arranged copies and pasting
-//! sewing attributes. Behaviour follows the PE-DESIGN 11 guide pages "Grouping/Ungrouping
-//! embroidery patterns", "Arrange Copies" and "Copying sewing attributes".
+//! Drawing and editing commands beyond single shapes: grouping, arranged copies, pasting
+//! sewing attributes and pasting cut objects. Behaviour follows the PE-DESIGN 11 guide pages
+//! "Grouping/Ungrouping embroidery patterns", "Arrange Copies" and "Copying sewing
+//! attributes".
 
 use crate::commands::{CommandSpec, Effect, IDS, MM, indexes, opt, req, spec};
 use crate::params::{CommandError, Params};
 use crate::session::EngineState;
-use openstitch_design::{Design, DesignObject, Rect, Transform, v2};
+use openstitch_design::{Design, DesignObject, ObjectKind, Rect, Transform, v2};
 use serde_json::json;
 use std::collections::HashMap;
 
@@ -16,6 +17,7 @@ pub fn commands() -> Vec<CommandSpec> {
     let mut v = group_commands();
     v.push(arrange_command());
     v.push(paste_attributes_command());
+    v.push(paste_command());
     v.push(entry_exit_command());
     v.push(spec(
         "object.setJumpTrimming",
@@ -38,10 +40,17 @@ pub fn commands() -> Vec<CommandSpec> {
 /// becomes a new group, and text on a path copied along with its path follows the copy.
 pub fn copy_set(design: &mut Design, idx: &[usize], t: &Transform) -> Vec<u64> {
     let originals: Vec<DesignObject> = idx.iter().map(|&i| design.objects[i].clone()).collect();
+    add_set(design, originals, t)
+}
+
+/// Adds `objects` (with `t` applied) under new ids, appended in sewing order: groups become
+/// new groups, text on a path added along with its path follows it, and a path left behind
+/// is dropped when it is no longer in the design.
+fn add_set(design: &mut Design, objects: Vec<DesignObject>, t: &Transform) -> Vec<u64> {
     let mut groups: HashMap<u64, u64> = HashMap::new();
     let mut ids: HashMap<u64, u64> = HashMap::new();
     let mut out = Vec::new();
-    for mut copy in originals {
+    for mut copy in objects {
         copy.apply(t);
         if let Some(g) = copy.group {
             copy.group = Some(*groups.entry(g).or_insert_with(|| design.new_group_id()));
@@ -53,13 +62,68 @@ pub fn copy_set(design: &mut Design, idx: &[usize], t: &Transform) -> Vec<u64> {
     }
     for &id in &out {
         let i = design.index_of(id).expect("just added");
-        if let Some(spec) = &mut design.objects[i].text
-            && let Some(p) = spec.path.and_then(|p| ids.get(&p))
-        {
-            spec.path = Some(*p);
+        let path = design.objects[i].text.as_ref().and_then(|spec| spec.path);
+        if let Some(p) = path {
+            let to = ids
+                .get(&p)
+                .copied()
+                .or_else(|| design.index_of(p).map(|_| p));
+            if let Some(spec) = &mut design.objects[i].text {
+                spec.path = to;
+            }
         }
     }
     out
+}
+
+/// Most objects one paste may add.
+pub const MAX_PASTE: usize = 10_000;
+
+/// Edit ▸ Cut and Paste: objects as `object.get` returns them, added back under new ids.
+fn paste_command() -> CommandSpec {
+    spec(
+        "object.paste",
+        "Add objects given as object.get returns them (Cut and Paste): new ids, groups kept together, appended in sewing order",
+        Effect::Edit,
+        vec![
+            req("objects", "[object]", "Object data (1-10000)"),
+            opt("dx", "mm", "Offset (default 0)"),
+            opt("dy", "mm", "Offset (default 0)"),
+        ],
+        |s, p| {
+            let arr = p.array("objects")?;
+            if arr.is_empty() || arr.len() > MAX_PASTE {
+                return Err(p.invalid("objects", format!("needs 1...{MAX_PASTE} objects")));
+            }
+            let objects = arr
+                .iter()
+                .enumerate()
+                .map(|(k, v)| {
+                    let o: DesignObject = serde_json::from_value(v.clone())
+                        .map_err(|e| p.invalid("objects", format!("object {k}: {e}")))?;
+                    let ok = match o.kind {
+                        ObjectKind::Stitches => o.stitch_block.is_some(),
+                        ObjectKind::Text => o.text.is_some(),
+                        ObjectKind::Shape => !o.contours.is_empty(),
+                    };
+                    let finite = o
+                        .contours
+                        .iter()
+                        .flat_map(|c| &c.points)
+                        .all(|q| q.x.is_finite() && q.y.is_finite());
+                    if !ok || !finite {
+                        return Err(p.invalid("objects", format!("object {k} is incomplete")));
+                    }
+                    Ok(o)
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            let t = Transform::translation(
+                p.opt("dx", 0.0, -5000.0, 5000.0)? * MM,
+                p.opt("dy", 0.0, -5000.0, 5000.0)? * MM,
+            );
+            Ok(json!({ "ids": add_set(&mut s.design, objects, &t) }))
+        },
+    )
 }
 
 // MARK: groups

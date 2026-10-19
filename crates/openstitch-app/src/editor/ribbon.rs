@@ -107,7 +107,7 @@ actions! {
     PointTool => "point", "Point Edit", "Move, add and delete points of the selected outline.", Some("A"), Some("object.setPoint"), true;
     SelectAll => "selectAll", "Select All", "Select every visible object.", Some("Ctrl+A"), None, true;
     // Home ▸ Clipboard.
-    Cut => "cut", "Cut", "Move the selection to the clipboard. Use Copy, then Delete.", Some("Ctrl+X"), None, false;
+    Cut => "cut", "Cut", "Move the selection to the clipboard; Paste puts it back.", Some("Ctrl+X"), Some("object.paste"), true;
     Copy => "copy", "Copy", "Copy the selection; Paste adds a copy of it.", Some("Ctrl+C"), None, true;
     Paste => "paste", "Paste", "Add a copy of the copied objects.", Some("Ctrl+V"), Some("object.duplicate"), true;
     Duplicate => "duplicate", "Duplicate", "Add a copy of the selection, slightly offset.", Some("Ctrl+D"), Some("object.duplicate"), true;
@@ -122,10 +122,10 @@ actions! {
     Ellipse => "ellipse", "Circle / Ellipse", "Drag to draw an ellipse.", Some("E"), Some("shape.ellipse"), true;
     ClosedStraight => "polygon", "Closed Straight Line", "Click the corners of a closed outline.", Some("P"), Some("shape.polygon"), true;
     ClosedCurve => "pen", "Closed Curve", "Click for corners, drag for curves; click the first point to close.", Some("B"), Some("shape.path"), true;
-    PencilClosed => "pencilClosed", "Pencil (Closed Curve)", "Draw a closed outline freehand.", None, None, false;
-    OpenStraight => "openStraight", "Open Straight Line", "Click the points of an open line.", None, None, false;
+    PencilClosed => "pencilClosed", "Pencil (Closed Curve)", "Drag to draw a closed outline freehand.", None, Some("shape.freehand"), true;
+    OpenStraight => "openStraight", "Open Straight Line", "Click the points of an open line; double-click or Return ends it.", Some("L"), Some("shape.polygon"), true;
     OpenCurve => "openCurve", "Open Curve", "Pen tool: Return finishes the curve open.", None, Some("shape.path"), true;
-    PencilOpen => "pencilOpen", "Pencil (Open Curve)", "Draw an open line freehand.", None, None, false;
+    PencilOpen => "pencilOpen", "Pencil (Open Curve)", "Drag to draw an open line freehand.", None, Some("shape.freehand"), true;
     ZoomIn => "zoomIn", "Zoom In", "Magnify the view.", Some("Ctrl+="), None, true;
     ZoomOut => "zoomOut", "Zoom Out", "Reduce the view.", Some("Ctrl+-"), None, true;
     OtherZoom => "zoom", "Zoom", "Fit the Design Page, the selection, or 100 %.", Some("Ctrl+0"), None, true;
@@ -196,15 +196,15 @@ actions! {
     ConvertToBlocks => "toBlocks", "Convert to Blocks", "Turn the stitch pattern into editable regions.", None, Some("object.toShapes"), true;
     ConvertToStitches => "toStitches", "Convert to Stitches", "Turn the selection into a stitch pattern.", None, Some("object.toStitches"), true;
     ConvertToOutline => "toOutline", "Convert to Outline", "Text: one shape per character. Stitches: their outline.", None, Some("object.toShapes"), true;
-    EdgeRadius => "edgeRadius", "Edge radius", "Round the corners of the rectangle.", None, None, false;
+    EdgeRadius => "edgeRadius", "Edge radius", "Round the corners of the rectangles you draw.", None, Some("shape.rectangle"), true;
     StraightBlock => "punch", "Straight Block", "Click both ends of each sewing-direction line.", Some("U"), Some("shape.column"), true;
-    CurvedBlock => "curvedBlock", "Curved Block", "Blocks with curved sides.", None, None, false;
-    Running => "running", "Running", "Running stitch between clicked points.", None, None, false;
-    Feed => "feed", "Feed", "Jump between clicked points.", None, None, false;
+    CurvedBlock => "curvedBlock", "Curved Block", "Click both ends of each sewing-direction line; the sides curve through them.", None, Some("shape.column"), true;
+    Running => "running", "Running", "Running stitch between clicked points.", None, Some("shape.polygon"), true;
+    Feed => "feed", "Feed", "Jump between clicked points.", None, Some("shape.feed"), true;
     SplitOutline => "splitOutline", "Split Outline", "Draw a cut line that splits the selected shape.", None, Some("shape.split"), true;
     AddDirectionLine => "addDirection", "Add Direction Line", "Draw a curved sewing direction across the region.", None, Some("object.setDirectionCurve"), true;
     DeleteDirectionLine => "deleteDirection", "Delete Direction Line", "Back to a straight sewing direction.", None, Some("object.setDirectionLines"), true;
-    ReverseDirectionLine => "reverseDirection", "Reverse Direction Line", "Sew the direction line the other way.", None, None, false;
+    ReverseDirectionLine => "reverseDirection", "Reverse Direction Line", "Sew the direction line the other way.", None, Some("object.reverseDirection"), true;
     EditPoint => "editPoint", "Edit Point", "Move the points of the outline.", Some("A"), Some("object.setPoint"), true;
     DeletePoint => "deletePoint", "Delete Point", "Delete the selected point.", Some("Delete"), Some("object.deletePoint"), true;
     SplitAtPoint => "splitAtPoint", "Split at Point", "Split the stitch pattern at the selected needle point.", None, Some("stitches.splitAt"), true;
@@ -214,11 +214,11 @@ actions! {
     EntryExit => "entryExit", "Entry/Exit Points", "Where the region and line start and end.", None, Some("object.setEntryExit"), true;
     SewingPoints => "sewingPoints", "Center/Reference Point", "Centre point of radial fills and the reference point of stitch patterns.", None, Some("object.setCenterPoint"), true;
     SplitStitchData => "splitStitchData", "Split Stitch Data", "Draw around stitches to split them off.", None, Some("stitches.splitArea"), true;
-    ChangeColor => "changeColor", "Change Color", "Change a thread colour of the stitch pattern.", None, Some("threads.remap"), false;
+    ChangeColor => "changeColor", "Change Color", "Change a thread colour of the stitch pattern.", None, Some("stitches.setThread"), true;
     DivideByColor => "divideByColor", "Divide by Color", "One stitch pattern per thread colour.", None, Some("stitches.divideByColor"), true;
     Connect => "connect", "Connect", "The pattern sewn later starts where the earlier one ends.", None, Some("stitches.connect"), true;
     ConvertToOutlines => "toOutlines", "Convert to Outlines", "One outline per thread colour of the stitches.", None, Some("object.toShapes"), true;
-    MoveSections => "moveSections", "Move Sections", "Move the hooping sections of a large design.", None, None, false;
+    MoveSections => "moveSections", "Move Sections", "Drag the split lines of a split design to move its sections.", None, Some("sections.set"), true;
     ExportSections => "exportSections", "Export Sections", "One file per hooping of a design larger than the hoop.", None, Some("sections.export"), true;
 }
 
@@ -259,6 +259,8 @@ impl Action {
                 | RegionSewType
                 | EntryExit
                 | SewingPoints
+                | EdgeRadius
+                | ChangeColor
         )
     }
 
@@ -284,6 +286,7 @@ impl Action {
                 | FontFilter
                 | Pan
                 | Measure
+                | MoveSections
         )
     }
 
@@ -298,6 +301,12 @@ impl Action {
             ClosedStraight => Tool::Polygon,
             ClosedCurve | OpenCurve => Tool::Pen,
             StraightBlock => Tool::Punch,
+            OpenStraight => Tool::Line,
+            PencilClosed => Tool::Pencil,
+            PencilOpen => Tool::PencilOpen,
+            CurvedBlock => Tool::CurvedBlock,
+            Running => Tool::Running,
+            Feed => Tool::Feed,
             _ => return None,
         })
     }
@@ -763,9 +772,11 @@ pub fn contextual_tabs(f: &Facts) -> Vec<TabId> {
         }
     };
     match f.tool {
-        Tool::Polygon | Tool::Pen => add(TabId::Outline),
+        Tool::Polygon | Tool::Pen | Tool::Line | Tool::Pencil | Tool::PencilOpen => {
+            add(TabId::Outline)
+        }
         Tool::Rectangle => add(TabId::OutlineRect),
-        Tool::Punch => add(TabId::ManualPunch),
+        Tool::Punch | Tool::CurvedBlock | Tool::Running | Tool::Feed => add(TabId::ManualPunch),
         Tool::Ellipse | Tool::Point => add(TabId::Shapes),
         Tool::Select => {}
     }
@@ -909,6 +920,12 @@ mod tests {
         );
         assert_eq!(tab_for_tool(Tool::Rectangle), Some(TabId::OutlineRect));
         assert_eq!(tab_for_tool(Tool::Punch), Some(TabId::ManualPunch));
+        for t in [Tool::CurvedBlock, Tool::Running, Tool::Feed] {
+            assert_eq!(tab_for_tool(t), Some(TabId::ManualPunch), "{t:?}");
+        }
+        for t in [Tool::Line, Tool::Pencil, Tool::PencilOpen] {
+            assert_eq!(tab_for_tool(t), Some(TabId::Outline), "{t:?}");
+        }
         assert_eq!(tab_for_tool(Tool::Ellipse), Some(TabId::Shapes));
         assert_eq!(tab_for_tool(Tool::Select), None);
         assert_eq!(

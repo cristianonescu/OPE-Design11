@@ -7,6 +7,7 @@ pub mod column;
 pub mod compile;
 pub mod direction;
 pub mod fonts;
+pub mod freehand;
 pub mod generate;
 pub mod geometry;
 pub mod lines;

@@ -17,6 +17,7 @@ pub mod prefs;
 pub mod render;
 pub mod request;
 pub mod ribbon;
+pub mod sections;
 pub mod sewing;
 pub mod tools;
 pub mod viewport;
@@ -31,5 +32,7 @@ pub use tools::{
 };
 pub use viewport::{ScreenRect, Viewport};
 
+#[cfg(test)]
+mod drawing_tests;
 #[cfg(test)]
 mod tests;
