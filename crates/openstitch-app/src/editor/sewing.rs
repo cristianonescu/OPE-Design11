@@ -8,8 +8,10 @@ use openstitch_design::sewing::{MAX_LENGTH, SewingKind, SewingStitch};
 use openstitch_design::{Vec2, v2};
 use serde_json::{Value, json};
 
-/// Editing grid (mm).
+/// Default editing grid (mm).
 pub const SNAP: f64 = 0.25;
+/// Grid Spacing choices (mm).
+pub const GRID_SPACINGS: [f64; 5] = [0.25, 0.5, 1.0, 2.0, 5.0];
 
 /// Something the pointer can grab.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -27,6 +29,8 @@ pub enum Handle {
 pub struct SewingEditor {
     pub doc: SewingStitch,
     pub snap: bool,
+    /// Grid Spacing (mm): the grid drawn and what points snap to.
+    pub grid: f64,
 }
 
 impl Default for SewingEditor {
@@ -40,6 +44,7 @@ impl SewingEditor {
         SewingEditor {
             doc: SewingStitch::new(kind),
             snap: true,
+            grid: SNAP,
         }
     }
 
@@ -47,13 +52,15 @@ impl SewingEditor {
         SewingEditor {
             doc: s.clone(),
             snap: true,
+            grid: SNAP,
         }
     }
 
     /// `p` snapped (when on) and kept inside the band 0…200 mm × ±width/2.
     pub fn clamp(&self, p: Vec2) -> Vec2 {
+        let g = self.grid;
         let p = if self.snap {
-            v2((p.x / SNAP).round() * SNAP, (p.y / SNAP).round() * SNAP)
+            v2((p.x / g).round() * g, (p.y / g).round() * g)
         } else {
             p
         };
@@ -250,6 +257,101 @@ impl SewingEditor {
         }
     }
 
+    /// Select Object: moves the whole pattern by `delta` mm (snapped to the grid when on; cross
+    /// patterns by whole cells). Refused, leaving it unchanged, when it would leave the band.
+    pub fn move_by(&mut self, delta: Vec2) -> bool {
+        let g = self.grid;
+        let delta = if self.snap {
+            v2((delta.x / g).round() * g, (delta.y / g).round() * g)
+        } else {
+            delta
+        };
+        if delta.x == 0.0 && delta.y == 0.0 {
+            return false;
+        }
+        self.doc.translate(delta).is_ok()
+    }
+
+    /// Pen Tool: a stroke dragged through `stroke` (mm), sampled every grid step (at least
+    /// 0.5 mm). Decorative patterns gain needle points at the end, satin patterns stations,
+    /// cross patterns the cells passed over; a decorative satin outline is replaced by the
+    /// stroke when it encloses an area. Returns whether the pattern changed.
+    pub fn pen(&mut self, stroke: &[Vec2]) -> bool {
+        let step = self.grid.max(0.5);
+        let mut samples: Vec<Vec2> = Vec::new();
+        for &p in stroke {
+            let q = self.clamp(p);
+            if samples.last().is_none_or(|l| l.distance(q) >= step - 1e-9) {
+                samples.push(q);
+            }
+        }
+        let before = self.doc.clone();
+        match self.doc.kind {
+            SewingKind::Decorative | SewingKind::Satin => {
+                for q in samples {
+                    self.add(q);
+                }
+            }
+            SewingKind::DecorativeSatin => {
+                if samples.len() >= 3 {
+                    self.doc.outline = samples;
+                }
+            }
+            SewingKind::Cross => {
+                let d = &self.doc;
+                let c = d.cell_size;
+                let top = -f64::from(d.rows) * c / 2.0;
+                let mut cells = d.cells.clone();
+                for q in stroke {
+                    let (col, row) = ((q.x / c).floor(), ((q.y - top) / c).floor());
+                    if col < 0.0 || row < 0.0 || row >= f64::from(d.rows) {
+                        continue;
+                    }
+                    let cell = [col as u32, row as u32];
+                    if !cells.contains(&cell) {
+                        cells.push(cell);
+                    }
+                }
+                self.doc.cells = cells;
+            }
+        }
+        if self.doc.validate().is_err() {
+            self.doc = before;
+            return false;
+        }
+        self.doc != before
+    }
+
+    /// Swap: start and end exchanged (the needle points sewn in reverse order).
+    pub fn swap(&mut self) {
+        self.doc.swap();
+    }
+
+    /// Duplicate: a copy of the pattern placed where it ends.
+    pub fn duplicate(&mut self) -> Result<(), String> {
+        self.doc = self.doc.duplicate()?;
+        Ok(())
+    }
+
+    /// The bounding box of what is drawn (mm): handles and needle points.
+    pub fn bounds(&self) -> Option<(Vec2, Vec2)> {
+        let d = &self.doc;
+        let pts: Vec<Vec2> = d
+            .needles()
+            .into_iter()
+            .chain(d.points.iter().copied())
+            .chain(d.outline.iter().copied())
+            .chain(d.profile.iter().flat_map(|&[x, l, r]| [v2(x, l), v2(x, r)]))
+            .collect();
+        let first = *pts.first()?;
+        Some(pts.iter().fold((first, first), |(lo, hi), p| {
+            (
+                v2(lo.x.min(p.x), lo.y.min(p.y)),
+                v2(hi.x.max(p.x), hi.y.max(p.y)),
+            )
+        }))
+    }
+
     fn document(&self) -> Value {
         serde_json::from_str(&self.doc.to_json(false)).unwrap_or_default()
     }
@@ -390,5 +492,73 @@ mod tests {
         e.add(v2(7.0, 3.4));
         assert_eq!(e.doc.cells.len(), before, "outside the three rows");
         assert!(e.hit(v2(0.0, 0.0), 10.0).is_none(), "cells have no handles");
+    }
+
+    #[test]
+    fn grid_spacing_sets_what_points_snap_to() {
+        let mut e = SewingEditor::new(SewingKind::Decorative);
+        e.grid = 2.0;
+        e.add(v2(9.1, 0.9));
+        assert_eq!(*e.doc.points.last().expect("point"), v2(10.0, 0.0));
+        e.snap = false;
+        e.add(v2(11.1, 0.9));
+        assert_eq!(*e.doc.points.last().expect("point"), v2(11.1, 0.9));
+    }
+
+    #[test]
+    fn select_object_moves_the_whole_pattern_inside_the_band() {
+        let mut e = SewingEditor::new(SewingKind::Decorative);
+        assert!(e.move_by(v2(1.1, 0.4)));
+        assert_eq!(e.doc.points[0], v2(1.0, 0.5));
+        let before = e.doc.clone();
+        assert!(!e.move_by(v2(0.0, 2.0)), "would leave the width");
+        assert!(!e.move_by(v2(0.05, 0.0)), "less than a grid step");
+        assert_eq!(e.doc, before);
+        let (lo, hi) = e.bounds().expect("bounds");
+        assert_eq!((lo, hi), (v2(1.0, -2.5), v2(9.0, 3.5)));
+    }
+
+    #[test]
+    fn pen_strokes_add_to_every_kind() {
+        let stroke: Vec<Vec2> = (0..=40)
+            .map(|i| v2(10.0 + f64::from(i) * 0.1, 1.0))
+            .collect();
+        let mut e = SewingEditor::new(SewingKind::Decorative);
+        let n = e.doc.points.len();
+        assert!(e.pen(&stroke));
+        assert_eq!(e.doc.points.len(), n + 9, "every 0.5 mm over 4 mm");
+        assert_eq!(*e.doc.points.last().expect("point"), v2(14.0, 1.0));
+
+        let mut e = SewingEditor::new(SewingKind::Satin);
+        assert!(e.pen(&stroke));
+        assert!(e.doc.profile.len() > 3 && e.doc.validate().is_ok());
+
+        let mut e = SewingEditor::new(SewingKind::DecorativeSatin);
+        let ring: Vec<Vec2> = (0..24)
+            .map(|i| {
+                let a = f64::from(i) * std::f64::consts::TAU / 24.0;
+                v2(5.0 + 3.0 * a.cos(), 3.0 * a.sin())
+            })
+            .collect();
+        assert!(e.pen(&ring));
+        assert!(e.doc.outline.len() >= 12);
+        assert!(!e.pen(&stroke), "a straight stroke encloses nothing");
+
+        let mut e = SewingEditor::new(SewingKind::Cross);
+        assert!(e.pen(&stroke));
+        assert!(e.doc.cells.contains(&[5, 2]) && e.doc.cells.contains(&[7, 2]));
+        assert!(!e.pen(&stroke), "painting twice adds nothing");
+    }
+
+    #[test]
+    fn swap_and_duplicate_change_the_pattern() {
+        let mut e = SewingEditor::new(SewingKind::Decorative);
+        e.swap();
+        assert_eq!(e.doc.needles()[0], v2(8.0, 0.0));
+        e.duplicate().expect("duplicate");
+        assert_eq!(e.doc.points.len(), 10);
+        assert!(e.define_request().is_ok());
+        let mut e = SewingEditor::new(SewingKind::DecorativeSatin);
+        assert!(e.duplicate().is_err());
     }
 }

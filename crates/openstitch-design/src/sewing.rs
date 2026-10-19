@@ -91,6 +91,8 @@ pub struct SewingStitch {
     pub cells: Vec<[u32; 2]>,
     /// Cross: sew every diagonal three times.
     pub triple: bool,
+    /// Start and end swapped: the needle points are sewn in reverse order.
+    pub swapped: bool,
 }
 
 /// JSON shape of an `openstitch.sewing` document.
@@ -119,6 +121,8 @@ pub struct SewingFile {
     cells: Vec<[u32; 2]>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     triple: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    swapped: bool,
     /// Generated needle points (mm), written on export for tools that only want to sew;
     /// ignored when read (they are always regenerated).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -144,6 +148,7 @@ impl From<SewingStitch> for SewingFile {
             rows: cross.then_some(s.rows),
             cells: s.cells,
             triple: s.triple,
+            swapped: s.swapped,
             needles: Vec::new(),
         }
     }
@@ -171,6 +176,7 @@ impl TryFrom<SewingFile> for SewingStitch {
             rows: f.rows.unwrap_or(3),
             cells: f.cells,
             triple: f.triple,
+            swapped: f.swapped,
         };
         s.validate()?;
         Ok(s)
@@ -208,6 +214,7 @@ impl SewingStitch {
             rows: 3,
             cells: Vec::new(),
             triple: false,
+            swapped: false,
         };
         match kind {
             SewingKind::Decorative => {
@@ -337,12 +344,89 @@ impl SewingStitch {
 
     /// The needle points the machine sews, in order (mm).
     pub fn needles(&self) -> Vec<Vec2> {
-        match self.kind {
+        let mut n = match self.kind {
             SewingKind::Decorative => self.points.clone(),
             SewingKind::Satin => satin(&self.profile, self.density),
             SewingKind::DecorativeSatin => decorative_satin(&self.outline, self.density),
             SewingKind::Cross => cross(self),
+        };
+        if self.swapped {
+            n.reverse();
         }
+        n
+    }
+
+    /// Swap: exchanges the start and end points, so the same needle points are sewn in
+    /// reverse order (the guide's Home ▸ Stitch ▸ Swap).
+    pub fn swap(&mut self) {
+        self.swapped ^= true;
+    }
+
+    /// Duplicate: the pattern followed by a copy of itself placed where it ends along the feed
+    /// (needle points, satin stations or cross cells). A decorative satin outline is one closed
+    /// shape and cannot hold a copy. Fails, leaving `self` as it was, when the result breaks a
+    /// rule of the format (length, needle count, feed).
+    pub fn duplicate(&self) -> Result<SewingStitch, String> {
+        let mut d = self.clone();
+        match self.kind {
+            SewingKind::Decorative => {
+                let span = span(self.points.iter().map(|p| p.x));
+                if span <= 0.0 {
+                    return Err("the needle points have no length to repeat".into());
+                }
+                d.points
+                    .extend(self.points.iter().map(|p| v2(p.x + span, p.y)));
+            }
+            SewingKind::Satin => {
+                let span = span(self.profile.iter().map(|s| s[0]));
+                d.profile.extend(
+                    self.profile
+                        .iter()
+                        .skip(1)
+                        .map(|&[x, l, r]| [x + span, l, r]),
+                );
+            }
+            SewingKind::DecorativeSatin => {
+                return Err(
+                    "a decorative satin outline is one shape and cannot be duplicated".into(),
+                );
+            }
+            SewingKind::Cross => {
+                let lo = self.cells.iter().map(|c| c[0]).min().unwrap_or(0);
+                let hi = self.cells.iter().map(|c| c[0]).max().unwrap_or(0);
+                let cols = hi - lo + 1;
+                d.cells
+                    .extend(self.cells.iter().map(|&[c, r]| [c + cols, r]));
+            }
+        }
+        d.validate()?;
+        Ok(d)
+    }
+
+    /// Moves every point of the pattern by `delta` mm (cross cells by whole cells, rounded).
+    /// Fails, leaving `self` as it was, when a point would leave the width or 0-200 mm.
+    pub fn translate(&mut self, delta: Vec2) -> Result<(), String> {
+        let mut d = self.clone();
+        for p in d.points.iter_mut().chain(d.outline.iter_mut()) {
+            *p = *p + delta;
+        }
+        for s in &mut d.profile {
+            *s = [s[0] + delta.x, s[1] + delta.y, s[2] + delta.y];
+        }
+        let (dc, dr) = (
+            (delta.x / d.cell_size).round() as i64,
+            (delta.y / d.cell_size).round() as i64,
+        );
+        for c in &mut d.cells {
+            let (col, row) = (i64::from(c[0]) + dc, i64::from(c[1]) + dr);
+            if col < 0 || row < 0 {
+                return Err("the pattern would leave the grid".into());
+            }
+            *c = [col as u32, row as u32];
+        }
+        d.validate()?;
+        *self = d;
+        Ok(())
     }
 
     /// The pattern as an `openstitch.sewing` document (with the generated needle points under
@@ -358,6 +442,13 @@ impl SewingStitch {
         }
         v.to_string()
     }
+}
+
+/// Largest minus smallest of `xs` (0 when empty).
+fn span(xs: impl Iterator<Item = f64> + Clone) -> f64 {
+    let hi = xs.clone().fold(f64::NEG_INFINITY, f64::max);
+    let lo = xs.fold(f64::INFINITY, f64::min);
+    if hi >= lo { hi - lo } else { 0.0 }
 }
 
 fn round3(v: f64) -> f64 {
