@@ -86,14 +86,11 @@ fn raw(endpoint: &Endpoint, lines: &[String]) -> Vec<Option<Value>> {
     let mut reader = BufReader::new(stream.try_clone().expect("clone"));
     let mut out = Vec::new();
     for line in lines {
-        if stream
+        // A server that already answered and closed may refuse the write; its reply can still
+        // be waiting, so read regardless.
+        let _ = stream
             .write_all(line.as_bytes())
-            .and_then(|()| stream.write_all(b"\n"))
-            .is_err()
-        {
-            out.push(None);
-            continue;
-        }
+            .and_then(|()| stream.write_all(b"\n"));
         let mut reply = String::new();
         out.push(match reader.read_line(&mut reply) {
             Ok(n) if n > 0 => Some(serde_json::from_str(&reply).expect("reply json")),
@@ -369,4 +366,58 @@ fn writes_and_removes_the_endpoint_file_and_clients_stay_on_loopback() {
         .is_err()
     );
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Early closes (refused connection, bad token, oversized line) must not reset the connection
+/// while the client's request bytes are still unread: a reset can destroy the reply before the
+/// client reads it (always on Windows). The client here keeps sending and reads late.
+#[test]
+fn early_closes_deliver_the_reply_before_closing() {
+    let host = Host::start(ServerConfig {
+        max_connections: 1,
+        max_request_bytes: 1024,
+        ..Default::default()
+    });
+    let late_reply = |payload: &[u8]| {
+        let mut stream = TcpStream::connect(host.endpoint.address).expect("connect");
+        stream
+            .set_read_timeout(Some(Duration::from_secs(10)))
+            .expect("timeout");
+        let _ = stream.write_all(payload);
+        std::thread::sleep(Duration::from_millis(300));
+        let mut reply = String::new();
+        BufReader::new(stream)
+            .read_line(&mut reply)
+            .expect("reply arrives intact");
+        serde_json::from_str::<Value>(&reply).expect("reply json")
+    };
+    let junk = "x".repeat(64 << 10);
+    let wrong = format!("{{\"token\":\"00\",\"command\":\"design.info\"}}\n{junk}\n");
+    assert!(
+        late_reply(wrong.as_bytes())["error"]
+            .as_str()
+            .is_some_and(|e| e.contains("token"))
+    );
+    let oversized = format!("{junk}\n{junk}\n");
+    assert!(
+        late_reply(oversized.as_bytes())["error"]
+            .as_str()
+            .is_some_and(|e| e.contains("exceeds"))
+    );
+    let mut first = host.client();
+    assert_eq!(
+        first
+            .request(&json!({"command": "design.info"}))
+            .expect("reply")["ok"],
+        json!(true)
+    );
+    let line = format!(
+        "{{\"token\":\"{}\",\"command\":\"design.info\"}}\n{junk}\n",
+        host.endpoint.token
+    );
+    assert!(
+        late_reply(line.as_bytes())["error"]
+            .as_str()
+            .is_some_and(|e| e.contains("too many"))
+    );
 }
