@@ -73,6 +73,8 @@ pub struct RibbonState {
     pub prefs_path: Option<PathBuf>,
     /// Opens the Application menu on the next frame (`--show appmenu`).
     pub open_app_menu: bool,
+    /// Opens the Print to PDF dialog on the next frame (`--show print`).
+    pub open_print: bool,
     last_tool: Tool,
     /// Objects Copy remembered; Paste duplicates the ones still in the design.
     pub clipboard: BTreeSet<u64>,
@@ -98,6 +100,7 @@ impl Default for RibbonState {
             prefs: UiPrefs::default(),
             prefs_path: None,
             open_app_menu: false,
+            open_print: false,
             last_tool: Tool::Select,
             clipboard: BTreeSet::new(),
             cut: Vec::new(),

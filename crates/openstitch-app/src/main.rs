@@ -2,7 +2,7 @@
 //!
 //! ```text
 //! openstitch [FILE] [--demo] [--select ID,ID] [--simulate FRACTION] [--tool select|point|rectangle|ellipse|polygon|pen]
-//!            [--size WxH] [--zoom F] [--show realistic,reference,settings,measure,norulers,text,usb,arrange]
+//!            [--size WxH] [--zoom F] [--show realistic,reference,settings,measure,norulers,text,usb,arrange,print]
 //!            [--script STEPS] [--screenshot OUT.png]
 //!            [--image IMAGE [--convert autopunch|cross|photofill|photolines|designcenter]]
 //!            [--pattern PATTERN.json]
@@ -20,7 +20,8 @@
 //! address, the per-launch token and the endpoint file holding both. Clients get no file access
 //! unless roots are given (`--listen-root` read/write, `--listen-read-root` read only).
 //! `--ribbon` picks the ribbon tab and `--pane` the right-hand pane tab; `--show appmenu`
-//! opens the Application menu, `--show floating` floats the side panes (for screenshots).
+//! opens the Application menu, `--show floating` floats the side panes and `--show print`
+//! opens the Print to PDF dialog (for screenshots).
 //! `--database` opens the Design Database at a folder (a file is selected in its folder).
 //! `--image` opens the Image to Embroidery dialog with that image chosen; `--convert` also runs
 //! the conversion with that method. `--wizard` opens a pattern wizard dialog for the selection;

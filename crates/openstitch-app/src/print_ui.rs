@@ -57,6 +57,9 @@ pub fn open(ctx: &egui::Context) {
 }
 
 pub fn window(app: &mut EditorApp, ctx: &egui::Context) {
+    if std::mem::take(&mut app.ui.open_print) {
+        open(ctx);
+    }
     let mut d: PrintDialog =
         ctx.data_mut(|m| m.get_temp_mut_or_default::<PrintDialog>(id()).clone());
     if !d.open {
