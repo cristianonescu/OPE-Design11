@@ -24,7 +24,7 @@ no web runtime.
 | `openstitch-app` | first version | Desktop editor `openstitch` (eframe/egui). The library half (`openstitch_app::editor`) holds every testable piece without egui: `Viewport`, hit-testing, `SelectionHandles`, the `ToolController` state machine, `RenderModel`, inspector and object-list models. Screenshot: [rust-editor-overview.png](images/rust-editor-overview.png). The Design Database mode (`database_ui.rs`, model in `editor::database`) runs on `openstitch-library`. |
 | `openstitch-digitize` | first version | Image → embroidery approximations of Auto Punch, Cross Stitch, Photo Stitch 1/2 and Design Center: bounded image decoding (`image`, PNG/JPEG/BMP), median-cut colour reduction to PEC threads, dithering, region segmentation, marching-squares tracing, Douglas–Peucker simplification, least-squares Bézier fitting. Pure and deterministic; returns `DesignObject`s. See [Digitizing](#digitizing). |
 | `openstitch-library` | first version | The Design Database without UI: folder listing and bounded walks (`scan`), Property information (`info`: size, stitches, colour changes / totals, sewing time, PES properties; `.osd` compiled), a change-aware cache (`index`), thumbnails (`thumb`, tiny-skia), search (`search`), organising files (`ops`: new folder, copy / move / rename without overwriting, delete to the OS trash through the `trash` crate), batch conversion (`convert`) and catalogues (`catalog`: own PDF writer with Helvetica and Flate images via `miniz_oxide`, PNG pages with the bundled Lato font, HTML, CSV). Reads `.osd` through `openstitch_design::project`, not the engine. Every file is hostile: see [Design Database](#design-database). |
-| planned | — | Boolean geometry (offsets, union/difference); monograms, kerning and user fonts; realistic simulation, thread length. |
+| planned | — | Boolean geometry (offsets, union/difference); realistic simulation, thread length. |
 
 **Golden regressions:** `examples/badge.json` must keep exporting the recorded
 `badge-golden.pes` byte for byte (`script_output_matches_golden_pes`), and the recorded
@@ -100,7 +100,7 @@ No image codec is added: `--screenshot` writes PNG with a 100-line stored-deflat
 - Fonts: SIL OFL 1.1 fonts bundled unmodified in `crates/openstitch-design/fonts/` (Lato Bold,
   Pacifico), embedded with `include_bytes!`; no Brother font or asset is used.
 - Limits: 2000 characters, size 1–300 mm, laid-out text at most 2000 mm in each direction.
-  Characters the font lacks are skipped and reported (`missing`); kerning is not applied yet.
+  Characters the font lacks are skipped and reported (`missing`).
 - User fonts (`openstitch_design::fonts`): `fonts.loadTrueType` reads a TrueType/OpenType file
   or one face of a collection from a path the user gives (sandboxed like every file command)
   and stores it, unchanged and base64-encoded, in `Design::fonts`, so the `.osd` reopens
@@ -157,16 +157,33 @@ No image codec is added: `--screenshot` writes PNG with a 100-line stored-deflat
   `nameDrop.apply`, so a replacement fits the slot's box. `template.list` reads at most 500
   `.ostemplate` files from a folder and its category subfolders, each through the sandbox,
   and reports damaged ones instead of failing.
-- Scripts and shaping: layout is one glyph per character through the `cmap`, left to right,
-  no kerning or OpenType features. That is correct for Latin, Greek, Cyrillic, CJK
-  ideographs, kana and precomposed Hangul (CJK works with any font that has the glyphs, as in
-  PE-DESIGN, where it goes through the TrueType text tool). Scripts that need shaping —
-  Hebrew and other right-to-left scripts (drawn in logical order), Arabic, Syriac and N'Ko
-  (contextual joining), Indic scripts (reordering, conjuncts), Thai/Lao (mark positioning),
-  Tibetan, Myanmar, Khmer, Mongolian, conjoining jamo and combining marks — are laid out
-  unshaped and named in the commands' `shaping` result so front ends can warn. A shaping
-  engine (e.g. rustybuzz) would be the next step. Size is the capital height; fonts without
-  Latin capitals use 70 % of the em, so ideographs come out somewhat taller than the size.
+- Scripts and shaping (`openstitch_design::shaping`): each line is split into level runs by
+  the Unicode Bidirectional Algorithm (`unicode-bidi`, UAX #9) and put in visual order, then
+  into script runs (`unicode-script`; Common and Inherited characters join the run before
+  them). TrueType/OpenType runs are shaped by `rustybuzz` (HarfBuzz's algorithm in safe Rust):
+  GSUB/GPOS contextual forms (Arabic, Syriac, N'Ko joining), Indic and Southeast Asian
+  reordering, mark positioning, Unicode composition of base + accent, mirrored brackets in
+  right-to-left runs. Standard and contextual ligatures (`liga`, `clig`) are turned off so each
+  letter stays its own glyph for digitizing and per-character edits; required ligatures stay.
+  Kerning (`kern`) follows `TextSpec::kerning` (off by default, so files written before it
+  existed lay out unchanged; unkerned text is shaped without the font's legacy `kern` table,
+  which works around a rustybuzz 0.20.1 bug that left such right-to-left text in logical
+  order). Glyph clusters keep the index of their first character
+  (`Glyph::index`). Shaper panics on damaged fonts are contained: that run falls back to one
+  glyph per character. Embroidery fonts are not shaped: their characters are set one after
+  another in bidi order with their own advances, and scripts that need shaping are named in
+  the `shaping` result. Size is the capital height; fonts without Latin capitals use 70 % of
+  the em, so ideographs come out somewhat taller than the size.
+- Vertical text (`TextSpec::direction`): characters run top to bottom in logical order (no bidi
+  reordering), shaped top-to-bottom so `vert` forms and `vmtx`/`VORG` metrics apply (without
+  `vmtx`, a cell is ascender − descender with the glyph centred); lines become columns from
+  right to left, one line height apart; alignment is top / middle / bottom about y = 0. Text on
+  a path is always laid out along the path.
+- Per-character edits (`TextSpec::characters`, `text.setCharacter`): offset (mm), clockwise
+  rotation about the letter's middle (half its capital height above the baseline) and a size
+  that scales the glyph about the middle of its advance on the baseline and scales its advance,
+  so later letters move. Edits are keyed by character index, dropped when the text gets
+  shorter, cleared by Name Drop, and omitted from the `.osd` when there are none.
 
 ## Data type conversions
 
@@ -593,9 +610,17 @@ openstitch_app::editor (lib, no egui, unit-tested)
   outlines. `ttf-parser` (MIT OR Apache-2.0, RazrFalcon/harfbuzz org) is pure safe Rust,
   zero-allocation and zero dependencies, parses `glyf` and `CFF`/`CFF2` outlines, and is
   heavily fuzzed as the parser under `rustybuzz`, `resvg` and `cosmic-text`. It is built with
-  `default-features = false, features = ["std"]` (no shaping/variation tables). Rasterizing
+  `default-features = false, features = ["std"]`. Rasterizing
   crates (`fontdue`, `ab_glyph`) were not used: they target pixels, and the engine needs exact
   vector outlines; writing a parser in-house would add an untrusted-input attack surface.
+- **`rustybuzz` and `unicode-bidi` for shaping (2026-10-19).** Right-to-left and complex
+  scripts need OpenType shaping and the bidi algorithm. `rustybuzz` 0.20.1 (MIT; a port of
+  HarfBuzz's shaping algorithm to safe Rust, built on the `ttf-parser` 0.25 already in use)
+  and `unicode-bidi` 0.3.18 and `unicode-script` 0.5.8 (MIT OR Apache-2.0, servo / unicode-rs)
+  are pinned exactly. HarfBuzz itself would need C FFI, which the workspace forbids; writing a
+  shaper in-house would not get near its script coverage. Their dependencies (`bitflags`,
+  `bytemuck`, `smallvec`, `core_maths`/`libm`, `unicode-bidi-mirroring`, `unicode-ccc`,
+  `unicode-properties`) are MIT and/or Apache-2.0.
 - **`image` for decoding (2026-10-19).** Digitizing needs PNG, JPEG and BMP decoding. `image`
   0.25 (MIT OR Apache-2.0) is pure Rust, already in the lock file through eframe, and exposes
   header dimensions and allocation limits before decoding, which the hostile-input rules

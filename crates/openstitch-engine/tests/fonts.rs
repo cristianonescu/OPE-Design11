@@ -225,15 +225,16 @@ fn font_loading_obeys_the_sandbox_and_capabilities() {
 }
 
 #[test]
-fn scripts_that_need_shaping_are_reported() {
+fn text_in_scripts_the_font_lacks_is_missing_not_unshaped() {
     let mut s = Session::new(temp_dir());
+    // TrueType text is shaped; Lato simply has no Arabic letters.
     let r = run(&mut s, "text.add", json!({"text": "Ab \u{0628}\u{0627}"}));
     assert_eq!(r["glyphs"], 2);
-    let shaping = r["shaping"].as_array().expect("shaping");
-    assert_eq!(shaping.len(), 1);
-    assert!(shaping[0].as_str().expect("s").starts_with("Arabic"));
+    assert_eq!(r["shaping"], json!([]));
+    assert_eq!(r["missing"], json!(["\u{0628}", "\u{0627}"]));
     let r = run(&mut s, "object.setText", json!({"id": 1, "text": "Plain"}));
     assert_eq!(r["shaping"], json!([]));
+    assert_eq!(r["missing"], json!([]));
 }
 
 /// CJK through a system font, when the machine has one (fonts are never bundled for this).

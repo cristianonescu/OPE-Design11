@@ -351,9 +351,17 @@ fn text_window(app: &mut EditorApp, ctx: &egui::Context) {
                     }
                 });
                 ui.end_row();
+                ui.label("Options");
+                ui.horizontal(|ui| {
+                    ui.checkbox(&mut f.kerning, "Kerning")
+                        .on_hover_text("Use the TrueType font's kerning pairs");
+                    ui.checkbox(&mut f.vertical, "Vertical")
+                        .on_hover_text("Characters top to bottom, lines as columns right to left");
+                });
+                ui.end_row();
             });
             ui.weak(
-                "CJK and other scripts need a TrueType font that has them (Load TrueType Font…).",
+                "CJK, Arabic, Hebrew and other scripts need a TrueType font that has them (Load TrueType Font…); they are shaped and set right to left where needed.",
             );
             if ui.button("Add").clicked() {
                 add = f.request();

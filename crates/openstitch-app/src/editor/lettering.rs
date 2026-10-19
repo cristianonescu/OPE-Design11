@@ -40,6 +40,10 @@ pub struct TextForm {
     /// Capital height, mm.
     pub size: f64,
     pub align: &'static str,
+    /// Apply the font's kerning (TrueType fonts).
+    pub kerning: bool,
+    /// Vertical text: top to bottom, columns right to left.
+    pub vertical: bool,
 }
 
 impl Default for TextForm {
@@ -50,6 +54,8 @@ impl Default for TextForm {
             font: "lato-bold".into(),
             size: 10.0,
             align: "center",
+            kerning: false,
+            vertical: false,
         }
     }
 }
@@ -63,7 +69,8 @@ impl TextForm {
                 "text.add",
                 json!({
                     "text": self.text, "font": self.font, "size": self.size,
-                    "align": self.align,
+                    "align": self.align, "kerning": self.kerning,
+                    "direction": if self.vertical { "vertical" } else { "horizontal" },
                 }),
             )
         })
@@ -774,7 +781,19 @@ mod tests {
         assert_eq!(r["glyphs"], 2);
         let summary = text_summary(&r);
         assert!(summary.contains("no glyphs for \u{05D0}"), "{summary}");
-        assert!(summary.contains("Hebrew"), "{summary}");
+        assert!(
+            !summary.contains("not shaped"),
+            "TrueType text is shaped: {summary}"
+        );
+        form.kerning = true;
+        form.vertical = true;
+        let r = run(&mut s, &form.request().expect("request"));
+        let added = run(
+            &mut s,
+            &CommandRequest::new("object.get", json!({ "id": r["id"] })),
+        );
+        assert_eq!(added["text"]["kerning"], true);
+        assert_eq!(added["text"]["direction"], "vertical");
         form.text = "  ".into();
         assert!(form.request().is_none());
     }

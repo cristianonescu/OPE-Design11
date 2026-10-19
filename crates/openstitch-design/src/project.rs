@@ -84,6 +84,11 @@ pub fn validate(d: &Design) -> Result<(), String> {
                 && [t.size, t.letter_spacing, t.line_spacing]
                     .iter()
                     .all(|v| v.is_finite())
+                && t.characters.windows(2).all(|w| w[0].index < w[1].index)
+                && t.characters.iter().all(|e| {
+                    [e.x, e.y, e.rotation].iter().all(|v| v.is_finite())
+                        && e.size.is_none_or(|s| s.is_finite() && s > 0.0)
+                })
         })
     });
     let skeletons_ok = d.objects.iter().all(|o| {
