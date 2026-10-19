@@ -63,7 +63,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
    embroidery fonts.
 3. **Formats:** CSD export (no public writer); editable PES shapes and text (no public
    description; needs reference files and the legal opinion).
-4. **Design Database:** printing through the OS print dialog.
+4. **Design Database:** done: printing through the OS print dialog (Linux opens the PDF
+   viewer) and the Writing List to USB media. Card Reading is Blocked (below).
 5. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo
    sources, owner's account). Blocked on `unsafe` FFI, which the workspace forbids: macOS
    Apple-Event file opening (winit 0.30/eframe 0.37 deliver no file-open event; a delegate
@@ -72,8 +73,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
 6. **Reference tier:** once a licensed PE-DESIGN is available (VM_PLAN.md), generate fixtures,
    calibrate defaults and estimates, and promote rows to Verified Compatible.
 
-Wireless transfer and Link are Blocked: their protocols are undocumented and will not be
-reverse-engineered.
+Wireless transfer, Link and the Design Database's Card Reading (Brother's USB card
+reader/writer) are Blocked: their protocols are undocumented and will not be reverse-engineered.
 
 ## Blocked on a licensed PE-DESIGN installation
 

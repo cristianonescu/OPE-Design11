@@ -73,7 +73,7 @@ pub struct RibbonState {
     pub prefs_path: Option<PathBuf>,
     /// Opens the Application menu on the next frame (`--show appmenu`).
     pub open_app_menu: bool,
-    /// Opens the Print to PDF dialog on the next frame (`--show print`).
+    /// Opens the Print dialog on the next frame (`--show print`).
     pub open_print: bool,
     last_tool: Tool,
     /// Objects Copy remembered; Paste duplicates the ones still in the design.
@@ -591,7 +591,7 @@ pub fn menu(app: &mut EditorApp, a: Action, ui: &mut egui::Ui) {
     ui.set_min_width(180.0);
     match a {
         Print => {
-            if ui.button("Print to PDF…").clicked() {
+            if ui.button("Print…").clicked() {
                 crate::print_ui::open(ui.ctx());
             }
         }
