@@ -36,7 +36,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
 - **Lettering:** text objects with Lato Bold and Pacifico (SIL OFL), text on a path, user
   TrueType/OpenType fonts (CJK through any font with the glyphs), shaping of right-to-left and
   complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits,
-  user-mapped text, monograms, Name Drop, templates and the Template Wizard, Font Creator.
+  user-mapped text, monograms, Name Drop, templates and the Template Wizard, Font Creator (including
+  characters traced from an image in one step).
 - **Wizards:** background fill (echo, stippling, decorative, crosshatch, stripes), appliqué,
   embroidered patch, cutwork.
 - **Suite programs:** Programmable Stitch Creator (`openstitch.pattern`), Stitch Design Factory
@@ -58,11 +59,12 @@ for macOS, Windows and Linux. CI builds and tests all three.
 1. **Editing details:** an editor tool for drawing satin skeletons and deriving one from a
    shape (the engine keeps Bézier curves through shape operations and sews variable-direction
    satin along a skeleton).
-2. **Lettering:** Font Creator characters from background images in one step; editing
-   characters on the canvas (the engine command exists); shaping embroidery fonts.
+2. **Lettering:** editing characters on the canvas (the engine command exists); shaping
+   embroidery fonts.
 3. **Formats:** CSD export (no public writer); editable PES shapes and text (no public
    description; needs reference files and the legal opinion).
-4. **Design Database:** printing through the OS print dialog.
+4. **Design Database:** done: printing through the OS print dialog (Linux opens the PDF
+   viewer) and the Writing List to USB media. Card Reading is Blocked (below).
 5. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo
    sources, owner's account). Blocked on `unsafe` FFI, which the workspace forbids: macOS
    Apple-Event file opening (winit 0.30/eframe 0.37 deliver no file-open event; a delegate
@@ -71,8 +73,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
 6. **Reference tier:** once a licensed PE-DESIGN is available (VM_PLAN.md), generate fixtures,
    calibrate defaults and estimates, and promote rows to Verified Compatible.
 
-Wireless transfer and Link are Blocked: their protocols are undocumented and will not be
-reverse-engineered.
+Wireless transfer, Link and the Design Database's Card Reading (Brother's USB card
+reader/writer) are Blocked: their protocols are undocumented and will not be reverse-engineered.
 
 ## Blocked on a licensed PE-DESIGN installation
 

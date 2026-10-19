@@ -437,9 +437,9 @@ commands! {
         Delete => "delete", "Delete", "Move the selected files to the Trash.", Some("Delete"), None, Delete, Button, true;
         Rename => "rename", "Rename", "Rename the selected file (the extension stays).", Some("F2"), None, EditText, Button, true;
         Search => "search", "Search", "Find designs by name, format, size, stitches, colours, date or PES properties.", None, Some("library.search"), OtherZoom, Button, true;
-        PrintSetup => "printSetup", "Print Setup", "Paper, layout and colour list of the printed catalogue.", None, None, DesignSettings, Button, true;
+        PrintSetup => "printSetup", "Print Setup", "Paper, layout and colour list of the printed catalogue; print or save it as a PDF.", None, None, DesignSettings, Button, true;
         PrintPreview => "printPreview", "Print Preview", "Catalogue pages as images to check before printing.", None, None, Print, Button, true;
-        Print => "print", "Print", "Catalogue of the designs as printable PDF pages.", None, Some("library.catalog"), Print, Button, true;
+        Print => "print", "Print", "Print the catalogue with the system print dialog, using the Print Setup options.", None, Some("library.catalog"), Print, Button, true;
         ImageHtml => "imageHtml", "Create Image File and HTML", "A web page with an image of each design.", None, Some("library.catalog"), OpenImage, Button, true;
         Csv => "csv", "Create CSV", "A spreadsheet of the designs and their threads.", None, Some("library.catalog"), Export, Button, true;
         Exit => "exit", "Exit", "Close the Design Database and return to Layout & Editing.", None, None, Exit, Button, true;
@@ -466,8 +466,8 @@ commands! {
         Support => "support", "Customer Support", "Report a problem or ask a question.", None, None, Help, Button, true;
         ParentFolder => "parent", "Parent Folder", "Go to the folder that holds this one.", Some("Alt+Up"), None, Undo, Button, true;
         ChooseFolder => "chooseFolder", "Choose Folder", "Browse to a folder.", None, None, Open, Button, true;
-        ReadCard => "readCard", "Card Reading", "Read the designs on an original card.", None, None, ImportPatterns, Button, false;
-        WritingBox => "writingBox", "Writing List", "Show the list of designs to write to USB media, a machine or a card.", None, None, SendEmbroidery, Toggle, false;
+        ReadCard => "readCard", "Card Reading", "Read the designs on an original card. Blocked: Brother has not published the USB card reader/writer protocol or the card data layout, and OpenStitch will not reverse-engineer them.", None, None, ImportPatterns, Button, false;
+        WritingBox => "writingBox", "Writing List", "Show the list of designs to write to USB media (Add, Remove, Write).", None, None, SendEmbroidery, Toggle, true;
     }
 }
 

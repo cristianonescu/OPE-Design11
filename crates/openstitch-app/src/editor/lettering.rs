@@ -138,6 +138,50 @@ pub struct FontsForm {
     /// Font Creator: where a character is drawn on the Design Page (left set line, baseline), mm.
     pub glyph_x: f64,
     pub glyph_y: f64,
+    /// Font Creator: characters from an image.
+    pub image: ImageCharacters,
+}
+
+/// Font Creator ▸ Characters from image: the image, how it is read, and the characters
+/// found in it (`fonts.traceImage`) with the character each becomes, editable before
+/// `fonts.fromImage` applies them.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ImageCharacters {
+    /// Image file; `None` uses the design's background image.
+    pub path: Option<std::path::PathBuf>,
+    /// The whole image is one character (the form's character).
+    pub whole: bool,
+    /// Whole background image used where it is placed, measured from the form's set line
+    /// and baseline, instead of fitted to the standard height.
+    pub as_placed: bool,
+    /// Pixels darker than this are ink.
+    pub threshold: i64,
+    /// Characters assigned in order when the image is read.
+    pub order: String,
+    pub found: Vec<FoundCharacter>,
+}
+
+impl Default for ImageCharacters {
+    fn default() -> Self {
+        ImageCharacters {
+            path: None,
+            whole: false,
+            as_placed: false,
+            threshold: 128,
+            order: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".into(),
+            found: Vec::new(),
+        }
+    }
+}
+
+/// One character found in the image.
+#[derive(Clone, Debug, PartialEq)]
+pub struct FoundCharacter {
+    pub row: u64,
+    /// Traced outline polylines, mm from the left set line and baseline.
+    pub outline: Vec<Vec<[f64; 2]>>,
+    /// The character it becomes; empty skips it.
+    pub assigned: String,
 }
 
 impl Default for FontsForm {
@@ -153,6 +197,7 @@ impl Default for FontsForm {
                 .into(),
             glyph_x: 20.0,
             glyph_y: 60.0,
+            image: ImageCharacters::default(),
         }
     }
 }
@@ -211,6 +256,80 @@ impl FontsForm {
                 "x": self.glyph_x, "y": self.glyph_y,
             }),
         )
+    }
+
+    /// Parameters shared by `fonts.traceImage` and `fonts.fromImage`.
+    fn image_params(&self) -> serde_json::Map<String, Value> {
+        let i = &self.image;
+        let mut m = serde_json::Map::new();
+        m.insert("font".into(), json!(self.font));
+        if let Some(p) = &i.path {
+            m.insert("path".into(), json!(p.display().to_string()));
+        }
+        m.insert(
+            "mode".into(),
+            json!(if i.whole { "whole" } else { "split" }),
+        );
+        m.insert("threshold".into(), json!(i.threshold));
+        if i.whole && i.as_placed && i.path.is_none() {
+            m.insert("x".into(), json!(self.glyph_x));
+            m.insert("y".into(), json!(self.glyph_y));
+        }
+        m
+    }
+
+    /// Finds the image's characters, assigning the order string (whole: the form's character).
+    pub fn trace_image(&self) -> CommandRequest {
+        let mut m = self.image_params();
+        let chars = if self.image.whole {
+            &self.character
+        } else {
+            &self.image.order
+        };
+        m.insert("chars".into(), json!(chars));
+        m.insert("outlines".into(), json!(true));
+        CommandRequest::new("fonts.traceImage", Value::Object(m))
+    }
+
+    /// Takes the characters of a `fonts.traceImage` result.
+    pub fn set_found(&mut self, r: &Value) {
+        self.image.found = r["characters"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|c| FoundCharacter {
+                row: c["row"].as_u64().unwrap_or(0),
+                outline: c["outline"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .map(|l| {
+                        l.as_array()
+                            .into_iter()
+                            .flatten()
+                            .filter_map(|q| Some([q[0].as_f64()?, q[1].as_f64()?]))
+                            .collect()
+                    })
+                    .collect(),
+                assigned: c["char"].as_str().unwrap_or_default().into(),
+            })
+            .collect();
+    }
+
+    /// Stores the found characters as assigned, in one step.
+    pub fn from_image(&self) -> Option<CommandRequest> {
+        let chars: Vec<String> = self
+            .image
+            .found
+            .iter()
+            .map(|c| c.assigned.trim().chars().take(1).collect())
+            .collect();
+        if chars.iter().all(String::is_empty) {
+            return None;
+        }
+        let mut m = self.image_params();
+        m.insert("chars".into(), json!(chars));
+        Some(CommandRequest::new("fonts.fromImage", Value::Object(m)))
     }
 
     pub fn save(&self, path: &Path) -> CommandRequest {
@@ -669,6 +788,57 @@ mod tests {
                 "unchanged shape stores the same outline"
             );
         }
+    }
+
+    #[test]
+    fn characters_from_an_image_are_found_assigned_and_stored() {
+        let dir =
+            std::env::temp_dir().join(format!("openstitch-app-fontimage-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        // Three bars of ink; the middle one is skipped.
+        let img = openstitch_digitize::Raster::from_fn(90, 40, |x, y| {
+            if (10..30).contains(&y) && [5, 35, 65].iter().any(|&x0| (x0..x0 + 10).contains(&x)) {
+                [0, 0, 0, 255]
+            } else {
+                [255, 255, 255, 255]
+            }
+        })
+        .expect("raster");
+        let path = dir.join("bars.png");
+        std::fs::write(&path, img.encode_png().expect("png")).expect("write");
+        let mut s = Session::new(dir);
+        let mut form = FontsForm {
+            new_id: "bars".into(),
+            ..FontsForm::default()
+        };
+        run(&mut s, &form.create());
+        form.font = "bars".into();
+        form.image.path = Some(path);
+        assert!(form.from_image().is_none(), "nothing found yet");
+        let r = run(&mut s, &form.trace_image());
+        form.set_found(&r);
+        let assigned: Vec<&str> = form
+            .image
+            .found
+            .iter()
+            .map(|c| c.assigned.as_str())
+            .collect();
+        assert_eq!(assigned, ["A", "B", "C"]);
+        assert!(form.image.found.iter().all(|c| c.outline.len() == 1));
+        form.image.found[1].assigned.clear();
+        form.image.found[2].assigned = "l".into();
+        let r = run(&mut s, &form.from_image().expect("request"));
+        assert_eq!(r["created"], "Al");
+        form.image.whole = true;
+        form.character = "W".into();
+        let r = run(&mut s, &form.trace_image());
+        form.set_found(&r);
+        assert_eq!(form.image.found.len(), 1);
+        assert_eq!(form.image.found[0].assigned, "W");
+        assert_eq!(
+            run(&mut s, &form.from_image().expect("request"))["created"],
+            "W"
+        );
     }
 
     #[test]

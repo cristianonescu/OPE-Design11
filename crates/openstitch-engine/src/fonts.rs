@@ -579,7 +579,7 @@ fn glyph_from_pattern(
 
 /// Sets `glyph` in the embroidery font of the `font` parameter, keeping the font within its
 /// limits.
-fn store_glyph(
+pub(crate) fn store_glyph(
     s: &mut EngineState,
     p: &Params,
     glyph: EmbroideryGlyph,

@@ -158,6 +158,8 @@ pub struct EditorApp {
     pub database: openstitch_app::editor::database::Database,
     pub db_textures: crate::database_ui::Textures,
     pub db_chrome: crate::database_ui::Chrome,
+    /// A PDF being handed to the system's print dialog or viewer.
+    pub print_job: Option<openstitch_app::os_print::Job>,
     /// Loopback automation socket; its requests run in [`EditorApp::serve_remote`].
     pub remote: Option<openstitch_remote::Server>,
     /// Ribbon, Quick Access Toolbar, panes and window preferences.
@@ -228,6 +230,7 @@ impl EditorApp {
             database: Default::default(),
             db_textures: Default::default(),
             db_chrome: Default::default(),
+            print_job: None,
             remote: None,
             ui: Default::default(),
         };
@@ -822,6 +825,27 @@ impl EditorApp {
 
     // MARK: frame
 
+    /// Hands a PDF OpenStitch wrote to the system's print dialog (or its PDF viewer).
+    pub fn print_pdf(&mut self, pdf: &Path) {
+        self.status = format!("Opening the print dialog for {}…", pdf.display());
+        self.database.status = self.status.clone();
+        self.print_job = Some(openstitch_app::os_print::start(pdf));
+    }
+
+    fn poll_print(&mut self, ctx: &egui::Context) {
+        let Some(job) = &self.print_job else {
+            return;
+        };
+        match job.poll() {
+            Some(outcome) => {
+                self.status = outcome.message();
+                self.database.status = self.status.clone();
+                self.print_job = None;
+            }
+            None => ctx.request_repaint_after(std::time::Duration::from_millis(200)),
+        }
+    }
+
     fn update_title(&mut self, ctx: &egui::Context) {
         let name = self.path.as_ref().and_then(|p| p.file_name()).map_or_else(
             || self.session.design().name.clone(),
@@ -1084,6 +1108,7 @@ impl eframe::App for EditorApp {
         let ctx = ui.ctx().clone();
         self.ui.apply_theme(&ctx);
         self.serve_remote();
+        self.poll_print(&ctx);
         if self.database.open || self.creator.open || self.sewing.open {
             // The other suite windows take the whole window, as separate programs do.
             self.update_title(&ctx);

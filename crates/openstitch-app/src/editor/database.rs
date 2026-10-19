@@ -3,6 +3,7 @@
 //! actions they run through `openstitch-library`. `database_ui.rs` draws it.
 
 use openstitch_core::StitchPattern;
+use openstitch_engine::transfer::{SendError, write_to_volume};
 use openstitch_formats::FileType;
 use openstitch_library::catalog::{self, ColorList, Setup, Units};
 use openstitch_library::convert::{self, ConvertOptions, Converted, Output};
@@ -231,7 +232,7 @@ impl Default for ConvertForm {
 /// What a catalogue is written as.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum CatalogFormat {
-    /// Printable pages (print from the PDF viewer).
+    /// Printable pages (File ▸ Print hands them to the system print dialog).
     #[default]
     Pdf,
     Png,
@@ -331,6 +332,9 @@ pub struct Database {
     pub status: String,
     /// Bumped whenever files change, so the UI drops stale textures.
     pub generation: u64,
+    /// The Writing List: designs queued for Write to USB media, and whether it is shown.
+    pub writing: Vec<PathBuf>,
+    pub show_writing: bool,
 }
 
 impl Default for Database {
@@ -359,6 +363,8 @@ impl Default for Database {
             subfolders: HashMap::new(),
             status: String::new(),
             generation: 0,
+            writing: Vec::new(),
+            show_writing: false,
         }
     }
 }
@@ -915,6 +921,148 @@ impl Database {
     }
 }
 
+/// What Write does with a design whose name already exists on the destination (the guide's
+/// overwrite, stop, or copy with a different name).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OnExists {
+    /// Stop at the file and ask.
+    Ask,
+    Overwrite,
+    /// Write it as "name (2)", "name (3)" and so on.
+    NewName,
+}
+
+/// How far Write got.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum WriteOutcome {
+    /// Every design from the start index was written.
+    Done {
+        written: usize,
+    },
+    /// The design at `index` exists on the destination as `path`; nothing after it was written.
+    Exists {
+        index: usize,
+        path: PathBuf,
+        written: usize,
+    },
+    Failed {
+        written: usize,
+        error: String,
+    },
+}
+
+/// The largest design file Write copies.
+const MAX_WRITE_BYTES: u64 = 64 << 20;
+
+impl Database {
+    /// Prints the catalogue with the Print Setup options: writes the PDF to the temporary
+    /// folder and returns its path for the system print dialog.
+    pub fn print_catalog(&mut self) -> Result<PathBuf, String> {
+        let paths = self.catalog_paths();
+        if paths.is_empty() {
+            return Err("No designs to print".into());
+        }
+        let items = catalog::load_items(&paths, &self.limits);
+        let mut setup = self.catalog.setup.clone();
+        setup.units = self.units;
+        let path = crate::os_print::temp_pdf("catalogue");
+        if let Some(dir) = path.parent() {
+            std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+        }
+        convert::write_file(&path, &catalog::pdf(&items, &setup), true)
+            .map_err(|e| e.to_string())?;
+        Ok(path)
+    }
+
+    /// Whether File ▸ Print has designs to print.
+    pub fn can_print(&self) -> bool {
+        !self.catalog_paths().is_empty()
+    }
+
+    // MARK: writing list
+
+    /// Add to Writing List: machine files not already queued. Returns how many were added.
+    pub fn add_to_writing(&mut self, paths: &[PathBuf]) -> usize {
+        let mut n = 0;
+        for p in paths {
+            if matches!(Kind::of(p), Some(Kind::Machine(_))) && !self.writing.contains(p) {
+                self.writing.push(p.clone());
+                n += 1;
+            }
+        }
+        if n > 0 {
+            self.show_writing = true;
+        }
+        n
+    }
+
+    /// Remove from Writing List.
+    pub fn remove_from_writing(&mut self, paths: &[PathBuf]) {
+        self.writing.retain(|p| !paths.contains(p));
+    }
+
+    /// Write: copies the queued designs, unchanged, to the root of `volume` (a USB stick or SD
+    /// card from [`openstitch_engine::transfer::detect`]), starting at `from`. `first` decides
+    /// a name clash on the first design; later clashes stop and ask.
+    pub fn write_list(&self, volume: &Path, from: usize, first: OnExists) -> WriteOutcome {
+        let mut written = 0;
+        for (index, src) in self.writing.iter().enumerate().skip(from) {
+            let on_exists = if index == from { first } else { OnExists::Ask };
+            let failed = |error: String| WriteOutcome::Failed { written, error };
+            let bytes = match std::fs::metadata(src) {
+                Ok(m) if m.len() > MAX_WRITE_BYTES => {
+                    return failed(format!("{} is too large", file_name(src)));
+                }
+                Ok(_) => match std::fs::read(src) {
+                    Ok(b) => b,
+                    Err(e) => return failed(format!("{}: {e}", file_name(src))),
+                },
+                Err(e) => return failed(format!("{}: {e}", file_name(src))),
+            };
+            let stem = src
+                .file_stem()
+                .map_or_else(String::new, |s| s.to_string_lossy().into_owned());
+            let ext = src
+                .extension()
+                .map_or_else(String::new, |e| e.to_string_lossy().to_lowercase());
+            match write_one(volume, &stem, &ext, &bytes, on_exists) {
+                Ok(()) => written += 1,
+                Err(SendError::Exists(path)) => {
+                    return WriteOutcome::Exists {
+                        index,
+                        path,
+                        written,
+                    };
+                }
+                Err(SendError::Failed(e)) => return failed(e),
+            }
+        }
+        WriteOutcome::Done { written }
+    }
+}
+
+fn write_one(
+    volume: &Path,
+    stem: &str,
+    ext: &str,
+    bytes: &[u8],
+    on_exists: OnExists,
+) -> Result<(), SendError> {
+    let overwrite = on_exists == OnExists::Overwrite;
+    match write_to_volume(volume, stem, ext, bytes, overwrite) {
+        Err(SendError::Exists(_)) if on_exists == OnExists::NewName => {
+            for n in 2..100 {
+                match write_to_volume(volume, &format!("{stem} ({n})"), ext, bytes, false) {
+                    Err(SendError::Exists(_)) => continue,
+                    r => return r.map(|_| ()),
+                }
+            }
+            Err(SendError::Failed(format!("no free name for {stem}.{ext}")))
+        }
+        r => r.map(|_| ()),
+    }
+}
+
 pub fn file_name(p: &Path) -> String {
     p.file_name().map_or_else(
         || p.display().to_string(),
@@ -1146,5 +1294,79 @@ mod tests {
         assert!(t.0.join("cat").is_dir());
         db.selection.clear();
         assert!(db.write_catalog(&t.0.join("none.pdf")).is_err());
+    }
+
+    #[test]
+    fn print_writes_the_catalogue_pdf_for_the_print_dialog() {
+        let (_t, mut db) = setup();
+        assert!(db.can_print());
+        let pdf = db.print_catalog().unwrap();
+        assert!(pdf.starts_with(std::env::temp_dir()));
+        assert!(std::fs::read(&pdf).unwrap().starts_with(b"%PDF"));
+        let _ = std::fs::remove_file(&pdf);
+        db.catalog.selected_only = true;
+        assert!(!db.can_print());
+        assert!(db.print_catalog().is_err());
+    }
+
+    #[test]
+    fn the_writing_list_queues_designs_and_writes_them_to_the_volume() {
+        let (t, mut db) = setup();
+        let usb = Temp::new();
+        let items = db.items().to_vec();
+        let mut queued = items.clone();
+        queued.push(t.0.join("Sub")); // not a design
+        assert!(!db.show_writing);
+        assert_eq!(db.add_to_writing(&queued), 3);
+        assert!(db.show_writing);
+        assert_eq!(db.add_to_writing(&items[..1]), 0, "no duplicates");
+        db.remove_from_writing(&items[1..2]);
+        assert_eq!(db.writing, [items[0].clone(), items[2].clone()]);
+
+        assert_eq!(
+            db.write_list(&usb.0, 0, OnExists::Ask),
+            WriteOutcome::Done { written: 2 }
+        );
+        for p in &db.writing {
+            let copy = usb.0.join(p.file_name().unwrap());
+            assert_eq!(std::fs::read(copy).unwrap(), std::fs::read(p).unwrap());
+        }
+        // Writing again stops at the first clash and asks.
+        let again = db.write_list(&usb.0, 0, OnExists::Ask);
+        let WriteOutcome::Exists {
+            index,
+            path,
+            written,
+        } = again
+        else {
+            panic!("{again:?}")
+        };
+        assert_eq!((index, written), (0, 0));
+        assert_eq!(path, usb.0.join("a.pes"));
+        // Copy with a different name, then overwrite the next clash.
+        let next = db.write_list(&usb.0, 0, OnExists::NewName);
+        assert!(usb.0.join("a (2).pes").exists());
+        assert!(
+            matches!(
+                next,
+                WriteOutcome::Exists {
+                    index: 1,
+                    written: 1,
+                    ..
+                }
+            ),
+            "{next:?}"
+        );
+        assert_eq!(
+            db.write_list(&usb.0, 1, OnExists::Overwrite),
+            WriteOutcome::Done { written: 1 }
+        );
+        assert_eq!(std::fs::read_dir(&usb.0).unwrap().count(), 3);
+        // A missing source or volume fails cleanly.
+        let gone = usb.0.join("missing");
+        assert!(matches!(
+            db.write_list(&gone, 0, OnExists::Overwrite),
+            WriteOutcome::Failed { written: 0, .. }
+        ));
     }
 }

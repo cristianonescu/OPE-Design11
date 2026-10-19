@@ -78,7 +78,7 @@ Behaviour follows the guide's pages
 
 | Previous menu item | Now |
 |---|---|
-| File ▸ New, Open, Save, Save As, Print to PDF, Export, Quit | Application menu (Print ▸ Print to PDF, Export ▸, Exit) |
+| File ▸ New, Open, Save, Save As, Print, Export, Quit | Application menu (Print ▸ Print: system print dialog or Save PDF; Export ▸, Exit) |
 | File ▸ Import into design, Import SVG | Home ▸ Import |
 | File ▸ Background Image (choose, paste, show/hide, opacity, remove) | Image ▸ Open Image, Paste Image, Background Image Density, Delete Image |
 | File ▸ Export Sections, Send to USB Media | Home ▸ Sew ▸ Sew Embroidery; Hoop Settings tab; Application menu ▸ Export ▸ |
@@ -571,15 +571,17 @@ Preview, Property) plus labelled ones, and a status bar.
 
 | Guide element | OpenStitch |
 |---|---|
-| Toolbar | Exit, Parent Folder, Choose Folder · Cut, Copy, Paste · Large/Small Thumbnails, Details · Preview, Property · Search, Convert Format, Open in / Import Into Layout & Editing · Card Reading, Writing List (not yet) |
+| Toolbar | Exit, Parent Folder, Choose Folder · Cut, Copy, Paste · Large/Small Thumbnails, Details · Preview, Property · Search, Convert Format, Open in / Import Into Layout & Editing · Card Reading (Blocked), Writing List |
 | Folder pane | Left: folder tree; drop files on a folder to move them there |
 | Contents pane | Thumbnails or details of the folder; double-click opens in Layout & Editing |
 | Preview and Property | Right; each shown or hidden from Display |
-| Card reading, Writing list, Send to selector | Not yet available (Card Reading and Writing List are disabled in the toolbar) |
+| Writing list, Send to selector | Transfer area under the contents (toolbar ▸ Writing List): Send To lists the USB media found; Add, Remove, Write; right-click Add to / Remove from Writing List, or drag designs into the list. Machine memory, wireless, original card and Link are listed disabled (Blocked: undocumented protocols) |
+| Card reading button | Blocked: Brother has not published the USB card reader/writer protocol or the card data layout, and OpenStitch will not reverse-engineer them; the button stays disabled and its ScreenTip says why |
 | Status bar | Folder summary or the ScreenTip under the pointer |
 
-OpenStitch differences: File ▸ Print Setup and Print open the catalogue dialog for printable PDF
-pages (print them from the PDF viewer) and Print Preview for page images; File ▸ Rename (F2)
+OpenStitch differences: File ▸ Print Setup opens the catalogue dialog (Print hands the PDF to
+the system print dialog, Save keeps it), File ▸ Print prints with those options through the
+system print dialog (on Linux, the PDF viewer), and Print Preview writes page images; File ▸ Rename (F2)
 renames in every view; Option ▸ Application Color offers OpenStitch's Light, Dark and System
 themes instead of Blue, Black, Silver and Aqua; Help ▸ Customer Support opens the project's issue
 tracker.
@@ -662,5 +664,5 @@ tracker.
 | Convert Format |  | `DbAction::ConvertFormat` | `library.convert` | yes |
 | Open in Layout & Editing | `Enter` | `DbAction::OpenInEditor` | `project.open` | yes |
 | Import Into Layout & Editing |  | `DbAction::ImportIntoEditor` | `stitches.import` | yes |
-| Card Reading |  | `DbAction::ReadCard` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Writing List |  | `DbAction::WritingBox` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Card Reading |  | `DbAction::ReadCard` | view/UI only | **Blocked** (disabled, ScreenTip says why: undocumented card reader protocol) |
+| Writing List |  | `DbAction::WritingBox` | view/UI only | yes |
