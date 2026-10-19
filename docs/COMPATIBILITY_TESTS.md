@@ -38,6 +38,8 @@ blocks with a trim + jump and one stitch longer than 121 units.
 | SEW write(read(f)) == f | byte-identical | byte-identical | pass |
 | PES v1, v6, v6 truncated (with `CEmbOne`/`CSewSeg`, thread table) read matches reference | identical; v6 threads `#e01010` `#1040c0` (exact RGB) | identical | pass |
 | PES v1, v6, v6t write(read(f)) == f | byte-identical | byte-identical | pass |
+| PES v6 with thread chart, brand, catalogue and description (`oracle_v6_chart.pes`): write(read(f)) == f | byte-identical (chart strings and colour type kept) | byte-identical | pass |
+| Default PES (`FileType::Pes.write`) == pyembroidery `6` | byte-identical to `oracle_v6.pes` | byte-identical | pass |
 | HUS read matches reference decoder (fixture assembled, literal-only streams) | identical, chart threads `#ff0000` `#0000e7` | identical | pass |
 | HUS written by OpenStitch (LZ77 + Huffman) read by the reference decoder | same stitches and threads as the original | identical (`openstitch_hus_read.json`) | pass |
 | SHV read matches reference decoder (fixture assembled) | identical, chart threads `#ff0000` `#0000ff`, name `oracle` | identical | pass |

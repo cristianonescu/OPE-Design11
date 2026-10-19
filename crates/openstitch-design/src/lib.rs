@@ -38,9 +38,9 @@ pub use machine::{
     BROTHER_HOOPS, Estimate, Hoop, MachineSettings, MachineType, SewingArea, UserHoop, estimate,
 };
 pub use model::{
-    Arrange, BackgroundImage, ChainShape, Design, DesignObject, DesignPage, Feather, FeatherSide,
-    Guides, ImageAdjust, LineSewing, LineType, ObjectKind, RegionSewing, RegionType, StitchBlock,
-    UnderlayStyle,
+    Arrange, BackgroundImage, ChainShape, Design, DesignObject, DesignPage, DesignProperties,
+    Feather, FeatherSide, Guides, ImageAdjust, LineSewing, LineType, ObjectKind, RegionSewing,
+    RegionType, StitchBlock, UnderlayStyle,
 };
 pub use text::{CharEdit, FONTS, FontInfo, Layout, TextAlign, TextDirection, TextError, TextSpec};
 

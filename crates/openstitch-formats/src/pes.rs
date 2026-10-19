@@ -3,12 +3,13 @@
 //!
 //! Reading: the stitches always come from the PEC section. The object section is parsed as far
 //! as public descriptions go (pyembroidery 1.5.1's `PesReader` and `PesWriter`, MIT): the
-//! v4+ metadata strings, the v5+ thread table (exact RGB, names, catalogue numbers), and
+//! v4+ metadata strings, the v5+ thread table (exact RGB, names, catalogue numbers, brand,
+//! chart and colour type), and
 //! `CEmbOne` / `CSewSeg` stitch-group objects. Parsing stops at the first object class with no
 //! public description (`CSewFigSeg`, `CEmbRect`, text and so on) and records its name in
 //! [`ObjectSection::unparsed`]. A malformed object section never fails the read.
 //!
-//! Writing: version 1 or 6, either "truncated" (no objects) or with one `CEmbOne` / `CSewSeg`
+//! Writing: version 6 with objects by default, or version 1 or 6, either "truncated" (no objects) or with one `CEmbOne` / `CSewSeg`
 //! pair holding the whole stitch stream, byte-identical to pyembroidery's writer. Version 6
 //! stores the RGB thread table, so colours and thread names survive a round trip; the PEC
 //! section still carries the nearest Brother chart colours for the machine.
@@ -194,15 +195,18 @@ pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
     for _ in 0..threads {
         let catalog = read_string8(&mut r)?;
         let rgb = r.read(3)?;
-        r.skip(5)?;
+        r.skip(1)?;
+        let kind = r.u32le()?;
         let name = read_string8(&mut r)?;
         let brand = read_string8(&mut r)?;
-        let _chart = read_string8(&mut r)?;
+        let chart = read_string8(&mut r)?;
         let mut t =
             Thread::rgb(u32::from(rgb[0]) << 16 | u32::from(rgb[1]) << 8 | u32::from(rgb[2]));
         t.name = name.map(Cow::Owned);
         t.catalog_number = catalog.map(Cow::Owned);
         t.brand = brand.map(Cow::Owned);
+        t.chart = chart.map(Cow::Owned);
+        t.kind = Some(kind).filter(|&k| k != Thread::CUSTOM_KIND);
         section.threads.push(t);
     }
     read_blocks(&mut r, pec_offset, &mut section)?;
@@ -306,8 +310,8 @@ fn read_blocks(r: &mut ByteReader, end: usize, section: &mut ObjectSection) -> R
 /// PES versions OpenStitch writes.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Version {
-    #[default]
     V1,
+    #[default]
     V6,
 }
 
@@ -319,16 +323,21 @@ pub struct WriteOptions {
 }
 
 impl Default for WriteOptions {
-    /// Version 1, truncated: the form OpenStitch has always written.
+    /// Version 6 with the stitch-group object and the RGB thread table: the form every
+    /// user-facing path writes. `1t` (version 1, no objects) stays an explicit "machine only,
+    /// smallest" choice.
     fn default() -> Self {
         Self {
-            version: Version::V1,
-            truncated: true,
+            version: Version::V6,
+            truncated: false,
         }
     }
 }
 
 impl WriteOptions {
+    /// The `pesVersion` string of [`WriteOptions::default`].
+    pub const DEFAULT_NAME: &str = "6";
+
     /// Parses pyembroidery's version strings: `1`, `1t`, `6`, `6t`.
     pub fn parse(s: &str) -> Option<Self> {
         let (v, truncated) = match s.strip_suffix('t') {
@@ -451,10 +460,10 @@ fn write_header_v6(w: &mut ByteWriter, pattern: &StitchPattern) -> Result<()> {
     for t in &pattern.threads {
         write_string8(w, t.catalog_number.as_deref());
         w.append(&[t.red, t.green, t.blue, 0]);
-        w.u32le(0x0A); // custom colour
+        w.u32le(i64::from(t.kind.unwrap_or(Thread::CUSTOM_KIND)));
         write_string8(w, t.name.as_deref());
         write_string8(w, t.brand.as_deref());
-        write_string8(w, None); // chart
+        write_string8(w, t.chart.as_deref());
     }
     Ok(())
 }

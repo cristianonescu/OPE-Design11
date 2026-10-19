@@ -72,7 +72,7 @@ dearest:
 | # | Difference | Area | Severity | Grade | Needs reference to finish? |
 |---|---|---|---|---|---|
 | 1 | Satin sewn as a square wave, not a zigzag | Stitches | 5 | Defect | No |
-| 2 | Default PES is truncated v1 with no object section | PES | 5 | Documented, unverified | Black-box open test |
+| 2 | Default PES is truncated v1 with no object section (**fixed**, internal regression; open test pending) | PES | 5 | Documented, unverified | Black-box open test |
 | 3 | Trims and jumps inside one fill or satin region; no Running Stitch Path | Stitches | 5 | Documented difference | No |
 | 4 | Trims between underlay, top stitching and outline of one object | Stitches | 4 | Documented, unverified | Single-needle policy |
 | 5 | Every design is written as one stitch group, nothing editable | PES | 5 | Documented, unverified | Yes (shapes, text) |
@@ -88,8 +88,8 @@ dearest:
 | 15 | Missing fill, satin and zigzag attributes; wrong ranges | Stitches | 3 | Documented difference | Geometry |
 | 16 | Optimize Sewing Order does not move entry and exit points | Stitches | 3 | Documented difference | No |
 | 17 | Hole sewing not validated or paired | Stitches | 3 | Documented difference | No |
-| 18 | PES thread table drops chart names and colour type | PES | 3 | Documented difference | Chart strings |
-| 19 | Design Property metadata cannot be set; lost on import | PES | 3 | Documented difference | No |
+| 18 | PES thread table drops chart names and colour type (**fixed**: round trip; chart strings pending) | PES | 3 | Documented difference | Chart strings |
+| 19 | Design Property metadata cannot be set; lost on import (**fixed**, internal regression) | PES | 3 | Documented difference | No |
 | 20 | Character kerning moves one glyph without reflowing the line | Fonts | 3 | Documented, unverified | Reflow rule |
 
 Line references are relative to `crates/`.
@@ -137,6 +137,14 @@ Line references are relative to `crates/`.
   - Golden fixtures that contain satin change and must be regenerated in the same PR.
 
 ## 2. Default PES is truncated v1 with no object section
+
+- **Status (2026-10-19): fixed, internal regression.** `WriteOptions::default` is v6 with the
+  stitch group; `FileType::write`, `design.export`, `nameDrop.export`, `transfer.send` and
+  `library.convert` follow; `1t` stays as the explicit machine-only choice. Tests:
+  `default_pes_is_version_6_with_objects_and_thread_table`, `pes_compat::*_writes_full_v6`,
+  `transfer::tests::sent_pes_is_version_6_with_objects_and_threads`. Not verified: the
+  black-box open test in PE-DESIGN below is still needed before it can be called Reference
+  Verified.
 
 - **Impact:** severity 5.
   - Most paths write `#PES0001` with no object section and no thread table: `design.export`
@@ -590,6 +598,12 @@ Line references are relative to `crates/`.
 
 ## 18. PES thread table drops chart names and colour type
 
+- **Status (2026-10-19): fixed for round trips, internal regression.** `Thread::chart` and
+  `Thread::kind` are read and written back; OpenStitch's own colours still get type `0x0A` and
+  an empty chart. `pes_v6_thread_chart_and_kind_round_trip_byte_identically` rewrites
+  `oracle_v6_chart.pes` (pyembroidery) byte for byte. Still open: chart strings for
+  OpenStitch's colours (owner files) and the meaning of the type codes.
+
 - **Impact:** severity 3.
   - Every thread is written as custom colour (`0x0A`) with an empty chart.
   - Re-saving a PE-DESIGN file erases its brand charts.
@@ -616,6 +630,12 @@ Line references are relative to `crates/`.
   - Set chart strings from OpenStitch thread charts only after owner files confirm them.
 
 ## 19. Design Property metadata cannot be set; lost on import
+
+- **Status (2026-10-19): fixed, internal regression.** `Design.properties`,
+  `design.setProperties` (≤ 255 bytes per field, no control characters except line breaks and
+  tabs), compiled into `StitchPattern.metadata`, kept in `.osd`, offered and adopted on
+  `stitches.import` (`adoptProperties`), editable in Application menu ▸ Design Property.
+  Tests: `pes_compat::design_properties_*`, app `design_property_edits_apply_as_one_undo_step`.
 
 - **Impact:** severity 3.
   - PE-DESIGN users fill in category, author, keywords and comments, which Design Database
