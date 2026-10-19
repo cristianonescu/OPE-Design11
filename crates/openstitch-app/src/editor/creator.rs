@@ -10,7 +10,10 @@
 
 use super::request::CommandRequest;
 use openstitch_core::Thread;
-use openstitch_design::patterns::{self, MAX_DOCUMENT, MAX_POINTS, Pattern, PatternKind};
+use openstitch_design::patterns::{
+    self, MAX_DOCUMENT, MAX_POINTS, MAX_REGIONS, Pattern, PatternKind, PatternRegion, RegionEffect,
+    RegionMask,
+};
 use openstitch_design::{
     Contour, Design, DesignObject, DesignPage, LineSewing, LineType, RegionSewing, RegionType,
     Vec2, v2,
@@ -46,6 +49,8 @@ pub struct Creator {
     /// Decorative rows: shift of each row, in tile widths.
     pub row_shift: f64,
     pub paths: Vec<Vec<Vec2>>,
+    /// Fill tiles: embossed and engraved areas (Region tools), in the order applied.
+    pub regions: Vec<PatternRegion>,
     /// The path new points go into.
     pub current: usize,
     pub snap: bool,
@@ -71,6 +76,7 @@ impl Creator {
             name: format!("My {}", kind_name(kind)),
             row_shift: 0.0,
             paths,
+            regions: Vec::new(),
             current: 0,
             snap: true,
         }
@@ -84,6 +90,7 @@ impl Creator {
             name: p.name.clone(),
             row_shift: p.row_shift,
             paths: p.paths.clone(),
+            regions: p.regions.clone(),
             current: 0,
             snap: true,
         }
@@ -233,6 +240,58 @@ impl Creator {
         self.snap = snap;
     }
 
+    /// Splits line `path` in two at point `index` (Split at Point): the point ends the first
+    /// line and starts the second, which becomes current. Fill tiles only (a motif is one
+    /// line and decorative rows run end to end); never at a line end.
+    pub fn split_at(&mut self, path: usize, index: usize) -> bool {
+        if !self.can_split(path, index) {
+            return false;
+        }
+        let tail = self.paths[path][index..].to_vec();
+        self.paths[path].truncate(index + 1);
+        self.paths.insert(path + 1, tail);
+        self.current = path + 1;
+        true
+    }
+
+    /// Whether [`Creator::split_at`] would split.
+    pub fn can_split(&self, path: usize, index: usize) -> bool {
+        self.kind == PatternKind::Fill
+            && self.paths.len() < patterns::MAX_PATHS
+            && self.point_count() < MAX_POINTS
+            && self
+                .paths
+                .get(path)
+                .is_some_and(|p| index > 0 && index + 1 < p.len())
+    }
+
+    /// The tile's closed areas and their effects (fill tiles).
+    pub fn region_mask(&self) -> Option<RegionMask> {
+        (self.kind == PatternKind::Fill).then(|| RegionMask::new(&self.paths, &self.regions))
+    }
+
+    /// Region tools: gives the closed area around tile point `at` the `effect` (Engrave,
+    /// Emboss) or clears it (`None`, Reset). Fill/stamp tiles only.
+    pub fn set_region(&mut self, at: Vec2, effect: Option<RegionEffect>) -> Result<(), String> {
+        if self.kind != PatternKind::Fill {
+            return Err("embossing and engraving are for fill/stamp patterns".into());
+        }
+        let at = v2(at.x.clamp(0.0, 1.0), at.y.clamp(0.0, 1.0));
+        let mask = RegionMask::new(&self.paths, &self.regions);
+        let area = mask.area_at(at).map_err(|e| e.to_string())?;
+        // One entry per area: drop earlier ones naming it (and any that no longer name a
+        // closed area).
+        self.regions
+            .retain(|r| mask.area_at(r.at).is_ok_and(|a| a != area));
+        if let Some(effect) = effect {
+            if self.regions.len() >= MAX_REGIONS {
+                return Err(format!("at most {MAX_REGIONS} regions"));
+            }
+            self.regions.push(PatternRegion { effect, at });
+        }
+        Ok(())
+    }
+
     /// The pattern as an `openstitch.pattern` document.
     pub fn document(&self) -> Value {
         let mut doc = json!({
@@ -247,6 +306,19 @@ impl Creator {
         });
         if self.kind == PatternKind::Decorative && self.row_shift != 0.0 {
             doc["rowShift"] = json!(self.row_shift);
+        }
+        if self.kind == PatternKind::Fill && !self.regions.is_empty() {
+            doc["regions"] = self
+                .regions
+                .iter()
+                .map(|r| {
+                    let effect = match r.effect {
+                        RegionEffect::Engrave => "engrave",
+                        RegionEffect::Emboss => "emboss",
+                    };
+                    json!({ "effect": effect, "at": [r.at.x, r.at.y] })
+                })
+                .collect();
         }
         doc
     }
@@ -336,6 +408,148 @@ impl Creator {
         d.patterns.push(pattern);
         Some(d)
     }
+}
+
+/// Background Image Density steps (Hide, 25 … 100 %).
+pub const DENSITIES: [u8; 5] = [0, 25, 50, 75, 100];
+
+/// The template image behind the Design Page (View ▸ Template): a picture the user opened
+/// to trace, never saved in the pattern. Placed in unit-box coordinates.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Template {
+    pub path: PathBuf,
+    /// Pixel size of the image.
+    pub size: (u32, u32),
+    /// Top-left corner and size, in unit-box coordinates.
+    pub min: Vec2,
+    pub width: f64,
+    pub height: f64,
+    /// Background Image Density, percent (0 hides it).
+    pub density: u8,
+}
+
+/// Smallest template side, unit-box widths.
+pub const MIN_TEMPLATE: f64 = 0.05;
+
+impl Template {
+    /// `size` pixels fitted into `doc`'s unit box, centred, at full density.
+    pub fn fitted(path: PathBuf, size: (u32, u32), doc: &Creator) -> Self {
+        let (x0, y0, x1, y1) = doc.unit_box();
+        let (w, h) = (f64::from(size.0.max(1)), f64::from(size.1.max(1)));
+        let scale = ((x1 - x0) / w).min((y1 - y0) / h);
+        let (width, height) = (w * scale, h * scale);
+        Template {
+            path,
+            size,
+            min: v2(x0 + (x1 - x0 - width) / 2.0, y0 + (y1 - y0 - height) / 2.0),
+            width,
+            height,
+            density: 100,
+        }
+    }
+
+    pub fn max(&self) -> Vec2 {
+        v2(self.min.x + self.width, self.min.y + self.height)
+    }
+
+    pub fn contains(&self, p: Vec2) -> bool {
+        let m = self.max();
+        (self.min.x..=m.x).contains(&p.x) && (self.min.y..=m.y).contains(&p.y)
+    }
+
+    /// Modify Template: moves the image by `d`.
+    pub fn translate(&mut self, d: Vec2) {
+        self.min = self.min + d;
+    }
+
+    /// Modify Template: drags the bottom-right corner to `corner`, keeping the aspect ratio.
+    pub fn resize_to(&mut self, corner: Vec2) {
+        let aspect = self.height / self.width.max(1e-9);
+        let w = (corner.x - self.min.x)
+            .max((corner.y - self.min.y) / aspect.max(1e-9))
+            .max(MIN_TEMPLATE);
+        self.width = w;
+        self.height = w * aspect;
+    }
+
+    /// Next density down (100 → 75 → … → Hide → 100).
+    pub fn cycle_density(&mut self) {
+        let i = DENSITIES
+            .iter()
+            .position(|&d| d == self.density)
+            .unwrap_or(0);
+        self.density = DENSITIES[(i + DENSITIES.len() - 1) % DENSITIES.len()];
+    }
+}
+
+/// Most guidelines along each ruler.
+pub const MAX_GUIDES: usize = 100;
+
+/// Guidelines over the Design Page (View ▸ Guideline): added by clicking a ruler, dragged
+/// along it, removed with a right-click; hidden (not deleted) when the Guideline box is off.
+/// Unit-box coordinates.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Guides {
+    pub show: bool,
+    /// x of each vertical guideline (top ruler).
+    pub vertical: Vec<f64>,
+    /// y of each horizontal guideline (left ruler).
+    pub horizontal: Vec<f64>,
+}
+
+impl Guides {
+    fn list(&mut self, vertical: bool) -> &mut Vec<f64> {
+        if vertical {
+            &mut self.vertical
+        } else {
+            &mut self.horizontal
+        }
+    }
+
+    /// Adds a guideline at `at` (snapped to the grid when `snap`); returns its index.
+    pub fn add(&mut self, vertical: bool, at: f64, snap: bool) -> Option<usize> {
+        let list = self.list(vertical);
+        if list.len() >= MAX_GUIDES {
+            return None;
+        }
+        list.push(snap_to(at, snap));
+        Some(list.len() - 1)
+    }
+
+    pub fn move_to(&mut self, vertical: bool, index: usize, at: f64, snap: bool) {
+        if let Some(g) = self.list(vertical).get_mut(index) {
+            *g = snap_to(at, snap);
+        }
+    }
+
+    pub fn remove(&mut self, vertical: bool, index: usize) -> bool {
+        let list = self.list(vertical);
+        if index < list.len() {
+            list.remove(index);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// The guideline within `tolerance` of `at`.
+    pub fn nearest(&self, vertical: bool, at: f64, tolerance: f64) -> Option<usize> {
+        let list = if vertical {
+            &self.vertical
+        } else {
+            &self.horizontal
+        };
+        list.iter()
+            .enumerate()
+            .map(|(i, g)| (i, (g - at).abs()))
+            .filter(|&(_, d)| d <= tolerance)
+            .min_by(|a, b| a.1.total_cmp(&b.1))
+            .map(|(i, _)| i)
+    }
+}
+
+fn snap_to(v: f64, snap: bool) -> f64 {
+    if snap { (v / SNAP).round() * SNAP } else { v }
 }
 
 /// The user pattern library folder: `$OPENSTITCH_PATTERNS` if set, else the platform's
@@ -632,5 +846,115 @@ mod tests {
             v2(1.0, 0.875),
             "pasted points stay in the tile"
         );
+    }
+
+    #[test]
+    fn split_at_point_makes_two_lines_of_a_fill_tile() {
+        let mut c = Creator::new(PatternKind::Fill);
+        assert!(!c.split_at(0, 0), "not at a line end");
+        assert!(!c.split_at(0, 2));
+        assert!(!c.split_at(3, 1), "no such line");
+        assert!(c.split_at(0, 1));
+        assert_eq!(
+            c.paths,
+            vec![
+                vec![v2(0.0, 0.5), v2(0.5, 0.0)],
+                vec![v2(0.5, 0.0), v2(1.0, 0.5)]
+            ]
+        );
+        assert_eq!(c.current, 1);
+        assert!(c.pattern().is_ok());
+        for kind in [PatternKind::Motif, PatternKind::Decorative] {
+            let mut c = Creator::new(kind);
+            assert!(!c.can_split(0, 1) && !c.split_at(0, 1), "{kind:?}");
+        }
+    }
+
+    #[test]
+    fn region_tools_mark_closed_areas_and_reach_the_design() {
+        let mut c = Creator::new(PatternKind::Fill);
+        c.paths = vec![
+            vec![v2(0.0, 0.25), v2(1.0, 0.25)],
+            vec![v2(0.0, 0.75), v2(1.0, 0.75)],
+        ];
+        assert!(
+            c.set_region(v2(0.5, 0.25), Some(RegionEffect::Emboss))
+                .is_err(),
+            "on a line"
+        );
+        c.set_region(v2(0.5, 0.5), Some(RegionEffect::Engrave))
+            .expect("closed");
+        c.set_region(v2(0.2, 0.6), Some(RegionEffect::Emboss))
+            .expect("same area");
+        assert_eq!(c.regions.len(), 1, "one entry per area");
+        c.set_region(v2(0.5, 0.1), Some(RegionEffect::Engrave))
+            .expect("outer strip");
+        let mask = c.region_mask().expect("fill");
+        assert_eq!(mask.effect_at(v2(0.5, 0.5)), Some(RegionEffect::Emboss));
+        assert_eq!(mask.effect_at(v2(0.5, 0.9)), Some(RegionEffect::Engrave));
+        let p = c.pattern().expect("valid");
+        assert_eq!(p.regions, c.regions);
+        let mut s = Session::new(std::env::temp_dir());
+        let r = c.define_request().expect("request");
+        s.execute(r.command, Some(&r.params))
+            .expect("pattern.define");
+        assert_eq!(s.design().patterns[0].regions, c.regions);
+        assert_eq!(Creator::from_pattern(&p).regions, c.regions);
+        c.set_region(v2(0.5, 0.5), None).expect("reset");
+        assert_eq!(c.regions.len(), 1);
+        // One line encloses nothing; motifs have no regions.
+        c.paths.truncate(1);
+        assert!(
+            c.set_region(v2(0.5, 0.5), Some(RegionEffect::Emboss))
+                .is_err()
+        );
+        let mut m = Creator::new(PatternKind::Motif);
+        assert!(m.set_region(v2(0.5, 0.5), None).is_err());
+        assert!(m.region_mask().is_none());
+    }
+
+    #[test]
+    fn templates_fit_move_scale_and_fade() {
+        let c = Creator::new(PatternKind::Fill);
+        let mut t = Template::fitted(PathBuf::from("a.png"), (200, 100), &c);
+        assert_eq!((t.min, t.width, t.height), (v2(0.0, 0.25), 1.0, 0.5));
+        assert!(t.contains(v2(0.5, 0.5)) && !t.contains(v2(0.5, 0.1)));
+        t.translate(v2(0.1, -0.25));
+        assert_eq!(t.min, v2(0.1, 0.0));
+        t.resize_to(v2(0.6, 0.0));
+        assert!((t.width - 0.5).abs() < 1e-9 && (t.height - 0.25).abs() < 1e-9);
+        t.resize_to(v2(-5.0, -5.0));
+        assert_eq!(t.width, MIN_TEMPLATE, "never smaller than the minimum");
+        let mut seen = Vec::new();
+        for _ in 0..DENSITIES.len() {
+            t.cycle_density();
+            seen.push(t.density);
+        }
+        assert_eq!(seen, [75, 50, 25, 0, 100]);
+        let motif = Creator::new(PatternKind::Motif);
+        let t = Template::fitted(PathBuf::from("a.png"), (100, 100), &motif);
+        assert_eq!(
+            (t.min, t.width),
+            (v2(-0.5, -1.0), 2.0),
+            "centred in the motif box"
+        );
+    }
+
+    #[test]
+    fn guidelines_are_added_moved_and_removed() {
+        let mut g = Guides::default();
+        assert_eq!(g.add(true, 0.26, true), Some(0));
+        assert_eq!(g.vertical, [0.25], "snapped to the grid");
+        g.add(false, 0.3, false);
+        assert_eq!(g.horizontal, [0.3]);
+        assert_eq!(g.nearest(true, 0.27, 0.05), Some(0));
+        assert_eq!(g.nearest(true, 0.5, 0.05), None);
+        g.move_to(true, 0, 0.7, true);
+        assert_eq!(g.vertical, [0.6875]);
+        assert!(g.remove(true, 0) && !g.remove(true, 0));
+        for _ in 0..MAX_GUIDES {
+            g.add(true, 0.5, false);
+        }
+        assert_eq!(g.add(true, 0.5, false), None, "at most 100 per ruler");
     }
 }

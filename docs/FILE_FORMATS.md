@@ -474,12 +474,17 @@ rows, used by the bundled library (`crates/openstitch-design/patterns/`, generat
 | `name` | 1–128 bytes |
 | `rowShift` | decorative only, 0–1 tile widths per row (optional) |
 | `paths` | 1–64 polylines, at least 2 points each, at most 4000 points in all |
+| `regions` | fill only, optional: at most 256 `{"effect": "emboss" \| "engrave", "at": [x, y]}`, each the closed area of the tile around `at` |
 
 Coordinates are in the pattern's unit box: motif x −0.5…1.5 (along the line), y −1…1
 (across, scaled by the motif height), one path from (0, 0) to (1, 0); fill x, y 0…1 (the
 tile; programmable fill puts needle points where its rows cross the lines); decorative x
 −0.5…1.5, y 0…1, every path from (0, y) to (1, y) so tiles chain into rows. Unknown fields
-are refused. Designs carry the user patterns they define in `design.patterns` (same document
+are refused. A region's area is found on a 64 × 64 grid over the tile that wraps at its sides
+(the tile repeats); a point on a line or in an area the lines do not close names nothing, and a
+later region of the same area replaces an earlier one. Programmable fill sews engraved areas
+with 1 mm stitches and drops needle points inside embossed areas (stitches up to 7 mm), like
+the stamp effects. Designs carry the user patterns they define in `design.patterns` (same document
 shape), so a project sews the same everywhere.
 
 Brother's `.pas`, `.pmf` and `.plf` pattern files are undocumented and cannot be read or

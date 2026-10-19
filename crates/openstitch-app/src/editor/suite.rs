@@ -169,13 +169,13 @@ commands! {
         EditPoint => "editPoint", "Edit Point Tool", "Drag points to move them; right-click deletes one.", None, None, PointTool, Toggle, true;
         DrawLine => "drawLine", "Draw Line Tool", "Click to add points to the current line.", None, None, OpenStraight, Toggle, true;
         NewLine => "newLine", "New Line", "Start another line in the tile (fill and decorative patterns).", None, None, OpenCurve, Button, true;
-        RegionReset => "regionReset", "Region (Reset) Tool", "Clear the emboss or engrave effect of a region.", None, None, StampEmboss, Toggle, false;
-        RegionEngrave => "regionEngrave", "Region (Engrave) Tool", "Mark a region to sew engraved.", None, None, StampEmboss, Toggle, false;
-        RegionEmboss => "regionEmboss", "Region (Emboss) Tool", "Mark a region to sew embossed.", None, None, StampEmboss, Toggle, false;
+        RegionReset => "regionReset", "Region (Reset) Tool", "Click a closed area of the fill/stamp tile to clear its emboss or engrave effect.", None, None, StampEmboss, Toggle, true;
+        RegionEngrave => "regionEngrave", "Region (Engrave) Tool", "Click a closed area of the fill/stamp tile to sew it engraved (short stitches, red).", None, None, StampEmboss, Toggle, true;
+        RegionEmboss => "regionEmboss", "Region (Emboss) Tool", "Click a closed area of the fill/stamp tile to sew it embossed (no needle points inside, blue).", None, None, StampEmboss, Toggle, true;
         ZoomIn => "zoomIn", "Zoom In", "Magnify the Design Page.", Some("Ctrl+="), None, ZoomIn, Button, true;
         ZoomOut => "zoomOut", "Zoom Out", "Reduce the Design Page.", Some("Ctrl+-"), None, ZoomOut, Button, true;
         OtherZoom => "zoom", "Other Zoom Tools", "Zoom to fit, 200 % or 400 %.", None, None, OtherZoom, Menu, true;
-        Pan => "pan", "Pan", "Drag the view.", None, None, Pan, Toggle, false;
+        Pan => "pan", "Pan", "Drag the magnified Design Page to scroll it.", None, None, Pan, Toggle, true;
         Cut => "cut", "Cut", "Copy the current line, then delete it.", Some("Ctrl+X"), None, Cut, Button, true;
         Copy => "copy", "Copy", "Copy the current line.", Some("Ctrl+C"), None, Copy, Button, true;
         Paste => "paste", "Paste", "Add the copied line to the pattern.", Some("Ctrl+V"), None, Paste, Button, true;
@@ -183,17 +183,17 @@ commands! {
         Delete => "delete", "Delete", "Delete the current line (one always remains).", Some("Delete"), None, Delete, Button, true;
         FlipVertical => "flipVertical", "Flip vertically", "Mirror the current line top to bottom.", None, None, RotateFlip, Button, true;
         FlipHorizontal => "flipHorizontal", "Flip horizontally", "Mirror the current line left to right.", None, None, RotateFlip, Button, true;
-        SplitAtPoint => "splitAtPoint", "Split at Point", "Split a line in two at the selected point.", None, None, SplitAtPoint, Button, false;
+        SplitAtPoint => "splitAtPoint", "Split at Point", "Split the line in two at the selected point (fill/stamp patterns; click a point first).", None, None, SplitAtPoint, Button, true;
         AddToDesign => "addToDesign", "Add to Design", "Put the pattern in the open design (one Undo); choose it in the Sewing Attributes pane.", None, Some("pattern.define"), ConvertToStitches, Button, true;
-        OpenTemplate => "openTemplate", "Open Template", "Show an image behind the pattern to trace.", None, None, OpenImage, Button, false;
-        ModifyTemplate => "modifyTemplate", "Modify Template", "Move or scale the template image.", None, None, ModifyImage, Button, false;
-        DeleteImage => "deleteImage", "Delete Image", "Remove the template image.", None, None, DeleteImage, Button, false;
-        ImageDensity => "imageDensity", "Background Image Density", "Fade the template image.", None, None, ImageDensity, Menu, false;
+        OpenTemplate => "openTemplate", "Open Template", "Show a PNG, JPEG or BMP image of your own behind the pattern to trace (one at a time).", None, None, OpenImage, Button, true;
+        ModifyTemplate => "modifyTemplate", "Modify Template", "Drag inside the red frame to move the template image, its corner to scale it; click outside to finish.", None, None, ModifyImage, Toggle, true;
+        DeleteImage => "deleteImage", "Delete Image", "Remove the template image.", None, None, DeleteImage, Button, true;
+        ImageDensity => "imageDensity", "Background Image Density", "Fade or hide the template image (F6 steps through the densities).", None, None, ImageDensity, Menu, true;
         PreviewWindow => "previewWindow", "Show/Hide Preview window", "Show how the pattern sews in a region.", None, None, PaneSimulator, Toggle, true;
         StatusBar => "statusBar", "Show/Hide Status Bar", "Show the status bar.", None, None, PaneAttributes, Toggle, true;
         GridAxes => "gridAxes", "Show Grid with Axes", "Show the grid over the tile.", None, None, ShowGrid, Toggle, true;
         GridInterval => "gridInterval", "Grid interval", "Points snap to 1/16 of the tile.", None, None, GridSpacing, Menu, true;
-        Guideline => "guideline", "Guideline", "Guidelines over the Design Page.", None, None, Guideline, Toggle, false;
+        Guideline => "guideline", "Guideline", "Show guidelines and the rulers: click a ruler to add one, drag to move, right-click to delete.", None, None, Guideline, Toggle, true;
     }
 }
 
@@ -317,7 +317,7 @@ commands! {
         ZoomIn => "zoomIn", "Zoom in", "Magnify the design area.", Some("Ctrl+="), None, ZoomIn, Button, true;
         ZoomOut => "zoomOut", "Zoom Out", "Reduce the design area.", Some("Ctrl+-"), None, ZoomOut, Button, true;
         SelectedZoom => "selectedZoom", "Selected object zoom", "Zoom to the selected object.", None, None, OtherZoom, Button, false;
-        Pan => "pan", "Pan", "Drag the view.", None, None, Pan, Toggle, false;
+        Pan => "pan", "Pan", "Drag the magnified Design Page to scroll it.", None, None, Pan, Toggle, true;
         SingleStitch => "single", "Single Stitch", "Cross stitches sew each diagonal once.", None, None, OpenStraight, Toggle, true;
         TripleStitch => "triple", "Triple Stitch", "Cross stitches sew each diagonal three times.", None, None, Running, Toggle, true;
         Swap => "swap", "Swap", "Swap the start and end of the selected stitches.", None, None, Connect, Button, false;
@@ -325,9 +325,9 @@ commands! {
         FlipHorizontal => "flipHorizontal", "Flip Horizontal", "Mirror the pattern along the feed.", None, None, RotateFlip, Button, true;
         Duplicate => "duplicate", "Duplicate", "Add a copy of the selected stitches.", Some("Ctrl+D"), None, Duplicate, Button, false;
         Delete => "delete", "Delete", "Delete the selected point (each kind keeps its minimum).", Some("Delete"), None, Delete, Button, true;
-        OpenTemplate => "openTemplate", "Open Template", "Show an image behind the pattern to trace.", None, None, OpenImage, Button, false;
-        ModifyTemplate => "modifyTemplate", "Modify Template", "Move or scale the template image.", None, None, ModifyImage, Button, false;
-        DeleteImage => "deleteImage", "Delete Image", "Remove the template image.", None, None, DeleteImage, Button, false;
+        OpenTemplate => "openTemplate", "Open Template", "Show a PNG, JPEG or BMP image of your own behind the pattern to trace (one at a time).", None, None, OpenImage, Button, true;
+        ModifyTemplate => "modifyTemplate", "Modify Template", "Drag inside the red frame to move the template image, its corner to scale it; click outside to finish.", None, None, ModifyImage, Toggle, true;
+        DeleteImage => "deleteImage", "Delete Image", "Remove the template image.", None, None, DeleteImage, Button, true;
         TemplateDensity => "templateDensity", "Template Density", "Fade the template image.", None, None, ImageDensity, Menu, false;
         NeedleDropPoint => "needleDrops", "Needle Drop Point", "Show the needle drop points.", None, None, SewingPoints, Toggle, true;
         HorizontalOrientation => "horizontal", "Horizontal Orientation", "Turn the design area to sew upwards instead of to the right.", None, None, ImageRotateRight, Toggle, false;

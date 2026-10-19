@@ -76,7 +76,7 @@ pub fn commands() -> Vec<CommandSpec> {
             vec![req(
                 "pattern",
                 "object",
-                "The pattern document: {format, version, kind, id, name, rowShift?, paths}",
+                "The pattern document: {format, version, kind, id, name, rowShift?, paths, regions? (fill tiles: [{effect: emboss|engrave, at: [x, y]}])}",
             )],
             |s, p| {
                 let pattern = parse_value(p, "pattern")?;

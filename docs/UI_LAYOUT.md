@@ -406,6 +406,16 @@ where the Sewing Attributes pane offers it; the **User library** pane at the lef
 patterns (Edit, Add to Design, Delete file). Cut, Copy, Paste, Duplicate, Delete and the flips
 work on the current line.
 
+The Region tools click a closed area of a fill/stamp tile (the tile wraps, so a line leaving one
+side closes at the other): Engrave shades it red, Emboss blue, Reset clears it; the areas travel
+in the pattern's `regions` (docs/FILE_FORMATS.md) and programmable fill sews them engraved or
+embossed. Split at Point splits the line at the point last clicked (fill/stamp tiles). The
+template is an image of the user's own (PNG, JPEG, BMP), shown behind the tile and never saved
+in the pattern; Modify Template drags it (its corner scales it), Background Image Density offers
+Hide, 25, 50, 75 and 100 % (F6 steps through them). Guideline shows rulers along the top and
+left: a click adds a guideline (on the grid while it is shown, at most 100 per ruler), a drag
+moves it, a right-click deletes it. Pan drags the magnified Design Page.
+
 #### Home
 
 | Group | Command | Shortcut | OpenStitch action | Engine command | Available |
@@ -414,13 +424,13 @@ work on the current line.
 | Select | Edit Point Tool |  | `CreatorAction::EditPoint` | view/UI only | yes |
 | Draw | Draw Line Tool |  | `CreatorAction::DrawLine` | view/UI only | yes |
 | Draw | New Line |  | `CreatorAction::NewLine` | view/UI only | yes |
-| Draw | Region (Reset) Tool |  | `CreatorAction::RegionReset` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Draw | Region (Engrave) Tool |  | `CreatorAction::RegionEngrave` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Draw | Region (Emboss) Tool |  | `CreatorAction::RegionEmboss` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Draw | Region (Reset) Tool |  | `CreatorAction::RegionReset` | view/UI only | yes |
+| Draw | Region (Engrave) Tool |  | `CreatorAction::RegionEngrave` | view/UI only | yes |
+| Draw | Region (Emboss) Tool |  | `CreatorAction::RegionEmboss` | view/UI only | yes |
 | Zoom | Zoom In | `Ctrl+=` | `CreatorAction::ZoomIn` | view/UI only | yes |
 | Zoom | Zoom Out | `Ctrl+-` | `CreatorAction::ZoomOut` | view/UI only | yes |
 | Zoom | Other Zoom Tools |  | `CreatorAction::OtherZoom` | view/UI only | yes |
-| Zoom | Pan |  | `CreatorAction::Pan` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Zoom | Pan |  | `CreatorAction::Pan` | view/UI only | yes |
 | Clipboard | Paste | `Ctrl+V` | `CreatorAction::Paste` | view/UI only | yes |
 | Clipboard | Cut | `Ctrl+X` | `CreatorAction::Cut` | view/UI only | yes |
 | Clipboard | Copy | `Ctrl+C` | `CreatorAction::Copy` | view/UI only | yes |
@@ -428,22 +438,22 @@ work on the current line.
 | Clipboard | Delete | `Delete` | `CreatorAction::Delete` | view/UI only | yes |
 | Edit | Flip vertically |  | `CreatorAction::FlipVertical` | view/UI only | yes |
 | Edit | Flip horizontally |  | `CreatorAction::FlipHorizontal` | view/UI only | yes |
-| Edit | Split at Point |  | `CreatorAction::SplitAtPoint` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Edit | Split at Point |  | `CreatorAction::SplitAtPoint` | view/UI only | yes |
 | Design | Add to Design |  | `CreatorAction::AddToDesign` | `pattern.define` | yes |
 
 #### View
 
 | Group | Command | Shortcut | OpenStitch action | Engine command | Available |
 |---|---|---|---|---|---|
-| Template | Open Template |  | `CreatorAction::OpenTemplate` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Template | Modify Template |  | `CreatorAction::ModifyTemplate` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Template | Delete Image |  | `CreatorAction::DeleteImage` | view/UI only | **not yet** (disabled, ScreenTip says so) |
-| Template | Background Image Density |  | `CreatorAction::ImageDensity` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Template | Open Template |  | `CreatorAction::OpenTemplate` | view/UI only | yes |
+| Template | Modify Template |  | `CreatorAction::ModifyTemplate` | view/UI only | yes |
+| Template | Delete Image |  | `CreatorAction::DeleteImage` | view/UI only | yes |
+| Template | Background Image Density |  | `CreatorAction::ImageDensity` | view/UI only | yes |
 | Show/Hide | Show/Hide Preview window |  | `CreatorAction::PreviewWindow` | view/UI only | yes |
 | Show/Hide | Show/Hide Status Bar |  | `CreatorAction::StatusBar` | view/UI only | yes |
 | Grid | Show Grid with Axes |  | `CreatorAction::GridAxes` | view/UI only | yes |
 | Grid | Grid interval |  | `CreatorAction::GridInterval` | view/UI only | yes |
-| Guideline | Guideline |  | `CreatorAction::Guideline` | view/UI only | **not yet** (disabled, ScreenTip says so) |
+| Guideline | Guideline |  | `CreatorAction::Guideline` | view/UI only | yes |
 
 #### Application menu
 
