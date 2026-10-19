@@ -206,6 +206,7 @@ Releases are made only when a version is declared stable:
 - [Feature matrix](docs/FEATURE_MATRIX.md)
 - [File formats](docs/FILE_FORMATS.md)
 - [Compatibility tests](docs/COMPATIBILITY_TESTS.md)
+- [Compatibility audit 2026-10-19: top 20 differences](docs/COMPATIBILITY_AUDIT.md)
 - [Legal and licensing](docs/LEGAL_AND_LICENSING.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Distribution and packaging](docs/DISTRIBUTION.md)
