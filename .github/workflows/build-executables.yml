@@ -2,7 +2,7 @@ name: Build executables
 
 # Builds and packages OpenStitch for macOS (universal), Linux and Windows:
 #   - the desktop app as an installable package (OpenStitch.app zip, MSI + zip, tarball with
-#     install.sh), using the scripts in packaging/;
+#     install.sh, AppImage), using the scripts in packaging/;
 #   - the command-line tools (stitchtool, openstitch-mcp) as an archive.
 # One workflow artifact per OS. Called by rust.yml after every push to main and by release.yml
 # for a version tag; it also runs on pull requests that change packaging, so packaging changes
@@ -163,6 +163,32 @@ jobs:
           "$RUNNER_TEMP/prefix/bin/openstitch-thumbnailer" -s 128 "$RUNNER_TEMP/smoke/examples/badge.pes" "$RUNNER_TEMP/thumb.png"
           test -s "$RUNNER_TEMP/thumb.png"
           mv app-out/openstitch-*-linux-*.tar.gz "dist/OpenStitch-$LABEL-linux-x86_64.tar.gz"
+
+      - name: Linux AppImage
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Shared libraries the editor links directly (X11/Wayland/GL/Vulkan are dlopened).
+          ldd bin/openstitch
+          image=$(packaging/linux/appimage.sh bin/openstitch "$CARGO_VERSION" appimage-out | tail -1)
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          # The bundled thumbnailer runs through AppRun.
+          "$image" --thumbnailer -s 128 "$RUNNER_TEMP/smoke/examples/badge.pes" "$RUNNER_TEMP/thumb-appimage.png"
+          test -s "$RUNNER_TEMP/thumb-appimage.png"
+          # Desktop integration for one user: entry pointing at the AppImage, MIME types, icons,
+          # thumbnailer.
+          data="$RUNNER_TEMP/appimage-data"
+          XDG_DATA_HOME="$data" "$image" --install-integration
+          desktop-file-validate "$data/applications/openstitch.desktop"
+          grep -qF "Exec=\"$image\" %f" "$data/applications/openstitch.desktop"
+          grep -q 'application/x-pes-embroidery:\*.pes' "$data/mime/globs2"
+          test -f "$data/icons/hicolor/256x256/apps/openstitch.png"
+          "$data/openstitch/appimage/openstitch-thumbnailer" -s 64 "$RUNNER_TEMP/smoke/examples/badge.pes" "$RUNNER_TEMP/thumb-int.png"
+          test -s "$RUNNER_TEMP/thumb-int.png"
+          XDG_DATA_HOME="$data" "$image" --remove-integration
+          test ! -e "$data/applications/openstitch.desktop"
+          mv "$image" "dist/OpenStitch-$LABEL-linux-x86_64.AppImage"
 
       - name: Windows zip
         if: runner.os == 'Windows'

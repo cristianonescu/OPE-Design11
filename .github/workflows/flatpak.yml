@@ -1,0 +1,85 @@
+name: Flatpak
+
+# Builds the editor from packaging/flatpak/io.github.cristianonescu.OpenStitch.yml with
+# flatpak-builder (freedesktop 25.08 runtime, rust-stable SDK extension from Flathub), checks
+# the exported desktop entry, MIME types and AppStream data, and uploads a single-file bundle
+# as a workflow artifact. Runs when the manifest or the Linux packaging changes, and on demand.
+# Nothing here publishes to Flathub or creates a release.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/flatpak.yml"
+      - "packaging/flatpak/**"
+      - "packaging/linux/**"
+      - "assets/icons/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/flatpak.yml"
+      - "packaging/flatpak/**"
+      - "packaging/linux/**"
+      - "assets/icons/**"
+
+permissions:
+  contents: read
+
+env:
+  APP_ID: io.github.cristianonescu.OpenStitch
+
+jobs:
+  flatpak:
+    name: flatpak-x86_64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder appstream desktop-file-utils elfutils librsvg2-common
+          # elfutils: flatpak-builder strips debug info with eu-strip. librsvg2-common: the SVG
+          # loader appstreamcli compose needs to read the scalable icon.
+          # Ubuntu restricts unprivileged user namespaces, which bubblewrap needs.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      - name: Validate AppStream metadata
+        run: appstreamcli validate --no-net --explain "packaging/flatpak/$APP_ID.metainfo.xml"
+
+      - uses: actions/cache@v4
+        with:
+          path: .flatpak-builder
+          key: flatpak-${{ hashFiles('packaging/flatpak/*.yml', 'Cargo.lock') }}
+          restore-keys: flatpak-
+
+      - name: Build
+        run: |
+          flatpak-builder --user --install-deps-from=flathub --force-clean --disable-rofiles-fuse \
+            --repo=repo build-flatpak "packaging/flatpak/$APP_ID.yml"
+
+      - name: Check exports
+        run: |
+          set -euo pipefail
+          export_dir=build-flatpak/export/share
+          desktop-file-validate "$export_dir/applications/$APP_ID.desktop"
+          grep -q "^Icon=$APP_ID$" "$export_dir/applications/$APP_ID.desktop"
+          grep -q 'pattern="\*.osd"' "$export_dir/mime/packages/$APP_ID.xml"
+          test -f "$export_dir/icons/hicolor/256x256/apps/$APP_ID.png"
+          test -f "$export_dir/icons/hicolor/scalable/apps/$APP_ID.svg"
+          test -x build-flatpak/files/bin/openstitch
+
+      - name: Bundle
+        run: |
+          mkdir -p dist
+          flatpak build-bundle repo "dist/OpenStitch-x86_64.flatpak" "$APP_ID" \
+            --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openstitch-flatpak-x86_64
+          path: dist/*.flatpak
+          if-no-files-found: error
+          retention-days: 7
