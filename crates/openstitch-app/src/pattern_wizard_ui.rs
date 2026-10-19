@@ -1,4 +1,4 @@
-//! Pattern wizard dialogs (Design menu): Background Fill, Appliqué Wizard, Embroidered
+//! Pattern wizard dialogs (Home ▸ Wizards): Background Fill, Appliqué Wizard, Embroidered
 //! Patch, Cutwork Wizard. Settings live in
 //! [`openstitch_app::editor::pattern_wizards`]; OK sends the wizard's one `wizard.*` command, so
 //! the whole result is one Undo and stays editable.
@@ -10,16 +10,6 @@ use openstitch_app::editor::pattern_wizards::{
     BackgroundForm, COVERS, FILL_TYPES, LINE_SEWS, MATERIALS, NET_PATTERNS, PATCH_CUTS, TACK_DOWNS,
     WizardKind,
 };
-
-/// Design menu items.
-pub fn design_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
-    ui.separator();
-    for kind in WizardKind::ALL {
-        if ui.button(format!("{}…", kind.title())).clicked() {
-            app.pattern_wizards.open = Some(kind);
-        }
-    }
-}
 
 pub fn windows(app: &mut EditorApp, ctx: &egui::Context) {
     let Some(kind) = app.pattern_wizards.open else {

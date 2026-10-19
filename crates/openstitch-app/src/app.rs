@@ -57,10 +57,15 @@ pub struct Launch {
     pub database_dialog: Option<String>,
     /// Automation socket (`--listen`); started by `main` before the window opens.
     pub listen: Option<openstitch_remote::ServerConfig>,
+    /// Ribbon tab and right-hand pane tab to show (`--ribbon`, `--pane`).
+    pub ribbon: Option<openstitch_app::editor::ribbon::TabId>,
+    pub pane: Option<crate::ribbon::PaneTab>,
+    /// Colour theme (`--theme`); otherwise the saved preference.
+    pub theme: Option<openstitch_app::editor::prefs::Theme>,
 }
 
 /// Values `--show` accepts.
-pub const SHOW: [&str; 16] = [
+pub const SHOW: [&str; 20] = [
     "realistic",
     "reference",
     "settings",
@@ -77,6 +82,10 @@ pub const SHOW: [&str; 16] = [
     "namedrop",
     "templates",
     "arrange",
+    "appmenu",
+    "property",
+    "shortcuts",
+    "floating",
 ];
 
 pub struct EditorApp {
@@ -142,6 +151,8 @@ pub struct EditorApp {
     pub db_textures: crate::database_ui::Textures,
     /// Loopback automation socket; its requests run in [`EditorApp::serve_remote`].
     pub remote: Option<openstitch_remote::Server>,
+    /// Ribbon, Quick Access Toolbar, panes and window preferences.
+    pub ui: crate::ribbon::RibbonState,
 }
 
 struct Screenshot {
@@ -208,6 +219,7 @@ impl EditorApp {
             database: Default::default(),
             db_textures: Default::default(),
             remote: None,
+            ui: Default::default(),
         };
         app.refresh();
         app.saved_revision = app.revision;
@@ -220,6 +232,17 @@ impl EditorApp {
             && let Err(e) = self.session.with_user_settings(path)
         {
             self.status = format!("Could not read the user settings ({e}); they are not saved");
+        }
+        // Screenshots use the default window layout, not the user's.
+        if let Some(path) = &l.user_settings
+            && l.screenshot.is_none()
+        {
+            let ui = openstitch_app::editor::prefs::path_beside(path);
+            self.ui.prefs = openstitch_app::editor::prefs::UiPrefs::load(&ui);
+            self.ui.prefs_path = Some(ui);
+        }
+        if let Some(t) = l.theme {
+            self.ui.prefs.theme = t;
         }
         if l.demo {
             for r in demo_design() {
@@ -268,6 +291,14 @@ impl EditorApp {
                 }
                 "usb" => crate::transfer_ui::open(self),
                 "arrange" => self.edit.arrange_open = true,
+                "appmenu" => self.ui.open_app_menu = true,
+                "property" => self.ui.property_open = true,
+                "shortcuts" => self.ui.shortcuts_open = true,
+                "floating" => {
+                    let p = &mut self.ui.prefs.panes;
+                    p.sewing_order.floating = true;
+                    p.attributes.floating = true;
+                }
                 _ => {}
             }
         }
@@ -320,6 +351,12 @@ impl EditorApp {
                 "newfolder" => self.database.dialog = Dialog::NewFolder("New Folder".into()),
                 _ => {}
             }
+        }
+        if let Some(t) = l.ribbon {
+            self.ui.tab = t;
+        }
+        if let Some(p) = l.pane {
+            self.ui.pane_tab = p;
         }
         if !l.script.is_empty() {
             self.player = Some(crate::script::Player::new(l.script));
@@ -570,6 +607,7 @@ impl EditorApp {
             {
                 self.after_load(Some(p.to_path_buf()));
                 self.status = format!("Opened {}", p.display());
+                self.ui.add_recent(p);
             }
             return;
         }
@@ -584,6 +622,7 @@ impl EditorApp {
         )];
         if self.grouped(|app| app.execute_all(&steps).is_some() && app.import(p)) {
             self.after_load(None);
+            self.ui.add_recent(p);
             self.status = format!(
                 "Opened {} as a new design (Save to keep it as .osd)",
                 p.display()
@@ -707,6 +746,7 @@ impl EditorApp {
             .is_some()
         {
             self.status = format!("Saved {}", path.display());
+            self.ui.add_recent(&path);
             self.path = Some(path);
             self.saved_revision = self.revision;
         }
@@ -807,10 +847,29 @@ impl EditorApp {
         if take(cmd(Key::Num0)) {
             self.fit_requested = true;
         }
+        if take(cmd(Key::Equals)) || take(cmd(Key::Plus)) {
+            crate::panels::zoom_center(self, 1.25);
+        }
+        if take(cmd(Key::Minus)) {
+            crate::panels::zoom_center(self, 1.0 / 1.25);
+        }
         if ctx.egui_wants_keyboard_input() {
             return;
         }
         let take = |s: KeyboardShortcut| ctx.input_mut(|i| i.consume_shortcut(&s));
+        // Copy and Paste arrive as clipboard events, not key presses.
+        let (copy, paste) = ctx.input(|i| {
+            (
+                i.events.iter().any(|e| matches!(e, egui::Event::Copy)),
+                i.events.iter().any(|e| matches!(e, egui::Event::Paste(_))),
+            )
+        });
+        if copy {
+            crate::ribbon::run(self, openstitch_app::editor::ribbon::Action::Copy, ctx);
+        }
+        if paste {
+            crate::ribbon::run(self, openstitch_app::editor::ribbon::Action::Paste, ctx);
+        }
         if take(cmd(Key::A)) {
             self.select_all();
         }
@@ -879,217 +938,20 @@ impl EditorApp {
             for c in typed {
                 // Point tool: C curves, S straightens the segment under the pointer.
                 if c.eq_ignore_ascii_case(&'m') {
+                    self.ui.pan = false;
                     self.toggle_measure();
+                } else if c.eq_ignore_ascii_case(&'h') {
+                    crate::ribbon::run(self, openstitch_app::editor::ribbon::Action::Pan, ctx);
                 } else if self.tools.tool() == Tool::Point && matches!(c, 'c' | 'C' | 's' | 'S') {
                     let curved = c.eq_ignore_ascii_case(&'c');
                     self.with_tools(|t, ctx| t.set_segment_under_pointer(curved, ctx));
                 } else if let Some(t) = Tool::from_shortcut(c) {
                     self.tools.set_tool(t);
                     self.workspace.measure.active = false;
+                    self.ui.pan = false;
                 }
             }
         }
-    }
-
-    fn menu_bar(&mut self, ui: &mut egui::Ui) {
-        egui::MenuBar::new().ui(ui, |ui| {
-            ui.menu_button("File", |ui| {
-                if ui.button("New").clicked() {
-                    self.new_design();
-                }
-                if ui.button("Open…").clicked() {
-                    self.open_dialog();
-                }
-                if ui.button("Import into design…").clicked() {
-                    self.import_dialog();
-                }
-                if ui.button("Import SVG…").clicked() {
-                    self.import_svg_dialog();
-                }
-                if ui.button("Design Database…").clicked() {
-                    let folder = self
-                        .path
-                        .as_deref()
-                        .and_then(Path::parent)
-                        .map(Path::to_path_buf);
-                    self.database.show(folder.as_deref());
-                }
-                ui.menu_button("Background Image", |ui| {
-                    if ui.button("Choose…").clicked() {
-                        self.background_dialog();
-                    }
-                    if ui.button("Paste from Clipboard").clicked() {
-                        self.paste_background();
-                    }
-                    let current = self.session.design().background.clone();
-                    if let Some(b) = current {
-                        let label = if b.visible { "Hide" } else { "Show" };
-                        if ui.button(label).clicked() {
-                            self.execute(&CommandRequest::new(
-                                "background.show",
-                                json!({ "visible": !b.visible }),
-                            ));
-                        }
-                        for (name, o) in [
-                            ("Opacity 25 %", 0.25),
-                            ("Opacity 50 %", 0.5),
-                            ("Opacity 100 %", 1.0),
-                        ] {
-                            if ui.radio(b.opacity == o, name).clicked() {
-                                self.execute(&CommandRequest::new(
-                                    "background.show",
-                                    json!({ "opacity": o }),
-                                ));
-                            }
-                        }
-                        if ui.button("Remove").clicked() {
-                            self.execute(&CommandRequest::new("background.clear", json!({})));
-                        }
-                    }
-                });
-                ui.separator();
-                if ui.button("Save").clicked() {
-                    self.save(false);
-                }
-                if ui.button("Save As…").clicked() {
-                    self.save(true);
-                }
-                if ui.button("Print to PDF…").clicked() {
-                    crate::print_ui::open(ui.ctx());
-                }
-                ui.menu_button("Export", |ui| {
-                    for ty in FileType::writable() {
-                        let enabled = self.stats.stitches > 0;
-                        if ty == FileType::Pes {
-                            ui.add_enabled_ui(enabled, |ui| {
-                                ui.menu_button("PES", |ui| {
-                                    for (v, label) in Self::PES_VERSIONS {
-                                        if ui.button(format!("{label}…")).clicked() {
-                                            self.export_with(ty, Some(v));
-                                        }
-                                    }
-                                });
-                            });
-                            continue;
-                        }
-                        if ui
-                            .add_enabled(
-                                enabled,
-                                egui::Button::new(format!("{}…", ty.extension().to_uppercase())),
-                            )
-                            .clicked()
-                        {
-                            self.export(ty);
-                        }
-                    }
-                });
-                let sections = crate::sections_ui::has_sections(self);
-                if ui
-                    .add_enabled(sections, egui::Button::new("Export Sections…"))
-                    .on_disabled_hover_text("The design fits one hooping")
-                    .clicked()
-                {
-                    crate::sections_ui::export_sections(self);
-                }
-                if ui
-                    .add_enabled(
-                        self.stats.stitches > 0,
-                        egui::Button::new("Send to USB Media…"),
-                    )
-                    .clicked()
-                {
-                    crate::transfer_ui::open(self);
-                }
-                ui.separator();
-                if ui.button("Quit").clicked() {
-                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
-                }
-            });
-            ui.menu_button("Edit", |ui| {
-                if ui
-                    .add_enabled(self.session.can_undo(), egui::Button::new("Undo"))
-                    .clicked()
-                {
-                    self.undo();
-                }
-                if ui
-                    .add_enabled(self.session.can_redo(), egui::Button::new("Redo"))
-                    .clicked()
-                {
-                    self.redo();
-                }
-                ui.separator();
-                let any = !self.selection.is_empty();
-                if ui.button("Select All").clicked() {
-                    self.select_all();
-                }
-                if ui
-                    .add_enabled(any, egui::Button::new("Duplicate"))
-                    .clicked()
-                {
-                    self.on_selection(CommandRequest::duplicate);
-                }
-                if ui.add_enabled(any, egui::Button::new("Delete")).clicked() {
-                    self.on_selection(CommandRequest::delete);
-                }
-                crate::edit_ui::edit_menu(self, ui);
-                ui.separator();
-                crate::settings_ui::menu(self, ui);
-            });
-            crate::edit_ui::shapes_menu(self, ui);
-            crate::lettering_ui::lettering_menu(self, ui);
-            crate::convert_ui::convert_menu(self, ui);
-            crate::convert_ui::stitches_menu(self, ui);
-            ui.menu_button("Design", |ui| {
-                if ui.button("Design Settings…").clicked() {
-                    self.workspace.settings_open = true;
-                }
-                if ui.button("Image to Embroidery…").clicked() {
-                    self.wizard.open = true;
-                }
-                crate::pattern_wizard_ui::design_menu(self, ui);
-            });
-            ui.menu_button("Tools", |ui| {
-                if ui.button("Programmable Stitch Creator…").clicked() {
-                    self.creator.open = true;
-                }
-                if ui.button("Stitch Design Factory…").clicked() {
-                    self.sewing.open = true;
-                }
-            });
-            ui.menu_button("View", |ui| {
-                if ui.button("Fit Design Page").clicked() {
-                    self.fit_requested = true;
-                }
-                ui.checkbox(&mut self.show_travel, "Show travel (jumps)");
-                ui.checkbox(&mut self.workspace.realistic, "Realistic preview");
-                ui.separator();
-                ui.checkbox(&mut self.workspace.rulers, "Rulers");
-                ui.checkbox(&mut self.workspace.grid.visible, "Grid");
-                if ui
-                    .checkbox(&mut self.workspace.grid.snap.clone(), "Snap to grid")
-                    .clicked()
-                {
-                    self.toggle_snap_to_grid();
-                }
-                ui.menu_button("Grid spacing", |ui| {
-                    for s in openstitch_app::editor::workspace::GridSettings::SPACINGS_MM {
-                        let label = if s == 25.4 {
-                            "1 inch".to_string()
-                        } else {
-                            format!("{s} mm")
-                        };
-                        ui.radio_value(&mut self.workspace.grid.spacing_mm, s, label);
-                    }
-                });
-                ui.checkbox(&mut self.workspace.reference, "Reference window");
-                ui.separator();
-                let mut measuring = self.workspace.measure.active;
-                if ui.checkbox(&mut measuring, "Measure (M)").changed() {
-                    self.toggle_measure();
-                }
-            });
-        });
     }
 
     fn screenshot_step(&mut self, ctx: &egui::Context) {
@@ -1184,6 +1046,7 @@ impl eframe::App for EditorApp {
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
+        self.ui.apply_theme(&ctx);
         self.serve_remote();
         if self.database.open {
             self.update_title(&ctx);
@@ -1194,23 +1057,14 @@ impl eframe::App for EditorApp {
         self.shortcuts(&ctx);
         self.tick(&ctx);
         self.update_title(&ctx);
-        egui::Panel::top("menu").show(ui, |ui| self.menu_bar(ui));
-        egui::Panel::top("toolbar").show(ui, |ui| crate::panels::toolbar(self, ui));
-        egui::Panel::bottom("status").show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.label(&self.status);
-            });
-        });
-        egui::Panel::bottom("simulator").show(ui, |ui| crate::panels::simulator(self, ui));
-        egui::Panel::left("objects")
-            .default_size(240.0)
-            .show(ui, |ui| crate::panels::object_list(self, ui));
-        egui::Panel::right("inspector")
-            .default_size(280.0)
-            .show(ui, |ui| crate::panels::inspector(self, ui));
+        egui::Panel::top("ribbon").show(ui, |ui| crate::ribbon::ribbon(self, ui));
+        egui::Panel::bottom("status").show(ui, |ui| crate::panes::status_bar(self, ui));
+        crate::panes::docked(self, ui);
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE)
             .show(ui, |ui| crate::canvas::canvas(self, ui));
+        crate::panes::floating_panes(self, &ctx);
+        crate::panes::windows(self, &ctx);
         crate::workspace_ui::design_settings_window(self, &ctx);
         crate::print_ui::window(self, &ctx);
         crate::transfer_ui::window(self, &ctx);

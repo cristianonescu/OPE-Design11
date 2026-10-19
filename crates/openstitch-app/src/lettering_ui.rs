@@ -1,4 +1,4 @@
-//! Lettering menu and its dialogs. The forms live in `openstitch_app::editor::lettering`; each
+//! Lettering dialogs (Home ▸ Tools ▸ Text). The forms live in `openstitch_app::editor::lettering`; each
 //! action is one engine command, so one Undo.
 
 use crate::app::EditorApp;
@@ -20,47 +20,52 @@ pub struct LetteringState {
 }
 
 /// The fonts `fonts.list` reports for the open design.
-fn fonts(app: &mut EditorApp) -> Vec<FontChoice> {
+pub fn fonts(app: &mut EditorApp) -> Vec<FontChoice> {
     app.session
         .execute("fonts.list", Some(&json!({})))
         .map(|v| lettering::font_choices(&v))
         .unwrap_or_default()
 }
 
-pub fn lettering_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
-    ui.menu_button("Lettering", |ui| {
-        if ui.button("Text…").clicked() {
-            app.lettering.text.open = true;
-        }
-        if ui.button("Monogram…").clicked() {
-            app.lettering.monogram.open = true;
-        }
-        if ui.button("Name Drop List…").clicked() {
-            app.lettering.name_drop.open = true;
-        }
-        if ui.button("Template Wizard…").clicked() {
-            open_template_wizard(app);
-        }
-        if ui.button("Save as Template…").clicked() {
-            save_template(app);
-        }
-        ui.separator();
-        if ui.button("Fonts…").clicked() {
-            app.lettering.fonts.open = true;
-        }
-        if ui.button("Load TrueType Font…").clicked()
-            && let Some(p) = rfd::FileDialog::new()
-                .add_filter("TrueType / OpenType", &["ttf", "otf", "ttc", "otc"])
-                .pick_file()
-            && let Some(r) = app.execute(&lettering::load_font_request(&p))
-        {
-            app.status = format!(
-                "Loaded font {} ({} glyphs); it is saved with the design",
-                r["id"].as_str().unwrap_or_default(),
-                r["glyphs"]
-            );
-        }
-    });
+/// Home ▸ Tools ▸ Text: text, monogram, name drop, templates and fonts.
+pub fn text_tools_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
+    if ui.button("Text…").clicked() {
+        app.lettering.text.open = true;
+    }
+    if ui.button("Monogram…").clicked() {
+        app.lettering.monogram.open = true;
+    }
+    if ui.button("Name Drop List…").clicked() {
+        app.lettering.name_drop.open = true;
+    }
+    if ui.button("Template Wizard…").clicked() {
+        open_template_wizard(app);
+    }
+    if ui.button("Save as Template…").clicked() {
+        save_template(app);
+    }
+    ui.separator();
+    if ui.button("Fonts…").clicked() {
+        app.lettering.fonts.open = true;
+    }
+    if ui.button("Load TrueType Font…").clicked() {
+        load_truetype(app);
+    }
+}
+
+/// Loads a TrueType / OpenType font into the design.
+pub fn load_truetype(app: &mut EditorApp) {
+    if let Some(p) = rfd::FileDialog::new()
+        .add_filter("TrueType / OpenType", &["ttf", "otf", "ttc", "otc"])
+        .pick_file()
+        && let Some(r) = app.execute(&lettering::load_font_request(&p))
+    {
+        app.status = format!(
+            "Loaded font {} ({} glyphs); it is saved with the design",
+            r["id"].as_str().unwrap_or_default(),
+            r["glyphs"]
+        );
+    }
 }
 
 fn font_combo(ui: &mut egui::Ui, salt: &str, value: &mut String, choices: &[FontChoice]) {
@@ -713,7 +718,7 @@ pub fn open_template_wizard(app: &mut EditorApp) {
     }
 }
 
-fn save_template(app: &mut EditorApp) {
+pub fn save_template(app: &mut EditorApp) {
     let ext = openstitch_engine::templates::EXTENSION;
     if let Some(p) = rfd::FileDialog::new()
         .add_filter("OpenStitch template", &[ext])

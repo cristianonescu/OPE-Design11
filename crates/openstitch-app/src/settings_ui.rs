@@ -28,16 +28,6 @@ fn single(app: &EditorApp) -> Option<u64> {
         .flatten()
 }
 
-/// Edit menu entries.
-pub fn menu(app: &mut EditorApp, ui: &mut egui::Ui) {
-    if ui.button("Sewing Attribute Sets…").clicked() {
-        app.settings.sets_open = true;
-    }
-    if ui.button("User Thread Charts…").clicked() {
-        app.settings.charts_open = true;
-    }
-}
-
 pub fn windows(app: &mut EditorApp, ctx: &egui::Context) {
     sets_window(app, ctx);
     charts_window(app, ctx);

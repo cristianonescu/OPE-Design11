@@ -7,7 +7,7 @@ PE-DESIGN 11.
 Not affiliated with Brother Industries. No Brother code or assets are included; see
 [docs/LEGAL_AND_LICENSING.md](docs/LEGAL_AND_LICENSING.md).
 
-![The OpenStitch editor: sewing order on the left, the design page in the middle, sewing attributes on the right and the stitch simulator below](docs/images/readme/editor.png)
+![The OpenStitch editor: Application menu, Quick Access Toolbar and ribbon at the top, sewing order on the left, the design page in the middle, sewing attributes on the right and the stitch simulator below](docs/images/readme/editor.png)
 
 ## Screenshots
 
@@ -15,7 +15,7 @@ Not affiliated with Brother Industries. No Brother code or assets are included; 
 |---|---|
 | ![Realistic view of a satin-stitched star](docs/images/readme/realistic-view.png) | ![Stitch simulator part-way through sewing a design](docs/images/readme/stitch-simulator.png) |
 | **Realistic view:** see how the stitches will look on fabric. | **Stitch simulator:** play the design back stitch by stitch, with jumps and trims. |
-| ![Drawing tools with shapes, hearts and a boolean merge](docs/images/readme/drawing.png) | ![Monogram with a decorative circle frame](docs/images/readme/monogram.png) |
+| ![Drawing tools with shapes, hearts and a boolean merge](docs/images/readme/drawing.png) | ![Monograms with decorative frames and the Monogram dialog](docs/images/readme/monogram.png) |
 | **Drawing and editing:** shapes, Bézier outlines, arranged copies and shape operations. | **Lettering:** text, monograms and frames with open-licence or your own fonts. |
 | ![Auto Punch turning an image into embroidery regions](docs/images/readme/auto-punch.png) | ![Design Database browsing folders of designs as thumbnails](docs/images/readme/design-database.png) |
 | **Image to embroidery:** Auto Punch, Cross Stitch and Photo Stitch-style conversion. | **Design Database:** browse, search, organise and convert your design files. |
@@ -24,7 +24,9 @@ Not affiliated with Brother Industries. No Brother code or assets are included; 
 
 ## What it does today
 
-- **Desktop editor** (`openstitch`):
+- **Desktop editor** (`openstitch`), laid out like PE-DESIGN 11's Layout & Editing window
+  (Application menu, Home / Image / View ribbon with contextual tabs, Quick Access Toolbar,
+  Sewing Order and attribute panes; [docs/UI_LAYOUT.md](docs/UI_LAYOUT.md)), light or dark:
   - drawing tools (rectangle, ellipse, polygon, arcs and preset shapes, Bézier pen, point editing)
   - selection and transforms, grouping, arranged copies
   - sewing attributes and sewing order
@@ -196,6 +198,7 @@ Releases are made only when a version is declared stable:
 
 - [Research log](docs/RESEARCH.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Editor window layout](docs/UI_LAYOUT.md)
 - [Feature matrix](docs/FEATURE_MATRIX.md)
 - [File formats](docs/FILE_FORMATS.md)
 - [Compatibility tests](docs/COMPATIBILITY_TESTS.md)

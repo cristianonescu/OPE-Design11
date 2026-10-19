@@ -12,11 +12,15 @@
 //!            [--wizard background|applique|patch|cutwork [--apply]]
 //!            [--database FOLDER|FILE [--db-view large|small|details] [--db-dialog search|convert|catalog|delete|newfolder]]
 //!            [--listen PORT [--listen-read-only] [--listen-no-files] [--listen-root DIR]... [--listen-read-root DIR]...]
+//!            [--ribbon home|image|view|text|outline|rectangle|punch|shapes|stitches|hoop]
+//!            [--pane import|color|attributes|text] [--theme light|dark|system]
 //! ```
 //! `--listen` opens the loopback automation socket on `127.0.0.1:PORT` (`0`: any free port) so
 //! `stitchtool connect` and `openstitch-mcp --live` can drive this session. It prints the
 //! address, the per-launch token and the endpoint file holding both. Clients get no file access
 //! unless roots are given (`--listen-root` read/write, `--listen-read-root` read only).
+//! `--ribbon` picks the ribbon tab and `--pane` the right-hand pane tab; `--show appmenu`
+//! opens the Application menu, `--show floating` floats the side panes (for screenshots).
 //! `--database` opens the Design Database at a folder (a file is selected in its folder).
 //! `--image` opens the Image to Embroidery dialog with that image chosen; `--convert` also runs
 //! the conversion with that method. `--wizard` opens a pattern wizard dialog for the selection;
@@ -32,15 +36,19 @@ mod convert_ui;
 mod creator_ui;
 mod database_ui;
 mod edit_ui;
+mod icons;
 mod lettering_ui;
 mod panels;
+mod panes;
 mod pattern_wizard_ui;
 mod print_ui;
 mod remote;
+mod ribbon;
 mod script;
 mod sections_ui;
 mod settings_ui;
 mod sewing_ui;
+mod theme;
 mod transfer_ui;
 mod wizard_ui;
 mod workspace_ui;
@@ -105,6 +113,28 @@ fn parse(args: impl Iterator<Item = String>) -> Result<(Launch, [f32; 2]), Strin
                 );
             }
             "--apply" => l.apply_wizard = true,
+            "--ribbon" => {
+                let v = value("--ribbon")?;
+                l.ribbon = Some(
+                    openstitch_app::editor::ribbon::TabId::from_key(&v).ok_or(
+                        "--ribbon takes home, image, view, text, outline, rectangle, punch, shapes, stitches or hoop",
+                    )?,
+                );
+            }
+            "--pane" => {
+                let v = value("--pane")?;
+                l.pane = Some(
+                    ribbon::PaneTab::from_key(&v)
+                        .ok_or("--pane takes import, color, attributes or text")?,
+                );
+            }
+            "--theme" => {
+                let v = value("--theme")?;
+                l.theme = Some(
+                    openstitch_app::editor::prefs::Theme::from_key(&v)
+                        .ok_or("--theme takes light, dark or system")?,
+                );
+            }
             "--select" => {
                 l.select = value("--select")?
                     .split(',')
@@ -205,7 +235,7 @@ fn main() -> eframe::Result {
                 eprintln!("openstitch: {e}");
             }
             eprintln!(
-                "usage: openstitch [FILE] [--demo] [--select ID,ID] [--simulate F] [--tool NAME] [--size WxH] [--zoom F] [--show VIEWS] [--script STEPS] [--screenshot OUT.png] [--image IMAGE [--convert METHOD]] [--pattern PATTERN.json] [--wizard NAME [--apply]] [--database PATH [--db-view VIEW] [--db-dialog NAME]] [--listen PORT [--listen-read-only] [--listen-no-files] [--listen-root DIR] [--listen-read-root DIR]]"
+                "usage: openstitch [FILE] [--demo] [--select ID,ID] [--simulate F] [--tool NAME] [--size WxH] [--zoom F] [--show VIEWS] [--script STEPS] [--screenshot OUT.png] [--image IMAGE [--convert METHOD]] [--pattern PATTERN.json] [--wizard NAME [--apply]] [--database PATH [--db-view VIEW] [--db-dialog NAME]] [--listen PORT [--listen-read-only] [--listen-no-files] [--listen-root DIR] [--listen-read-root DIR]] [--ribbon TAB] [--pane TAB] [--theme THEME]"
             );
             std::process::exit(2);
         }
@@ -282,6 +312,14 @@ mod tests {
         );
         assert!(parse(args("--db-view huge")).is_err());
         assert!(parse(args("--db-dialog format")).is_err());
+        let (l, _) = parse(args(
+            "--ribbon view --pane color --theme dark --show appmenu",
+        ))
+        .expect("ribbon");
+        assert_eq!(l.ribbon, Some(openstitch_app::editor::ribbon::TabId::View));
+        assert_eq!(l.pane, Some(crate::ribbon::PaneTab::Color));
+        assert_eq!(l.theme, Some(openstitch_app::editor::prefs::Theme::Dark));
+        assert!(parse(args("--ribbon file")).is_err() && parse(args("--theme neon")).is_err());
     }
 
     #[test]
