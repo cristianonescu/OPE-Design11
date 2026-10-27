@@ -322,3 +322,27 @@ only in the jump segment, so after the change above that needle point was lost (
 stitch had carried it before). PE-DESIGN's own re-saved file reopened unchanged. Each stitch run
 after a jump now starts at the landing; PE-DESIGN then reported 56 stitches, and that re-save is
 the reference.
+
+### `pes-csewseg-trims`: reference, 2026-10-27
+
+Made by pe-gui in PE-DESIGN 11.50: OpenStitch's `a.pes` (two Red running lines 40 mm apart, one
+colour, a trim between them) was opened unchanged and saved with Save As, default type
+(`#PES0110`, the reference), and also as Layout & Editing Ver.6.0 (`#PES0060`, kept as
+`crates/openstitch-formats/tests/fixtures/pe_design_v6_trims.pes`). The PEC-only `1t` export
+opened blank, so it was not re-saved. The audit listed "CSewSeg drops trims" as a gap. The
+re-saves show it isn't one:
+- `CSewSeg` has no trim type. PE-DESIGN's own Ver.6.0 stitch group stores the move as a jump
+  segment (flag 1) between two stitch runs, as OpenStitch does. Both re-saves keep the trim as the
+  PEC record's `0x20` flag, and the reference compare (stitches, jumps, trims) has no differences.
+  PE-DESIGN greys out View Thread Trimming and Jump Stitch Trimming for this stitch data.
+- PE-DESIGN's stitch group has no lead-in jump segment from the origin. OpenStitch no longer
+  writes one, so its `CSewSeg` now matches PE-DESIGN's run for run (unit test
+  `pes_v6_stitch_group_matches_pe_design_and_keeps_the_trim`).
+- PE-DESIGN writes the v6 thread table's strings (catalogue number, name, brand, chart) as MFC
+  Unicode strings: `FF FE FF`, a length in UTF-16 units, then UTF-16LE. The reader took `FF` as
+  a 255-byte length and lost the whole object section of PE-DESIGN-written v6 files; it now reads
+  both forms. OpenStitch keeps writing single-byte strings, which PE-DESIGN reads.
+- Not changed: PE-DESIGN stores `CSewSeg` points in page coordinates (identity transform, bounds
+  in the `CEmbOne` header) where OpenStitch stores them relative to the group with a translation,
+  as pyembroidery does. It writes colour type 0 where OpenStitch writes `0x0A`, and `01` where
+  OpenStitch writes `02` after the hoop field. PE-DESIGN opens OpenStitch's form unchanged.

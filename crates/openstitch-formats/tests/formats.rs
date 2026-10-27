@@ -390,6 +390,49 @@ fn pes_header_strings_stop_at_255_bytes_without_half_a_line_break() {
 }
 
 #[test]
+fn pes_v6_stitch_group_matches_pe_design_and_keeps_the_trim() {
+    // pe_design_v6_trims.pes: PE-DESIGN 11.50's Ver.6.0 re-save of the compat spec
+    // pes-csewseg-trims (two Red lines, a trim between them). Its CSewSeg is stitch run, jump
+    // (flag 1, CSewSeg has no trim type), stitch run, with no lead-in jump; the trim is the PEC
+    // section's 0x20 flag.
+    let pe = data("pe_design_v6_trims.pes");
+    let pattern = pes::read(&pe).expect("read");
+    assert_eq!(pattern.count(Command::Trim), 1);
+    // Its thread table strings are MFC Unicode strings (`FF FEFF`, length, UTF-16LE).
+    let t = &pattern.threads[0];
+    assert_eq!(t.hex(), "#ed171f");
+    assert_eq!(
+        (
+            t.name.as_deref(),
+            t.brand.as_deref(),
+            t.catalog_number.as_deref()
+        ),
+        (Some("Red"), Some("Brother"), Some("5"))
+    );
+    let ours = pes::write(&pattern).expect("write");
+    assert_eq!(pes::read(&ours).expect("read").count(Command::Trim), 1);
+    // Runs, colours and point offsets within each run (PE stores page coordinates, OpenStitch
+    // coordinates relative to the group, so compare relative to the first point).
+    let shape = |bytes: &[u8]| {
+        let objects = pes::read_objects(bytes).expect("objects");
+        assert_eq!(objects.objects.len(), 1);
+        let segments = &objects.objects[0].segments;
+        let (x0, y0) = segments[0].points[0];
+        segments
+            .iter()
+            .map(|s| {
+                let points: Vec<(i16, i16)> =
+                    s.points.iter().map(|&(x, y)| (x - x0, y - y0)).collect();
+                (s.flag, s.color, points)
+            })
+            .collect::<Vec<_>>()
+    };
+    let expected = shape(&pe);
+    assert_eq!(expected.iter().map(|s| s.0).collect::<Vec<_>>(), [0, 1, 0]);
+    assert_eq!(shape(&ours), expected);
+}
+
+#[test]
 fn pes_unknown_object_classes_are_reported_not_fatal() {
     let mut bytes = data("oracle_v1.pes");
     let at = bytes
