@@ -125,6 +125,7 @@ The fields:
 | `stitchesOutside {polygon, within}` | Stitch midpoints outside a region |
 | `travelGaps`, `totalJumpLength` | Needle travel across each jump / trim run; total jump length, mm |
 | `polar {center, ring?, ringWithin, property}` | Needle points seen from `center` (mm): `minRadius`, `maxRadius` (mm), `midAngle`, `angleSpan` (degrees clockwise on screen from 12 o'clock); points within `ringWithin` mm (default 0.3) of a circle of radius `ring` (an outline sewn with fitted text) are left out |
+| `columns {x, halfWidth}` | For each x (mm), the highest and lowest needle point within `halfWidth` mm (default 0.3): `[top0, bottom0, …]`, mm |
 | `needleEnds` | First and last needle point `[x0, y0, x1, y1]`, mm from the top-left of the needle points (a jump landing right before the first stitch counts as the start) |
 | `stitchedArea` | Area covered by 0° fill rows, mm²: each row's needle extent (with the stitches into and out of it from ≤ 0.5 mm away) × the mean row gap. Single points (under sewing across the fill, travel) are not rows |
 | `rowShift {stitchLength, interior}` | Row-to-row needle shift of a 0° fill (Fill Frequency). Only fill rows count: runs with two consecutive interior needle points one stitch length (±0.15 mm) apart. Under sewing, edge runs and travel are skipped |
@@ -351,6 +352,17 @@ at its defaults, 800 RED, Save As default type.
 - `text-sewing-order`: AB with a red fill and a black running outline. PE sews both fills,
   then both outlines, in two colour blocks, as OpenStitch does. The outline block's stitch
   count waits for the lines track's PE line defaults (pitch 2.0 mm, tie-in and lock).
+- `text-transform-N`: HHHHHHH, 10 mm, centred at (50, 50) mm, with Text Transform preset N
+  (the two arches, then PE's grid in reading order; 26 presets). The first set was saved with
+  the text off the page and PE then wrote no PEC section, so pe-gui remade them on the page.
+  `tools/fit_envelopes.py` reads every H stem's top and bottom needle point and fits each
+  preset's top and bottom edge in the straight text's box (constant, slope and cosine terms,
+  outliers dropped; mirror pairs and symmetric presets pooled), into
+  `crates/openstitch-design/src/envelope_presets.rs`. The specs check the box (`bounds`) and the
+  14 stems (`columns`, 1.05 mm half width: OpenStitch's fill rows end on the stem edges) within
+  0.5 mm. The arches set the letters rigidly along an arc whose inner line keeps the text's
+  width (1.879 rad), 0.55 % of the width left of centre, as PE does. 13 and 14 (fans) have no
+  spec: they skew each letter differently and are not laid out yet.
 
 ### `pes-csewseg-trims`: reference, 2026-10-27
 

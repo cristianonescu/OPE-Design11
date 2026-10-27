@@ -108,6 +108,13 @@ pub enum Measure {
     BlockStitchCounts,
     /// One bound of the stitches and jumps, mm.
     Bounds { property: BoundsProperty },
+    /// For each x (mm), the highest and lowest needle point within `halfWidth` mm of it:
+    /// `[top0, bottom0, top1, bottom1, …]` (y down, mm). Fails when a column has no point.
+    Columns {
+        x: Vec<f64>,
+        #[serde(default = "default_ring_within", rename = "halfWidth")]
+        half_width: f64,
+    },
     /// Needle points (stitch entries) seen from `center` (mm), with angles clockwise on screen
     /// from 12 o'clock (−y), in (−180, 180], and radii in mm. Points within `ringWithin` mm of
     /// the circle of radius `ring` about the centre (an outline sewn with text fitted to it)
@@ -264,6 +271,7 @@ impl Measure {
             Self::BlockStitchCounts => "blockStitchCounts",
             Self::Bounds { .. } => "bounds",
             Self::Polar { .. } => "polar",
+            Self::Columns { .. } => "columns",
             Self::StitchLength { .. } => "stitchLength",
             Self::StitchLengthHistogram { .. } => "stitchLengthHistogram",
             Self::EdgeStitches { .. } => "edgeStitches",
@@ -432,6 +440,7 @@ impl Measure {
                 ring_within,
                 property,
             } => json!(polar(t, *center, *ring, *ring_within, *property)?),
+            Self::Columns { x, half_width } => json!(columns(t, x, *half_width)?),
             Self::StitchLength { stat, min_length } => {
                 let mut v: Vec<f64> = stitch_lengths(t)
                     .into_iter()
@@ -798,6 +807,24 @@ fn row_shifts(t: &Trace, l: f64, interior: [f64; 2]) -> Vec<f64> {
         .collect()
 }
 
+/// See [`Measure::Columns`].
+fn columns(t: &Trace, xs: &[f64], half_width: f64) -> Result<Vec<f64>, String> {
+    let mut out = Vec::with_capacity(xs.len() * 2);
+    for &x in xs {
+        let ys: Vec<f64> = t
+            .stitches()
+            .filter(|e| (e.x - x).abs() <= half_width)
+            .map(|e| e.y)
+            .collect();
+        if ys.is_empty() {
+            return Err(format!("no needle point within {half_width} mm of x = {x}"));
+        }
+        out.push(ys.iter().copied().fold(f64::INFINITY, f64::min));
+        out.push(ys.iter().copied().fold(f64::NEG_INFINITY, f64::max));
+    }
+    Ok(out)
+}
+
 /// See [`Measure::Polar`].
 fn polar(
     t: &Trace,
@@ -845,6 +872,17 @@ fn polar(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn columns_give_the_top_and_bottom_near_each_x() {
+        // A column from y 2 to 8 at x 1, a stray point beside it, one at x 5.
+        let t = trace(&[(1.0, 2.0), (1.1, 8.0), (0.9, 5.0), (1.5, 0.0), (5.0, 3.0)]);
+        assert_eq!(
+            columns(&t, &[1.0, 5.0], 0.3).expect("columns"),
+            vec![2.0, 8.0, 3.0, 3.0]
+        );
+        assert!(columns(&t, &[3.0], 0.3).is_err());
+    }
 
     #[test]
     fn polar_measures_angles_and_radii_off_the_ring() {

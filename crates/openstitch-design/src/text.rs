@@ -124,7 +124,25 @@ pub struct TextSpec {
     /// Per-character edits, by character index, sorted and unique.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub characters: Vec<CharEdit>,
+    /// Text Transform: one of PE-DESIGN's 26 envelope presets (1..=26, its palette in reading
+    /// order), applied to straight horizontal text. See [`ENVELOPE_PRESETS`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub envelope: Option<u8>,
 }
+
+/// Text Transform presets OpenStitch lays out: 1 and 2 (arches over and under), the
+/// envelopes in `envelope_presets.rs` (3–12, 15–26), but not yet 13 and 14 (fans).
+pub const ENVELOPE_PRESETS: [u8; 24] = [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+];
+
+/// The arches' angle: the text's width over the radius of its inner line (PE-DESIGN 11.50:
+/// 74.6 mm of HHHHHHH round a 39.7 mm radius, compat text-transform-1 and -2).
+const ARCH_ANGLE: f64 = 1.879;
+
+/// PE-DESIGN sets arched text a little left of the straight text's centre, by this share of
+/// its width (0.3-0.45 mm of 74.6 mm in both arches).
+const ARCH_SHIFT: f64 = -0.0055;
 
 /// What a text's size and line spacing measure.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -364,6 +382,7 @@ impl TextSpec {
             kerning: false,
             direction: TextDirection::Horizontal,
             characters: Vec::new(),
+            envelope: None,
         }
     }
 
@@ -1068,6 +1087,9 @@ pub fn layout_in(
         }
         return Ok(l);
     }
+    if let (Some(n), None, TextDirection::Horizontal) = (spec.envelope, path, spec.direction) {
+        return envelope_layout(spec, n, fonts);
+    }
     let font = LoadedFont::load_in(&spec.font, fonts)?;
     let scale = spec.size * font.per_mm(spec.metrics);
     // Capital height, 0.1 mm.
@@ -1294,6 +1316,159 @@ pub fn layout_in(
         missing,
         shaping,
     })
+}
+
+/// Ink bounds of a layout's outlines and stitches.
+fn layout_bounds(l: &Layout) -> Option<Rect> {
+    Rect::enclosing(l.glyphs.iter().flat_map(|g| {
+        g.contours.iter().flat_map(Contour::outline_points).chain(
+            g.stitches
+                .iter()
+                .flat_map(|b| b.stitches.iter().map(|s| v2(s.x, s.y))),
+        )
+    }))
+}
+
+/// Applies `t` to every outline and stitch of `l`.
+fn transform_layout(l: &mut Layout, t: &Transform) {
+    for g in &mut l.glyphs {
+        for c in &mut g.contours {
+            *c = c.transformed(t);
+        }
+        for s in g.stitches.iter_mut().flat_map(|b| b.stitches.iter_mut()) {
+            let p = t.apply(v2(s.x, s.y));
+            (s.x, s.y) = (p.x, p.y);
+        }
+    }
+}
+
+/// Text Transform: the straight text set along an arch (1, 2) or warped into an envelope.
+/// Presets OpenStitch does not lay out yet lay the text out straight.
+fn envelope_layout(spec: &TextSpec, preset: u8, fonts: &[DesignFont]) -> Result<Layout, TextError> {
+    let plain = TextSpec {
+        envelope: None,
+        transform: Transform::IDENTITY,
+        ..spec.clone()
+    };
+    let mut l = layout_in(&plain, None, fonts)?;
+    let Some(b) = layout_bounds(&l) else {
+        return Ok(l);
+    };
+    if matches!(preset, 1 | 2) && b.width() > 0.0 {
+        // The inner line keeps the text's width: the baseline over the top of a circle (1),
+        // the capital line under the bottom of one (2), letters radial and turned with it.
+        let r = b.width() / ARCH_ANGLE;
+        let cx = b.center().x + ARCH_SHIFT * b.width();
+        let reach = (ARCH_ANGLE / 2.0 + 0.6).min(std::f64::consts::PI * 0.98);
+        let steps = 240;
+        let at = |k: usize| -reach + 2.0 * reach * k as f64 / steps as f64;
+        let (points, fit) = if preset == 1 {
+            let c = v2(cx, r);
+            let p = (0..=steps).map(|k| c + v2(r * at(k).sin(), -r * at(k).cos()));
+            (p.collect(), PathFit::default())
+        } else {
+            let c = v2(cx, -spec.size * 10.0 - r);
+            let p = (0..=steps).map(|k| c + v2(r * at(k).sin(), r * at(k).cos()));
+            let fit = PathFit {
+                valign: VAlign::Top,
+                ..PathFit::default()
+            };
+            (p.collect(), fit)
+        };
+        let arched = TextSpec {
+            align: TextAlign::Center,
+            fit,
+            ..plain
+        };
+        l = layout_in(&arched, Some(&Contour::new(points, false)), fonts)?;
+    } else if let Some((_, top, bottom)) = crate::envelope_presets::ENVELOPES
+        .iter()
+        .find(|(n, _, _)| *n == preset)
+    {
+        let warp = |p: Vec2| {
+            let u = ((p.x - b.min_x) / b.width().max(1e-9)).clamp(0.0, 1.0);
+            let v = (p.y - b.min_y) / b.height().max(1e-9);
+            let (t, bt) = (edge_at(top, u), edge_at(bottom, u));
+            v2(
+                b.min_x + b.width() * (t.x + v * (bt.x - t.x)),
+                b.min_y + b.height() * (t.y + v * (bt.y - t.y)),
+            )
+        };
+        for g in &mut l.glyphs {
+            for c in &mut g.contours {
+                *c = warp_contour(c, &warp);
+            }
+            for s in g.stitches.iter_mut().flat_map(|b| b.stitches.iter_mut()) {
+                let p = warp(v2(s.x, s.y));
+                (s.x, s.y) = (p.x, p.y);
+            }
+        }
+    }
+    transform_layout(&mut l, &spec.transform);
+    Ok(l)
+}
+
+/// The top and bottom edge of Text Transform preset `n` in a unit box (x right, y down), for
+/// drawing its palette button; `None` for presets OpenStitch does not lay out.
+pub fn envelope_edges(n: u8) -> Option<(Vec<Vec2>, Vec<Vec2>)> {
+    if matches!(n, 1 | 2) {
+        // The arches: a 108° arc, the text two fifths of the box thick.
+        let arc = |r: f64| -> Vec<Vec2> {
+            (0..=24)
+                .map(|k| {
+                    let a = (k as f64 / 24.0 - 0.5) * ARCH_ANGLE;
+                    let (x, y) = (0.5 + r * a.sin(), r * (1.0 - a.cos()));
+                    if n == 1 {
+                        v2(x, y + 0.1)
+                    } else {
+                        v2(x, 0.9 - y)
+                    }
+                })
+                .collect()
+        };
+        let (outer, inner) = (arc(0.6), arc(0.4));
+        return Some(if n == 1 {
+            (outer, inner)
+        } else {
+            (inner, outer)
+        });
+    }
+    let (_, top, bottom) = crate::envelope_presets::ENVELOPES
+        .iter()
+        .find(|(k, _, _)| *k == n)?;
+    let pts = |e: &crate::envelope_presets::Edge| e.iter().map(|&(x, y)| v2(x, y)).collect();
+    Some((pts(top), pts(bottom)))
+}
+
+/// The point of an envelope edge at `u` (0..=1), between its knots.
+fn edge_at(edge: &crate::envelope_presets::Edge, u: f64) -> Vec2 {
+    let f = u * (edge.len() - 1) as f64;
+    let k = (f.floor() as usize).min(edge.len() - 2);
+    let t = f - k as f64;
+    let (a, b) = (edge[k], edge[k + 1]);
+    v2(a.0 + t * (b.0 - a.0), a.1 + t * (b.1 - a.1))
+}
+
+/// `c` flattened, its segments split to 0.5 mm, and every point moved by `warp`.
+fn warp_contour(c: &Contour, warp: &impl Fn(Vec2) -> Vec2) -> Contour {
+    let mut path = c.path();
+    if c.closed && path.len() > 1 {
+        path.pop();
+    }
+    let mut out = Vec::with_capacity(path.len() * 2);
+    let n = path.len();
+    let segments = if c.closed { n } else { n.saturating_sub(1) };
+    for i in 0..n {
+        out.push(warp(path[i]));
+        if i < segments {
+            let (a, b) = (path[i], path[(i + 1) % n]);
+            let pieces = (a.distance(b) / 5.0).ceil() as usize;
+            for k in 1..pieces {
+                out.push(warp(a + (b - a) * (k as f64 / pieces as f64)));
+            }
+        }
+    }
+    Contour::new(out, c.closed)
 }
 
 /// Arc-length lookup along a flattened contour.
@@ -1636,6 +1811,49 @@ H",
             fill[3].max_x < 1000.0 && fill[3].max_x > 960.0,
             "{:?}",
             fill[3]
+        );
+    }
+
+    #[test]
+    fn text_transform_presets_warp_the_straight_text() {
+        let straight = bounds(&lay("HHHHHHH", 10.0).contours());
+        let with = |n: u8| {
+            let mut spec = TextSpec::new("HHHHHHH", DEFAULT_FONT, 10.0);
+            spec.envelope = Some(n);
+            layout(&spec, None).expect("layout")
+        };
+        // Every listed preset lays out, and every envelope in the table is listed.
+        for &(n, _, _) in crate::envelope_presets::ENVELOPES {
+            assert!(ENVELOPE_PRESETS.contains(&n), "{n}");
+        }
+        for &n in &ENVELOPE_PRESETS {
+            let l = with(n);
+            assert_eq!(l.glyphs.len(), 7, "{n}");
+        }
+        // 3 grows to the right on a straight baseline: the first H half as tall as the last.
+        let g = with(3).glyphs;
+        let (first, last) = (bounds(&g[0].contours), bounds(&g[6].contours));
+        assert!((last.max_y - first.max_y).abs() < 1.0, "{first:?} {last:?}");
+        assert!(first.height() < 0.65 * last.height(), "{first:?} {last:?}");
+        assert!((last.height() - straight.height()).abs() < 3.0, "{last:?}");
+        // 9 slants: the box keeps its width, the first H leans right.
+        let b = bounds(&with(9).contours());
+        assert!((b.width() - straight.width()).abs() < 3.0, "{b:?}");
+        assert!(bounds(&with(9).glyphs[0].contours).width() > 140.0);
+        // 1 arches over the top: the middle H stays, the outer ones drop and turn.
+        let g = with(1).glyphs;
+        let (mid, end) = (bounds(&g[3].contours), bounds(&g[0].contours));
+        assert!((mid.min_y - straight.min_y).abs() < 3.0, "{mid:?}");
+        assert!(end.min_y > mid.max_y, "{end:?}");
+        // 2 arches under: the outer ones rise.
+        let g = with(2).glyphs;
+        assert!(bounds(&g[0].contours).max_y < bounds(&g[3].contours).min_y);
+        // Off by default, and not written to files then.
+        let plain = TextSpec::new("H", DEFAULT_FONT, 10.0);
+        assert!(
+            !serde_json::to_string(&plain)
+                .expect("json")
+                .contains("envelope")
         );
     }
 

@@ -6,6 +6,7 @@ pub mod boolean;
 pub mod column;
 pub mod compile;
 pub mod direction;
+mod envelope_presets;
 pub mod fonts;
 pub mod freehand;
 pub mod generate;

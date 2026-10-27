@@ -1877,7 +1877,12 @@ fn text_docs(text_required: bool) -> Vec<ParamDoc> {
         opt(
             "lineSpacingPercent",
             "%",
-            "Line spacing, % of the font's line height, 0...500 (default 100)",
+            "Line spacing, % of the character height, 0...500 (default 100)",
+        ),
+        opt(
+            "envelope",
+            "int | null",
+            "Text Transform preset, 1-26 in the palette's reading order (13 and 14 not yet available); null turns it off. Not for text fitted to an outline",
         ),
         opt(
             "lineSpacing",
@@ -1943,6 +1948,20 @@ fn text_params(
             "vertical" => TextDirection::Vertical,
             _ => return Err(p.invalid("direction", "must be horizontal or vertical")),
         };
+    }
+    if p.is_null("envelope") {
+        spec.envelope = None;
+    } else if p.has("envelope") {
+        let n = p.int("envelope", None, 1, 26)? as u8;
+        if !text::ENVELOPE_PRESETS.contains(&n) {
+            return Err(p.invalid("envelope", format!("preset {n} is not available yet")));
+        }
+        if spec.path.is_some() {
+            return Err(p.failed(
+                "Text Transform is not available for text fitted to an outline; release it first",
+            ));
+        }
+        spec.envelope = Some(n);
     }
     Ok(())
 }
@@ -2137,6 +2156,7 @@ fn text_commands() -> Vec<CommandSpec> {
                 let path = path_param(s, p, s.design.next_object_id)?;
                 if let Some(path) = path {
                     spec.path = Some(path);
+                    spec.envelope = None;
                     spec.transform = Transform::IDENTITY;
                 }
                 object.text = Some(spec);
@@ -2269,6 +2289,8 @@ fn text_commands() -> Vec<CommandSpec> {
                         };
                         let t = s.design.objects[i].text.as_mut().expect("text object");
                         t.path = Some(path);
+                        // Fitting to an outline cancels Text Transform (the guide).
+                        t.envelope = None;
                         t.fit = fit;
                         t.align = align;
                         t.transform = Transform::IDENTITY;
