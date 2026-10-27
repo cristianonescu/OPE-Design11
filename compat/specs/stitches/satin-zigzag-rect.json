@@ -3,7 +3,7 @@
   "id": "satin-zigzag-rect",
   "area": "stitches",
   "title": "Region satin is a zigzag across the column",
-  "description": "A 5 × 2 mm column sewn in satin at density 3 must be a zigzag: the needle goes across the column on every stitch, alternating between the two long edges, with no short stitch along an edge (the old square wave doubled the stitch count and perforated both edges).",
+  "description": "A 5 × 2 mm rectangle sewn in satin at 90°, density 3, without under sewing, must be sewn as PE-DESIGN 11.50 sews it: from its start point in the middle of the bottom edge, along that edge to one end, a sawtooth back to the middle (one crossing along the sewing direction, the next slanted, never a short stitch between rows as in the old square wave), the last row 0.2 mm short of the start point, then the same for the other half, and a tie-in and end lock.",
   "covers": {
     "audit": [
       1
@@ -28,6 +28,14 @@
     {
       "kind": "measured",
       "note": "PE-DESIGN 11.50 round-1 reference (PR #34) was made with under sewing on, PE's default: 40 stitches, of which 13-15 are under sewing. Under sewing is off here so the spec tests the top satin's shape only (coordinator decision, 2026-10-27); the reference is to be remade with under sewing off."
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-zigzag-rect.pes (under sewing off, 2026-10-27): 27 stitches = tie-in, run to the left end, sawtooth back to the middle, run to the right end, sawtooth back, end lock; PE starts and ends a Rectangle tool shape in the middle of its bottom edge."
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 starts and ends a Rectangle tool shape's region sewing in the middle of its bottom edge (this reference, and the fill rectangles of fill-frequency-0/25/50). OpenStitch has no such default yet, so the script places the start and end point there."
     }
   ],
   "script": [
@@ -55,6 +63,20 @@
         "angle": 90,
         "density": 3,
         "underlay": false
+      }
+    },
+    {
+      "command": "object.setEntryExit",
+      "params": {
+        "id": 1,
+        "regionEntry": [
+          12.5,
+          12
+        ],
+        "regionExit": [
+          12.5,
+          12
+        ]
       }
     }
   ],
@@ -90,11 +112,11 @@
           ]
         }
       },
-      "expected": 15,
+      "expected": 27,
       "tolerance": {
         "count": 1
       },
-      "evidence": "audit item 1: 15 ±1 stitches for the 5 × 2 mm column at density 3",
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-zigzag-rect.pes (under sewing off, 2026-10-27): 27 stitches. Was 15 ±1 (audit item 1, top satin only).",
       "reference": {
         "tolerance": {
           "percent": 10
@@ -140,8 +162,8 @@
           ]
         }
       },
-      "expected": 0,
-      "evidence": "audit item 1: no stitch shorter than 0.5 mm lies along an edge",
+      "expected": 7,
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-zigzag-rect.pes (under sewing off, 2026-10-27): 7 short edge stitches, all at the start point: the tie-in (1), the 0.2–0.3 mm hops to and from the last row of each half (4) and the end lock (2). Was 0 (audit item 1).",
       "reference": {}
     },
     {
@@ -224,9 +246,12 @@
           ]
         }
       },
-      "expected": 1.0,
-      "evidence": "audit item 1: consecutive needle points alternate between the edges",
-      "reference": {}
+      "expected": 0.59,
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-zigzag-rect.pes (under sewing off, 2026-10-27): 0.5926 (the runs along the edge to each end and the hops at the start point do not cross). Was 1.0 (audit item 1).",
+      "reference": {},
+      "tolerance": {
+        "percent": 3
+      }
     },
     {
       "id": "shortest-stitch",
@@ -245,9 +270,9 @@
         }
       },
       "expected": {
-        "min": 1.95
+        "min": 0.15
       },
-      "evidence": "audit item 1, measured after the fix (c5f3bad): stitches of 2.0–2.03 mm"
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-zigzag-rect.pes (under sewing off, 2026-10-27): the shortest stitches are the 0.2 mm hops and lock. Was ≥ 1.95 mm (audit item 1)."
     },
     {
       "id": "longest-stitch",
@@ -266,9 +291,9 @@
         }
       },
       "expected": {
-        "max": 2.1
+        "max": 2.16
       },
-      "evidence": "audit item 1, measured after the fix (c5f3bad): stitches of 2.0–2.03 mm"
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-zigzag-rect.pes (under sewing off, 2026-10-27): the slanted stitch back to the next row is 2.09–2.12 mm (rows 2/3 mm apart). Was 2.1 (audit item 1)."
     },
     {
       "id": "versus-reference",

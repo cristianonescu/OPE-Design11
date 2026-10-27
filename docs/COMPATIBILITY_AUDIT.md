@@ -119,10 +119,25 @@ Line references are relative to `crates/`.
 - **Grade:** Defect.
 - **Measured after the fix (`c5f3bad`):** the same 5×2 mm rectangle sews 15 stitches of
   2.0–2.03 mm, alternating edges, with no edge stitches.
-- **Status:** fixed, internal regression tier only (not reference verified). Region satin,
-  Manual Punch columns and skeleton satin sew the first row across, then one needle point per
-  row on alternate edges (`column::zigzag`, `generate::chain_satin_spans`); pull compensation
-  still lengthens every row. Tests: `crates/openstitch-engine/tests/satin_compat.rs`
+- **PE-DESIGN 11.50 behaviour** (black-box, 2026-10-27; references
+  `compat/reference/stitches/satin-zigzag-rect.pes` and `satin-zigzag-column.pes`, under
+  sewing off): no square wave, but not a symmetric zigzag either. Fixed-direction and Manual
+  Punch satin is a sawtooth: each row (rung) is sewn across along the sewing direction and the
+  stitch to the next row slants back, rows 2/density apart (2.0 mm crossings and 2.09–2.15 mm
+  slants on the 5×2 mm column). Every satin object starts with a tie-in (0.3 mm out along the
+  first stitch and back) and ends with a lock (0.3 mm back along the last stitch and return).
+  A rectangle starts and ends in the middle of its bottom edge: PE runs along that edge to one
+  end, sews back to the middle (the last row 0.2 mm short, reached along the far edge), then
+  does the same for the other half: 27 stitches, 7 of them short edge stitches at the start
+  point. The Manual Punch column sews 18: tie-in, 15 crossings over 8 rungs, lock. Auto satin
+  stays a symmetric zigzag.
+- **Status:** fixed to PE-DESIGN's structure, reference tier. Region satin with a fixed
+  direction and Manual Punch columns sew the sawtooth (`region::sawtooth_satin`,
+  `column::sawtooth`), split at a start point inside the column (`region::split_satin`), with
+  PE's tie-in and lock (`region::tie_and_lock`); skeleton and Auto satin keep the symmetric
+  zigzag. satin-zigzag-column and -skeleton measure the body without the tie-in and lock
+  (`exclude`); satin-zigzag-rect expects PE's observed values. Pull compensation still
+  lengthens every row. Tests: `crates/openstitch-engine/tests/satin_compat.rs`
   (`region_satin_sews_a_zigzag_across_the_column`, `manual_punch_column_sews_a_zigzag`,
   `skeleton_satin_sews_a_zigzag`, `pull_compensation_widens_the_zigzag`).
 - **Test:**

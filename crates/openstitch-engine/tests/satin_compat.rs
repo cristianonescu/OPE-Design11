@@ -28,11 +28,19 @@ fn session() -> Session {
     s
 }
 
+/// The satin's body: without PE-DESIGN's tie-in (the first needle point, 0.3 mm along the
+/// first stitch) and end lock (the last two: 0.3 mm back and return), as the satin-zigzag-*
+/// specs measure it.
+fn body(pts: &[(f64, f64)]) -> &[(f64, f64)] {
+    &pts[1..pts.len() - 2]
+}
+
 /// The audit's satin assertions for a 5 × 2 mm column from (10, 10) to (15, 12), stitches
 /// across its 2 mm height: consecutive needle points alternate between the top and bottom
-/// edge, so no stitch (let alone one shorter than 0.5 mm) lies along an edge, and the stitch
-/// count is 15 ± 1 at density 3.
-fn assert_zigzag_column(pts: &[(f64, f64)], what: &str) {
+/// edge, so no stitch (let alone one shorter than 0.5 mm) lies along an edge; each stitch
+/// moves at most `slant` mm along the column (one row: 1/3 mm for a zigzag, 2/3 mm for
+/// PE-DESIGN's sawtooth at density 3), and there are `count` ± 1 stitches.
+fn assert_zigzag_column(pts: &[(f64, f64)], slant: f64, count: usize, what: &str) {
     let edge = |&(x, y): &(f64, f64)| {
         assert!((9.9..=15.1).contains(&x), "{what}: {x} outside the column");
         if (y - 10.0).abs() < 0.05 {
@@ -46,12 +54,12 @@ fn assert_zigzag_column(pts: &[(f64, f64)], what: &str) {
     for w in pts.windows(2) {
         assert_ne!(edge(&w[0]), edge(&w[1]), "{what}: {w:?} runs along an edge");
         let along = (w[1].0 - w[0].0).abs();
-        assert!(along < 0.5, "{what}: {w:?} slants {along} mm");
+        assert!(along <= slant + 0.06, "{what}: {w:?} slants {along} mm");
     }
     let stitches = pts.len() - 1;
     assert!(
-        (14..=16).contains(&stitches),
-        "{what}: {stitches} stitches, expected 15 ± 1"
+        stitches.abs_diff(count) <= 1,
+        "{what}: {stitches} stitches, expected {count} ± 1"
     );
 }
 
@@ -79,7 +87,8 @@ fn region_satin_sews_a_zigzag_across_the_column() {
         json!({"id": 1, "type": "satin", "angle": 90, "density": 3, "underlay": false}),
     );
     let pts = needle_points(&mut s, 1);
-    assert_zigzag_column(&pts, "region satin");
+    // A sawtooth with rows 2/3 mm apart from edge to edge: 9 rows, 17 crossings.
+    assert_zigzag_column(body(&pts), 2.0 / 3.0, 17, "region satin");
 }
 
 #[test]
@@ -92,7 +101,8 @@ fn manual_punch_column_sews_a_zigzag() {
     );
     top_satin_at_density_3(&mut s);
     let pts = needle_points(&mut s, 1);
-    assert_zigzag_column(&pts, "shape.column");
+    // PE-DESIGN's Manual Punch sawtooth: 8 rungs 5/7 mm apart, 15 crossings.
+    assert_zigzag_column(body(&pts), 5.0 / 7.0, 15, "shape.column");
 }
 
 #[test]
@@ -105,7 +115,7 @@ fn skeleton_satin_sews_a_zigzag() {
     );
     top_satin_at_density_3(&mut s);
     let pts = needle_points(&mut s, 1);
-    assert_zigzag_column(&pts, "shape.skeletonSatin");
+    assert_zigzag_column(body(&pts), 1.0 / 3.0, 15, "shape.skeletonSatin");
 }
 
 #[test]
@@ -122,7 +132,7 @@ fn pull_compensation_widens_the_zigzag() {
         json!({"id": 1, "type": "satin", "angle": 90, "density": 3, "pullCompensation": 0.2, "underlay": false}),
     );
     let pts = needle_points(&mut s, 1);
-    for w in pts.windows(2) {
+    for w in body(&pts).windows(2) {
         let (a, b) = (w[0].1.min(w[1].1), w[0].1.max(w[1].1));
         assert!((a - 9.8).abs() < 0.02 && (b - 12.2).abs() < 0.02, "{w:?}");
     }

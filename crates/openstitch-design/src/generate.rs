@@ -195,7 +195,7 @@ pub fn fill_edge_to_edge(
             }
             xs
         },
-        false,
+        Chain::Fill,
         start,
     )
 }
@@ -306,7 +306,7 @@ pub fn chain_spans(
     p: &RegionParams,
     points: impl Fn(&Span, usize, bool) -> Vec<f64>,
 ) -> Vec<Run> {
-    chain(spans, p, points, false, None)
+    chain(spans, p, points, Chain::Fill, None)
 }
 
 /// [`chain_spans`] for satin: when a row follows the previous one along the same edge (the
@@ -319,14 +319,33 @@ pub fn chain_satin_spans(
     p: &RegionParams,
     points: impl Fn(&Span, usize, bool) -> Vec<f64>,
 ) -> Vec<Run> {
-    chain(spans, p, points, true, None)
+    chain(spans, p, points, Chain::Satin, None)
+}
+
+/// [`chain_spans`] for PE-DESIGN's satin sawtooth: when a row follows the previous one along
+/// the same edge, it is entered from its far end, so every row is sewn whole in the same
+/// direction and the stitch between rows slants back across the column. Rows are then two
+/// crossings apart (twice the satin's line spacing).
+pub fn chain_sawtooth_spans(
+    spans: &[RowSpan],
+    p: &RegionParams,
+    points: impl Fn(&Span, usize, bool) -> Vec<f64>,
+) -> Vec<Run> {
+    chain(spans, p, points, Chain::Sawtooth, None)
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Chain {
+    Fill,
+    Satin,
+    Sawtooth,
 }
 
 fn chain(
     spans: &[RowSpan],
     p: &RegionParams,
     points: impl Fn(&Span, usize, bool) -> Vec<f64>,
-    satin: bool,
+    mode: Chain,
     start: Option<Vec2>,
 ) -> Vec<Run> {
     let Some(first) = spans.first() else {
@@ -355,11 +374,17 @@ fn chain(
         if best_d > join_limit && !current.is_empty() {
             runs.push(std::mem::take(&mut current));
         }
+        let along_edge = !current.is_empty()
+            && last_row.is_some_and(|(row, y)| {
+                row.abs_diff(s.row) == 1 && best_d <= 3.0 * (s.y - y).abs() + 1e-9
+            });
+        let forward = if mode == Chain::Sawtooth && along_edge {
+            !forward
+        } else {
+            forward
+        };
         let xs = points(&s.range, s.row, forward);
-        let along_edge = last_row.is_some_and(|(row, y)| {
-            row.abs_diff(s.row) == 1 && best_d <= 3.0 * (s.y - y).abs() + 1e-9
-        });
-        let skip = usize::from(satin && xs.len() >= 2 && !current.is_empty() && along_edge);
+        let skip = usize::from(mode == Chain::Satin && xs.len() >= 2 && along_edge);
         current.extend(
             xs.iter()
                 .skip(skip)

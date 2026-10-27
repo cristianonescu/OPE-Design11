@@ -11,7 +11,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Area | Feature | Tier | Specs |
 |---|---|---|---|
 | Editing | Hole sewing… | internal-regression | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
-| Editing | Manual Punch: shapes made of several sewing-direction lines… | internal-regression; reference pending | `satin-zigzag-column` |
+| Editing | Manual Punch: shapes made of several sewing-direction lines… | reference | `satin-zigzag-column` |
 | Editing | Sewing order editing… | reference | `optimize-entry-exit` |
 | Editing | Thread colour, sew type, straight sewing direction… | reference | `auto-satin-bent-band` |
 | Files | Design Property… | reference | `pes-design-properties` |
@@ -61,6 +61,6 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/region-travel-u-on-outline` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-satin` | pass | reference | pass | — | pass | — |
 | `stitches/running-stitch-path-exclusions` | pass | internal-regression | pass | — | — | — |
-| `stitches/satin-zigzag-column` | pass | internal-regression | pass | — | pending | — |
-| `stitches/satin-zigzag-rect` | pass | internal-regression | pass | — | pending | pending |
+| `stitches/satin-zigzag-column` | pass | reference | pass | — | pass | — |
+| `stitches/satin-zigzag-rect` | pass | reference | pass | — | pass | pending |
 | `stitches/satin-zigzag-skeleton` | pass | internal-regression | pass | — | — | — |

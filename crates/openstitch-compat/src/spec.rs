@@ -206,6 +206,22 @@ pub struct Source {
     /// Move the trace so the anchor lands on `to` (mm) before measuring.
     #[serde(default)]
     pub align: Option<Align>,
+    /// Leave stitches at the start and end out of the measurement (applied after
+    /// `colorBlock` and `align`, to OpenStitch's file and the reference alike).
+    #[serde(default)]
+    pub exclude: Option<Exclude>,
+}
+
+/// Stitches a measurement leaves out: the first and last `first` / `last` stitch segments
+/// (needle penetration to needle penetration, as `stitchSegments` counts them), e.g. a
+/// tie-in and an end lock. A spec that uses it says why in the measurement's evidence.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Exclude {
+    #[serde(default)]
+    pub first: usize,
+    #[serde(default)]
+    pub last: usize,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

@@ -377,13 +377,16 @@ fn auto_direction_sews_across_the_narrow_side() {
         }
     }
     assert_inside(runs, std::slice::from_ref(&wide), "auto satin");
-    // Holes keep the single direction across the narrow side.
+    // Holes keep the single direction across the narrow side: a sawtooth whose slanted
+    // stitches move one row (two crossings) along it. Travel between the parts (running
+    // stitches of at most 2.5 mm) is left out.
     let hole = Contour::rectangle(80.0, 20.0, 40.0, 10.0);
     let holed = crate::region::layers(std::slice::from_ref(&wide), &r, &[hole]);
+    let row = 2.0 * 10.0 / r.density;
     for run in holed.last().expect("top") {
-        for w in run.windows(2) {
+        for w in run.windows(2).filter(|w| w[0].distance(w[1]) > 25.0 + 1e-6) {
             let d = w[0] - w[1];
-            assert!(d.x.abs() <= 10.0 / 3.0 + 1e-6 || d.y.abs() < 1e-6, "{w:?}");
+            assert!(d.x.abs() <= row + 1e-6 || d.y.abs() < 1e-6, "{w:?}");
         }
     }
 }

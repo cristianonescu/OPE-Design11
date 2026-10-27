@@ -82,13 +82,17 @@
             10,
             10
           ]
+        },
+        "exclude": {
+          "first": 2,
+          "last": 2
         }
       },
       "expected": 15,
       "tolerance": {
         "count": 1
       },
-      "evidence": "audit item 1: 15 ±1 stitches for the 5 × 2 mm column at density 3"
+      "evidence": "audit item 1: 15 ±1 stitches for the 5 × 2 mm column at density 3. The tie-in (0.3 mm out along the first stitch and back) and the end lock (0.3 mm back along the last stitch and return) are left out: PE-DESIGN 11.50 sews both on every satin object (compat/reference/stitches/satin-zigzag-column.pes and the round-1 satin references)."
     },
     {
       "id": "edge-stitches",
@@ -127,10 +131,14 @@
             10,
             10
           ]
+        },
+        "exclude": {
+          "first": 2,
+          "last": 2
         }
       },
       "expected": 0,
-      "evidence": "audit item 1: no stitch shorter than 0.5 mm lies along an edge"
+      "evidence": "audit item 1: no stitch shorter than 0.5 mm lies along an edge. The tie-in (0.3 mm out along the first stitch and back) and the end lock (0.3 mm back along the last stitch and return) are left out: PE-DESIGN 11.50 sews both on every satin object (compat/reference/stitches/satin-zigzag-column.pes and the round-1 satin references)."
     },
     {
       "id": "off-edge-points",
@@ -168,10 +176,14 @@
             10,
             10
           ]
+        },
+        "exclude": {
+          "first": 2,
+          "last": 2
         }
       },
       "expected": 0,
-      "evidence": "audit item 1: every needle point is on one of the two edges"
+      "evidence": "audit item 1: every needle point is on one of the two edges. The tie-in (0.3 mm out along the first stitch and back) and the end lock (0.3 mm back along the last stitch and return) are left out: PE-DESIGN 11.50 sews both on every satin object (compat/reference/stitches/satin-zigzag-column.pes and the round-1 satin references)."
     },
     {
       "id": "side-alternation",
@@ -209,10 +221,14 @@
             10,
             10
           ]
+        },
+        "exclude": {
+          "first": 2,
+          "last": 2
         }
       },
       "expected": 1.0,
-      "evidence": "audit item 1: consecutive needle points alternate between the edges"
+      "evidence": "audit item 1: consecutive needle points alternate between the edges. The tie-in (0.3 mm out along the first stitch and back) and the end lock (0.3 mm back along the last stitch and return) are left out: PE-DESIGN 11.50 sews both on every satin object (compat/reference/stitches/satin-zigzag-column.pes and the round-1 satin references)."
     },
     {
       "id": "shortest-stitch",
@@ -228,12 +244,16 @@
             10,
             10
           ]
+        },
+        "exclude": {
+          "first": 2,
+          "last": 2
         }
       },
       "expected": {
         "min": 1.95
       },
-      "evidence": "audit item 1, measured after the fix (c5f3bad): stitches of 2.0–2.03 mm"
+      "evidence": "audit item 1, measured after the fix (c5f3bad): stitches of 2.0–2.03 mm. The tie-in (0.3 mm out along the first stitch and back) and the end lock (0.3 mm back along the last stitch and return) are left out: PE-DESIGN 11.50 sews both on every satin object (compat/reference/stitches/satin-zigzag-column.pes and the round-1 satin references)."
     },
     {
       "id": "longest-stitch",
@@ -249,12 +269,16 @@
             10,
             10
           ]
+        },
+        "exclude": {
+          "first": 2,
+          "last": 2
         }
       },
       "expected": {
         "max": 2.1
       },
-      "evidence": "audit item 1, measured after the fix (c5f3bad): stitches of 2.0–2.03 mm"
+      "evidence": "audit item 1, measured after the fix (c5f3bad): stitches of 2.0–2.03 mm. The tie-in (0.3 mm out along the first stitch and back) and the end lock (0.3 mm back along the last stitch and return) are left out: PE-DESIGN 11.50 sews both on every satin object (compat/reference/stitches/satin-zigzag-column.pes and the round-1 satin references)."
     }
   ]
 }

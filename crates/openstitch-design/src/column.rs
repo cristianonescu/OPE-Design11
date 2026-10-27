@@ -134,14 +134,43 @@ fn rungs_at(rungs: &[[Vec2; 2]], spacing: f64) -> Vec<[Vec2; 2]> {
     out
 }
 
-/// Satin across the column: one needle point per rung, `spacing` apart, on alternate sides
-/// (see [`zigzag`]), each rung lengthened by `pull` at both ends.
+/// Rungs evenly spaced along the column, at least `pitch` apart on the longer rail of each
+/// section (the number of steps rounded down, as PE-DESIGN 11 places Manual Punch satin),
+/// first and last rungs included.
+fn rungs_within_pitch(rungs: &[[Vec2; 2]], pitch: f64) -> Vec<[Vec2; 2]> {
+    let mut out = vec![rungs[0]];
+    for w in rungs.windows(2) {
+        let ([a, b], [c, d]) = (w[0], w[1]);
+        let len = a.distance(c).max(b.distance(d));
+        let n = ((len / pitch.max(0.1) + 1e-9).floor() as usize).clamp(1, 100_000);
+        for k in 1..=n {
+            let t = k as f64 / n as f64;
+            out.push([a.lerp(c, t), b.lerp(d, t)]);
+        }
+    }
+    out
+}
+
+/// Satin across the column as PE-DESIGN 11 sews Manual Punch satin: a sawtooth (see
+/// [`sawtooth`]) of rungs two crossings apart (`spacing` is the distance between crossings),
+/// each rung lengthened by `pull` at both ends.
 pub fn satin(rungs: &[[Vec2; 2]], spacing: f64, pull: f64) -> Run {
-    zigzag(rungs_at(rungs, spacing).into_iter().map(|[l, r]| {
-        let len = l.distance(r).max(1e-9);
-        let d = (r - l) * (pull / len);
-        [l - d, r + d]
-    }))
+    sawtooth(
+        rungs_within_pitch(rungs, 2.0 * spacing)
+            .into_iter()
+            .map(|[l, r]| {
+                let len = l.distance(r).max(1e-9);
+                let d = (r - l) * (pull / len);
+                [l - d, r + d]
+            }),
+    )
+}
+
+/// Satin needle points from rungs [left, right] in sewing order, every rung sewn from left to
+/// right: the stitch along each rung crosses the column in the sewing direction, the one to
+/// the next rung slants back. Every stitch crosses the column.
+pub fn sawtooth(rungs: impl IntoIterator<Item = [Vec2; 2]>) -> Run {
+    rungs.into_iter().flatten().collect()
 }
 
 /// Satin needle points from rungs [left, right] in sewing order: the first rung is sewn
