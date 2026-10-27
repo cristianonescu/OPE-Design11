@@ -158,6 +158,10 @@
       "make": "On a 100 × 100 mm Design Page, with Options ▸ Optimize Entry/Exit Points off, draw with the Shapes tools, each in a different thread colour, line Not Sewn, region Fill Stitch with Under Sewing off and every other attribute at its default: a Rectangle (2,2)–(22,22) mm; a Rectangle (26,2)–(46,12); an Ellipse in the box (50,2)–(70,12); a Heart in (74,2)–(94,22); a Diamond in (2,26)–(22,46); a 4-point star in (26,26)–(46,46); a Triangle in (50,26)–(70,46); a Drop in (74,26)–(94,46). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
     }
   ],
+  "machine": {
+    "record": "stitches/shape-start-points.json",
+    "make": "Sew target/compat/work/shape-start-points/shapes.pes on a Brother machine (medium-weight woven cotton, tear-away): seven colour stops in drawing order; each shape starts and ends at the bottom middle of its outline; every move between shapes is cut (no thread span on top). Record the result."
+  },
   "measurements": [
     {
       "id": "ends-1",

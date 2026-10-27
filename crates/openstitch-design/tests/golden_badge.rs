@@ -23,8 +23,9 @@ fn golden_project_compiles_to_recorded_statistics() {
     // the satin's 20 mm crossings stay whole, as PE-DESIGN writes them (3074 before), 4 more
     // because the running outline ties in and locks as PE-DESIGN's lines do (2953 before), then
     // 17 fewer when the satin started at its outline's first point with PE's opening row
-    // (2957 before).
-    assert_eq!(p.count(Command::Stitch), 2940);
+    // (2957 before), then 3 fewer because a stitch that repeats the needle point just sewn is
+    // dropped, as PE-DESIGN writes no zero-length stitch record (2940 before).
+    assert_eq!(p.count(Command::Stitch), 2937);
     assert_eq!(p.count(Command::Jump), 3);
     assert_eq!(p.count(Command::Trim), 3);
     assert_eq!(p.count(Command::ColorChange), 2);

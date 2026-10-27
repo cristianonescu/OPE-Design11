@@ -170,6 +170,12 @@ pub(crate) fn prepare(input: &StitchPattern) -> StitchPattern {
     p.interpolating_long_moves(MAX_DELTA, MAX_DELTA)
 }
 
+/// Metadata key for the PEC label when it differs from the design name. PE-DESIGN 11 labels the
+/// PEC section with the first 8 characters of the file name it saves to, whatever the Design
+/// Property name (compat/reference: `pes-design-properties.pes` is named "Rose" and labelled
+/// "pes-desi"); `design.export` sets this key from the output path.
+pub const LABEL_KEY: &str = "pec.label";
+
 /// The PEC label: the first 8 characters of the name, space padded to 16 bytes.
 ///
 /// Padding by characters would misalign the header for non-ASCII names, so this keeps whole
@@ -202,7 +208,14 @@ pub(crate) fn write_section(input: &StitchPattern, w: &mut ByteWriter) -> Result
     // Header
     let section_start = w.len();
     w.ascii("LA:");
-    w.append(&label_bytes(pattern.name().unwrap_or("Untitled")));
+    let label = pattern
+        .metadata
+        .get(LABEL_KEY)
+        .map(String::as_str)
+        .filter(|s| !s.trim().is_empty())
+        .or_else(|| pattern.name())
+        .unwrap_or("Untitled");
+    w.append(&label_bytes(label));
     w.ascii("\r");
     w.fill(0x20, 12);
     w.append(&[0xFF, 0x00]);

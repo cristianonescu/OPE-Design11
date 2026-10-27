@@ -11,7 +11,9 @@ cargo-fuzz target per reader under `crates/openstitch-formats/fuzz`).
 
 Notes that do not change the fixture bytes:
 - PEC label: the first 8 characters are kept as whole UTF-8 characters that fit in 16 bytes,
-  so non-ASCII names never misalign the 512-byte header.
+  so non-ASCII names never misalign the 512-byte header. `design.export` labels the section
+  with the output file's name (metadata `pec.label`), as PE-DESIGN 11 does whatever the Design
+  Property name says; a pattern without that key is labelled with its name.
 - JEF date: a supplied stamp must be 14 ASCII digits; the default is the current UTC time.
 
 | Format | Read | Write | Evidence level | Notes |
