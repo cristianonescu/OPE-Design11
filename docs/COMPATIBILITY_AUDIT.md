@@ -797,8 +797,13 @@ Line references are relative to `crates/`.
   (specs text-size-h, text-size-hg, text-line-spacing-50/100/150, all at the reference tier).
   OpenStitch now does the same; `.osd` files before version 3 keep the old capital-height
   basis.
-- **Fit Text to Outline:** the dialog's horizontal and vertical alignment, orientation and
-  other-side options are missing, and one text per outline is not enforced.
+- **Fit Text to Outline (calibrated 2026-10-27):** PE-DESIGN 11.50's dialog has Horizontal
+  Alignment left / centre (default) / right / stretched / spaced evenly, Vertical Alignment
+  above (default) / centred / below (by the size, not the capital height), Text Orientation
+  along / upright, and "the other side"; a circle's outline starts at its bottom, and only one
+  text fits an outline. OpenStitch now does the same: specs text-fit-* (eight files) at the
+  reference tier; stretched is implemented but has no comparable reference (PE's file is far
+  off the page). Fitted texts block Text Transform in PE: OpenStitch has no Text Transform yet.
   ([guide](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/05_1810870.html))
 - **Text Transform (envelope presets):** missing.
 - **Sewing order inside a text:** all fills first, then all outlines. Character edits are

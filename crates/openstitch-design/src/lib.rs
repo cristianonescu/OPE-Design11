@@ -44,7 +44,8 @@ pub use model::{
     RegionSewing, RegionType, RunningStitchPath, StitchBlock, UnderlayStyle,
 };
 pub use text::{
-    CharEdit, FONTS, FontInfo, Layout, TextAlign, TextDirection, TextError, TextMetrics, TextSpec,
+    CharEdit, FONTS, FontInfo, Layout, PathFit, Spread, TextAlign, TextDirection, TextError,
+    TextMetrics, TextSpec, VAlign,
 };
 
 #[cfg(test)]

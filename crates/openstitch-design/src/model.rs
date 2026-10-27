@@ -270,10 +270,21 @@ impl Design {
         }
     }
 
-    /// The contour text on a path follows: the first contour of shape object `id`.
-    pub fn path_contour(&self, id: u64) -> Option<&Contour> {
+    /// The contour text on a path follows: the first contour of shape object `id`, from the
+    /// shape's start point (its line's entry, else its region's), as in PE-DESIGN, where the
+    /// outline's start is where left-aligned fitted text begins.
+    pub fn path_contour(&self, id: u64) -> Option<Contour> {
         let o = &self.objects[self.index_of(id)?];
-        (o.kind == ObjectKind::Shape).then(|| o.contours.first())?
+        let c = (o.kind == ObjectKind::Shape).then(|| o.contours.first())??;
+        let start = o
+            .line
+            .as_ref()
+            .and_then(|l| l.entry)
+            .or_else(|| o.region.as_ref().and_then(|r| r.entry));
+        Some(match start {
+            Some(p) if c.closed => c.starting_at(p),
+            _ => c.clone(),
+        })
     }
 
     /// Lays the text of object `index` out again from its [`TextSpec`], following its path
@@ -287,7 +298,7 @@ impl Design {
             return self.layout_text(index);
         }
         let path = spec.path.and_then(|id| self.path_contour(id));
-        let layout = text::layout_in(&spec, path, &self.fonts)?;
+        let layout = text::layout_in(&spec, path.as_ref(), &self.fonts)?;
         spec.glyphs = layout.glyph_counts();
         let o = &mut self.objects[index];
         o.contours = layout.contours();

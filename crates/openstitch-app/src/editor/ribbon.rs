@@ -143,7 +143,7 @@ actions! {
     StampEmboss => "stampEmboss", "Stamp/Emboss", "Emboss or engrave a shape, or place stamps in it.", None, Some("shape.emboss"), true;
     ModifyOverlap => "modifyOverlap", "Modify Overlap", "Merge, remove overlap or combine outlines.", None, Some("shape.combine"), true;
     DecorativeFrame => "decorativeFrame", "Decorative Frame", "Add a frame around the selection.", None, Some("shape.decorative"), true;
-    FitTextToOutline => "fitText", "Fit Text to outline", "Select a text and a shape: the text follows the shape's outline.", None, Some("text.setPath"), true;
+    FitTextToOutline => "fitText", "Fit Text", "Fit Text to Outline: select a text and a shape, and the text follows the shape's outline. Release Text from Outline takes it off again.", None, Some("text.setPath"), true;
     // Home ▸ Wizards.
     BackgroundFill => "backgroundFill", "Background fill", "Fill around the selection with a background stitch.", None, Some("wizard.backgroundFill"), true;
     Applique => "applique", "Applique Wizard", "Placement, tack-down and cover stitching for an appliqué.", None, Some("wizard.applique"), true;
@@ -250,6 +250,7 @@ impl Action {
                 | StampEmboss
                 | ModifyOverlap
                 | DecorativeFrame
+                | FitTextToOutline
                 | SendEmbroidery
                 | SaveImage
                 | ImageDensity

@@ -124,6 +124,7 @@ The fields:
 | `angleOffPerpendicular {stations, radius, minLength}` | Largest deviation from perpendicular of stitches crossing stations on a band |
 | `stitchesOutside {polygon, within}` | Stitch midpoints outside a region |
 | `travelGaps`, `totalJumpLength` | Needle travel across each jump / trim run; total jump length, mm |
+| `polar {center, ring?, ringWithin, property}` | Needle points seen from `center` (mm): `minRadius`, `maxRadius` (mm), `midAngle`, `angleSpan` (degrees clockwise on screen from 12 o'clock); points within `ringWithin` mm (default 0.3) of a circle of radius `ring` (an outline sewn with fitted text) are left out |
 | `needleEnds` | First and last needle point `[x0, y0, x1, y1]`, mm from the top-left of the needle points (a jump landing right before the first stitch counts as the start) |
 | `stitchedArea` | Area covered by 0° fill rows, mm²: each row's needle extent (with the stitches into and out of it from ≤ 0.5 mm away) × the mean row gap. Single points (under sewing across the fill, travel) are not rows |
 | `rowShift {stitchLength, interior}` | Row-to-row needle shift of a 0° fill (Fill Frequency). Only fill rows count: runs with two consecutive interior needle points one stitch length (±0.15 mm) apart. Under sewing, edge runs and travel are skipped |
@@ -324,6 +325,27 @@ only in the jump segment, so after the change above that needle point was lost (
 stitch had carried it before). PE-DESIGN's own re-saved file reopened unchanged. Each stitch run
 after a jump now starts at the landing; PE-DESIGN then reported 56 stitches, and that re-save is
 the reference.
+
+### Lettering (`text-*`): reference, 2026-10-27
+
+Made by pe-gui in PE-DESIGN 11.50 with Lato Bold (OFL, the font OpenStitch bundles),
+installed for the Windows user and used as a TrueType font; no Brother fonts. Fill Stitch
+at its defaults, 800 RED, Save As default type.
+- `text-size-h`, `text-size-hg`: H and Hxg at size 20. PE's letters are 1.03 × OpenStitch's
+  earlier ones in both directions, stems and counters alike, so the size is 0.7 em (Lato's
+  capitals are 1446/2000 em); OpenStitch now matches to the 0.1 mm grid.
+- `text-line-spacing-50/100/150`: two 10 mm lines of H. The pitch is linear in the % ("% of
+  char height", default 100): 7.9 / 15.9 / 23.8 mm, the font's Windows ascent on that em at
+  100 %.
+- `text-fit-*`: ABCDE, 8 mm, fitted to a 60 mm circle sewn in running stitch, with each
+  dialog option changed alone. Measured with `polar` about the circle's centre, leaving out
+  the circle's own needle points. The circle's outline starts and ends at its bottom: left
+  alignment starts the text there and runs clockwise, centre centres it at 12 o'clock.
+  Centred and below drop the text by half the size and the size (not the capital height).
+  `text-fit-otherside` widens `ringWithin` to 0.5 mm: its baseline lies on the circle, and
+  both files have two points 0.27–0.30 mm outside it that the default window splits.
+  Stretched has no spec: PE's file puts the 140 mm text off the page, beyond what the PES
+  reader takes in. Spaced evenly centres each character in an equal share of the outline.
 
 ### `pes-csewseg-trims`: reference, 2026-10-27
 

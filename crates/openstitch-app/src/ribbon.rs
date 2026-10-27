@@ -176,11 +176,31 @@ pub fn fit_pair(app: &EditorApp) -> Option<(u64, u64)> {
     let kind = |id: u64| d.index_of(id).map(|i| d.objects[i].kind);
     let mut it = app.selection.iter().copied();
     let (a, b) = (it.next()?, it.next()?);
-    match (kind(a), kind(b)) {
-        (Some(ObjectKind::Text), Some(ObjectKind::Shape)) => Some((a, b)),
-        (Some(ObjectKind::Shape), Some(ObjectKind::Text)) => Some((b, a)),
-        _ => None,
-    }
+    let (text, shape) = match (kind(a), kind(b)) {
+        (Some(ObjectKind::Text), Some(ObjectKind::Shape)) => (a, b),
+        (Some(ObjectKind::Shape), Some(ObjectKind::Text)) => (b, a),
+        _ => return None,
+    };
+    // One text per outline: PE-DESIGN greys Fit Text when another text is fitted to it.
+    let taken = d
+        .objects
+        .iter()
+        .any(|o| o.id != text && o.text.as_ref().is_some_and(|t| t.path == Some(shape)));
+    (!taken).then_some((text, shape))
+}
+
+/// Selected texts that are fitted to an outline.
+pub fn fitted_texts(app: &EditorApp) -> Vec<u64> {
+    let d = app.session.design();
+    app.selection
+        .iter()
+        .copied()
+        .filter(|&id| {
+            d.index_of(id)
+                .and_then(|i| d.objects[i].text.as_ref())
+                .is_some_and(|t| t.path.is_some())
+        })
+        .collect()
 }
 
 fn clipboard_ids(app: &EditorApp) -> BTreeSet<u64> {
@@ -217,7 +237,7 @@ pub fn enabled(app: &EditorApp, a: Action) -> bool {
         Ungroup => edit_ui::can_ungroup(app),
         StampEmboss => edit_ui::single_shape(app).is_some() || app.selection.len() == 2,
         ModifyOverlap => many,
-        FitTextToOutline => fit_pair(app).is_some(),
+        FitTextToOutline => fit_pair(app).is_some() || !fitted_texts(app).is_empty(),
         Export | Print | SendEmbroidery => drawn,
         ExportSections => crate::sections_ui::has_sections(app),
         ImageDensity | DeleteImage => background,
@@ -453,14 +473,6 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
         ImportSvg => app.import_svg_dialog(),
         Group => edit_ui::group(app),
         Ungroup => edit_ui::ungroup(app),
-        FitTextToOutline => {
-            if let Some((text, shape)) = fit_pair(app) {
-                app.execute(&CommandRequest::new(
-                    "text.setPath",
-                    json!({ "id": text, "path": shape }),
-                ));
-            }
-        }
         BackgroundFill => app.pattern_wizards.open = Some(WizardKind::Background),
         Applique => app.pattern_wizards.open = Some(WizardKind::Applique),
         Patch => app.pattern_wizards.open = Some(WizardKind::Patch),
@@ -556,9 +568,9 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
         | Running | Feed | SatinSkeleton => {}
         Print | Wizard | Export | Options | Help | TextTools | ShapesTools | OtherZoom
         | Arrange | RotateFlip | Size | StampEmboss | ModifyOverlap | DecorativeFrame
-        | SendEmbroidery | SaveImage | ImageDensity | GridSpacing | Font | TextSize | EditText
-        | LineColor | LineSewType | RegionColor | RegionSewType | EntryExit | SewingPoints
-        | EdgeRadius | ChangeColor | SkeletonWidth | EditCharacter => {}
+        | FitTextToOutline | SendEmbroidery | SaveImage | ImageDensity | GridSpacing | Font
+        | TextSize | EditText | LineColor | LineSewType | RegionColor | RegionSewType
+        | EntryExit | SewingPoints | EdgeRadius | ChangeColor | SkeletonWidth | EditCharacter => {}
     }
 }
 
@@ -673,6 +685,34 @@ pub fn menu(app: &mut EditorApp, a: Action, ui: &mut egui::Ui) {
                 if ui.button(format!("{p:.0} %")).clicked() {
                     zoom_to_percent(app, p);
                 }
+            }
+        }
+        FitTextToOutline => {
+            let pair = fit_pair(app);
+            if ui
+                .add_enabled(pair.is_some(), egui::Button::new("Fit Text to Outline…"))
+                .on_hover_text("Select one text and one shape")
+                .clicked()
+                && let Some((text, shape)) = pair
+            {
+                crate::lettering_ui::open_fit(app, text, shape);
+            }
+            let fitted = fitted_texts(app);
+            if ui
+                .add_enabled(
+                    !fitted.is_empty(),
+                    egui::Button::new("Release Text from Outline"),
+                )
+                .clicked()
+            {
+                app.grouped(|a| {
+                    for id in fitted {
+                        a.execute(&CommandRequest::new(
+                            "text.setPath",
+                            json!({ "id": id, "path": null }),
+                        ));
+                    }
+                });
             }
         }
         Arrange => {
@@ -1783,6 +1823,24 @@ mod tests {
         app.selection = BTreeSet::from([text, 2]);
         assert_eq!(update_tab(&mut app), [TabId::Text, TabId::Shapes]);
         assert!(enabled(&app, Action::FitTextToOutline));
+        // Fit Text ▸ Fit Text to Outline…: the dialog's OK fits it with its options.
+        crate::lettering_ui::open_fit(&mut app, text, 2);
+        app.lettering.fit.valign = openstitch_design::VAlign::Middle;
+        app.lettering.fit.other_side = true;
+        let r = crate::lettering_ui::fit_request(&app.lettering.fit, text, 2);
+        app.execute(&r);
+        let d = app.session.design();
+        let t = d.objects[d.index_of(text).expect("text")]
+            .text
+            .clone()
+            .expect("spec");
+        assert_eq!(t.path, Some(2));
+        assert!(t.fit.other_side && t.fit.valign == openstitch_design::VAlign::Middle);
+        assert_eq!(fitted_texts(&app), vec![text]);
+        app.execute(&CommandRequest::new(
+            "text.setPath",
+            json!({ "id": text, "path": null }),
+        ));
         assert!(enabled(&app, Action::Font) && enabled(&app, Action::RegionColor));
         app.selection = BTreeSet::from([text]);
         let ctx = egui::Context::default();

@@ -197,6 +197,70 @@ fn text_follows_its_path() {
 }
 
 #[test]
+fn fit_text_to_outline_options_and_one_text_per_outline() {
+    let mut s = Session::new(temp_dir());
+    run(
+        &mut s,
+        "shape.ellipse",
+        json!({"cx": 50, "cy": 50, "rx": 30}),
+    );
+    run(&mut s, "text.add", json!({"text": "ABCDE", "size": 8}));
+    run(&mut s, "text.add", json!({"text": "XY", "size": 8}));
+    run(
+        &mut s,
+        "text.setPath",
+        json!({"id": 2, "path": 1, "align": "center", "valign": "middle", "otherSide": true}),
+    );
+    let t = s.design().objects[1].text.clone().expect("text");
+    assert_eq!(t.path, Some(1));
+    assert_eq!(t.fit.valign, openstitch_design::VAlign::Middle);
+    assert!(t.fit.other_side && !t.fit.upright);
+    // A second text on the same outline is refused and changes nothing.
+    let before = s.design().clone();
+    let e = s
+        .execute("text.setPath", Some(&json!({"id": 3, "path": 1})))
+        .expect_err("second text");
+    assert!(e.to_string().contains("only one text"), "{e}");
+    assert!(
+        s.execute("text.add", Some(&json!({"text": "Z", "path": 1})))
+            .is_err()
+    );
+    assert_eq!(s.design(), &before);
+    // Released, the outline takes another text; fitting again keeps the text's own options.
+    run(&mut s, "text.setPath", json!({"id": 2, "path": null}));
+    run(
+        &mut s,
+        "text.setPath",
+        json!({"id": 3, "path": 1, "upright": true}),
+    );
+    let t = s.design().objects[2].text.clone().expect("text");
+    // First fitted: centred, as PE-DESIGN's dialog defaults.
+    assert!(t.fit.upright && t.align == openstitch_design::TextAlign::Center);
+    run(
+        &mut s,
+        "text.setPath",
+        json!({"id": 3, "path": 1, "align": "spaced"}),
+    );
+    let t = s.design().objects[2].text.clone().expect("text");
+    assert_eq!(t.fit.spread, openstitch_design::Spread::Even);
+    assert!(t.fit.upright, "other options kept");
+    run(
+        &mut s,
+        "text.setPath",
+        json!({"id": 3, "path": 1, "align": "right"}),
+    );
+    let t = s.design().objects[2].text.clone().expect("text");
+    assert_eq!(t.fit.spread, openstitch_design::Spread::None);
+    assert_eq!(t.align, openstitch_design::TextAlign::Right);
+    for bad in [
+        json!({"id": 3, "path": 1, "valign": "above"}),
+        json!({"id": 3, "path": 1, "otherSide": 2}),
+    ] {
+        assert!(s.execute("text.setPath", Some(&bad)).is_err(), "{bad}");
+    }
+}
+
+#[test]
 fn convert_to_shapes_keeps_the_stitches() {
     let mut s = Session::new(temp_dir());
     run(

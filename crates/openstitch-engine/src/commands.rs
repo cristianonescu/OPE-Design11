@@ -565,6 +565,12 @@ fn add_shape_ending(
         r.entry = Some(at);
         r.exit = Some(at);
     }
+    // The outline is sewn from the same point (PE-DESIGN sews a circle's line from its bottom),
+    // and text fitted to it starts there.
+    let mut line = line;
+    if let (Some(l), Some(at)) = (line.as_mut(), point) {
+        l.entry = Some(at);
+    }
     let mut object = DesignObject::shape(vec![contour], region, line);
     object.name = object_name(p)?;
     Ok(json!({ "id": s.design.add(object) }))
@@ -1974,9 +1980,22 @@ fn path_param(s: &EngineState, p: &Params, text_id: u64) -> Result<Option<u64>, 
         return Err(p.not_found(format!("path object {id}")));
     }
     match s.design.path_contour(id) {
-        Some(c) if id != text_id && c.points.len() >= 2 => Ok(Some(id)),
-        _ => Err(p.invalid("path", "must be the id of a shape object with an outline")),
+        Some(c) if id != text_id && c.points.len() >= 2 => {}
+        _ => return Err(p.invalid("path", "must be the id of a shape object with an outline")),
     }
+    // As in PE-DESIGN, only one text can be fitted to an outline.
+    if let Some(other) = s
+        .design
+        .objects
+        .iter()
+        .find(|o| o.id != text_id && o.text.as_ref().is_some_and(|t| t.path == Some(id)))
+    {
+        return Err(p.failed(format!(
+            "text {} is already fitted to object {id}; only one text fits an outline",
+            other.id
+        )));
+    }
+    Ok(Some(id))
 }
 
 /// Lays out object `i` again and checks the result is sewable and of sane size.
@@ -2168,14 +2187,34 @@ fn text_commands() -> Vec<CommandSpec> {
         ),
         spec(
             "text.setPath",
-            "Lay text along a shape's outline (text on a path), or take it off with path null",
+            "Fit text to a shape's outline (text on a path), or release it with path null. One text per outline",
             Effect::Edit,
             vec![
                 req("id", "int", "Text object"),
                 opt(
                     "path",
                     "int | null",
-                    "Shape object to follow; null or omitted detaches",
+                    "Shape object to follow; null or omitted releases",
+                ),
+                opt(
+                    "align",
+                    "string",
+                    "Along the outline from its start: left, center (default when first fitted), right, spaced (evenly round the whole outline) or stretch (letters scaled to fill it)",
+                ),
+                opt(
+                    "valign",
+                    "string",
+                    "Across the outline: bottom (baseline on it, default), middle or top",
+                ),
+                opt(
+                    "upright",
+                    "bool",
+                    "Letters stay upright instead of turning with the outline (default false)",
+                ),
+                opt(
+                    "otherSide",
+                    "bool",
+                    "Run on the other side of the outline, following it the other way (default false)",
                 ),
             ],
             |s, p| {
@@ -2183,8 +2222,36 @@ fn text_commands() -> Vec<CommandSpec> {
                 let i = text_index(s, p, id)?;
                 match path_param(s, p, id)? {
                     Some(path) => {
+                        let old = s.design.objects[i].text.clone().expect("text object");
+                        // A text fitted for the first time starts from the dialog's defaults:
+                        // centred, above the line, turned along it, this side.
+                        let (fit, align) = if old.path.is_some() {
+                            (old.fit, old.align)
+                        } else {
+                            (openstitch_design::PathFit::default(), TextAlign::Center)
+                        };
+                        let (align, spread) = match p.has("align").then(|| p.string("align", None))
+                        {
+                            None => (align, fit.spread),
+                            Some(a) => match a?.as_str() {
+                                "spaced" => (align, openstitch_design::Spread::Even),
+                                "stretch" => (align, openstitch_design::Spread::Fill),
+                                _ => (
+                                    crate::lettering::align_param(p, align)?,
+                                    openstitch_design::Spread::None,
+                                ),
+                            },
+                        };
+                        let fit = openstitch_design::PathFit {
+                            valign: crate::lettering::valign_param(p, fit.valign)?,
+                            upright: p.bool("upright", Some(fit.upright))?,
+                            spread,
+                            other_side: p.bool("otherSide", Some(fit.other_side))?,
+                        };
                         let t = s.design.objects[i].text.as_mut().expect("text object");
                         t.path = Some(path);
+                        t.fit = fit;
+                        t.align = align;
                         t.transform = Transform::IDENTITY;
                     }
                     None => s.design.detach_text(i),
@@ -2209,7 +2276,7 @@ fn text_commands() -> Vec<CommandSpec> {
                     let o = s.design.objects.remove(i);
                     let spec = o.text.clone().expect("text object");
                     let path = spec.path.and_then(|id| s.design.path_contour(id));
-                    let chars: Vec<char> = text::layout_in(&spec, path, &s.design.fonts)
+                    let chars: Vec<char> = text::layout_in(&spec, path.as_ref(), &s.design.fonts)
                         .map(|l| l.outlined().map(|g| g.ch).collect())
                         .unwrap_or_default();
                     // Stitch glyphs (user-mapped text) become one stitch pattern object.

@@ -65,7 +65,7 @@ pub struct CharacterOverlay {
 /// Outlines of character `index` of `spec` laid out in `design` (its path and fonts).
 fn outlines(design: &Design, spec: &TextSpec, index: usize) -> Vec<Contour> {
     let path = spec.path.and_then(|id| design.path_contour(id));
-    openstitch_design::text::layout_in(spec, path, &design.fonts)
+    openstitch_design::text::layout_in(spec, path.as_ref(), &design.fonts)
         .map(|l| {
             l.glyphs
                 .into_iter()
@@ -121,7 +121,7 @@ pub fn character_frame(design: &Design, o: &DesignObject, index: usize) -> Optio
 pub fn character_at(design: &Design, o: &DesignObject, p: Vec2, tolerance: f64) -> Option<usize> {
     let spec = o.text.as_ref()?;
     let path = spec.path.and_then(|id| design.path_contour(id));
-    let layout = openstitch_design::text::layout_in(spec, path, &design.fonts).ok()?;
+    let layout = openstitch_design::text::layout_in(spec, path.as_ref(), &design.fonts).ok()?;
     let mut by_index: Vec<(usize, Vec<Contour>)> = Vec::new();
     for g in layout.glyphs {
         match by_index.iter_mut().find(|(i, _)| *i == g.index) {

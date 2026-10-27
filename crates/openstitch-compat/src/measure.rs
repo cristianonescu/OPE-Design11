@@ -69,6 +69,22 @@ fn default_within() -> f64 {
     0.05
 }
 
+fn default_ring_within() -> f64 {
+    0.3
+}
+
+/// What [`Measure::Polar`] reports.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PolarProperty {
+    MinRadius,
+    MaxRadius,
+    /// Middle of the angular span, degrees.
+    MidAngle,
+    /// Width of the angular span, degrees.
+    AngleSpan,
+}
+
 fn default_bin() -> f64 {
     1.0
 }
@@ -92,6 +108,18 @@ pub enum Measure {
     BlockStitchCounts,
     /// One bound of the stitches and jumps, mm.
     Bounds { property: BoundsProperty },
+    /// Needle points (stitch entries) seen from `center` (mm), with angles clockwise on screen
+    /// from 12 o'clock (−y), in (−180, 180], and radii in mm. Points within `ringWithin` mm of
+    /// the circle of radius `ring` about the centre (an outline sewn with text fitted to it)
+    /// are left out. The angular span is the circle minus its largest gap between points.
+    Polar {
+        center: [f64; 2],
+        #[serde(default)]
+        ring: Option<f64>,
+        #[serde(default = "default_ring_within", rename = "ringWithin")]
+        ring_within: f64,
+        property: PolarProperty,
+    },
     /// Statistic of stitch lengths (consecutive stitch entries), mm; stitches shorter than
     /// `minLength` are left out.
     StitchLength {
@@ -226,6 +254,7 @@ impl Measure {
             Self::ColorBlocks => "colorBlocks",
             Self::BlockStitchCounts => "blockStitchCounts",
             Self::Bounds { .. } => "bounds",
+            Self::Polar { .. } => "polar",
             Self::StitchLength { .. } => "stitchLength",
             Self::StitchLengthHistogram { .. } => "stitchLengthHistogram",
             Self::EdgeStitches { .. } => "edgeStitches",
@@ -386,6 +415,12 @@ impl Measure {
                     BoundsProperty::MaxY => b.3,
                 })
             }
+            Self::Polar {
+                center,
+                ring,
+                ring_within,
+                property,
+            } => json!(polar(t, *center, *ring, *ring_within, *property)?),
             Self::StitchLength { stat, min_length } => {
                 let mut v: Vec<f64> = stitch_lengths(t)
                     .into_iter()
@@ -728,9 +763,90 @@ fn row_shifts(t: &Trace, l: f64, interior: [f64; 2]) -> Vec<f64> {
         .collect()
 }
 
+/// See [`Measure::Polar`].
+fn polar(
+    t: &Trace,
+    center: [f64; 2],
+    ring: Option<f64>,
+    within: f64,
+    property: PolarProperty,
+) -> Result<f64, String> {
+    let points: Vec<(f64, f64)> = t
+        .stitches()
+        .map(|e| {
+            let (dx, dy) = (e.x - center[0], e.y - center[1]);
+            (dx.atan2(-dy).to_degrees(), dx.hypot(dy))
+        })
+        .filter(|&(_, r)| ring.is_none_or(|ring| (r - ring).abs() > within))
+        .collect();
+    if points.is_empty() {
+        return Err("no needle points off the ring".into());
+    }
+    let radii = || points.iter().map(|p| p.1);
+    match property {
+        PolarProperty::MinRadius => return Ok(radii().fold(f64::INFINITY, f64::min)),
+        PolarProperty::MaxRadius => return Ok(radii().fold(0.0, f64::max)),
+        _ => {}
+    }
+    let mut a: Vec<f64> = points.iter().map(|p| p.0.rem_euclid(360.0)).collect();
+    a.sort_by(f64::total_cmp);
+    // The largest gap, the wrap from the last angle round to the first included.
+    let (mut gap, mut after) = (a[0] + 360.0 - a[a.len() - 1], a[0]);
+    for w in a.windows(2) {
+        if w[1] - w[0] > gap {
+            (gap, after) = (w[1] - w[0], w[1]);
+        }
+    }
+    let span = 360.0 - gap;
+    Ok(match property {
+        PolarProperty::AngleSpan => span,
+        _ => {
+            let mid = (after + span / 2.0).rem_euclid(360.0);
+            if mid > 180.0 { mid - 360.0 } else { mid }
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn polar_measures_angles_and_radii_off_the_ring() {
+        // A 30 mm ring about (50, 50), and points 32–38 mm out from 30° left of 12 o'clock to
+        // 30° right of it, plus a stray point on the ring at 6 o'clock.
+        let mut p: Vec<(f64, f64)> = (0..=60)
+            .map(|k| {
+                let a = f64::from(k - 30).to_radians();
+                let r = 32.0 + 6.0 * f64::from(k % 2);
+                (50.0 + r * a.sin(), 50.0 - r * a.cos())
+            })
+            .collect();
+        p.extend((0..36).map(|k| {
+            let a = f64::from(k * 10).to_radians();
+            (50.0 + 30.0 * a.sin(), 50.0 - 30.0 * a.cos())
+        }));
+        let t = trace(&p);
+        let m = |property| polar(&t, [50.0, 50.0], Some(30.0), 0.3, property).expect("polar");
+        assert!((m(PolarProperty::MidAngle)).abs() < 1e-9);
+        assert!((m(PolarProperty::AngleSpan) - 60.0).abs() < 1e-9);
+        assert!((m(PolarProperty::MinRadius) - 32.0).abs() < 1e-9);
+        assert!((m(PolarProperty::MaxRadius) - 38.0).abs() < 1e-9);
+        // Round the bottom (across ±180°), and without a ring every point counts.
+        let flipped = trace(&p.iter().map(|&(x, y)| (x, 100.0 - y)).collect::<Vec<_>>());
+        let mid = polar(
+            &flipped,
+            [50.0, 50.0],
+            Some(30.0),
+            0.3,
+            PolarProperty::MidAngle,
+        )
+        .expect("polar");
+        assert!((mid.abs() - 180.0).abs() < 1e-9, "{mid}");
+        let all = polar(&t, [50.0, 50.0], None, 0.3, PolarProperty::MinRadius).expect("polar");
+        assert!((all - 30.0).abs() < 1e-9);
+        assert!(polar(&trace(&[]), [0.0, 0.0], None, 0.3, PolarProperty::MinRadius).is_err());
+    }
 
     fn trace(points: &[(f64, f64)]) -> Trace {
         Trace {

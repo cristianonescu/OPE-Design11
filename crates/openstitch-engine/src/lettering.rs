@@ -537,7 +537,7 @@ pub fn write_csv(rows: &[Vec<String>]) -> String {
     out
 }
 
-fn align_param(p: &Params, default: TextAlign) -> Result<TextAlign, CommandError> {
+pub(crate) fn align_param(p: &Params, default: TextAlign) -> Result<TextAlign, CommandError> {
     if !p.has("align") {
         return Ok(default);
     }
@@ -549,7 +549,7 @@ fn align_param(p: &Params, default: TextAlign) -> Result<TextAlign, CommandError
     })
 }
 
-fn valign_param(p: &Params, default: VAlign) -> Result<VAlign, CommandError> {
+pub(crate) fn valign_param(p: &Params, default: VAlign) -> Result<VAlign, CommandError> {
     if !p.has("valign") {
         return Ok(default);
     }

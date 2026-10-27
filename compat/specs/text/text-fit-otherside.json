@@ -1,0 +1,165 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "text-fit-otherside",
+  "area": "text",
+  "title": "Fit Text to Outline: the other side ticked",
+  "description": "ABCDE (Lato Bold, 8 mm) fitted to a 60 mm circle sewn in running stitch, the other side ticked, the others at their defaults: on the inside, reading the other way. Measured from the circle's centre on the text's needle points.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Lettering",
+        "feature": "Fit text to outline (text on a path)"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/05_1810870.html",
+      "note": "Fit Text to Outline: horizontal and vertical alignment, text orientation, the other side; one text per outline"
+    },
+    {
+      "kind": "measured",
+      "note": "compat/reference/text/text-fit-otherside.pes, PE-DESIGN 11.50 (pe-gui); survey in the text track notes"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 50,
+        "cy": 50,
+        "rx": 30,
+        "outline": "Red"
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "ABCDE",
+        "font": "lato-bold",
+        "size": 8,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "text.setPath",
+      "params": {
+        "id": 2,
+        "path": 1,
+        "otherSide": true
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "text.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "text/text-fit-otherside.pes",
+      "make": "On a 100 × 100 mm Design Page (File > New), with Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user and used as a TrueType font. Draw a circle with the Ellipse tool, 60.0 × 60.0 mm, centred on (50, 50) mm, line Running Stitch, region Not Sewn. Add the text ABCDE in Lato Bold, size 8.0 mm, colour 800 RED, region Fill Stitch at its defaults, line Not Sewn. Select the text and the circle, Home > Edit > Fit Text > Fit Text to Outline, the other side ticked, the others at their defaults, OK. Save As PES (default type) as compat/reference/text/text-fit-otherside.pes and record in compat/reference/MANIFEST.json the PE-DESIGN version, date, OS, the font as PE lists it, every option of the dialog and every setting you changed (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "mid-angle",
+      "measure": {
+        "kind": "polar",
+        "center": [
+          50,
+          50
+        ],
+        "ring": 30,
+        "property": "midAngle",
+        "ringWithin": 0.5
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: needle points off the 30 mm circle, seen from its centre; ringWithin 0.5 mm: the text's baseline lies on the circle here, and both PE's file and OpenStitch's have two needle points 0.27-0.30 mm outside it, which the default 0.3 mm window splits by a few thousandths (PE 30.3002 kept, OpenStitch 30.30 dropped)",
+      "reference": {
+        "tolerance": {
+          "deg": 3,
+          "modulo": 360
+        }
+      }
+    },
+    {
+      "id": "angle-span",
+      "measure": {
+        "kind": "polar",
+        "center": [
+          50,
+          50
+        ],
+        "ring": 30,
+        "property": "angleSpan",
+        "ringWithin": 0.5
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: needle points off the 30 mm circle, seen from its centre; ringWithin 0.5 mm: the text's baseline lies on the circle here, and both PE's file and OpenStitch's have two needle points 0.27-0.30 mm outside it, which the default 0.3 mm window splits by a few thousandths (PE 30.3002 kept, OpenStitch 30.30 dropped)",
+      "reference": {
+        "tolerance": {
+          "deg": 4
+        }
+      }
+    },
+    {
+      "id": "min-radius",
+      "measure": {
+        "kind": "polar",
+        "center": [
+          50,
+          50
+        ],
+        "ring": 30,
+        "property": "minRadius",
+        "ringWithin": 0.5
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: needle points off the 30 mm circle, seen from its centre; ringWithin 0.5 mm: the text's baseline lies on the circle here, and both PE's file and OpenStitch's have two needle points 0.27-0.30 mm outside it, which the default 0.3 mm window splits by a few thousandths (PE 30.3002 kept, OpenStitch 30.30 dropped)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "max-radius",
+      "measure": {
+        "kind": "polar",
+        "center": [
+          50,
+          50
+        ],
+        "ring": 30,
+        "property": "maxRadius",
+        "ringWithin": 0.5
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: needle points off the 30 mm circle, seen from its centre; ringWithin 0.5 mm: the text's baseline lies on the circle here, and both PE's file and OpenStitch's have two needle points 0.27-0.30 mm outside it, which the default 0.3 mm window splits by a few thousandths (PE 30.3002 kept, OpenStitch 30.30 dropped)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    }
+  ]
+}
