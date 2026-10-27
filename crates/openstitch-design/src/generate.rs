@@ -185,10 +185,18 @@ pub fn fill_edge_to_edge(
     let l = p.stitch_length;
     let spans = edge_row_spans(contours, p, holes);
     let start = entry.map(|e| e.rotated(-p.angle.to_radians()));
+    // The needle grid moves on in sewing order, as in PE-DESIGN 11: a fill sewn from its last
+    // row (an entry at the bottom of a rectangle) counts the rows from there.
+    let last = spans.iter().map(|s| s.row).max().unwrap_or(0);
+    let from_last = match (start, spans.first(), spans.last()) {
+        (Some(st), Some(f), Some(e)) => (st.y - f.y).abs() > (st.y - e.y).abs(),
+        _ => false,
+    };
     chain(
         &spans,
         p,
         |span, row, forward| {
+            let row = if from_last { last - row } else { row };
             let mut xs = tatami_xs(span, row_phase(row, shift) * l, l);
             if !forward {
                 xs.reverse();

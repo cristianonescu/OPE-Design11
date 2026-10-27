@@ -151,6 +151,10 @@ pub enum Measure {
     TravelGaps,
     /// Length of every jump move, mm.
     TotalJumpLength,
+    /// Where the needle starts and ends: `[x0, y0, x1, y1]`, mm from the top-left of the needle
+    /// points' bounds. The start is the landing of the jump right before the first stitch (a
+    /// needle point in PE-DESIGN's files), or else the first stitch; the end is the last stitch.
+    NeedleEnds,
     /// Area covered by straight (horizontal, 0°) fill rows: each row's needle extent (with the
     /// stitches into and out of it from the neighbouring rows), summed, times the mean row
     /// spacing, mm². Single points (under sewing across, travel) are not rows.
@@ -232,6 +236,7 @@ impl Measure {
             Self::StitchesOutside { .. } => "stitchesOutside",
             Self::TravelGaps => "travelGaps",
             Self::TotalJumpLength => "totalJumpLength",
+            Self::NeedleEnds => "needleEnds",
             Self::StitchedArea => "stitchedArea",
             Self::RowShift { .. } => "rowShift",
             Self::PesVersion => "pesVersion",
@@ -499,6 +504,7 @@ impl Measure {
                     .count()
             ),
             Self::TravelGaps => json!(travel_gaps(t)),
+            Self::NeedleEnds => json!(needle_ends(t).ok_or("no stitches")?),
             Self::TotalJumpLength => {
                 let mut total = 0.0;
                 for w in t.entries.windows(2) {
@@ -599,6 +605,30 @@ fn interior_moves(t: &Trace, command: Command) -> usize {
             }
         })
         .sum()
+}
+
+fn needle_ends(t: &Trace) -> Option<[f64; 4]> {
+    let e = &t.entries;
+    let first = e.iter().position(|x| x.command == Command::Stitch)?;
+    let last = e.iter().rposition(|x| x.command == Command::Stitch)?;
+    let start = if first > 0 && e[first - 1].command == Command::Jump {
+        first - 1
+    } else {
+        first
+    };
+    let needle = || {
+        e[start..=last]
+            .iter()
+            .filter(|x| matches!(x.command, Command::Stitch | Command::Jump))
+    };
+    let min_x = needle().map(|x| x.x).fold(f64::INFINITY, f64::min);
+    let min_y = needle().map(|x| x.y).fold(f64::INFINITY, f64::min);
+    Some([
+        e[start].x - min_x,
+        e[start].y - min_y,
+        e[last].x - min_x,
+        e[last].y - min_y,
+    ])
 }
 
 fn travel_gaps(t: &Trace) -> Vec<f64> {
@@ -817,5 +847,34 @@ mod tests {
         }
         let a = stitched_area(&trace(&p)).expect("rows");
         assert!((a - 1500.0).abs() < 0.02 * 1500.0, "{a}");
+    }
+
+    #[test]
+    fn needle_ends_start_at_the_jump_landing() {
+        // A 20 × 10 mm square outline from (5, 3), entered by a jump at the middle of its
+        // bottom edge and ending there.
+        let mut t = trace(&[
+            (15.0, 13.0),
+            (25.0, 13.0),
+            (25.0, 3.0),
+            (5.0, 3.0),
+            (5.0, 13.0),
+            (15.0, 13.0),
+        ]);
+        t.entries.insert(
+            0,
+            Entry {
+                x: 15.0,
+                y: 13.0,
+                command: Command::Jump,
+                block: 0,
+            },
+        );
+        t.entries[1].x = 15.3;
+        assert_eq!(needle_ends(&t), Some([10.0, 10.0, 10.0, 10.0]));
+        // Without a jump the first stitch is the start.
+        let t = trace(&[(0.0, 0.0), (4.0, 2.0)]);
+        assert_eq!(needle_ends(&t), Some([0.0, 0.0, 4.0, 2.0]));
+        assert_eq!(needle_ends(&Trace::default()), None);
     }
 }

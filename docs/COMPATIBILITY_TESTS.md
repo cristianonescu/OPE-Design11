@@ -124,6 +124,7 @@ The fields:
 | `angleOffPerpendicular {stations, radius, minLength}` | Largest deviation from perpendicular of stitches crossing stations on a band |
 | `stitchesOutside {polygon, within}` | Stitch midpoints outside a region |
 | `travelGaps`, `totalJumpLength` | Needle travel across each jump / trim run; total jump length, mm |
+| `needleEnds` | First and last needle point `[x0, y0, x1, y1]`, mm from the top-left of the needle points (a jump landing right before the first stitch counts as the start) |
 | `stitchedArea` | Area covered by 0° fill rows, mm²: each row's needle extent (with the stitches into and out of it from ≤ 0.5 mm away) × the mean row gap. Single points (under sewing across the fill, travel) are not rows |
 | `rowShift {stitchLength, interior}` | Row-to-row needle shift of a 0° fill (Fill Frequency). Only fill rows count: runs with two consecutive interior needle points one stitch length (±0.15 mm) apart. Under sewing, edge runs and travel are skipped |
 | `pesVersion`, `pesClasses`, `pesSummary`, `metadata {key}`, `threads` | PES object section, header strings, thread table |
@@ -175,6 +176,7 @@ The specs convert the audit's tests. The Rust tests (`satin_compat.rs`, `region_
 | 14 Programmable fill 45° | `programmable-fill-45` |
 | 15 Frequency and ranges | `fill-frequency-0`, `-25`, `-50`, `-default`, `attribute-ranges` |
 | 16 Optimize entry/exit | `optimize-entry-exit` |
+| Shape-tool start points | `shape-start-points` |
 | 17 Hole sewing | `hole-sewing-pentagon-star`, `hole-sewing-limits` |
 | 18 PES thread chart | `pes-thread-chart-roundtrip` (oracle) |
 | 19 Design Property | `pes-design-properties` |
