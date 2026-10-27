@@ -157,36 +157,42 @@ fn motif_line_closes_on_a_closed_contour() {
 
 #[test]
 fn stem_stitches_slant_across_the_line() {
+    // PE-DESIGN's stem: 21 stations (300 / 15 = 20 intervals), each sewn top, bottom, top,
+    // bottom, between the line's start and end points.
     let run = lines::stem(&hline(300.0), 20.0, 15.0, 45.0, false);
-    // 21 stitches, each sewn three times (four points), from below to above the line.
-    assert_eq!(run.len(), 21 * 4);
-    assert!(run.iter().all(|p| p.y.abs() <= 10.0 + 1e-9));
+    assert_eq!(run.len(), 21 * 4 + 2);
+    assert_eq!(run.first().copied(), Some(v2(0.0, 0.0)));
+    assert_eq!(run.last().copied(), Some(v2(300.0, 0.0)));
+    assert!(run.iter().all(|p| p.y.abs() <= 11.0 + 1e-9));
     let slant = 20.0 / 45f64.to_radians().sin();
-    assert!(longest(&run) <= slant + 15.0 + 1e-9);
-    assert!((run[0].distance(run[1]) - slant).abs() < 1e-9);
+    assert!((run[1].distance(run[2]) - slant).abs() < 1e-9);
+    // 45°: from the top right to the bottom left (y down).
+    assert!(run[1].x > run[2].x && run[1].y < run[2].y);
     let single = lines::stem(&hline(300.0), 20.0, 15.0, 90.0, true);
-    assert_eq!(single.len(), 21 * 2);
+    assert_eq!(single.len(), 21 * 2 + 2);
     assert!(
-        (single[0].x - single[1].x).abs() < 1e-9,
+        (single[1].x - single[2].x).abs() < 1e-9,
         "90° is perpendicular"
     );
 }
 
 #[test]
 fn candlewick_knots_sit_on_the_line() {
-    let run = lines::candlewick(&hline(200.0), 20.0, 6, 50.0, 25.0);
+    // Knots at 0, 50, 100, 150, 200 (200 / (20 + 30) = 4 intervals), each a {24/11} star
+    // visiting all 24 points of its circle.
+    let run = lines::candlewick(&hline(200.0), 20.0, 24, 30.0, 25.0);
     assert!(longest(&run) <= 25.0 + 1e-9);
     assert!(run.iter().all(|p| p.y.abs() <= 10.0 + 1e-9));
-    // Knots at 0, 50, 100, 150, 200: six spoke tips each.
-    let tips = run
-        .iter()
-        .filter(|p| {
-            [0.0, 50.0, 100.0, 150.0, 200.0]
-                .iter()
-                .any(|&x| (v2(x, 0.0).distance(**p) - 10.0).abs() < 1e-9)
-        })
-        .count();
-    assert_eq!(tips, 5 * 6);
+    for x in [0.0, 50.0, 100.0, 150.0, 200.0] {
+        let mut on: Vec<Vec2> = run
+            .iter()
+            .copied()
+            .filter(|p| (v2(x, 0.0).distance(*p) - 10.0).abs() < 1e-9)
+            .collect();
+        on.sort_by(|a, b| a.x.total_cmp(&b.x).then(a.y.total_cmp(&b.y)));
+        on.dedup_by(|a, b| a.distance(*b) < 1e-6);
+        assert_eq!(on.len(), 24, "knot at {x}");
+    }
 }
 
 #[test]
@@ -232,21 +238,28 @@ fn e_and_v_strokes_reach_the_stroke_width() {
 
 #[test]
 fn chain_links_stay_within_their_size() {
-    for shape in [ChainShape::Triangle, ChainShape::Diamond] {
-        let run = lines::chain(&hline(200.0), 20.0, shape, 2, Arrange::Normal, 10.0);
-        assert!(run.iter().all(|p| p.y.abs() <= 10.0 + 1e-9));
-        assert!(longest(&run) <= 10.0f64.hypot(10.0) + 1e-9);
-        let peaks = run
-            .iter()
-            .filter(|p| (p.y.abs() - 10.0).abs() < 1e-9)
-            .count();
-        let per_pass = if shape == ChainShape::Triangle {
-            10
-        } else {
-            20
-        };
-        assert_eq!(peaks, per_pass * 2, "{shape:?}");
-    }
+    // Triangles: floor(200 / 15) = 13 links, each with its base 20 ahead and 20/3 to either
+    // side, sewn twice and then to its left corner: 5 corners per link.
+    let run = lines::chain(
+        &hline(200.0),
+        20.0,
+        ChainShape::Triangle,
+        2,
+        Arrange::Normal,
+    );
+    let h = 20.0 / 3.0;
+    assert!(run.iter().all(|p| p.y.abs() <= h + 1e-9));
+    assert!(longest(&run) <= 20.0f64.hypot(h) + 1e-9);
+    let corners = run.iter().filter(|p| (p.y.abs() - h).abs() < 1e-9).count();
+    assert_eq!(corners, 13 * 5);
+    let run = lines::chain(&hline(200.0), 20.0, ChainShape::Diamond, 2, Arrange::Normal);
+    assert!(run.iter().all(|p| p.y.abs() <= 10.0 + 1e-9));
+    assert!(longest(&run) <= 10.0f64.hypot(10.0) + 1e-9);
+    let peaks = run
+        .iter()
+        .filter(|p| (p.y.abs() - 10.0).abs() < 1e-9)
+        .count();
+    assert_eq!(peaks, 20 * 2);
 }
 
 #[test]

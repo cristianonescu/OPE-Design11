@@ -1293,7 +1293,8 @@ impl LineSewing {
     /// A line of `kind` with the attributes PE-DESIGN 11.50 gives that type (measured from
     /// compat/reference/stitches/line-*-default.pes): run pitch 2.0 mm for running, triple
     /// and E/V; zigzag 2.0 mm wide at 4.5 lines/mm with under sewing and half stitch; E/V
-    /// strokes 2.5 mm every 5.0 mm.
+    /// strokes 2.5 mm every 5.0 mm; stem 2.0 mm every 1.5 mm at 45°; candlewicking knots of
+    /// 5.0 mm (Medium: 24 points) 1.0 mm apart; chain triangles of 4.0 mm sewn 5 times.
     pub fn new(kind: LineType, thread: Thread) -> Self {
         let zigzag = kind == LineType::Zigzag;
         let stroke = matches!(kind, LineType::EStitch | LineType::VStitch);
@@ -1305,9 +1306,18 @@ impl LineSewing {
                 _ if stroke => 2.0,
                 _ => 2.5,
             },
-            run_times: 1,
-            width: if stroke { 2.5 } else { 2.0 },
-            density: if zigzag { 4.5 } else { 3.0 },
+            run_times: if kind == LineType::Chain { 5 } else { 1 },
+            width: match kind {
+                LineType::Candlewick => 5.0,
+                LineType::Chain => 4.0,
+                _ if stroke => 2.5,
+                _ => 2.0,
+            },
+            density: match kind {
+                LineType::Zigzag => 4.5,
+                LineType::Candlewick => 12.0,
+                _ => 3.0,
+            },
             motif: None,
             height: None,
             spacing: None,
@@ -1328,7 +1338,7 @@ impl LineSewing {
         self.spacing.unwrap_or(match self.kind {
             LineType::Motif => 0.0,
             LineType::Stem => 1.5,
-            LineType::Candlewick => 5.0,
+            LineType::Candlewick => 1.0,
             LineType::EStitch | LineType::VStitch => 5.0,
             _ => 1.0,
         })

@@ -108,61 +108,126 @@ pub fn motif(path: &[Vec2], closed: bool, m: &MotifLine) -> Run {
     run
 }
 
-/// Stem stitch: slanted stitches of `width` across the line at `angle` degrees to it, every
-/// `spacing`, each overlapping the next like a twisted rope; sewn three times unless `single`.
+/// Stem stitch, as PE-DESIGN 11.50 sews it (line-stem-default.pes): on every straight leg,
+/// stations `leg / round(leg / spacing)` apart, each a stitch of `width` across the line
+/// leaning `angle` degrees counter-clockwise from it on screen (45: from the top right to the
+/// bottom left), sewn top, bottom, top, bottom (the second pass 0.14 mm beside the first, so
+/// the rope reads full), then on to the next station's top; `single` sews it once. The first
+/// station is at the line's start, the last at its end, and a corner is sewn as a plain needle
+/// point between the legs' stations. The line ends at its end point.
 pub fn stem(path: &[Vec2], width: f64, spacing: f64, angle: f64, single: bool) -> Run {
-    let w = Walker::new(path);
-    let len = w.length();
-    if len <= 0.0 || spacing <= 0.0 {
+    let legs: Vec<(Vec2, Vec2)> = path
+        .windows(2)
+        .filter(|q| q[0].distance(q[1]) > 1e-9)
+        .map(|q| (q[0], q[1]))
+        .collect();
+    if legs.is_empty() || spacing <= 0.0 {
         return path.to_vec();
     }
     let a = angle.to_radians();
     let along = width / 2.0 * (a.cos() / a.sin());
-    let n = (len / spacing).floor() as usize + 1;
-    let mut run = Vec::new();
-    for k in 0..n {
-        let s = (k as f64 * spacing).min(len);
-        let (c, t) = (w.at(s), w.tangent(s));
+    let mut run = vec![legs[0].0];
+    for (i, &(p, q)) in legs.iter().enumerate() {
+        let l = p.distance(q);
+        let t = (q - p) * (1.0 / l);
         let nrm = normal(t);
-        let from = c - t * along - nrm * (width / 2.0);
-        let to = c + t * along + nrm * (width / 2.0);
-        if single {
-            extend(&mut run, [from, to]);
-        } else {
-            extend(&mut run, [from, to, from, to]);
+        let n = (l / spacing).round().max(1.0) as usize;
+        let last = i + 1 == legs.len();
+        if i > 0 {
+            extend(&mut run, [p]);
+        }
+        for j in usize::from(i > 0)..n + usize::from(last) {
+            let c = p + t * (l * j as f64 / n as f64);
+            let top = c + t * along - nrm * (width / 2.0);
+            let bottom = c - t * along + nrm * (width / 2.0);
+            let u = top - bottom;
+            let e = normal(u * (1.0 / u.x.hypot(u.y))) * 1.4;
+            if single {
+                extend(&mut run, [top, bottom]);
+            } else {
+                extend(&mut run, [top - e, bottom - e, top + e, bottom + e]);
+            }
         }
     }
+    extend(&mut run, [legs[legs.len() - 1].1]);
     run
 }
 
-/// Candlewicking: knots of `size` (a star of `spokes` stitches out from the centre and back)
-/// every `spacing`, joined by running stitches.
-pub fn candlewick(path: &[Vec2], size: f64, spokes: usize, spacing: f64, pitch: f64) -> Run {
+/// Candlewicking, as PE-DESIGN 11.50 sews it (line-candlewick-default.pes): a knot at both
+/// ends of every straight leg and evenly between, `round(leg / (size + spacing))` apart per
+/// leg. A knot is a star of `points` chords on a circle of `size` around the line: from the
+/// point straight ahead it jumps `points / 2 - 1` points at a time until it is back there (a
+/// corner knot faces along the leg it leads into). The first knot starts with a stitch to its
+/// centre and back. Between knots, running stitch along the line from one knot's front point
+/// to the next one's, every vertex kept, the short stitch first, then `pitch`.
+pub fn candlewick(path: &[Vec2], size: f64, points: usize, spacing: f64, pitch: f64) -> Run {
     let w = Walker::new(path);
     let len = w.length();
-    if len <= 0.0 || spacing <= 0.0 {
+    if len <= 0.0 || size <= 0.0 || pitch <= 0.0 {
         return path.to_vec();
     }
-    let n = (len / spacing).floor() as usize;
-    let mut run = Vec::new();
     let r = size / 2.0;
-    for k in 0..=n {
-        let s = (k as f64 * spacing).min(len);
-        if k > 0 {
-            extend(&mut run, run_between(&w, (s - spacing).max(0.0), s, pitch));
+    let points = points.max(4);
+    let step = (points / 2).saturating_sub(1).max(1);
+    // Knot stations (arc length, facing direction).
+    let mut stations: Vec<(f64, Vec2)> = Vec::new();
+    let mut s0 = 0.0;
+    for seg in path.windows(2) {
+        let l = seg[0].distance(seg[1]);
+        if l <= 1e-9 {
+            continue;
         }
-        let c = w.at(s);
-        let t = w.tangent(s);
-        extend(&mut run, [c]);
-        for j in 0..spokes {
-            let d = t.rotated(std::f64::consts::TAU * j as f64 / spokes as f64);
-            run.push(c + d * r);
-            run.push(c);
+        let t = (seg[1] - seg[0]) * (1.0 / l);
+        let n = (l / (size + spacing).max(1e-6)).round().max(1.0) as usize;
+        for j in 0..=n {
+            if j == 0 && !stations.is_empty() {
+                stations.last_mut().expect("station").1 = t;
+                continue;
+            }
+            stations.push((s0 + l * j as f64 / n as f64, t));
         }
+        s0 += l;
     }
-    let last = n as f64 * spacing;
-    if last < len {
-        extend(&mut run, run_between(&w, last, len, pitch));
+    let front = |&(s, t): &(f64, Vec2)| w.at(s) + t * r;
+    let mut run = Vec::new();
+    for (k, st) in stations.iter().enumerate() {
+        let (c, t) = (w.at(st.0), st.1);
+        if k == 0 {
+            extend(&mut run, [front(st), c]);
+        } else {
+            let prev = &stations[k - 1];
+            let (a, b) = ((prev.0 + r).min(len), st.0);
+            let mut pts = vec![front(prev)];
+            if b > a {
+                let slice = w.slice(a, b);
+                let total: f64 = slice.windows(2).map(|q| q[0].distance(q[1])).sum();
+                let sw = Walker::new(&slice);
+                let mut cuts: Vec<f64> = Vec::new();
+                let mut d = total % pitch;
+                if d < 1e-6 {
+                    d = pitch;
+                }
+                while d < total - 1e-6 {
+                    cuts.push(d);
+                    d += pitch;
+                }
+                let mut cum = 0.0;
+                for q in slice.windows(2) {
+                    cum += q[0].distance(q[1]);
+                    cuts.push(cum);
+                }
+                cuts.sort_by(f64::total_cmp);
+                cuts.dedup_by(|x, y| (*x - *y).abs() < 1e-6);
+                pts.extend(cuts.iter().map(|&d| sw.at(d)));
+            }
+            pts.push(front(st));
+            extend(&mut run, pts);
+        }
+        for m in 0..=points {
+            let j = (m * step) % points;
+            let ang = -std::f64::consts::TAU * j as f64 / points as f64;
+            extend(&mut run, [c + t.rotated(ang) * r]);
+        }
     }
     run
 }
@@ -286,20 +351,41 @@ pub fn zigzag_underlay(path: &[Vec2], offset: f64, pitch: f64) -> Run {
     run
 }
 
-/// Chain stitch: links of `size` along the line. Triangles: peaks sewn forward, the baseline
-/// back; diamonds: upper halves forward, lower halves back. Repeated `times` (there and back).
-pub fn chain(
-    path: &[Vec2],
-    size: f64,
-    shape: ChainShape,
-    times: u32,
-    arrange: Arrange,
-    pitch: f64,
-) -> Run {
+/// Chain stitch. Triangles, as PE-DESIGN 11.50 sews them (line-chain-default.pes): on every
+/// straight leg, `n = floor(leg / (0.75 * size))` links `leg / n` apart, each a triangle from
+/// its point on the line to a base `size` further on and `size / 3` to either side, sewn point,
+/// left, right, point `times` times; then to the left corner, the base's middle and back to
+/// the next link's point (links overlap; the last runs past the leg's end). Diamonds: links of
+/// `size` along the line, upper halves forward, lower halves back, repeated `times`.
+pub fn chain(path: &[Vec2], size: f64, shape: ChainShape, times: u32, arrange: Arrange) -> Run {
     let w = Walker::new(path);
     let len = w.length();
     if len <= 0.0 || size <= 0.0 {
         return path.to_vec();
+    }
+    if shape == ChainShape::Triangle {
+        let mut run = Vec::new();
+        let mut k = 0;
+        for seg in path.windows(2) {
+            let l = seg[0].distance(seg[1]);
+            if l <= 1e-9 {
+                continue;
+            }
+            let t = (seg[1] - seg[0]) * (1.0 / l);
+            let n = (l / (0.75 * size) + 1e-9).floor().max(1.0) as usize;
+            for j in 0..n {
+                let nrm = normal(t) * (size / 3.0 * side(arrange, k));
+                let p = seg[0] + t * (l * j as f64 / n as f64);
+                let base = p + t * size;
+                extend(&mut run, [p]);
+                for _ in 0..times.max(1) {
+                    run.extend([base - nrm, base + nrm, p]);
+                }
+                run.extend([base - nrm, base]);
+                k += 1;
+            }
+        }
+        return run;
     }
     let n = (len / size).round().max(1.0) as usize;
     let l = len / n as f64;
@@ -314,13 +400,7 @@ pub fn chain(
             extend(&mut run, [peak(k, 1.0), w.at((k + 1) as f64 * l)]);
         }
         for k in (0..n).rev() {
-            match shape {
-                ChainShape::Triangle => extend(
-                    &mut run,
-                    run_between(&w, (k + 1) as f64 * l, k as f64 * l, pitch),
-                ),
-                ChainShape::Diamond => extend(&mut run, [peak(k, -1.0), w.at(k as f64 * l)]),
-            }
+            extend(&mut run, [peak(k, -1.0), w.at(k as f64 * l)]);
         }
     }
     run

@@ -924,6 +924,42 @@
       "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Shapes > Closed Straight Line, points (0,0) (30,0) (30,30) (25,30) (25,5) (0,5) mm, the last with a double click; line Not Sewn (Line); region Satin Stitch; Sewing Attributes > Region sew: Under sewing checkbox (top of the group) unticked, Density 3.0 line/mm; colour BROTHER EMBROIDERY 800 RED; Gradation off, Direction Auto, Half Stitch unticked, Pull compensation 0.0 mm; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "00d83c61e520bfde783c97a6827962b50087963e63de24f5e634ef87e7a52a1a",
       "notes": "Status bar: Width 30,00 mm, Height 30,00 mm, Stitches = 219. Round 1's auto-satin-bent-band (Half Stitch on, density 4.5, under sewing on) showed 433."
+    },
+    {
+      "file": "stitches/line-stem-default.pes",
+      "spec": "line-stem-default",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (100 x 100 mm page, grid 1 mm, Snap to Grid on, PE restarted earlier this session so tool attributes were at defaults); Shapes > Open Straight Line, clicks (10,20), (50,20), double-click (50,40); line colour set to 800 EMBROIDERY RED with the line selected (the tool had 030 VERMILLION left from an earlier shape); no region (an open line has none). The same line was then switched to each type in turn (Shapes tab > Sew > line sew type) with the line selected; the attributes shown are what PE gave the type on switching (none changed). Save As PES default type (#PES0110). Type: Line sew: Width 2.0 mm, Spacing 1.5 mm, Angle 45 degrees, Stitch Type first button (of two), Start/End Type Feed. Status: 42,20 x 22,20 mm, Stitches = 169.",
+      "sha256": "6f22f95e978db2ec9528e50e38a452953d092cb07b662bfd994a1ab2b335b021",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-candlewick-default.pes",
+      "spec": "line-candlewick-default",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (100 x 100 mm page, grid 1 mm, Snap to Grid on, PE restarted earlier this session so tool attributes were at defaults); Shapes > Open Straight Line, clicks (10,20), (50,20), double-click (50,40); line colour set to 800 EMBROIDERY RED with the line selected (the tool had 030 VERMILLION left from an earlier shape); no region (an open line has none). The same line was then switched to each type in turn (Shapes tab > Sew > line sew type) with the line selected; the attributes shown are what PE gave the type on switching (none changed). Save As PES default type (#PES0110). Type: (type listed as \"Candlewicking Stitch\") Line sew: Density Medium (drop-down), Size 5.0 mm, Spacing 1.0 mm, Start/End Type Feed. Status: 45,00 x 25,00 mm, Stitches = 305.",
+      "sha256": "05c243fad358a866ec96be99c4dae2894809432c0ecec8d7593dc9c498f9bacc",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-chain-default.pes",
+      "spec": "line-chain-default",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (100 x 100 mm page, grid 1 mm, Snap to Grid on, PE restarted earlier this session so tool attributes were at defaults); Shapes > Open Straight Line, clicks (10,20), (50,20), double-click (50,40); line colour set to 800 EMBROIDERY RED with the line selected (the tool had 030 VERMILLION left from an earlier shape); no region (an open line has none). The same line was then switched to each type in turn (Shapes tab > Sew > line sew type) with the line selected; the attributes shown are what PE gave the type on switching (none changed). Save As PES default type (#PES0110). Type: Line sew: Stitch Type first button (triangle; second is diamond), Size 4.0 mm, Time 5 time(s), Arrange first button (left-pointing), Start/End Type Feed. Status: 41,30 x 22,00 mm, Stitches = 348.",
+      "sha256": "89d1fdfc7858567eacc03eaf705892277e35b2f21f7c669d9fe490dbacf071ea",
+      "notes": "Header #PES0110."
     }
   ]
 }
