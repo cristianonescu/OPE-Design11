@@ -126,7 +126,9 @@ Line references are relative to `crates/`.
   Punch satin is a sawtooth: each row (rung) is sewn across along the sewing direction and the
   stitch to the next row slants back, rows 2/density apart (2.0 mm crossings and 2.09–2.15 mm
   slants on the 5×2 mm column). Every satin object starts with a tie-in (0.3 mm out along the
-  first stitch and back) and ends with a lock (0.3 mm back along the last stitch and return).
+  first stitch and back; three steps out and two back after a first stitch over 3 mm) and ends
+  with a lock (0.3 mm back along the last stitch and return; two steps after a last stitch over
+  4.25 mm), per `satin-lock-column-3p5.pes` and the other satin references.
   A rectangle starts and ends in the middle of its bottom edge: PE runs along that edge to one
   end, sews back to the middle (the last row 0.2 mm short, reached along the far edge), then
   does the same for the other half: 27 stitches, 7 of them short edge stitches at the start
@@ -138,7 +140,11 @@ Line references are relative to `crates/`.
   PE's tie-in and lock (`region::tie_and_lock`); skeleton and Auto satin keep the symmetric
   zigzag. satin-zigzag-column and -skeleton measure the body without the tie-in and lock
   (`exclude`); satin-zigzag-rect expects PE's observed values. Pull compensation still
-  lengthens every row. Tests: `crates/openstitch-engine/tests/satin_compat.rs`
+  lengthens every row. Regions of several sections (the U, the H) are sewn in PE's order
+  (`region::sections_in_order`, satin-sections-h): an opening row along the start point's
+  edge, the sections from the far end of the rows back, legs from the tip corner that comes
+  first in the outline, the start point's section last; a feathered edge keeps the sawtooth
+  and moves the rows' starting ends by PE's fixed pattern (satin-feather). Tests: `crates/openstitch-engine/tests/satin_compat.rs`
   (`region_satin_sews_a_zigzag_across_the_column`, `manual_punch_column_sews_a_zigzag`,
   `skeleton_satin_sews_a_zigzag`, `pull_compensation_widens_the_zigzag`).
 - **Test:**

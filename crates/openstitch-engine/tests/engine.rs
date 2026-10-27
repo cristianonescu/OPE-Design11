@@ -435,11 +435,11 @@ fn commands_documented_and_unique() {
 /// PE-DESIGN's defaults (4.5 lines/mm, under sewing linked to the top satin), when fill did
 /// (the ellipse: 4.5 rows/mm, under sewing on, rows edge to edge), and when satin became PE's
 /// sawtooth with a tie-in and end lock, and when direction angles turned counter-clockwise
-/// (the script's 45° ellipse fill now rises to the right), and when satin crossings stopped
-/// being split at 12 mm, when the ellipse and rectangle took PE-DESIGN's start and end point
-/// in the middle of the bottom edge, when their outlines started sewing there too, and when
-/// lines took PE-DESIGN's tie-in and lock (4 stitches on the ellipse's outline). The same
-/// design
+/// (the script's 45° ellipse fill now rises to the right), when satin crossings stopped being
+/// split at 12 mm, when the ellipse and rectangle took PE-DESIGN's start and end point in the
+/// middle of the bottom edge, when their outlines started sewing there too, when lines took
+/// PE-DESIGN's tie-in and lock (4 stitches on the ellipse's outline), and when satin took PE's
+/// section order and lock rule. The same design
 /// exported as `1t`
 /// must keep writing the identical bytes; the
 /// script's default export is now version 6 with objects and sews the same stitches.

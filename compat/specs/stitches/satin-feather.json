@@ -1,0 +1,200 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "satin-feather",
+  "area": "stitches",
+  "title": "Satin with a feathered edge stays a sawtooth",
+  "description": "A 20 × 5 mm rectangle in satin at 90°, density 3, without under sewing, with a 3 mm feathered edge on the side of its start point (the middle of the bottom edge), must be sewn as PE-DESIGN 11.50 sews it: the split sawtooth of satin-zigzag-rect, each row's starting end moved in by a fixed repeating pattern of shares of the feather width.",
+  "covers": {
+    "audit": [
+      1
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Satin: a zigzag across the column"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-feather.pes (under sewing off, 2026-10-27): 75 stitches; rows 0.7 mm apart from each end to the start point, sewn from the bottom edge up; the bottom ends of all rows but each half's first and last move up by 0.9, 0.2, 0.5, 1.0, 0.5, 0.1, 0.6, 0.3, 0.8, 0, 0.7, 0.4 × 3 mm, the pattern restarting in each half. OpenStitch places the start point with object.setEntryExit (it has no per-shape default yet)."
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 20,
+        "height": 5
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "satin",
+        "angle": 90,
+        "density": 3,
+        "underlay": false,
+        "featherSide": "start",
+        "featherWidth": 3
+      }
+    },
+    {
+      "command": "object.setEntryExit",
+      "params": {
+        "id": 1,
+        "regionEntry": [
+          20,
+          15
+        ],
+        "regionExit": [
+          20,
+          15
+        ]
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "satin.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/satin-feather.pes",
+      "make": "On a 100 x 100 mm Design Page draw a rectangle 20 mm wide and 5 mm high at (10, 10) mm. Line Not Sewn; region Satin Stitch, Direction 90°, Density 3.0, Under Sewing off, Feathered Edge on (3.0 mm on the first row), other attributes default. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchSegments"
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-feather.pes (under sewing off, 2026-10-27): 75 stitches.",
+      "reference": {
+        "tolerance": {
+          "percent": 5
+        }
+      }
+    },
+    {
+      "id": "feathered-points",
+      "measure": {
+        "kind": "offRailPoints",
+        "rails": [
+          [
+            [
+              9,
+              10
+            ],
+            [
+              31,
+              10
+            ]
+          ],
+          [
+            [
+              9,
+              15
+            ],
+            [
+              31,
+              15
+            ]
+          ]
+        ],
+        "within": 0.05
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-feather.pes (under sewing off, 2026-10-27): the feathered row ends lie between the edges.",
+      "reference": {
+        "tolerance": {
+          "count": 3
+        }
+      }
+    },
+    {
+      "id": "longest-stitch",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "expected": {
+        "max": 5.2
+      },
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-feather.pes (under sewing off, 2026-10-27): the longest stitches are the 5 mm crossings and their 5.05 mm slants."
+    },
+    {
+      "id": "versus-reference",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.3,
+          "boundsMm": 0.3,
+          "counts": {
+            "percent": 10
+          },
+          "sequence": false,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "satin.pes"
+      },
+      "evidence": "PE-DESIGN 11 output of the same rectangle",
+      "reference": {}
+    }
+  ]
+}
