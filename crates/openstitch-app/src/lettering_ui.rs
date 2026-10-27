@@ -755,7 +755,11 @@ fn name_drop_window(app: &mut EditorApp, ctx: &egui::Context) {
             });
             ui.separator();
             if n == 0 {
-                ui.weak("No text has the Name Drop attribute yet: select text and apply it.");
+                crate::art::header(ui, crate::art::Art::NameDrop, |ui| {
+                    ui.add_space(8.0);
+                    ui.weak("No text has the Name Drop attribute yet.");
+                    ui.weak("Select text and apply it.");
+                });
                 return;
             }
             egui::ScrollArea::vertical()

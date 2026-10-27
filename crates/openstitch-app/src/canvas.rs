@@ -60,8 +60,14 @@ pub fn canvas(app: &mut EditorApp, ui: &mut egui::Ui) {
     let colors = crate::theme::canvas(ui.ctx());
     painter.rect_filled(rect, CornerRadius::ZERO, colors.work_area);
     draw_page(&painter, &vp, &page_rect, colors.page);
+    if app.workspace.realistic {
+        draw_fabric(ui.ctx(), &painter, &vp, &page_rect, colors.page);
+    }
     draw_background(app, ui.ctx(), &painter, &vp);
     crate::workspace_ui::draw_grid(&painter, &vp, &page_rect, &app.workspace.grid);
+    if app.session.design().objects.is_empty() && app.session.design().background.is_none() {
+        draw_empty_hint(&painter, &vp, &page_rect);
+    }
     if app.workspace.realistic {
         crate::workspace_ui::draw_realistic(app, &painter, &vp);
         draw_travel(app, &painter, &vp);
@@ -254,6 +260,63 @@ fn draw_page(painter: &egui::Painter, vp: &Viewport, page: &Rect, fill: Color32)
 }
 
 /// The background reference image, decoded once per path (size limits as for the wizard).
+/// Realistic view: woven cloth on the Design Page, one repeat per `art::FABRIC_TILE`.
+fn draw_fabric(
+    ctx: &egui::Context,
+    painter: &egui::Painter,
+    vp: &Viewport,
+    page: &Rect,
+    tint: Color32,
+) {
+    let Some(t) = crate::art::fabric(ctx) else {
+        return;
+    };
+    let uv = egui::Rect::from_min_max(
+        Pos2::ZERO,
+        Pos2::new(
+            (page.width() / crate::art::FABRIC_TILE) as f32,
+            (page.height() / crate::art::FABRIC_TILE) as f32,
+        ),
+    );
+    painter.image(t.id(), model_rect(vp, page), uv, tint);
+}
+
+/// A new, empty design: a faded hoop and where to start, in the middle of the Design Page.
+fn draw_empty_hint(painter: &egui::Painter, vp: &Viewport, page: &Rect) {
+    let r = model_rect(vp, page);
+    let side = (r.width().min(r.height()) * 0.28).clamp(48.0, 150.0);
+    let art = egui::Rect::from_center_size(
+        r.center() - egui::vec2(0.0, side * 0.2),
+        egui::vec2(side, side),
+    );
+    crate::art::paint(
+        painter,
+        art,
+        crate::art::Art::EmptyCanvas,
+        crate::art::OUTLINE,
+        0.45,
+    );
+    if r.width() > 260.0 {
+        let grey = Color32::from_gray(120);
+        let font = egui::FontId::proportional(14.0);
+        let y = art.bottom() + 12.0;
+        painter.text(
+            egui::pos2(r.center().x, y),
+            egui::Align2::CENTER_TOP,
+            "An empty design",
+            egui::FontId::proportional(16.0),
+            Color32::from_gray(90),
+        );
+        painter.text(
+            egui::pos2(r.center().x, y + 24.0),
+            egui::Align2::CENTER_TOP,
+            "Draw with the Shapes or Text tools, or open a design from File.",
+            font,
+            grey,
+        );
+    }
+}
+
 fn draw_background(
     app: &mut EditorApp,
     ctx: &egui::Context,

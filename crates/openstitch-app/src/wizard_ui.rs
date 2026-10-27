@@ -16,7 +16,8 @@ pub fn image_wizard_window(app: &mut EditorApp, ctx: &egui::Context) {
         .resizable(false)
         .show(ctx, |ui| {
             let w = &mut app.wizard;
-            ui.horizontal(|ui| {
+            crate::art::header(ui, crate::art::Art::WizardImage, |ui| {
+                ui.add_space(4.0);
                 if ui.button("Choose image…").clicked()
                     && let Some(p) = rfd::FileDialog::new()
                         .add_filter("Images", &["png", "jpg", "jpeg", "bmp"])

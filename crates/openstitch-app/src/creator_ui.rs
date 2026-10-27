@@ -1034,7 +1034,11 @@ fn library(ui: &mut egui::Ui, st: &mut CreatorState, requests: &mut Vec<CommandR
     }
     ui.separator();
     if st.library.is_empty() {
-        ui.weak("No saved patterns yet.");
+        crate::art::header(ui, crate::art::Art::PatternLibrary, |ui| {
+            ui.add_space(8.0);
+            ui.weak("No saved patterns yet.");
+            ui.weak("Save a pattern to add it here.");
+        });
         return;
     }
     let mut edit = None;

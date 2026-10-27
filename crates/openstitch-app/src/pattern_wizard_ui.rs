@@ -4,6 +4,7 @@
 //! the whole result is one Undo and stays editable.
 
 use crate::app::EditorApp;
+use crate::art::Art;
 use eframe::egui;
 use openstitch_app::editor::CommandRequest;
 use openstitch_app::editor::pattern_wizards::{
@@ -24,10 +25,19 @@ pub fn windows(app: &mut EditorApp, ctx: &egui::Context) {
         .resizable(false)
         .show(ctx, |ui| {
             let n = app.selection.len();
-            ui.label(match n {
-                0 => "Select the patterns first.".to_string(),
-                1 => "1 pattern selected".to_string(),
-                _ => format!("{n} patterns selected"),
+            let art = match kind {
+                WizardKind::Background => Art::WizardBackground,
+                WizardKind::Applique => Art::WizardApplique,
+                WizardKind::Patch => Art::WizardPatch,
+                WizardKind::Cutwork => Art::WizardCutwork,
+            };
+            crate::art::header(ui, art, |ui| {
+                ui.add_space(14.0);
+                ui.label(match n {
+                    0 => "Select the patterns first.".to_string(),
+                    1 => "1 pattern selected".to_string(),
+                    _ => format!("{n} patterns selected"),
+                });
             });
             ui.separator();
             match kind {

@@ -305,7 +305,7 @@ fn texture(ctx: &egui::Context, g: Glyph, px: u32, fg: Color32) -> Option<egui::
 }
 
 /// Renders `src` into a `px`-square image with the outline drawn in `fg`.
-fn rasterize(src: &str, px: u32, fg: Color32) -> Option<egui::ColorImage> {
+pub(crate) fn rasterize(src: &str, px: u32, fg: Color32) -> Option<egui::ColorImage> {
     use resvg::{tiny_skia, usvg};
     let [r, g, b, _] = fg.to_array();
     let src = src.replace(OUTLINE, &format!("#{r:02x}{g:02x}{b:02x}"));
