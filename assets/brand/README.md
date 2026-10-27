@@ -7,7 +7,7 @@ and the o are only hinted. The lettering is "OpenStitch" in rounded strokes with
 | File | Use |
 |---|---|
 | `../icons/openstitch.svg` | App icon master (mark on the navy tile); `tools/gen_icons.py` writes the PNG, ICO, ICNS and RGBA files beside it |
-| `openstitch-mark.svg` | The mark without the tile (Application button) |
+| `openstitch-mark.svg` | The mark without the tile, for places that bring their own background |
 | `openstitch-wordmark.svg`, `.png` | Icon and lettering, for light backgrounds (README, About, splash) |
 | `openstitch-wordmark-dark.svg`, `.png` | The same with cream lettering, for dark backgrounds |
 

@@ -11,9 +11,15 @@ const FADE: f64 = 0.3;
 
 #[derive(Debug, Default)]
 pub struct Splash {
-    /// `egui` time of the first frame shown.
+    /// Frames drawn so far; the clock starts at [`START_FRAME`].
+    frames: u32,
+    /// `egui` time the clock started.
     start: Option<f64>,
 }
+
+/// The first frames come before the window is on screen and are slow (fonts, textures), so
+/// the splash stays fully visible until this frame and only then starts its second.
+const START_FRAME: u32 = 3;
 
 impl Splash {
     /// Opacity `t` seconds after the splash appeared; `None` once it is over.
@@ -31,7 +37,12 @@ impl Splash {
     /// skips it is taken out of the frame's input, so it doesn't also run a shortcut.
     pub fn show(&mut self, ctx: &egui::Context) -> bool {
         let now = ctx.input(|i| i.time);
-        let start = *self.start.get_or_insert(now);
+        self.frames += 1;
+        let start = if self.frames < START_FRAME {
+            now
+        } else {
+            *self.start.get_or_insert(now)
+        };
         let skipped = ctx.input_mut(|i| {
             let pressed = i.events.iter().any(|e| {
                 matches!(

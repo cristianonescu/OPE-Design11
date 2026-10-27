@@ -1053,8 +1053,9 @@ fn paint_shapes(painter: &egui::Painter, r: Rect, a: Action, fg: Color32, enable
     }
 }
 
-/// The OpenStitch logo (generated with Higgsfield, cleaned by tools/clean_logo.py): the mark
-/// alone, and the wordmark for light and dark backgrounds.
+/// The OpenStitch logo (generated with Higgsfield, cleaned by tools/clean_logo.py): the app
+/// icon (mark on its tile), the mark alone, and the wordmark for light and dark backgrounds.
+pub const APP_ICON: &str = include_str!("../../../assets/icons/openstitch.svg");
 pub const MARK: &str = include_str!("../../../assets/brand/openstitch-mark.svg");
 pub const WORDMARK: &str = include_str!("../../../assets/brand/openstitch-wordmark.svg");
 pub const WORDMARK_DARK: &str = include_str!("../../../assets/brand/openstitch-wordmark-dark.svg");
@@ -1138,10 +1139,10 @@ pub fn paint_svg_logo(painter: &egui::Painter, r: Rect, name: &'static str, src:
     true
 }
 
-/// The OpenStitch mark for the Application button; a code-drawn needle and running stitch
+/// The OpenStitch app icon for the Application button; a code-drawn needle and running stitch
 /// if the SVG cannot be rendered.
 pub fn paint_logo(painter: &egui::Painter, r: Rect, bg: Color32) {
-    if paint_svg_logo(painter, r, "mark", MARK) {
+    if paint_svg_logo(painter, r, "app-icon", APP_ICON) {
         return;
     }
     painter.rect_filled(r, CornerRadius::same(4), bg);
@@ -1192,6 +1193,7 @@ mod tests {
     #[test]
     fn the_logo_renders_at_every_size() {
         for (name, src) in [
+            ("icon", APP_ICON),
             ("mark", MARK),
             ("wordmark", WORDMARK),
             ("dark", WORDMARK_DARK),
