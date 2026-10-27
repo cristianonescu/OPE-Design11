@@ -21,6 +21,7 @@ pub mod jef;
 pub mod pcs;
 pub mod pec;
 pub mod pes;
+pub mod pes11;
 pub mod phc;
 pub mod sew;
 pub mod shv;
