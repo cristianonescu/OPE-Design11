@@ -8,7 +8,7 @@
     "featureMatrix": [
       {
         "area": "Line sew types",
-        "feature": "Zigzag: width, density, half stitch"
+        "feature": "Zigzag: width, density"
       }
     ]
   },

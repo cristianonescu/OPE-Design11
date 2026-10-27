@@ -3,12 +3,12 @@
   "id": "line-zigzag-density-max",
   "area": "stitches",
   "title": "Zigzag line at the density slider's maximum",
-  "description": "An open line (10,20)-(50,20)-(50,40) mm sewn as zigzag at PE-DESIGN's highest density. Fits the density mapping. The script's density is set once the reference shows PE-DESIGN's value.",
+  "description": "An open line (10,20)-(50,20)-(50,40) mm sewn as zigzag at PE-DESIGN's highest density. Fits the density mapping. PE-DESIGN's maximum is 14.0 lines/mm (MANIFEST settings of the reference).",
   "covers": {
     "featureMatrix": [
       {
         "area": "Line sew types",
-        "feature": "Zigzag: width, density, half stitch"
+        "feature": "Zigzag: width, density"
       }
     ]
   },
@@ -59,7 +59,8 @@
           1
         ],
         "type": "zigzag",
-        "color": "Red"
+        "color": "Red",
+        "density": 14.0
       }
     }
   ],
@@ -72,7 +73,7 @@
     {
       "id": "pe-design",
       "file": "stitches/line-zigzag-density-max.pes",
-      "make": "On a 100 x 100 mm Design Page (grid 1 mm, Snap to Grid) draw an open straight line by clicking (10, 20), (50, 20) and double-clicking (50, 40) mm. Region Not Sewn. Line sew type Zigzag Stitch, colour 800 RED, Density at the slider's maximum, every other line attribute at its default (record the density value shown). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system, every line attribute PE-DESIGN shows for the type with its value, and the status-bar size and stitch count in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+      "make": "On a 100 x 100 mm Design Page (grid 1 mm, Snap to Grid) draw an open straight line by clicking (10, 20), (50, 20) and double-clicking (50, 40) mm. Region Not Sewn. Line sew type Zigzag Stitch, colour 800 RED, Density 14.0 line/mm, the maximum, every other line attribute at its default (record the density value shown). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system, every line attribute PE-DESIGN shows for the type with its value, and the status-bar size and stitch count in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
     }
   ],
   "measurements": [

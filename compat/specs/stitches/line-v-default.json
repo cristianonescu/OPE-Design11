@@ -92,16 +92,16 @@
       }
     },
     {
-      "id": "stitch-length-median",
+      "id": "stitch-length-mean",
       "measure": {
         "kind": "stitchLength",
-        "stat": "median",
-        "minLength": 0.3
+        "stat": "mean",
+        "minLength": 1.0
       },
       "source": {
         "export": "line.pes"
       },
-      "evidence": "PE-DESIGN reference: typical stitch length",
+      "evidence": "PE-DESIGN reference: mean of the arms and the line between Vs. Not the median: the V's arms (2.69 mm) and its baseline (1.5 mm) are almost equally many, so PE-DESIGN's longer start lock (three 0.3 mm steps) alone tips the median from one to the other; stitches under 1 mm (the locks) are left out",
       "reference": {
         "tolerance": {
           "mm": 0.15

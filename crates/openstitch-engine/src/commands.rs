@@ -1466,7 +1466,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 opt(
                     "density",
                     "stitches/mm",
-                    "Zigzag density; candlewick spokes ÷ 2, 0.5-10",
+                    "Zigzag density (lines/mm); candlewick spokes ÷ 2, 0.1-14",
                 ),
                 opt(
                     "motif",
@@ -1498,6 +1498,11 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 opt("chainShape", "triangle|diamond", "Chain link shape"),
                 opt("leaveUncut", "bool", "Cutting: leave short uncut bridges"),
                 opt("halfStitch", "bool", "Zigzag: thin the inner side of bends"),
+                opt(
+                    "underSewing",
+                    "bool",
+                    "Zigzag: running stitch a quarter of the width to each side first",
+                ),
             ],
             |s, p| {
                 let idx = indexes(p, &s.design)?;
@@ -1567,8 +1572,15 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         .line
                         .clone()
                         .unwrap_or_else(|| LineSewing::new(LineType::Running, default_line()));
-                    if let Some(Some(k)) = kind {
-                        l.kind = k;
+                    // Switching the type gives the new type's own attributes, as PE-DESIGN does;
+                    // the colour and the entry point stay.
+                    if let Some(Some(k)) = kind
+                        && k != l.kind
+                    {
+                        l = LineSewing {
+                            entry: l.entry,
+                            ..LineSewing::new(k, l.thread.clone())
+                        };
                     }
                     if let Some(c) = &color {
                         l.thread = c.clone();
@@ -1583,7 +1595,8 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         max_times.into(),
                     )? as u32;
                     l.width = p.opt("width", l.width, 0.5, 10.0)?;
-                    l.density = p.opt("density", l.density, 0.5, 10.0)?;
+                    // PE-DESIGN's zigzag density runs from 0.1 to 14 lines/mm.
+                    l.density = p.opt("density", l.density, 0.1, 14.0)?;
                     if motif.is_some() {
                         l.motif.clone_from(&motif);
                     }
@@ -1609,6 +1622,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     }
                     l.leave_uncut = p.bool("leaveUncut", Some(l.leave_uncut))?;
                     l.half_stitch = p.bool("halfStitch", Some(l.half_stitch))?;
+                    l.underlay = p.bool("underSewing", Some(l.underlay))?;
                     o.line = Some(l);
                 }
                 Ok(Value::Null)

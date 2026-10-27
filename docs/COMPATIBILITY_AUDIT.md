@@ -780,7 +780,13 @@ Line references are relative to `crates/`.
 
 - **Uncalibrated numeric defaults:** cross-cutting, high impact, but needs method 1.
   - Values: satin 3.0 rows/mm, stitch length 4 mm, pull compensation 0, underlay spacing 2 mm,
-    line pitch 2.5 mm.
+    line pitch 2.5 mm (stem, candlewick, chain and motif lines; still open).
+  - Lines calibrated from PE-DESIGN 11.50 reference files (2026-10-27, `line-*-default` specs):
+    running and triple 2.0 mm, zigzag 2.0 mm wide at 4.5 lines/mm with under sewing and half
+    stitch on, E/V strokes 2.5 mm every 5.0 mm at 2.0 mm run pitch. Switching the line type
+    gives the new type's defaults, as PE-DESIGN does. Lines tie in and lock like a satin. PE's
+    zigzag is sewn between mitred rails, matched along each leg. Its V puts a V at every
+    multiple of the spacing, with arms to ±1/5 of it.
   - Calibrated from the PE-DESIGN 11.50 reference files (2026-10-27): fill 4.5 rows/mm with
     under sewing on (`EdgeFill`: edge run 1 mm inside the outline at <= 2.5 mm, then tatami
     rows across the fill, 2 mm apart, 4 mm stitches, 30 % shift, 1 mm inset), also on for

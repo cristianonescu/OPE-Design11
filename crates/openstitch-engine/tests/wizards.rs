@@ -659,8 +659,13 @@ fn patch_border_and_cutting_line_sit_at_their_distances() {
         (lo - 15.0).abs() < 0.1 && (hi - 18.0).abs() < 0.1,
         "{lo} {hi}"
     );
+    // Count the satin's needle points on its two edges; the zigzag's under sewing runs
+    // between them, a quarter of the width in from each.
     let circumference = 2.0 * std::f64::consts::PI * 16.5;
-    let swings = blocks[1].len() as f64;
+    let swings = radii
+        .iter()
+        .filter(|&&r| (r - 15.0).abs() < 0.1 || (r - 18.0).abs() < 0.1)
+        .count() as f64;
     assert!(
         (swings / circumference - 4.5).abs() < 0.5,
         "{} lines/mm",
