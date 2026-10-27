@@ -759,8 +759,13 @@ Line references are relative to `crates/`.
 ## Next 11 (lower impact or reference-bound)
 
 - **Uncalibrated numeric defaults:** cross-cutting, high impact, but needs method 1.
-  - Values: fill 2.5 and satin 3.0 rows/mm, stitch length 4 mm, pull compensation 0, underlay
-    spacing 2 mm, line pitch 2.5 mm.
+  - Values: satin 3.0 rows/mm, stitch length 4 mm, pull compensation 0, underlay spacing 2 mm,
+    line pitch 2.5 mm.
+  - Calibrated from the PE-DESIGN 11.50 reference files (2026-10-27): fill 4.5 rows/mm with
+    under sewing on (`EdgeFill`: edge run 1 mm inside the outline at <= 2.5 mm, then tatami
+    rows across the fill, 2 mm apart, 4 mm stitches, 30 % shift, 1 mm inset), also on for
+    programmable fill. Still open: fill Frequency default (PE 30 %, OpenStitch 1/3) and the
+    programmable fill density.
   - The guide gives word scales only. Fit the mapping from reference files at slider minimum,
     middle and maximum.
 - **Line Start/End type (Feed/Run):** motif, stem, candlewick and chain lines restart at a

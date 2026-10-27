@@ -1201,6 +1201,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                             ("zigzag", UnderlayStyle::Zigzag),
                             ("edgeZigzag", UnderlayStyle::EdgeZigzag),
                             ("double", UnderlayStyle::Double),
+                            ("edgeFill", UnderlayStyle::EdgeFill),
                         ],
                     )? {
                         r.underlay_style = u;

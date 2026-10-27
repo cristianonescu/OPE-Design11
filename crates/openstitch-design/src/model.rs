@@ -687,6 +687,9 @@ pub enum UnderlayStyle {
     EdgeZigzag,
     /// Two crossing layers of sparse rows (±45° to the sewing direction).
     Double,
+    /// PE-DESIGN's fill under sewing: a running stitch 1 mm inside the outline, then tatami
+    /// rows across the sewing direction, 1 mm inside it (see [`crate::region`]).
+    EdgeFill,
 }
 
 /// Which row ends a feathered edge roughens.
@@ -888,17 +891,22 @@ impl RegionSewing {
                 RegionType::ProgrammableFill => 45.0,
                 _ => 0.0,
             },
-            // PE-DESIGN 11.50 Sewing Attributes: satin 4.5 lines/mm with under sewing on.
+            // PE-DESIGN 11.50 Sewing Attributes (reference files, fill-analysis): fill and satin
+            // 4.5 lines/mm with under sewing on.
             density: match kind {
-                RegionType::Fill | RegionType::ProgrammableFill => 2.5,
-                RegionType::Satin => 4.5,
+                RegionType::Fill | RegionType::Satin => 4.5,
+                RegionType::ProgrammableFill => 2.5,
                 RegionType::Piping => 1.0,
                 _ => 1.5,
             },
             stitch_length: 4.0,
             pull_compensation: 0.0,
-            underlay: kind == RegionType::Satin,
+            underlay: matches!(
+                kind,
+                RegionType::Fill | RegionType::ProgrammableFill | RegionType::Satin
+            ),
             underlay_style: match kind {
+                RegionType::Fill | RegionType::ProgrammableFill => UnderlayStyle::EdgeFill,
                 RegionType::Satin => UnderlayStyle::EdgeZigzag,
                 _ => UnderlayStyle::Edge,
             },
