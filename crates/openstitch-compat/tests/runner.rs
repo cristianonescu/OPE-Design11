@@ -72,7 +72,10 @@ fn satin(id: &str) -> Value {
         "script": [
             {"command": "design.new", "params": {"width": 100, "height": 100}},
             {"command": "shape.rectangle", "params": {"x": 10, "y": 10, "width": 5, "height": 2}},
-            {"command": "object.setRegion", "params": {"id": 1, "type": "satin", "angle": 90, "density": 3, "underlay": false}}
+            {"command": "object.setRegion", "params": {"id": 1, "type": "satin", "angle": 90, "density": 3, "underlay": false}},
+            // No start point, so the column sews end to end (the shape tool's default start
+            // in the middle of the bottom edge would split it there).
+            {"command": "object.setEntryExit", "params": {"id": 1, "regionEntry": null, "regionExit": null}}
         ],
         "exports": [{"path": "satin.pes"}],
         "references": [{"id": "pe-design", "file": format!("stitches/{id}.pes"), "make": "Draw the column."}],
@@ -393,7 +396,7 @@ fn script_failures_and_paths_outside_the_work_directory_are_errors() {
         u.error
             .as_deref()
             .unwrap_or("")
-            .contains("script step 3 (no.such)")
+            .contains("script step 4 (no.such)")
     );
     let o = spec_result(&r, "outside");
     assert_eq!(o.status, Status::Error, "{:?}", o.error);
