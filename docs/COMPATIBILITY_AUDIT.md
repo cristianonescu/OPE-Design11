@@ -799,7 +799,9 @@ Line references are relative to `crates/`.
 - **Text Transform (envelope presets):** missing.
 - **Sewing order inside a text:** all fills first, then all outlines. Character edits are
   allowed on user-mapped text, which the guide disables.
-- **CSewSeg drops trims:** PEC keeps them.
+- **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
+  no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
+  OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.
 - **PES writer:** only v1 and v6.
 - **Wide satin:** stitches over 12 mm are split along the same line.
 - **Feathered edge:** the options and exclusions differ from the guide.

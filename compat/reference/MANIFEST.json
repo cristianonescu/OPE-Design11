@@ -204,6 +204,18 @@
       "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Shapes > Rectangle: line Not Sewn (Line); region Satin Stitch; in Sewing Attributes > Region sew: Under sewing checkbox (first row, top of the Region sew group) unticked, Density 3.0 line/mm, Direction Manual straight line 90 degrees; other attributes default (Half Stitch greyed/checked, Running Stitch Path first button, Pull compensation 0.0 mm, Feathered edge off); colour BROTHER EMBROIDERY 800 RED (tool default); rectangle dragged from (10,10) to (15,12) mm = 5.00 x 2.00 mm; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "dcc0560480dc670c53062a1dd807f34f82947017f13d1954382c93a68cb6159e",
       "notes": "Status bar: Width 5,00 mm, Height 2,00 mm, Stitches = 31. Round 1 (PR #34) made the same rectangle with under sewing on (44 stitches)."
+    },
+    {
+      "file": "pes/pes-csewseg-trims.pes",
+      "spec": "pes-csewseg-trims",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Opened the OpenStitch export a.pes (#PES0060, SHA-256 74cbaca405d3ebca3ccbf434c2af1dc26901d62cc86367baf6a802202f048e8b, from a copy outside the repository) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "b6151f5755f8064433cca627616a1973369d2c7aec26fb9b6afc00c187c483b0",
+      "notes": "a.pes opened with its stitches: 40.00 x 40.00 mm, 32 stitches, one colour; the move between the two lines is drawn as a dash-dot line. View > View Thread Trimming is greyed for this design, and Option > Options > Jump Stitch Trimming ('Add jump stitch trimming to the entered patterns') shows ticked but greyed; neither was changed. The re-save keeps the PEC trim flag on the move (record 17, 0x20 flag on both coordinates). Also saved as Layout & Editing Ver.6.0 (#PES0060; PE asks 'This embroidery data will be saved in the old file format. OK to save the data as stitch data?', answered OK): a-resave-old.pes, SHA-256 7624e86fdab71c7a6397600d5781665637208c6f33fdb7083e4cafc8a3ff04f2, in the notes folder. The 1t file b.pes (PEC only) opened blank, so it was not re-saved."
     }
   ]
 }

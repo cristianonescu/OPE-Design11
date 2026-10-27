@@ -200,10 +200,38 @@ pub fn decode_header_string(bytes: &[u8]) -> String {
     s.replace("\r\n", "\n")
 }
 
+/// A length-prefixed string as MFC's `CArchive` stores a `CString`: a u8 length (`FF` then a
+/// u16 for 255 or more, `FFFF` then a u32 beyond that) and single-byte text, or, for Unicode,
+/// `FF FEFF` first and then the length in UTF-16 units and UTF-16LE text. PE-DESIGN 11 writes
+/// the v6 thread table's strings in the Unicode form (tests/fixtures/pe_design_v6_trims.pes).
 fn read_string8(r: &mut ByteReader) -> Result<Option<String>> {
-    let len = usize::from(r.u8()?);
-    let bytes = r.read(len)?;
-    Ok(Some(decode_header_string(bytes)).filter(|s| !s.is_empty()))
+    let mut unicode = false;
+    let mut len = u32::from(r.u8()?);
+    if len == 0xFF {
+        len = r.u16le()?;
+        if len == 0xFFFE {
+            unicode = true;
+            len = u32::from(r.u8()?);
+            if len == 0xFF {
+                len = r.u16le()?;
+            }
+        }
+        if len == 0xFFFF {
+            len = r.u32le()?;
+        }
+    }
+    let len = len as usize;
+    let s = if unicode {
+        let units: Vec<u16> = r
+            .read(len.saturating_mul(2))?
+            .chunks_exact(2)
+            .map(|c| u16::from_le_bytes([c[0], c[1]]))
+            .collect();
+        String::from_utf16_lossy(&units).replace("\r\n", "\n")
+    } else {
+        decode_header_string(r.read(len)?)
+    };
+    Ok(Some(s).filter(|s| !s.is_empty()))
 }
 
 fn read_string16(r: &mut ByteReader) -> Result<String> {
@@ -672,6 +700,11 @@ fn segments(pattern: &StitchPattern, version: Version, min_x: f64, max_y: f64) -
             Command::Jump => {
                 let last = run[run.len() - 1];
                 landing = Some(point(last.x, last.y));
+                // PE-DESIGN 11's own v6 files start with the first stitch run: no jump segment
+                // from the origin (tests/fixtures/pe_design_v6_trims.pes).
+                if out.is_empty() {
+                    continue;
+                }
                 out.push(SewSegment {
                     flag: 1,
                     color,

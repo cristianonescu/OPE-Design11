@@ -107,10 +107,10 @@ Object section as pyembroidery 1.5.1 reads and writes it (little-endian):
 | thread (v5+) | u8-string catalogue no., R G B, u8 0, u32 colour type (`0x0A` custom colour), u8-strings name, brand, chart |
 | objects | u16 object count, `FFFF 0000`, then objects named by u16-length class strings, separated by `FFFF 0000`, ended by `0000 0000` |
 | `CEmbOne` | 16 zero bytes, six f32 transform (a b c d tx ty; pyembroidery places the group at `tx = 1000 − w/2`, `ty = 1000 + h/2`), u16 1, 0, 0, width, height, 8 zero bytes, u16 section count |
-| `CSewSeg` | sections separated by `03 80`: u16 flag (0 stitches, 1 jump), u16 colour (PEC index in v1, thread-table index in v6), u16 n, n × (i16 x, i16 y) relative to the bottom-left corner; then u16 n and n × (section, colour) colour log |
+| `CSewSeg` | sections separated by `03 80`: u16 flag (0 stitches, 1 jump), u16 colour (PEC index in v1, thread-table index in v6), u16 n, n × (i16 x, i16 y) relative to the bottom-left corner; then u16 n and n × (section, colour) colour log. No trim type: a trim is a jump segment, and the PEC section's `0x20` flag carries the trim. Like PE-DESIGN 11, OpenStitch writes no lead-in jump segment before the first stitch run |
 | v6 tail | after the objects u32 0, u32 0 and (i, 0) per colour-log entry; after the PEC section the PEC colour list padded to 128 bytes, 0x90 zero bytes per thread, u24 RGB per thread, u16 0 |
 
-The v6 thread table carries exact RGB, names, catalogue numbers, brands, chart names and the
+Thread-table strings are u8-length single-byte strings, or MFC Unicode strings (`FF FE FF`, length in UTF-16 units, UTF-16LE), which PE-DESIGN 11 writes; the reader takes both. The v6 thread table carries exact RGB, names, catalogue numbers, brands, chart names and the
 colour type (`Thread::chart`, `Thread::kind`). Chart and type are kept only as a file supplied
 them: OpenStitch writes an empty chart and type `0x0A` for its own colours and never invents
 Brother chart strings; a non-`0x0A` type read from a file is written back unchanged
