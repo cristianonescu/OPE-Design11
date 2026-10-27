@@ -21,7 +21,7 @@
       "peDesignVersion": "11.50",
       "date": "2026-10-27",
       "os": "Windows 11 Pro 10.0.26200",
-      "settings": "Opened the lines track's target/compat/work/pes-default-v6/a.pes (D:\\_sandboxes\\PE-reference-notes\\round2\\lines\\pes-default-v6-a.pes, OpenStitch export, header #PES0060, SHA-256 f385834340f91d18542ab5c77a0ac925b45bccfeeaa5e368edfa8dba8adb44c3: the spec's two open running-stitch polylines, now with tie-in and lock stitches) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "settings": "Opened the lines track's target/compat/work/pes-default-v6/a.pes (a copy kept in the track notes as pes-default-v6-a.pes; OpenStitch export, header #PES0060, SHA-256 f385834340f91d18542ab5c77a0ac925b45bccfeeaa5e368edfa8dba8adb44c3: the spec's two open running-stitch polylines, now with tie-in and lock stitches) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "cadcb9e14c789bc9d5878c0c7e58ac6c5f083ec1a3f094f6d7d6a6db33493006",
       "notes": "Replaces the #41 file; OpenStitch's lines now carry tie-in and lock stitches. a.pes opened with its stitches as two stitch blocks: 40.00 x 30.00 mm, 64 stitches (status bar), equal to the 64 stitch records in a.pes's PEC block."
     },
@@ -213,7 +213,7 @@
       "peDesignVersion": "11.50",
       "date": "2026-10-27",
       "os": "Windows 11 Pro 10.0.26200",
-      "settings": "Opened the lines track's OpenStitch export (D:\\_sandboxes\\PE-reference-notes\\round2\\lines\\pes-csewseg-trims-a.pes, built from origin/main + #55, header #PES0060, SHA-256 e472541b9abc6af1dd709e3201f3d19bb139594e8046c3023397fde097f83b5f: two Red running lines with a trim between them, now with tie-in and lock stitches) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "settings": "Opened the lines track's OpenStitch export (a copy kept in the track notes as pes-csewseg-trims-a.pes; built from origin/main + #55, header #PES0060, SHA-256 e472541b9abc6af1dd709e3201f3d19bb139594e8046c3023397fde097f83b5f: two Red running lines with a trim between them, now with tie-in and lock stitches) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "caea70d8f80593b9511dfc6fdfee4930a9c4d0b8033f98ebe19749740a3b0a1e",
       "notes": "Replaces the #53 file; OpenStitch's lines now carry tie-in and lock stitches. a.pes opened with its stitches: 40.00 x 40.00 mm, 40 stitches, one colour; the move between the lines drawn as a dash-dot line. View > View Thread Trimming greyed; Option > Options > Jump Stitch Trimming ('Add jump stitch trimming to the entered patterns') ticked but greyed; neither changed. The re-save keeps the PEC trim flag on the move."
     },
