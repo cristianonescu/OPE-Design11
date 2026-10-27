@@ -75,12 +75,24 @@ pub struct TextSpec {
     pub text: String,
     /// [`FontInfo::id`].
     pub font: String,
-    /// Height of capital letters, mm.
+    /// Text size, mm. For TrueType/OpenType fonts it is PE-DESIGN's size: 0.7 of the em, so
+    /// Latin capitals come out about this tall (Lato Bold's 'H' is 1.03 × size). For embroidery
+    /// fonts, and texts with [`TextMetrics::CapHeight`], it is the capital height.
     pub size: f64,
+    /// What `size` and the line spacing % measure. Texts from files before format version 3
+    /// keep [`TextMetrics::CapHeight`] so they lay out as they did.
+    #[serde(default, skip_serializing_if = "TextMetrics::is_pe")]
+    pub metrics: TextMetrics,
     /// Extra space between letters, mm (may be negative).
     #[serde(default)]
     pub letter_spacing: f64,
-    /// Extra space between lines, mm (may be negative).
+    /// Line spacing, % of the character height (PE-DESIGN's "% of char height"): at 100 the
+    /// lines are the font's Windows ascent apart (its line height for
+    /// [`TextMetrics::CapHeight`] texts and embroidery fonts).
+    #[serde(default = "hundred", skip_serializing_if = "is_hundred")]
+    pub line_spacing_percent: f64,
+    /// Extra space between lines, mm (may be negative), added to the spacing in %. Files
+    /// written before line spacing was in % use it alone.
     #[serde(default)]
     pub line_spacing: f64,
     #[serde(default)]
@@ -111,6 +123,25 @@ pub struct TextSpec {
     pub characters: Vec<CharEdit>,
 }
 
+/// What a text's size and line spacing measure.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TextMetrics {
+    /// PE-DESIGN's: size is 0.7 em, 100 % line spacing is the font's Windows ascent
+    /// (measured from PE-DESIGN 11.50's Lato Bold text, compat/reference/text).
+    #[default]
+    Pe,
+    /// OpenStitch's before format version 3: size is the capital height, 100 % line spacing
+    /// the font's line height (ascender − descender + line gap).
+    CapHeight,
+}
+
+impl TextMetrics {
+    pub fn is_pe(&self) -> bool {
+        *self == TextMetrics::Pe
+    }
+}
+
 /// Which way text runs.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -120,6 +151,14 @@ pub enum TextDirection {
     /// CJK vertical writing: characters top to bottom, lines as columns from right to left.
     /// Text on a path is always laid out along the path.
     Vertical,
+}
+
+fn hundred() -> f64 {
+    100.0
+}
+
+fn is_hundred(v: &f64) -> bool {
+    *v == 100.0
 }
 
 fn is_false(b: &bool) -> bool {
@@ -248,7 +287,9 @@ impl TextSpec {
             text: text.into(),
             font: font.into(),
             size,
+            metrics: TextMetrics::Pe,
             letter_spacing: 0.0,
+            line_spacing_percent: 100.0,
             line_spacing: 0.0,
             align: TextAlign::Left,
             path: None,
@@ -524,8 +565,10 @@ enum Source<'a> {
 /// A parsed font with the metrics layout needs.
 pub struct LoadedFont<'a> {
     source: Source<'a>,
-    /// 0.1 mm per font unit for a given size, per mm of size.
+    /// 0.1 mm per font unit for a given size, per mm of size, with size the capital height.
     unit_per_mm: f64,
+    /// The same with PE-DESIGN's size (0.7 em); equal to `unit_per_mm` for embroidery fonts.
+    pe_unit_per_mm: f64,
 }
 
 /// A glyph's outline (font units) and stitches, or `None` when it has neither.
@@ -560,6 +603,7 @@ impl<'a> LoadedFont<'a> {
                     return Ok(LoadedFont {
                         source: Source::Embroidery(e),
                         unit_per_mm: 10.0 / e.cap_height,
+                        pe_unit_per_mm: 10.0 / e.cap_height,
                     });
                 }
             },
@@ -581,6 +625,7 @@ impl<'a> LoadedFont<'a> {
         Ok(LoadedFont {
             source: Source::Face(Box::new(face)),
             unit_per_mm: 10.0 / cap,
+            pe_unit_per_mm: 10.0 / (0.7 * em),
         })
     }
 
@@ -682,13 +727,31 @@ impl<'a> LoadedFont<'a> {
         out
     }
 
-    /// Baseline to baseline, font units.
-    fn line_height(&self) -> f64 {
+    /// Baseline to baseline at 100 % line spacing, font units.
+    fn line_height(&self, metrics: TextMetrics) -> f64 {
         match &self.source {
-            Source::Face(f) => f64::from(
-                i32::from(f.ascender()) - i32::from(f.descender()) + i32::from(f.line_gap()),
-            ),
+            Source::Face(f) => {
+                let hhea =
+                    i32::from(f.ascender()) - i32::from(f.descender()) + i32::from(f.line_gap());
+                let win = f
+                    .tables()
+                    .os2
+                    .map(|t| i32::from(t.windows_ascender()))
+                    .filter(|&a| a > 0);
+                f64::from(match (metrics, win) {
+                    (TextMetrics::Pe, Some(a)) => a,
+                    _ => hhea,
+                })
+            }
             Source::Embroidery(e) => e.ascender + e.descender + e.line_gap,
+        }
+    }
+
+    /// 0.1 mm per font unit per mm of size.
+    fn per_mm(&self, metrics: TextMetrics) -> f64 {
+        match metrics {
+            TextMetrics::Pe => self.pe_unit_per_mm,
+            TextMetrics::CapHeight => self.unit_per_mm,
         }
     }
 
@@ -827,6 +890,7 @@ impl Run {
         scale: f64,
         spacing: f64,
         vertical: bool,
+        cap: f64,
     ) -> Run {
         // Pen position and glyph origin of each glyph, along the run.
         let mut pen = 0.0;
@@ -875,7 +939,7 @@ impl Run {
                     let pivot = if vertical {
                         v2(0.0, 0.0)
                     } else {
-                        v2(0.0, -spec.size * 10.0 * k / 2.0)
+                        v2(0.0, -cap * k / 2.0)
                     };
                     local = local
                         .then(&Transform::rotation(e.rotation, pivot))
@@ -940,9 +1004,12 @@ pub fn layout_in(
         return Ok(l);
     }
     let font = LoadedFont::load_in(&spec.font, fonts)?;
-    let scale = spec.size * font.unit_per_mm;
+    let scale = spec.size * font.per_mm(spec.metrics);
+    // Capital height, 0.1 mm.
+    let cap = scale * 10.0 / font.unit_per_mm;
     let spacing = spec.letter_spacing * 10.0;
-    let line_height = font.line_height() * scale + spec.line_spacing * 10.0;
+    let line_height = font.line_height(spec.metrics) * scale * spec.line_spacing_percent / 100.0
+        + spec.line_spacing * 10.0;
     let vertical = spec.direction == TextDirection::Vertical && path.is_none();
     let shaper = font.shaper(spec.kerning);
     let mut missing = Vec::new();
@@ -1042,7 +1109,7 @@ pub fn layout_in(
     match path.map(PathWalker::new) {
         Some(walker) => {
             let line = shaped_lines.concat();
-            let run = Run::along(&line, spec, scale, spacing, false);
+            let run = Run::along(&line, spec, scale, spacing, false, cap);
             let shift = match spec.align {
                 TextAlign::Left => 0.0,
                 TextAlign::Center => (walker.length - run.length) / 2.0,
@@ -1064,7 +1131,7 @@ pub fn layout_in(
         }
         None => {
             for (row, line) in shaped_lines.iter().enumerate() {
-                let run = Run::along(line, spec, scale, spacing, vertical);
+                let run = Run::along(line, spec, scale, spacing, vertical, cap);
                 let shift = match spec.align {
                     TextAlign::Left => 0.0,
                     TextAlign::Center => -run.length / 2.0,
@@ -1247,9 +1314,15 @@ mod tests {
             assert_eq!(l.glyphs[0].contours.len(), n, "{ch}");
             assert!(l.glyphs[0].contours.iter().all(|c| c.closed), "{ch}");
         }
-        // Capital height is the size: 'H' sits on the baseline (y = 0) and is 10 mm tall.
+        // PE-DESIGN's size is 0.7 em: Lato Bold's 'H' (1446 of 2000 units) sits on the
+        // baseline (y = 0) and is 10.33 mm tall at size 10.
         let h = bounds(&lay("H", 10.0).contours());
         assert!(h.max_y.abs() < 0.5, "{h:?}");
+        assert!((h.height() - 103.3).abs() < 0.5, "{h:?}");
+        // With the capital-height metrics of older files, it is exactly the size.
+        let mut old = TextSpec::new("H", DEFAULT_FONT, 10.0);
+        old.metrics = TextMetrics::CapHeight;
+        let h = bounds(&layout(&old, None).expect("layout").contours());
         assert!((h.height() - 100.0).abs() < 0.5, "{h:?}");
         // 'O' is round: its outline has curves; 'I' is a rectangle without any.
         assert!(lay("O", 10.0).glyphs[0].contours[0].has_curves());
@@ -1349,6 +1422,40 @@ mod tests {
     }
 
     #[test]
+    fn line_spacing_percent_scales_the_line_pitch() {
+        let pitch = |percent: f64, mm: f64| {
+            let mut spec = TextSpec::new(
+                "H
+H",
+                DEFAULT_FONT,
+                10.0,
+            );
+            spec.line_spacing_percent = percent;
+            spec.line_spacing = mm;
+            let l = layout(&spec, None).expect("layout");
+            let tops: Vec<f64> = l.glyphs.iter().map(|g| bounds(&g.contours).min_y).collect();
+            tops[1] - tops[0]
+        };
+        // PE-DESIGN's 100 %: Lato Bold's Windows ascent (2233 of 2000 units) at 0.7 em = size,
+        // 15.95 mm at size 10 (PE-DESIGN 11.50: 15.9, compat/reference/text).
+        let base = pitch(100.0, 0.0);
+        assert!((base - 159.5).abs() < 0.2, "{base}");
+        assert!((pitch(150.0, 0.0) - base * 1.5).abs() < 1e-6);
+        assert!((pitch(50.0, 0.0) - base * 0.5).abs() < 1e-6);
+        // Files from before the %: the mm spacing still adds on top.
+        assert!((pitch(100.0, 2.0) - base - 20.0).abs() < 1e-6);
+        let old: TextSpec =
+            serde_json::from_str(r#"{"text":"A","font":"lato-bold","size":10,"lineSpacing":2}"#)
+                .expect("old");
+        assert_eq!(old.line_spacing_percent, 100.0);
+        assert!(
+            !serde_json::to_string(&old)
+                .expect("json")
+                .contains("Percent")
+        );
+    }
+
+    #[test]
     fn text_on_a_straight_path_matches_straight_text() {
         let straight = lay("Ab", 10.0).contours();
         let path = Contour::new(vec![v2(0.0, 300.0), v2(2000.0, 300.0)], false);
@@ -1412,7 +1519,7 @@ mod tests {
         let plain = bounds(&lay_spec(&spec).contours());
         // Without kerning the advances are the font's own (as before shaping existed).
         let font = LoadedFont::load(DEFAULT_FONT).expect("font");
-        let scale = 10.0 * font.unit_per_mm;
+        let scale = 10.0 * font.per_mm(TextMetrics::Pe);
         let a = font.advance(font.glyph('A')) * scale;
         let v = font.advance(font.glyph('V')) * scale;
         let first = bounds(&lay("A", 10.0).contours());

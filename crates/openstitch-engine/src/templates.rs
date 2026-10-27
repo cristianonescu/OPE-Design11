@@ -14,7 +14,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 pub const FORMAT: &str = "openstitch.template";
-pub const VERSION: u32 = 1;
+/// 2: texts follow PE-DESIGN's size and line spacing metrics; version-1 templates keep the
+/// capital-height metrics they were made with.
+pub const VERSION: u32 = 2;
 pub const EXTENSION: &str = "ostemplate";
 /// Most template files `template.list` reads from a folder.
 const MAX_LISTED: usize = 500;
@@ -65,8 +67,12 @@ pub fn decode(data: &[u8]) -> Result<Template, String> {
             h.version
         ));
     }
-    let t: Template = serde_json::from_slice(data).map_err(|e| format!("damaged template: {e}"))?;
+    let mut t: Template =
+        serde_json::from_slice(data).map_err(|e| format!("damaged template: {e}"))?;
     project::validate(&t.design).map_err(|e| e.to_string())?;
+    if h.version < 2 {
+        openstitch_design::project::migrate_v2_text(&mut t.design);
+    }
     if !(1..=64).contains(&t.name.chars().count())
         || !(1..=64).contains(&t.category.chars().count())
     {

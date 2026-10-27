@@ -1,0 +1,90 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "text-line-spacing-50",
+  "area": "text",
+  "title": "Line spacing 50 %",
+  "description": "Two lines H / H in Lato Bold, 10 mm, aligned left, line spacing 50 %: the height of the stitches is one line pitch plus one capital height.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Lettering",
+        "feature": "Text entry and attributes"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md, Next 11: line spacing in %, default 100"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "H\nH",
+        "font": "lato-bold",
+        "size": 10,
+        "fill": "Red",
+        "x": 50,
+        "y": 50,
+        "align": "left",
+        "lineSpacingPercent": 50
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "text.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "text/text-line-spacing-50.pes",
+      "make": "On a 100 × 100 mm Design Page (File > New), with Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user and used as a TrueType font. Add the text H, Enter, H (two lines), size 10.0 mm, alignment Left, line spacing 50 %, colour 800 RED, region Fill Stitch at its defaults, line Not Sewn. Save As PES (default type) as compat/reference/text/text-line-spacing-50.pes and record in compat/reference/MANIFEST.json the PE-DESIGN version, date, OS, the font as PE lists it, every Text Attributes value and every setting you changed (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    }
+  ]
+}

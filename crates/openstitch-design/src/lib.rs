@@ -43,7 +43,9 @@ pub use model::{
     Feather, FeatherSide, Gradation, Guides, ImageAdjust, LineSewing, LineType, ObjectKind,
     RegionSewing, RegionType, RunningStitchPath, StitchBlock, UnderlayStyle,
 };
-pub use text::{CharEdit, FONTS, FontInfo, Layout, TextAlign, TextDirection, TextError, TextSpec};
+pub use text::{
+    CharEdit, FONTS, FontInfo, Layout, TextAlign, TextDirection, TextError, TextMetrics, TextSpec,
+};
 
 #[cfg(test)]
 mod stitch_type_tests;

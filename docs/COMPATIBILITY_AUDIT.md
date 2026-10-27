@@ -791,8 +791,12 @@ Line references are relative to `crates/`.
 - **Line Start/End type (Feed/Run):** motif, stem, candlewick and chain lines restart at a
   moved entry point instead of keeping the pattern in place.
   ([guide](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293444.html))
-- **Line spacing:** in mm, while the guide uses % with default 100. The basis that text size
-  measures (OpenStitch uses cap height) needs a reference.
+- **Line spacing and text size (calibrated 2026-10-27):** PE-DESIGN 11.50's line spacing is
+  "% of char height", default 100; its TrueType size is 0.7 em (Lato Bold's H is 1.033 × size)
+  and 100 % sets lines the font's Windows ascent apart. Measured in `compat/reference/text`
+  (specs text-size-h, text-size-hg, text-line-spacing-50/100/150, all at the reference tier).
+  OpenStitch now does the same; `.osd` files before version 3 keep the old capital-height
+  basis.
 - **Fit Text to Outline:** the dialog's horizontal and vertical alignment, orientation and
   other-side options are missing, and one text per outline is not enforced.
   ([guide](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/05_1810870.html))

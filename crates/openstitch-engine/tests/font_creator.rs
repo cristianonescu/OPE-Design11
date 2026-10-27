@@ -48,10 +48,12 @@ fn converted_truetype_glyphs_match_the_source_font() {
     );
     assert_eq!(r["converted"], " OScehinpt", "sorted, distinct");
     assert_eq!(r["missing"], "\u{4E2D}");
+    // An embroidery font's size is its capital height; TrueType text's is 0.7 em, so Lato
+    // Bold's capitals (1446 of 2000 units) at size 9 are 9 × 1446 / 1400 mm tall.
     let mine = run(
         &mut s,
         "text.add",
-        json!({"text": "Open Stitch", "font": "block", "size": 9, "x": 50, "y": 40}),
+        json!({"text": "Open Stitch", "font": "block", "size": 9.0 * 1446.0 / 1400.0, "x": 50, "y": 40}),
     )["id"]
         .as_u64()
         .expect("id");
