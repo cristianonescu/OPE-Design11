@@ -12,7 +12,7 @@ use openstitch_design::text::{self, TextAlign, TextDirection, TextSpec};
 use openstitch_design::{
     Arrange, Bezier, ChainShape, Compiler, Contour, Design, DesignObject, DesignPage, Feather,
     FeatherSide, Gradation, Layout, LineSewing, LineType, ObjectKind, Rect, RegionSewing,
-    RegionType, RunningStitchPath, Transform, UnderlayStyle, v2,
+    RegionType, RunningStitchPath, Transform, UnderlayStyle, Vec2, v2,
 };
 use serde_json::{Value, json};
 
@@ -549,7 +549,22 @@ fn hole_pair(s: &EngineState, p: &Params, idx: &[usize]) -> Result<(usize, usize
 }
 
 fn add_shape(s: &mut EngineState, p: &Params, contour: Contour) -> CommandResult {
-    let (region, line) = sewing(p, contour.closed)?;
+    add_shape_ending(s, p, contour, None)
+}
+
+/// Adds a shape whose region starts and ends at `ends` (PE-DESIGN's default for its Shape tools).
+fn add_shape_ending(
+    s: &mut EngineState,
+    p: &Params,
+    contour: Contour,
+    ends: Option<fn(&Contour) -> Option<Vec2>>,
+) -> CommandResult {
+    let point = ends.and_then(|f| f(&contour));
+    let (mut region, line) = sewing(p, contour.closed)?;
+    if let (Some(r), Some(at)) = (region.as_mut(), point) {
+        r.entry = Some(at);
+        r.exit = Some(at);
+    }
     let mut object = DesignObject::shape(vec![contour], region, line);
     object.name = object_name(p)?;
     Ok(json!({ "id": s.design.add(object) }))
@@ -588,7 +603,7 @@ fn shape_commands() -> Vec<CommandSpec> {
                 } else {
                     Contour::rectangle(x, y, w, h)
                 };
-                add_shape(s, p, r)
+                add_shape_ending(s, p, r, Some(shapes::bottom_centre))
             },
         ),
         spec(
@@ -612,7 +627,7 @@ fn shape_commands() -> Vec<CommandSpec> {
                     p.opt("ry", rx, 0.1, 1000.0)? * MM,
                     72,
                 );
-                add_shape(s, p, e)
+                add_shape_ending(s, p, e, Some(shapes::bottom_centre))
             },
         ),
         spec(
@@ -743,7 +758,15 @@ fn shape_commands() -> Vec<CommandSpec> {
             |s, p| {
                 let sides = p.int("sides", Some(5), 3, 64)? as usize;
                 let ratio = p.opt("ratio", 0.4, 0.05, 0.95)?;
-                let unit = match p.string("kind", None)?.as_str() {
+                let kind = p.string("kind", None)?;
+                // PE-DESIGN 11's start point for the matching gallery shapes; its polygons follow
+                // no one rule (hexagon mid-edge, pentagon and octagon at a corner), so they keep none.
+                let ends: Option<fn(&Contour) -> Option<Vec2>> = match kind.as_str() {
+                    "star" | "heart" | "diamond" | "teardrop" => Some(shapes::bottom_centre),
+                    "triangle" => Some(shapes::bottom_left),
+                    _ => None,
+                };
+                let unit = match kind.as_str() {
                     "polygon" => shapes::regular_polygon(sides),
                     "star" => shapes::star(sides, ratio),
                     "heart" => shapes::heart(),
@@ -768,7 +791,7 @@ fn shape_commands() -> Vec<CommandSpec> {
                 );
                 let rotation = p.opt("rotation", 0.0, -3600.0, 3600.0)?;
                 let c = shapes::fit(&unit, center, w * MM, h * MM, rotation);
-                add_shape(s, p, c)
+                add_shape_ending(s, p, c, ends)
             },
         ),
     ]

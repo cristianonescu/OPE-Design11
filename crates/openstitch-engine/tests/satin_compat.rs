@@ -86,6 +86,12 @@ fn region_satin_sews_a_zigzag_across_the_column() {
         "object.setRegion",
         json!({"id": 1, "type": "satin", "angle": 90, "density": 3, "underlay": false}),
     );
+    // End to end (no start point; the Rectangle tool's default splits the column there).
+    run(
+        &mut s,
+        "object.setEntryExit",
+        json!({"id": 1, "regionEntry": null, "regionExit": null}),
+    );
     let pts = needle_points(&mut s, 1);
     // A sawtooth with rows 2/3 mm apart from edge to edge: 9 rows, 17 crossings.
     assert_zigzag_column(body(&pts), 2.0 / 3.0, 17, "region satin");
@@ -130,6 +136,12 @@ fn pull_compensation_widens_the_zigzag() {
         &mut s,
         "object.setRegion",
         json!({"id": 1, "type": "satin", "angle": 90, "density": 3, "pullCompensation": 0.2, "underlay": false}),
+    );
+    // End to end (no start point; the Rectangle tool's default splits the column there).
+    run(
+        &mut s,
+        "object.setEntryExit",
+        json!({"id": 1, "regionEntry": null, "regionExit": null}),
     );
     let pts = needle_points(&mut s, 1);
     for w in body(&pts).windows(2) {

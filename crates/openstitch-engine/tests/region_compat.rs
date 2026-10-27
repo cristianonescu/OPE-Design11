@@ -333,6 +333,12 @@ fn row_shifts(frequency: Option<f64>) -> Vec<f64> {
     }
     run(&mut s, "object.setRegion", params);
     run(&mut s, "object.setLine", json!({"id": 1, "type": "none"}));
+    // Sewn from the top row down (no start point), so the rows here are in sewing order.
+    run(
+        &mut s,
+        "object.setEntryExit",
+        json!({"id": 1, "regionEntry": null, "regionExit": null}),
+    );
     run(&mut s, "object.toStitches", json!({"ids": [1]}));
     let points = run(&mut s, "stitches.points", json!({"id": 1}));
     let mut rows: Vec<(f64, Vec<f64>)> = Vec::new();

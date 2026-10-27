@@ -216,6 +216,18 @@
       "settings": "Opened the OpenStitch export a.pes (#PES0060, SHA-256 74cbaca405d3ebca3ccbf434c2af1dc26901d62cc86367baf6a802202f048e8b, from a copy outside the repository) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "b6151f5755f8064433cca627616a1973369d2c7aec26fb9b6afc00c187c483b0",
       "notes": "a.pes opened with its stitches: 40.00 x 40.00 mm, 32 stitches, one colour; the move between the two lines is drawn as a dash-dot line. View > View Thread Trimming is greyed for this design, and Option > Options > Jump Stitch Trimming ('Add jump stitch trimming to the entered patterns') shows ticked but greyed; neither was changed. The re-save keeps the PEC trim flag on the move (record 17, 0x20 flag on both coordinates). Also saved as Layout & Editing Ver.6.0 (#PES0060; PE asks 'This embroidery data will be saved in the old file format. OK to save the data as stitch data?', answered OK): a-resave-old.pes, SHA-256 7624e86fdab71c7a6397600d5781665637208c6f33fdb7083e4cafc8a3ff04f2, in the notes folder. The 1t file b.pes (PEC only) opened blank, so it was not re-saved."
+    },
+    {
+      "file": "stitches/shape-start-points.pes",
+      "spec": "shape-start-points",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Option > Options > Optimize Entry/Exit Points unticked; every shape drawn with the Shapes gallery tools, line Not Sewn (Line), region Fill Stitch with Under sewing unticked and every other attribute at its default (density 4.5 line/mm, Manual straight line 45 degrees, step pitch 4.0 mm, frequency 30 %, pull compensation 0.0 mm); thread colour chosen in the Color tab with the tool active, before each drag: Rectangle (2,2)-(22,22) mm, 800 RED; Rectangle (26,2)-(46,12), 007 PRUSSIAN BLUE; Ellipse (50,2)-(70,12), 027 FRESH GREEN; Heart (74,2)-(94,22), 019 SKY BLUE; Diamond (2,26)-(22,46), 058 DARK BROWN; 4-point star (26,26)-(46,46), 030 VERMILION; Triangle (50,26)-(70,46), 070 CORNFLOWER BLUE; Drop (74,26)-(94,46), 005 SILVER; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "e9a142667d07a5b925a69de288fdaaec4e03dc3451bbc9d3183564fd5c36df87",
+      "notes": "Eight colour blocks in drawing order. A survey file made just before it (16 shapes in one colour, same settings, not committed) showed every Shape-tool shape ending where it starts: rectangles (square, 20 x 10, 10 x 20), ellipses, Round Rectangle, heart, diamond, hexagon, 4- and 5-point stars (the 5-point star at the notch between its lower points), crescent and drop at the lowest outline point on the vertical centre line; triangle, pentagon and octagon at the left end of the bottom edge."
     }
   ]
 }

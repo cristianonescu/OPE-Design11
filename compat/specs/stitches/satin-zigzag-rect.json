@@ -35,7 +35,7 @@
     },
     {
       "kind": "measured",
-      "note": "PE-DESIGN 11.50 starts and ends a Rectangle tool shape's region sewing in the middle of its bottom edge (this reference, and the fill rectangles of fill-frequency-0/25/50). OpenStitch has no such default yet, so the script places the start and end point there."
+      "note": "PE-DESIGN 11.50 starts and ends a Rectangle tool shape's region sewing in the middle of its bottom edge (this reference, the fill rectangles of fill-frequency-0/25/50, and spec shape-start-points). OpenStitch's shape.rectangle now does the same by default."
     }
   ],
   "script": [
@@ -63,20 +63,6 @@
         "angle": 90,
         "density": 3,
         "underlay": false
-      }
-    },
-    {
-      "command": "object.setEntryExit",
-      "params": {
-        "id": 1,
-        "regionEntry": [
-          12.5,
-          12
-        ],
-        "regionExit": [
-          12.5,
-          12
-        ]
       }
     }
   ],

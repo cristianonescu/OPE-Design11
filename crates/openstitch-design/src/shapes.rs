@@ -268,6 +268,38 @@ pub fn fit(c: &Contour, center: Vec2, width: f64, height: f64, rotation: f64) ->
     c.transformed(&t)
 }
 
+/// PE-DESIGN 11's default start and end point of a Shape-tool region (rectangle, round
+/// rectangle, ellipse, heart, diamond, stars, drop): where the vertical line through the middle
+/// of the bounds meets the outline lowest, e.g. the middle of a rectangle's bottom edge, a
+/// heart's tip or the notch between a five-point star's lower points.
+pub fn bottom_centre(c: &Contour) -> Option<Vec2> {
+    let b = Rect::enclosing(c.outline_points())?;
+    let x = b.center().x;
+    c.edges()
+        .into_iter()
+        .filter_map(|(a, e)| {
+            let (lo, hi) = if a.x <= e.x { (a, e) } else { (e, a) };
+            if x < lo.x || x > hi.x {
+                return None;
+            }
+            if hi.x == lo.x {
+                return Some(v2(x, a.y.max(e.y)));
+            }
+            Some(lo.lerp(hi, (x - lo.x) / (hi.x - lo.x)))
+        })
+        .max_by(|p, q| p.y.total_cmp(&q.y))
+}
+
+/// The left end of the lowest edge: PE-DESIGN 11's default start and end point of its triangle.
+pub fn bottom_left(c: &Contour) -> Option<Vec2> {
+    let b = Rect::enclosing(c.outline_points())?;
+    let tol = b.height().max(b.width()) * 1e-6;
+    c.outline_points()
+        .into_iter()
+        .filter(|p| p.y >= b.max_y - tol)
+        .min_by(|p, q| p.x.total_cmp(&q.x))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -372,5 +404,25 @@ mod tests {
         assert!(inside(v2(-90.0, 0.0), &c));
         assert!(!inside(v2(50.0, 0.0), &c));
         assert!(!inside(v2(0.0, 0.0), &c));
+    }
+
+    #[test]
+    fn default_start_points() {
+        // PE-DESIGN 11.50 (compat spec shape-start-points): the middle of a rectangle's bottom
+        // edge, the notch between a five-point star's lower points, a triangle's lower left corner.
+        let r = Contour::rectangle(20.0, 20.0, 200.0, 100.0);
+        assert_eq!(bottom_centre(&r), Some(v2(120.0, 120.0)));
+        let star = fit(&star(5, 0.4), v2(0.0, 0.0), 200.0, 200.0, 0.0);
+        let notch = bottom_centre(&star).expect("notch");
+        assert!(
+            notch.x.abs() < 1e-6 && notch.y > 0.0 && notch.y < 100.0 - 1.0,
+            "{notch:?}"
+        );
+        let t = fit(&regular_polygon(3), v2(0.0, 0.0), 200.0, 200.0, 0.0);
+        let p = bottom_left(&t).expect("corner");
+        assert!(
+            (p.x + 100.0).abs() < 1e-6 && (p.y - 100.0).abs() < 1e-6,
+            "{p:?}"
+        );
     }
 }

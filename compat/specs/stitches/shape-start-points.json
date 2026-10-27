@@ -1,0 +1,331 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "shape-start-points",
+  "area": "stitches",
+  "title": "Shape-tool shapes start and end where PE-DESIGN 11 puts them",
+  "description": "Eight Shape-tool shapes, each in its own colour, filled with under sewing off: PE-DESIGN 11 starts and ends a rectangle, ellipse, heart, diamond, star and drop where the vertical line through the middle of the shape meets its outline lowest (the middle of a rectangle's bottom edge, the heart's tip), and a triangle at the left end of its bottom edge.",
+  "covers": {
+    "featureMatrix": [
+      {
+        "area": "Editing",
+        "feature": "Sewing order editing"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 black-box survey, 2026-10-27 (pe-gui): 16 Shape-tool shapes drawn with Optimize Entry/Exit Points off; every shape ended where it started. Rectangles (square, wide, tall), ellipses, Round Rectangle, heart, diamond, hexagon, 4- and 5-point stars, crescent and drop start at the lowest outline point on the vertical centre line; triangle, pentagon and octagon at the left end of the bottom edge."
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 2,
+        "y": 2,
+        "width": 20,
+        "height": 20,
+        "fill": "#ed171f"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 26,
+        "y": 2,
+        "width": 20,
+        "height": 10,
+        "fill": "#0a55a3"
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 60,
+        "cy": 7,
+        "rx": 10,
+        "ry": 5,
+        "fill": "#2d8f3b"
+      }
+    },
+    {
+      "command": "shape.preset",
+      "params": {
+        "kind": "heart",
+        "cx": 84,
+        "cy": 12,
+        "width": 20,
+        "height": 20,
+        "fill": "#f7e41b"
+      }
+    },
+    {
+      "command": "shape.preset",
+      "params": {
+        "kind": "diamond",
+        "cx": 12,
+        "cy": 36,
+        "width": 20,
+        "height": 20,
+        "fill": "#000000"
+      }
+    },
+    {
+      "command": "shape.preset",
+      "params": {
+        "kind": "star",
+        "sides": 4,
+        "cx": 36,
+        "cy": 36,
+        "width": 20,
+        "height": 20,
+        "fill": "#f08a1d"
+      }
+    },
+    {
+      "command": "shape.preset",
+      "params": {
+        "kind": "triangle",
+        "cx": 60,
+        "cy": 36,
+        "width": 20,
+        "height": 20,
+        "fill": "#7b2f8e"
+      }
+    },
+    {
+      "command": "shape.preset",
+      "params": {
+        "kind": "teardrop",
+        "cx": 84,
+        "cy": 36,
+        "width": 20,
+        "height": 20,
+        "fill": "#f4a6c0"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "type": "fill",
+        "underlay": false
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "shapes.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/shape-start-points.pes",
+      "make": "On a 100 × 100 mm Design Page, with Options ▸ Optimize Entry/Exit Points off, draw with the Shapes tools, each in a different thread colour, line Not Sewn, region Fill Stitch with Under Sewing off and every other attribute at its default: a Rectangle (2,2)–(22,22) mm; a Rectangle (26,2)–(46,12); an Ellipse in the box (50,2)–(70,12); a Heart in (74,2)–(94,22); a Diamond in (2,26)–(22,46); a 4-point star in (26,26)–(46,46); a Triangle in (50,26)–(70,46); a Drop in (74,26)–(94,46). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "ends-1",
+      "measure": {
+        "kind": "needleEnds"
+      },
+      "source": {
+        "export": "shapes.pes",
+        "colorBlock": 0
+      },
+      "expected": [
+        10,
+        20,
+        10,
+        20
+      ],
+      "tolerance": {
+        "mm": 0.5
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the rectangle 20 × 20 mm starts and ends at (10, 20) mm from the top-left of its stitches",
+      "reference": {}
+    },
+    {
+      "id": "ends-2",
+      "measure": {
+        "kind": "needleEnds"
+      },
+      "source": {
+        "export": "shapes.pes",
+        "colorBlock": 1
+      },
+      "expected": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "tolerance": {
+        "mm": 0.5
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the rectangle 20 × 10 mm starts and ends at (10, 10) mm from the top-left of its stitches",
+      "reference": {}
+    },
+    {
+      "id": "ends-3",
+      "measure": {
+        "kind": "needleEnds"
+      },
+      "source": {
+        "export": "shapes.pes",
+        "colorBlock": 2
+      },
+      "expected": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "tolerance": {
+        "mm": 0.5
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the ellipse 20 × 10 mm starts and ends at (10, 10) mm from the top-left of its stitches",
+      "reference": {}
+    },
+    {
+      "id": "ends-4",
+      "measure": {
+        "kind": "needleEnds"
+      },
+      "source": {
+        "export": "shapes.pes",
+        "colorBlock": 3
+      },
+      "expected": [
+        10,
+        20,
+        10,
+        20
+      ],
+      "tolerance": {
+        "mm": 0.5
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the heart starts and ends at (10, 20) mm from the top-left of its stitches",
+      "reference": {}
+    },
+    {
+      "id": "ends-5",
+      "measure": {
+        "kind": "needleEnds"
+      },
+      "source": {
+        "export": "shapes.pes",
+        "colorBlock": 4
+      },
+      "expected": [
+        10,
+        20,
+        10,
+        20
+      ],
+      "tolerance": {
+        "mm": 0.5
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the diamond starts and ends at (10, 20) mm from the top-left of its stitches",
+      "reference": {}
+    },
+    {
+      "id": "ends-6",
+      "measure": {
+        "kind": "needleEnds"
+      },
+      "source": {
+        "export": "shapes.pes",
+        "colorBlock": 5
+      },
+      "expected": [
+        10,
+        20,
+        10,
+        20
+      ],
+      "tolerance": {
+        "mm": 0.5
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the four-point star starts and ends at (10, 20) mm from the top-left of its stitches",
+      "reference": {}
+    },
+    {
+      "id": "ends-7",
+      "measure": {
+        "kind": "needleEnds"
+      },
+      "source": {
+        "export": "shapes.pes",
+        "colorBlock": 6
+      },
+      "expected": [
+        0,
+        20,
+        0,
+        20
+      ],
+      "tolerance": {
+        "mm": 0.5
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the triangle starts and ends at (0, 20) mm from the top-left of its stitches",
+      "reference": {}
+    },
+    {
+      "id": "ends-8",
+      "measure": {
+        "kind": "needleEnds"
+      },
+      "source": {
+        "export": "shapes.pes",
+        "colorBlock": 7
+      },
+      "expected": [
+        10,
+        20,
+        10,
+        20
+      ],
+      "tolerance": {
+        "mm": 0.5
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the drop starts and ends at (10, 20) mm from the top-left of its stitches",
+      "reference": {}
+    }
+  ]
+}
