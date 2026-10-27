@@ -634,7 +634,8 @@ openstitch_app::editor (lib, no egui, unit-tested)
   saved as `ui.json` beside `user.json`). The binary's `ribbon.rs` draws it, decides which
   commands are enabled for the selection and runs them; `panes.rs` holds the Sewing Order,
   Import/Color/Sewing Attributes/Text Attributes and Stitch Simulator panes and the status bar;
-  `icons.rs` paints the icons; `theme.rs` the light (default), dark and system themes. See
+  `icons.rs` renders the command icons (SVGs in `assets/icons/commands`, with code-drawn
+  fallbacks); `theme.rs` the light (default), dark and system themes. See
   [UI_LAYOUT.md](UI_LAYOUT.md).
 - **Input.** Scroll pans, pinch or Ctrl/⌘+scroll zooms at the pointer, middle-drag, Space+drag or
   the Pan tool (H) pans; ⌘/Ctrl+C / V copy and paste objects, ⌘/Ctrl+= / − zoom; ⌘/Ctrl+Z, ⇧+⌘Z / Ctrl+Y, ⌘S, ⇧⌘S, ⌘O, ⇧⌘I (import), ⌘N, ⌘0 (fit), ⌘A, ⌘D, Delete,

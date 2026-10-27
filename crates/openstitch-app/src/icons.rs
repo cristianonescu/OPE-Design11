@@ -1,5 +1,10 @@
-//! OpenStitch's own command icons, drawn with simple vector shapes so they scale with the
-//! ribbon and follow the colour theme. No artwork from any other product is used.
+//! OpenStitch's own command icons. Each one is an SVG in `assets/icons/commands`, generated for
+//! OpenStitch with Higgsfield (prompts in `prompts.tsv` there), rasterised at the exact pixel
+//! size with its charcoal outline swapped for the theme's text colour. The vector shapes drawn
+//! below are the fallback when an SVG cannot be rendered. No artwork from any other product is
+//! used.
+
+use std::collections::HashMap;
 
 use eframe::egui::{
     self, Color32, CornerRadius, Pos2, Rect, Shape, Stroke, StrokeKind, pos2, vec2,
@@ -177,8 +182,165 @@ fn glyph(a: Action) -> Glyph {
     }
 }
 
+/// The name and source of the generated SVG of `g`.
+fn svg(g: Glyph) -> (&'static str, &'static str) {
+    use Glyph::*;
+    macro_rules! svg {
+        ($n:literal) => {
+            (
+                $n,
+                include_str!(concat!("../../../assets/icons/commands/", $n, ".svg")),
+            )
+        };
+    }
+    match g {
+        Page => svg!("page"),
+        Folder => svg!("folder"),
+        Disk => svg!("disk"),
+        DiskPen => svg!("disk_pen"),
+        Printer => svg!("printer"),
+        Info => svg!("info"),
+        Gear => svg!("gear"),
+        Palette => svg!("palette"),
+        Wand => svg!("wand"),
+        Export => svg!("export"),
+        Exit => svg!("exit"),
+        Undo => svg!("undo"),
+        Redo => svg!("redo"),
+        Help => svg!("help"),
+        Database => svg!("database"),
+        Cursor => svg!("cursor"),
+        PointEdit => svg!("point_edit"),
+        SelectAll => svg!("select_all"),
+        Scissors => svg!("scissors"),
+        Copy => svg!("copy"),
+        Clipboard => svg!("clipboard"),
+        Duplicate => svg!("duplicate"),
+        Trash => svg!("trash"),
+        ArrangeCopy => svg!("arrange_copy"),
+        Dropper => svg!("dropper"),
+        Text => svg!("text"),
+        Font => svg!("font"),
+        TextPath => svg!("text_path"),
+        Shapes => svg!("shapes"),
+        Rect => svg!("rect"),
+        Ellipse => svg!("ellipse"),
+        Polygon => svg!("polygon"),
+        Curve => svg!("curve"),
+        Pencil => svg!("pencil"),
+        OpenLine => svg!("open_line"),
+        ZoomIn => svg!("zoom_in"),
+        ZoomOut => svg!("zoom_out"),
+        Zoom => svg!("zoom"),
+        Hand => svg!("hand"),
+        Ruler => svg!("ruler"),
+        Import => svg!("import"),
+        Align => svg!("align"),
+        Rotate => svg!("rotate"),
+        Size => svg!("size"),
+        Group => svg!("group"),
+        Ungroup => svg!("ungroup"),
+        Stamp => svg!("stamp"),
+        Overlap => svg!("overlap"),
+        Frame => svg!("frame"),
+        Wizard(c) if c == GREEN => svg!("wizard_background"),
+        Wizard(c) if c == RED => svg!("wizard_applique"),
+        Wizard(c) if c == GOLD => svg!("wizard_patch"),
+        Wizard(_) => svg!("wizard_cutwork"),
+        Needle => svg!("needle"),
+        Image => svg!("image"),
+        Photo => svg!("photo"),
+        Cross => svg!("cross"),
+        Eye => svg!("eye"),
+        Pane => svg!("pane"),
+        Grid => svg!("grid"),
+        Magnet => svg!("magnet"),
+        Guide => svg!("guide"),
+        Swatch(false) => svg!("swatch_line"),
+        Swatch(true) => svg!("swatch_region"),
+        SewType(false) => svg!("sew_line"),
+        SewType(true) => svg!("sew_region"),
+        Blocks => svg!("blocks"),
+        Outline => svg!("outline"),
+        Split => svg!("split"),
+        Direction => svg!("direction"),
+        Point => svg!("point"),
+        Offset => svg!("offset"),
+        Flower => svg!("flower"),
+        EntryExit => svg!("entry_exit"),
+        Hoop => svg!("hoop"),
+    }
+}
+
+/// The outline colour of the SVGs, replaced by the theme's text colour.
+const OUTLINE: &str = "#2b2f36";
+
+/// Rendered icons by (name, size in pixels, outline colour); `None` when the SVG failed.
+#[derive(Clone, Default)]
+struct Textures(HashMap<(&'static str, u32, [u8; 4]), Option<egui::TextureHandle>>);
+
+fn texture(ctx: &egui::Context, g: Glyph, px: u32, fg: Color32) -> Option<egui::TextureHandle> {
+    let (name, src) = svg(g);
+    let key = (name, px, fg.to_array());
+    let id = egui::Id::unique("openstitch-icons");
+    if let Some(t) = ctx.data(|d| {
+        d.get_temp::<Textures>(id)
+            .and_then(|c| c.0.get(&key).cloned())
+    }) {
+        return t;
+    }
+    let t = rasterize(src, px, fg).map(|img| {
+        ctx.load_texture(
+            format!("icon-{name}-{px}"),
+            img,
+            egui::TextureOptions::LINEAR,
+        )
+    });
+    ctx.data_mut(|d| {
+        d.get_temp_mut_or_default::<Textures>(id)
+            .0
+            .insert(key, t.clone())
+    });
+    t
+}
+
+/// Renders `src` into a `px`-square image with the outline drawn in `fg`.
+fn rasterize(src: &str, px: u32, fg: Color32) -> Option<egui::ColorImage> {
+    use resvg::{tiny_skia, usvg};
+    let [r, g, b, _] = fg.to_array();
+    let src = src.replace(OUTLINE, &format!("#{r:02x}{g:02x}{b:02x}"));
+    let tree = usvg::Tree::from_str(&src, &usvg::Options::default()).ok()?;
+    let mut pixmap = tiny_skia::Pixmap::new(px, px)?;
+    let k = px as f32 / tree.size().width();
+    resvg::render(
+        &tree,
+        tiny_skia::Transform::from_scale(k, k),
+        &mut pixmap.as_mut(),
+    );
+    Some(egui::ColorImage::from_rgba_premultiplied(
+        [px as usize; 2],
+        pixmap.data(),
+    ))
+}
+
 /// Draws the icon of `a` filling the square `r`.
 pub fn paint(painter: &egui::Painter, r: Rect, a: Action, fg: Color32, enabled: bool) {
+    let px = (r.width() * painter.ctx().pixels_per_point()).round() as u32;
+    if let Some(t) = texture(painter.ctx(), glyph(a), px, fg) {
+        let tint = if enabled {
+            Color32::WHITE
+        } else {
+            Color32::WHITE.gamma_multiply(0.35)
+        };
+        let uv = Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0));
+        painter.image(t.id(), r, uv, tint);
+        return;
+    }
+    paint_shapes(painter, r, a, fg, enabled);
+}
+
+/// Draws the code-drawn fallback icon of `a` filling the square `r`.
+fn paint_shapes(painter: &egui::Painter, r: Rect, a: Action, fg: Color32, enabled: bool) {
     let fade = |c: Color32| if enabled { c } else { c.gamma_multiply(0.35) };
     let fg = fade(fg);
     let (blue, red, green, gold) = (fade(BLUE), fade(RED), fade(GREEN), fade(GOLD));
@@ -905,5 +1067,36 @@ pub fn paint_logo(painter: &egui::Painter, r: Rect, bg: Color32) {
             [p(x, 0.84), p(x + 0.14, 0.84)],
             Stroke::new(s / 14.0, Color32::from_rgb(0xff, 0xd0, 0x6a)),
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_command_has_a_rendered_svg_and_every_svg_is_used() {
+        let mut used = std::collections::BTreeSet::new();
+        for &a in Action::ALL {
+            let (name, src) = svg(glyph(a));
+            assert!(src.contains(OUTLINE), "{name}: no outline colour");
+            let img = rasterize(src, 32, Color32::WHITE).unwrap_or_else(|| panic!("{name}"));
+            let inked = img.pixels.iter().filter(|p| p.a() > 128).count();
+            assert!(inked >= 8, "{name}: draws nothing");
+            used.insert(name.to_string());
+        }
+        let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/icons/commands");
+        let files: std::collections::BTreeSet<String> = std::fs::read_dir(dir)
+            .expect("icons folder")
+            .filter_map(|e| {
+                e.ok()?
+                    .file_name()
+                    .into_string()
+                    .ok()?
+                    .strip_suffix(".svg")
+                    .map(str::to_string)
+            })
+            .collect();
+        assert_eq!(used, files);
     }
 }
