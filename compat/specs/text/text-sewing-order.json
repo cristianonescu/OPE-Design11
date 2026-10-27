@@ -1,0 +1,73 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "text-sewing-order",
+  "area": "text",
+  "title": "Sewing order inside a text: every letter's region, then every letter's outline",
+  "description": "AB in Lato Bold, 20 mm, region Fill Stitch in red and line Running Stitch in black: PE-DESIGN 11.50 sews both letters' fills (one colour block), then both letters' outlines (a second block), not fill and outline letter by letter (four blocks). OpenStitch sews the same order.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Lettering",
+        "feature": "Text entry and attributes"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md, Next 11: sewing order inside a text"
+    },
+    {
+      "kind": "measured",
+      "note": "compat/reference/text/text-sewing-order.pes, PE-DESIGN 11.50 (pe-gui)"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "AB",
+        "font": "lato-bold",
+        "size": 20,
+        "fill": "Red",
+        "x": 50,
+        "y": 50,
+        "outline": "Black"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "text.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "text/text-sewing-order.pes",
+      "make": "On a 100 × 100 mm Design Page (File > New), with Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user and used as a TrueType font. Add the text AB, size 20.0 mm, region Fill Stitch colour 800 RED, line sewing Running Stitch colour 900 BLACK, every other value default. Save As PES (default type) as compat/reference/text/text-sewing-order.pes and record in compat/reference/MANIFEST.json the PE-DESIGN version, date, OS, the font as PE lists it, every Text Attributes value and every setting you changed (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "color-blocks",
+      "measure": {
+        "kind": "colorBlocks"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "expected": 2,
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/text/text-sewing-order.pes: Sewing Order pane rows 1-1 A fill, 1-2 B fill, 2-1 A outline, 2-2 B outline; two colour blocks. Per-block stitch counts are left out: the outline block depends on the line defaults (PE pitch 2.0 mm with tie-in and lock), which the lines track calibrates.",
+      "reference": {}
+    }
+  ]
+}

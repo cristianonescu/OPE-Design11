@@ -346,6 +346,9 @@ at its defaults, 800 RED, Save As default type.
   both files have two points 0.27–0.30 mm outside it that the default window splits.
   Stretched has no spec: PE's file puts the 140 mm text off the page, beyond what the PES
   reader takes in. Spaced evenly centres each character in an equal share of the outline.
+- `text-sewing-order`: AB with a red fill and a black running outline. PE sews both fills,
+  then both outlines, in two colour blocks, as OpenStitch does. The outline block's stitch
+  count waits for the lines track's PE line defaults (pitch 2.0 mm, tie-in and lock).
 
 ### `pes-csewseg-trims`: reference, 2026-10-27
 
