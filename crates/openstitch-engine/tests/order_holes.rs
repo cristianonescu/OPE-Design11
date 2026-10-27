@@ -86,7 +86,10 @@ fn optimize_moves_entry_and_exit_to_the_closest_points() {
     assert_eq!(r(1).entry.map(|p| p.x), Some(500.0));
     assert_eq!(r(1).exit.map(|p| p.x), Some(500.0));
     assert_eq!(r(2).entry.map(|p| p.x), Some(350.0));
-    assert!(r(0).entry.is_none() && r(2).exit.is_none());
+    // The ends that link to nothing keep the Rectangle tool's start and end point, the
+    // middle of the bottom edge (PE-DESIGN 11; spec shape-start-points).
+    assert_eq!(r(0).entry, Some(openstitch_design::v2(50.0, 100.0)));
+    assert_eq!(r(2).exit, Some(openstitch_design::v2(300.0, 100.0)));
 }
 
 #[test]
@@ -122,7 +125,11 @@ fn optimize_keeps_colour_groups_and_overlap_order() {
         r(1).exit.is_some() && r(3).entry.is_some(),
         "red to red is linked"
     );
-    assert!(r(3).exit.is_none(), "red to blue is not linked: {o:?}");
+    assert_eq!(
+        r(3).exit,
+        Some(openstitch_design::v2(250.0, 100.0)),
+        "red to blue is not linked; the default bottom-centre point stays: {o:?}"
+    );
 }
 
 #[test]
@@ -136,7 +143,8 @@ fn optimize_entry_exit_option_persists_and_applies_to_new_shapes() {
         run(&mut s, "options.get", json!({})),
         json!({"optimizeEntryExit": false})
     );
-    // Off: new shapes keep the default entry and exit.
+    // Off: new shapes keep the Rectangle tool's default entry and exit, the middle of the bottom
+    // edge (PE-DESIGN 11; spec shape-start-points).
     run(
         &mut s,
         "shape.rectangle",
@@ -147,13 +155,9 @@ fn optimize_entry_exit_option_persists_and_applies_to_new_shapes() {
         "shape.rectangle",
         json!({"x": 25, "y": 0, "width": 10, "height": 10}),
     );
-    assert!(
-        s.design().objects[1]
-            .region
-            .as_ref()
-            .expect("r")
-            .entry
-            .is_none()
+    assert_eq!(
+        s.design().objects[1].region.as_ref().expect("r").entry,
+        Some(openstitch_design::v2(300.0, 100.0))
     );
     run(&mut s, "options.set", json!({"optimizeEntryExit": true}));
     assert!(
@@ -202,15 +206,12 @@ fn optimize_entry_exit_option_persists_and_applies_to_new_shapes() {
     }
     let j = design_jumps(&plain);
     assert!(j.len() == 1 && (j[0] - 15.0).abs() <= 0.5, "{j:?}");
-    // One undo step removes the shape and the moved exit point together.
+    // One undo step removes the shape and the moved exit point together: the first square's
+    // exit is back at its own default, the middle of its bottom edge.
     run(&mut t, "history.undo", json!({}));
-    assert!(
-        t.design().objects[0]
-            .region
-            .as_ref()
-            .expect("r")
-            .exit
-            .is_none()
+    assert_eq!(
+        t.design().objects[0].region.as_ref().expect("r").exit,
+        Some(openstitch_design::v2(50.0, 100.0))
     );
     let _ = std::fs::remove_dir_all(&dir);
 }
