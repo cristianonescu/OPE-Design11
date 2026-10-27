@@ -109,6 +109,22 @@ pub(crate) fn default_fill() -> Thread {
     PEC_CHART[2].clone().unwrap_or(Thread::rgb(0x0A55A3))
 }
 
+/// A text's region sewing of `kind` with PE-DESIGN 11's defaults for text, which differ from
+/// a shape's (pe-gui, compat text-defaults-h / -fill): density 5.0 and under sewing off for
+/// Satin and Fill, pull compensation 0, and Fill's Frequency 30 %.
+pub(crate) fn text_region(kind: RegionType, thread: Thread) -> RegionSewing {
+    let mut r = RegionSewing::new(kind, thread);
+    if matches!(kind, RegionType::Satin | RegionType::Fill) {
+        r.density = 5.0;
+        r.underlay = false;
+        r.pull_compensation = 0.0;
+    }
+    if kind == RegionType::Fill {
+        r.frequency = Some(30.0);
+    }
+    r
+}
+
 pub(crate) fn default_line() -> Thread {
     PEC_CHART[20].clone().unwrap_or(Thread::rgb(0))
 }
@@ -1239,7 +1255,11 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     {
                         // The direction and the start and end points stay (as in PE-DESIGN).
                         let (angle, entry, exit) = (r.angle, r.entry, r.exit);
-                        r = RegionSewing::new(k, r.thread);
+                        r = if o.kind == ObjectKind::Text {
+                            text_region(k, r.thread)
+                        } else {
+                            RegionSewing::new(k, r.thread)
+                        };
                         (r.angle, r.entry, r.exit) = (angle, entry, exit);
                     }
                     if let Some(c) = &color {
@@ -2150,6 +2170,8 @@ fn text_commands() -> Vec<CommandSpec> {
                 let y = p.opt("y", page.y / MM, -5000.0, 5000.0)?;
                 spec.transform = Transform::translation(x * MM, y * MM);
                 let (region, line) = sewing(p, true)?;
+                // Text is Satin by default, with PE-DESIGN's text attributes.
+                let region = region.map(|r| text_region(RegionType::Satin, r.thread));
                 let mut object = DesignObject::shape(Vec::new(), region, line);
                 object.kind = ObjectKind::Text;
                 object.name = object_name(p)?;

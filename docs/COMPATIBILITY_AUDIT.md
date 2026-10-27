@@ -834,6 +834,13 @@ Line references are relative to `crates/`.
   (specs text-size-h, text-size-hg, text-line-spacing-50/100/150, all at the reference tier).
   OpenStitch now does the same; `.osd` files before version 3 keep the old capital-height
   basis.
+- **Text sewing defaults (calibrated 2026-10-27):** PE-DESIGN 11.50's text tool sews Satin
+  Stitch at density 5.0 with under sewing off and pull compensation 0; switched to Fill it is
+  density 5.0, under sewing off, Frequency 30 % (pe-gui, specs text-defaults-h and
+  text-defaults-fill). OpenStitch now gives new text the same; saved texts keep their stored
+  attributes. Stitch counts still differ: Fill 544 vs PE's 483 (fill rows join with a short
+  step along the outline where PE runs straight into the next row; the stitch-sweeps track),
+  Satin 221 vs 285 (satin structure).
 - **Fit Text to Outline (calibrated 2026-10-27):** PE-DESIGN 11.50's dialog has Horizontal
   Alignment left / centre (default) / right / stretched / spaced evenly, Vertical Alignment
   above (default) / centred / below (by the size, not the capital height), Text Orientation

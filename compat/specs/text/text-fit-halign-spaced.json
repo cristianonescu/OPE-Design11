@@ -3,7 +3,7 @@
   "id": "text-fit-halign-spaced",
   "area": "text",
   "title": "Fit Text to Outline: Horizontal Alignment spaced evenly round the outline",
-  "description": "ABCDE (Lato Bold, 8 mm) fitted to a 60 mm circle sewn in running stitch, Horizontal Alignment spaced evenly round the outline, the others at their defaults: letters spaced evenly round the whole circle. Measured from the circle's centre on the text's needle points.",
+  "description": "ABCDE (Lato Bold, 8 mm) fitted to a 60 mm circle sewn in running stitch, Horizontal Alignment spaced evenly round the outline, the others at their defaults: letters spaced evenly round the whole circle. Measured from the circle's centre on the text's needle points. No mid-angle check: with the letters spaced evenly every gap between them is the same, so the largest gap (which the polar measure's span and middle start from) is any of them, and the middle is not defined; the span and radii are.",
   "covers": {
     "audit": [],
     "featureMatrix": [
@@ -51,6 +51,13 @@
       }
     },
     {
+      "command": "object.setRegion",
+      "params": {
+        "id": 2,
+        "type": "fill"
+      }
+    },
+    {
       "command": "text.setPath",
       "params": {
         "id": 2,
@@ -72,28 +79,6 @@
     }
   ],
   "measurements": [
-    {
-      "id": "mid-angle",
-      "measure": {
-        "kind": "polar",
-        "center": [
-          50,
-          50
-        ],
-        "ring": 30,
-        "property": "midAngle"
-      },
-      "source": {
-        "export": "text.pes"
-      },
-      "evidence": "PE-DESIGN 11.50 reference: needle points off the 30 mm circle, seen from its centre",
-      "reference": {
-        "tolerance": {
-          "deg": 3,
-          "modulo": 360
-        }
-      }
-    },
     {
       "id": "angle-span",
       "measure": {

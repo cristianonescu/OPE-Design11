@@ -960,6 +960,30 @@
       "settings": "File > New (100 x 100 mm page, grid 1 mm, Snap to Grid on, PE restarted earlier this session so tool attributes were at defaults); Shapes > Open Straight Line, clicks (10,20), (50,20), double-click (50,40); line colour set to 800 EMBROIDERY RED with the line selected (the tool had 030 VERMILLION left from an earlier shape); no region (an open line has none). The same line was then switched to each type in turn (Shapes tab > Sew > line sew type) with the line selected; the attributes shown are what PE gave the type on switching (none changed). Save As PES default type (#PES0110). Type: Line sew: Stitch Type first button (triangle; second is diamond), Size 4.0 mm, Time 5 time(s), Arrange first button (left-pointing), Start/End Type Feed. Status: 41,30 x 22,00 mm, Stitches = 348.",
       "sha256": "89d1fdfc7858567eacc03eaf705892277e35b2f21f7c669d9fe490dbacf071ea",
       "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-defaults-h.pes",
+      "spec": "text-defaults-h",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "T6 TEXT SEWING DEFAULTS, 2026-10-27 21:12-21:14, PE-DESIGN 11.50 restarted at 20:41 (the Text tool had not been changed since except its size). Font: Lato-Bold.ttf from crates/openstitch-design/fonts installed for the current Windows user, PE lists 'Lato' (style Bold). App menu > New (100 x 100 mm page, grid 1 mm, Snap on). Home > Text > first tool 'A'; Text tab as PE shows it: font Lato, size set to 20.0 (the only change), line Not Sewn (Line), region Satin Stitch, region colour 800 EMBROIDERY RED; Text Attributes all default (Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, Alignment Left, horizontal, Transform off). Clicked the page at (50, 50) mm (the click sets the baseline-left), typed H, Select tool. Box about (50, 29.4)-(67.4, 50) mm. Save As 'Layout & Editing Ver.11.0 File (*.PES)'. This file: (a) as is. Sewing Attributes > Region sew for the SATIN text (PE text defaults): Under sewing UNTICKED (type buttons and Density 'Medium' greyed), Density 5.0 line/mm (house button), Half Stitch unticked, Pull compensation 0.0 mm (house button), Connection Points greyed (Default). No Direction, stitch length or Frequency field is shown for satin text; no Line sew section (line Not Sewn). Status: 17,40 x 20,60 mm, Stitches = 285.",
+      "sha256": "4c5c5933f30c1548fff76ca6158d80a59737d8950199d23b89876ef6ee6e1a3d",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-defaults-fill.pes",
+      "spec": "text-defaults-fill",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "T6 TEXT SEWING DEFAULTS, 2026-10-27 21:12-21:14, PE-DESIGN 11.50 restarted at 20:41 (the Text tool had not been changed since except its size). Font: Lato-Bold.ttf from crates/openstitch-design/fonts installed for the current Windows user, PE lists 'Lato' (style Bold). App menu > New (100 x 100 mm page, grid 1 mm, Snap on). Home > Text > first tool 'A'; Text tab as PE shows it: font Lato, size set to 20.0 (the only change), line Not Sewn (Line), region Satin Stitch, region colour 800 EMBROIDERY RED; Text Attributes all default (Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, Alignment Left, horizontal, Transform off). Clicked the page at (50, 50) mm (the click sets the baseline-left), typed H, Select tool. Box about (50, 29.4)-(67.4, 50) mm. Save As 'Layout & Editing Ver.11.0 File (*.PES)'. This file: (b) the same text, then (text selected) Text tab > Sew > region type Fill Stitch, nothing else. Sewing Attributes > Region sew for FILL text: Under sewing UNTICKED (Density 'Medium' greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Connection Points greyed (Default); no Direction field. Status: 17,40 x 20,60 mm, Stitches = 483 (same as T1 text-size-h).",
+      "sha256": "8b25b4a30f9a185223d11abae33cce80f8bee4eb3c6e6c4cbe9ae5b25ae491a4",
+      "notes": "Header #PES0110."
     }
   ]
 }
