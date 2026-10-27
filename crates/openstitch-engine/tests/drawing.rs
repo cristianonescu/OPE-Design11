@@ -329,7 +329,18 @@ fn paste_attributes_between_objects() {
         json!({"from": 1, "ids": [2]}),
     );
     let (a, b) = (&s.design().objects[0], &s.design().objects[1]);
-    assert_eq!(a.region, b.region);
+    // Each shape keeps its own start and end point (PE-DESIGN's default for the shape tool).
+    let sewing = |o: &openstitch_design::DesignObject| {
+        o.region.clone().map(|mut r| {
+            (r.entry, r.exit) = (None, None);
+            r
+        })
+    };
+    assert_eq!(sewing(a), sewing(b));
+    assert_ne!(
+        a.region.as_ref().and_then(|r| r.entry),
+        b.region.as_ref().and_then(|r| r.entry)
+    );
     assert_eq!(a.line, b.line);
     // Only the line colour.
     run(
