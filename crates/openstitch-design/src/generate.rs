@@ -288,20 +288,22 @@ fn sew_rows(
     chain_spans(&row_spans(contours, p, holes), p, points)
 }
 
-/// Inside intervals of every scan row, lengthened by the pull compensation at both ends.
+/// Inside intervals of every scan row, lengthened by the pull compensation at both ends. A
+/// negative pull compensation (an inset) leaves out spans shorter than twice the inset: they
+/// would collapse to a needle point outside the region.
 fn row_spans(contours: &[Contour], p: &RegionParams, holes: &[Contour]) -> Vec<RowSpan> {
     scan_rows(contours, p.angle, p.row_spacing, holes)
         .into_iter()
         .flat_map(|r| {
             let (row, y) = (r.index, r.y);
-            r.spans.into_iter().map(move |s| {
+            r.spans.into_iter().filter_map(move |s| {
                 let lo = s.start() - p.pull_compensation;
                 let hi = s.end() + p.pull_compensation;
-                RowSpan {
+                (hi >= lo).then_some(RowSpan {
                     row,
                     y,
-                    range: lo..=hi.max(lo),
-                }
+                    range: lo..=hi,
+                })
             })
         })
         .collect()

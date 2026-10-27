@@ -483,6 +483,36 @@ fn gradation_pattern_sews_equal_bands_from_edge_to_edge() {
 }
 
 #[test]
+fn fill_under_sewing_rows_stay_inside_narrow_points() {
+    // The star of compat hole-sewing-pentagon-star: rows across its points are shorter than
+    // the 1 mm inset at both ends; they must not collapse to a needle point outside the star.
+    let pts = [
+        (50.0, 42.0),
+        (52.3511, 48.7639),
+        (59.5106, 48.9098),
+        (53.8042, 53.2361),
+        (55.8779, 60.0902),
+        (50.0, 56.0),
+        (44.1221, 60.0902),
+        (46.1958, 53.2361),
+        (40.4894, 48.9098),
+        (47.6489, 48.7639),
+    ];
+    let star = vec![Contour::new(
+        pts.iter().map(|&(x, y)| v2(x * 10.0, y * 10.0)).collect(),
+        true,
+    )];
+    let r = region(RegionType::Fill);
+    assert!(r.underlay);
+    let layers = crate::region::layers(&star, &r, &[]);
+    for l in &layers {
+        assert_inside(l, &star, "star");
+    }
+    // The under sewing is one run: no jump or trim inside the star.
+    assert_eq!(layers[0].len(), 1);
+}
+
+#[test]
 fn gradation_reads_the_old_single_percentage() {
     let old: crate::Gradation = serde_json::from_str("40").expect("number");
     assert_eq!(old, crate::Gradation::continuous(40.0));
