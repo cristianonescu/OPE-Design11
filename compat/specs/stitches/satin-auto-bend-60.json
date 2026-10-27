@@ -1,0 +1,133 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "satin-auto-bend-60",
+  "area": "stitches",
+  "title": "Auto satin turns a 60° bend as PE-DESIGN does",
+  "description": "A 5 mm band bent through 60° in satin with Auto direction, density 3, without under sewing, must turn its corner as PE-DESIGN 11.50 does: the rung direction turns evenly with the distance along the outer edge, over two band widths for a 60° turn.",
+  "covers": {
+    "audit": [
+      7
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Satin: a zigzag across the column"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-auto-bend-60.pes (under sewing off, density 3, 2026-10-27): 177 stitches; the rung direction turns from 90° to 150° at about 5.6° per mm of outer edge, centred on the outer corner (90° per three band widths, as on the 90° bend). PE imported the shape from SVG with its vertices on the 0.1 mm grid and centred it: 38.60 × 17.40 mm against the polygon's 38.66 × 17.50 mm."
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.polygon",
+      "params": {
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            30,
+            0
+          ],
+          [
+            38.66,
+            15
+          ],
+          [
+            34.33,
+            17.5
+          ],
+          [
+            27.11,
+            5
+          ],
+          [
+            0,
+            5
+          ]
+        ]
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "satin",
+        "autoDirection": true,
+        "density": 3,
+        "underlay": false
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "band.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/satin-auto-bend-60.pes",
+      "make": "On a 100 × 100 mm Design Page draw (or import) the closed polygon (0,0) (30,0) (38.66,15) (34.33,17.5) (27.11,5) (0,5) mm (a 5 mm band bent through 60°). Line Not Sewn; region Satin Stitch, Direction Auto (Half Stitch at its default), Density 3.0, Under Sewing off, other attributes default. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "band.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            0,
+            0
+          ]
+        }
+      },
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-auto-bend-60.pes (under sewing off, density 3, 2026-10-27)",
+      "reference": {
+        "tolerance": {
+          "percent": 10
+        }
+      }
+    },
+    {
+      "id": "longest-stitch",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "band.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            0,
+            0
+          ]
+        }
+      },
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-auto-bend-60.pes (under sewing off, density 3, 2026-10-27): the longest crossings are in the corner fan.",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    }
+  ]
+}

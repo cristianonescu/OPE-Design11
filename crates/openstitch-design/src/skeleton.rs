@@ -426,7 +426,7 @@ impl Grid {
     }
 }
 
-fn segment_distance(p: Vec2, a: Vec2, b: Vec2) -> f64 {
+pub(crate) fn segment_distance(p: Vec2, a: Vec2, b: Vec2) -> f64 {
     let d = b - a;
     let len2 = d.x * d.x + d.y * d.y;
     let t = if len2 > 0.0 {

@@ -360,7 +360,16 @@ Line references are relative to `crates/`.
   Path are unavailable with Auto.
 - **REA:** none.
 - **Grade:** Documented difference.
-- **Status:** fixed, internal regression tier only (not reference verified). Auto satin
+- **PE-DESIGN 11.50 behaviour** (black-box, 2026-10-27; references `satin-auto-bend-90-nohalf.pes`,
+  `satin-auto-bend-60.pes`, `auto-satin-bent-band.pes`): Auto satin starts at the start point, runs
+  0.5 mm inside the outline to the far end and sews back. On straight legs the rungs are square to
+  the leg; at a bend the outer ends keep an even spacing along the outer edge and the rung
+  direction turns linearly with the distance along it, over three band widths for a 90° turn (two
+  for 60°), centred on the outer corner; each rung reaches across to the inner edge, so the inner
+  ends crowd towards the inner corner. The satin reaches the band's square ends.
+- **Status:** fixed; the corner fan, end reach and start travel follow PE-DESIGN (reference tier:
+  satin-auto-bend-90-nohalf, satin-auto-bend-60, auto-satin-bent-band; `region::fan_corners`,
+  `region::reach_ends`). Earlier: Auto satin
   derives a skeleton and sews along it, each row reaching the outline
   (`skeleton::rungs_within`). Running Stitch Path is hidden with Auto satin, which travels
   inside (item 3); OpenStitch has no Half Stitch or Stitch Type for regions. Fill, regions with holes or
