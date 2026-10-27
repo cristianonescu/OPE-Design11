@@ -132,7 +132,10 @@ fn fill_and_satin_travel_between_parts_without_trims() {
 #[test]
 fn the_outline_paths_differ_from_inside_travel() {
     let pts = |path: &str| -> Vec<(i64, i64)> {
-        sew_u(json!({"type": "fill", "angle": 0, "runningStitchPath": path}))
+        // 45°: at 0° the rows end on the notch's edge, where the shortest inside path is the
+        // outline itself. PE-DESIGN's 0° U files share that leg-to-leg travel too
+        // (compat/reference/stitches/region-travel-u-fill.pes and -on-outline.pes).
+        sew_u(json!({"type": "fill", "angle": 45, "runningStitchPath": path}))
             .iter()
             .map(|e| ((e.0 * 100.0) as i64, (e.1 * 100.0) as i64))
             .collect()
@@ -322,7 +325,9 @@ fn row_shifts(frequency: Option<f64>) -> Vec<f64> {
         "shape.rectangle",
         json!({"x": 10, "y": 10, "width": 40, "height": 40}),
     );
-    let mut params = json!({"id": 1, "type": "fill", "angle": 0, "stitchLength": 4});
+    // The top rows only: under sewing runs across them.
+    let mut params =
+        json!({"id": 1, "type": "fill", "angle": 0, "stitchLength": 4, "underlay": false});
     if let Some(f) = frequency {
         params["frequency"] = json!(f);
     }

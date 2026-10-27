@@ -300,6 +300,8 @@ mod tests {
         let rect = Contour::new(band, true);
         let mut r = sewing(RegionType::Fill);
         r.direction_curve = Some(arch());
+        // The top rows only: under sewing runs across them.
+        r.underlay = false;
         let spacing = 10.0 / r.density;
         let w = Warp::new(&arch()).expect("warp");
         let points = layers(&rect, &r);

@@ -159,22 +159,95 @@ pub fn fill_shifted(
 ) -> Vec<Run> {
     let l = p.stitch_length;
     sew_rows(contours, p, holes, |span, row, forward| {
-        let phase = row_phase(row, shift) * l;
-        let mut xs = vec![*span.start()];
-        let mut k = ((span.start() - phase) / l).floor() + 1.0;
-        while phase + k * l < *span.end() {
-            let x = phase + k * l;
-            if x - span.start() > l * 0.25 && span.end() - x > l * 0.25 {
-                xs.push(x);
-            }
-            k += 1.0;
-        }
-        xs.push(*span.end());
+        let mut xs = tatami_xs(span, row_phase(row, shift) * l, l);
         if !forward {
             xs.reverse();
         }
         xs
     })
+}
+
+/// Shortest row span [`fill_edge_to_edge`] sews, 0.1 mm.
+const MIN_EDGE_ROW_SPAN: f64 = 3.0;
+
+/// [`fill_shifted`] with PE-DESIGN's row placement: the first row lies on one edge of the
+/// region and the last on the other (a 40 mm square at 4.5 rows/mm has 181 rows), instead of
+/// starting half a row spacing in. Rows on an edge are sampled just inside it. With an
+/// `entry` point (design space) the rows chain from the row end nearest it, so the fill starts
+/// at the entry instead of travelling along the outline to the first row.
+pub fn fill_edge_to_edge(
+    contours: &[Contour],
+    p: &RegionParams,
+    holes: &[Contour],
+    shift: Option<f64>,
+    entry: Option<Vec2>,
+) -> Vec<Run> {
+    let l = p.stitch_length;
+    let spans = edge_row_spans(contours, p, holes);
+    let start = entry.map(|e| e.rotated(-p.angle.to_radians()));
+    chain(
+        &spans,
+        p,
+        |span, row, forward| {
+            let mut xs = tatami_xs(span, row_phase(row, shift) * l, l);
+            if !forward {
+                xs.reverse();
+            }
+            xs
+        },
+        false,
+        start,
+    )
+}
+
+/// Rows from the rotated bounds' minimum to their maximum, `row_spacing` apart, both ends
+/// included, lengthened by the pull compensation. Spans shorter than
+/// [`MIN_EDGE_ROW_SPAN`] are left out: an end row that only touches a curved outline at its
+/// tip would otherwise be a stitch a fraction of a millimetre long.
+fn edge_row_spans(contours: &[Contour], p: &RegionParams, holes: &[Contour]) -> Vec<RowSpan> {
+    let Some(b) = crate::region::rotated_bounds(contours, p.angle) else {
+        return Vec::new();
+    };
+    let (h, s) = (b.height(), p.row_spacing);
+    if !(h > 0.0 && s > 0.0) {
+        return Vec::new();
+    }
+    let n = ((h / s) + 1e-6).floor().min(100_000.0) as usize;
+    let inside = 1e-3_f64.min(h / 4.0);
+    (0..=n)
+        .flat_map(|row| {
+            // Sampled just past the row's line, so a row on a horizontal edge inside the region
+            // (a notch's end) does not run along that edge across the gap.
+            let y = (b.min_y + row as f64 * s + inside).clamp(b.min_y + inside, b.max_y - inside);
+            crate::region::spans_at(contours, holes, p.angle, y)
+                .into_iter()
+                .filter_map(move |sp| {
+                    let lo = sp.start() - p.pull_compensation;
+                    let hi = sp.end() + p.pull_compensation;
+                    (hi - lo >= MIN_EDGE_ROW_SPAN).then_some(RowSpan {
+                        row,
+                        y,
+                        range: lo..=hi,
+                    })
+                })
+        })
+        .collect()
+}
+
+/// Tatami needle positions along `span`: its ends, and the `l` grid shifted by `phase` in
+/// between, leaving out grid points within a quarter stitch of an end.
+fn tatami_xs(span: &Span, phase: f64, l: f64) -> Vec<f64> {
+    let mut xs = vec![*span.start()];
+    let mut k = ((span.start() - phase) / l).floor() + 1.0;
+    while phase + k * l < *span.end() {
+        let x = phase + k * l;
+        if x - span.start() > l * 0.25 && span.end() - x > l * 0.25 {
+            xs.push(x);
+        }
+        k += 1.0;
+    }
+    xs.push(*span.end());
+    xs
 }
 
 /// Satin region: one needle point per row on alternate edges, so every stitch crosses the
@@ -233,7 +306,7 @@ pub fn chain_spans(
     p: &RegionParams,
     points: impl Fn(&Span, usize, bool) -> Vec<f64>,
 ) -> Vec<Run> {
-    chain(spans, p, points, false)
+    chain(spans, p, points, false, None)
 }
 
 /// [`chain_spans`] for satin: when a row follows the previous one along the same edge (the
@@ -246,7 +319,7 @@ pub fn chain_satin_spans(
     p: &RegionParams,
     points: impl Fn(&Span, usize, bool) -> Vec<f64>,
 ) -> Vec<Run> {
-    chain(spans, p, points, true)
+    chain(spans, p, points, true, None)
 }
 
 fn chain(
@@ -254,6 +327,7 @@ fn chain(
     p: &RegionParams,
     points: impl Fn(&Span, usize, bool) -> Vec<f64>,
     satin: bool,
+    start: Option<Vec2>,
 ) -> Vec<Run> {
     let Some(first) = spans.first() else {
         return Vec::new();
@@ -261,7 +335,7 @@ fn chain(
     let mut used = vec![false; spans.len()];
     let mut runs: Vec<Run> = Vec::new();
     let mut current: Run = Vec::new();
-    let mut position = v2(*first.range.start(), first.y);
+    let mut position = start.unwrap_or(v2(*first.range.start(), first.y));
     let join_limit = p.row_spacing * 3.0 + p.stitch_length;
     let mut last_row: Option<(usize, f64)> = None;
     for _ in 0..spans.len() {

@@ -299,6 +299,13 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
                 let runs = stamp::apply(std::mem::take(top), &region.stamps);
                 *top = route::route_region(runs, &closed, region.entry, region.exit, 25.0);
             }
+            // PE-DESIGN's fill under sewing runs straight on into the top stitching.
+            if region.underlay
+                && region.underlay_style == crate::model::UnderlayStyle::EdgeFill
+                && let Some(path) = region.travel_path()
+            {
+                layers = vec![region::join_layers(layers, &closed, holes, path)];
+            }
             for runs in layers {
                 out.push(Element {
                     thread: region.thread.clone(),

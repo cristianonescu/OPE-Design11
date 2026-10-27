@@ -432,7 +432,8 @@ fn commands_documented_and_unique() {
 /// Golden regression: `examples/badge.json` exported `badge-golden.pes` (version 1, no objects)
 /// on 2026-10-18, re-recorded on 2026-10-27 without the four zero-length `00 00` records at
 /// jump landings (compat pes-default-v6; otherwise identical), and again when satin took
-/// PE-DESIGN's defaults (4.5 lines/mm, under sewing linked to the top satin). The same design
+/// PE-DESIGN's defaults (4.5 lines/mm, under sewing linked to the top satin), and when fill
+/// did (the ellipse: 4.5 rows/mm, under sewing on, rows edge to edge). The same design
 /// exported as `1t`
 /// must keep writing the identical bytes; the
 /// script's default export is now version 6 with objects and sews the same stitches.

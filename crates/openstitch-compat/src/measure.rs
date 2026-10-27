@@ -151,11 +151,14 @@ pub enum Measure {
     TravelGaps,
     /// Length of every jump move, mm.
     TotalJumpLength,
-    /// Area covered by straight (horizontal, 0°) fill rows: their total length times the
-    /// median row spacing, mm².
+    /// Area covered by straight (horizontal, 0°) fill rows: each row's needle extent (with the
+    /// stitches into and out of it from the neighbouring rows), summed, times the mean row
+    /// spacing, mm². Single points (under sewing across, travel) are not rows.
     StitchedArea,
-    /// Fill at 0°: the needle-grid shift from each row to the next modulo `stitchLength`, mm,
-    /// using needle points strictly inside `interior` (x range, mm).
+    /// Fill at 0°: the needle-grid shift from each fill row to the next modulo `stitchLength`,
+    /// mm, using needle points strictly inside `interior` (x range, mm). Fill rows have two
+    /// consecutive interior needle points one stitch length apart; under sewing, edge runs and
+    /// travel are skipped.
     RowShift {
         #[serde(rename = "stitchLength")]
         stitch_length: f64,
@@ -616,39 +619,203 @@ fn travel_gaps(t: &Trace) -> Vec<f64> {
     out
 }
 
+/// Runs of consecutive stitch points on one horizontal line (same y), in sewing order: (y, xs),
+/// plus the x of the stitch points just before and after the run (when there are any).
+/// Under sewing across the fill and travel stitches give runs of one point.
+#[allow(clippy::type_complexity)]
+fn horizontal_runs(t: &Trace) -> Vec<(f64, Vec<f64>, [Option<(f64, f64)>; 2])> {
+    let pts: Vec<&Entry> = t.stitches().collect();
+    let mut rows: Vec<(f64, Vec<f64>, [Option<(f64, f64)>; 2])> = Vec::new();
+    for (i, e) in pts.iter().enumerate() {
+        match rows.last_mut() {
+            Some((y, xs, _)) if (*y - e.y).abs() < 1e-6 => xs.push(e.x),
+            _ => {
+                if let Some(last) = rows.last_mut() {
+                    last.2[1] = Some((e.x, e.y));
+                }
+                let before = i.checked_sub(1).map(|k| (pts[k].x, pts[k].y));
+                rows.push((e.y, vec![e.x], [before, None]));
+            }
+        }
+    }
+    rows
+}
+
+/// Fill rows (runs of two or more needle points on one line) × the mean distance between the
+/// rows' distinct lines. A row's length is the needle extent of the run together with the
+/// stitches into and out of it from a point at most 0.5 mm away across the rows: a row whose
+/// own needle points stop one grid step short of the edge is still covered to the edge by those
+/// slanted stitches. The file's 0.1 mm rounding of the row lines does not change the mean gap.
+/// Single points (under sewing across the fill, travel) are not rows.
 fn stitched_area(t: &Trace) -> Option<f64> {
-    let rows: Vec<(f64, f64)> = stitch_pairs(t)
-        .map(|(a, b)| ((b.x - a.x).abs(), (b.y - a.y).abs(), a.y))
-        .filter(|&(dx, dy, _)| dx > 0.0 && dy < 0.05 * dx)
-        .map(|(dx, _, y)| (dx, y))
+    let rows: Vec<(f64, f64)> = horizontal_runs(t)
+        .into_iter()
+        .filter(|(_, xs, _)| xs.len() >= 2)
+        .map(|(y, mut xs, ends)| {
+            xs.extend(
+                ends.into_iter()
+                    .flatten()
+                    .filter(|&(_, ny)| (ny - y).abs() <= 0.5)
+                    .map(|(x, _)| x),
+            );
+            let lo = xs.iter().copied().fold(f64::INFINITY, f64::min);
+            let hi = xs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+            (hi - lo, y)
+        })
+        .filter(|&(w, _)| w > 0.0)
         .collect();
     let mut ys: Vec<f64> = rows.iter().map(|r| r.1).collect();
     ys.sort_by(f64::total_cmp);
     ys.dedup_by(|a, b| (*a - *b).abs() < 0.05);
-    let mut gaps: Vec<f64> = ys.windows(2).map(|w| w[1] - w[0]).collect();
-    if gaps.is_empty() {
+    if ys.len() < 2 {
         return None;
     }
-    gaps.sort_by(f64::total_cmp);
-    let spacing = gaps[gaps.len() / 2];
+    let spacing = (ys[ys.len() - 1] - ys[0]) / (ys.len() - 1) as f64;
     Some(rows.iter().map(|r| r.0).sum::<f64>() * spacing)
 }
 
+/// Shift of the needle grid from each fill row to the next, modulo `l`. A fill row is a
+/// horizontal run with two consecutive needle points inside `interior` one stitch length apart
+/// (±0.15 mm); its grid is the first such point. Under sewing, edge runs and travel are not
+/// fill rows and are skipped.
 fn row_shifts(t: &Trace, l: f64, interior: [f64; 2]) -> Vec<f64> {
-    let mut rows: Vec<(f64, Vec<f64>)> = Vec::new();
-    for e in t.stitches() {
-        let keep = e.x > interior[0] + 0.05 && e.x < interior[1] - 0.05;
-        match rows.last_mut() {
-            Some((y, xs)) if (*y - e.y).abs() < 1e-6 => {
-                if keep {
-                    xs.push(e.x);
-                }
-            }
-            _ => rows.push((e.y, if keep { vec![e.x] } else { Vec::new() })),
+    let phases: Vec<f64> = horizontal_runs(t)
+        .into_iter()
+        .filter_map(|(_, xs, _)| {
+            let inner: Vec<f64> = xs
+                .into_iter()
+                .filter(|&x| x > interior[0] + 0.05 && x < interior[1] - 0.05)
+                .collect();
+            inner
+                .windows(2)
+                .find(|w| ((w[1] - w[0]).abs() - l).abs() <= 0.15)
+                .map(|w| w[0].rem_euclid(l))
+        })
+        .collect();
+    phases
+        .windows(2)
+        .map(|w| (w[1] - w[0]).rem_euclid(l))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn trace(points: &[(f64, f64)]) -> Trace {
+        Trace {
+            entries: points
+                .iter()
+                .map(|&(x, y)| Entry {
+                    x,
+                    y,
+                    command: Command::Stitch,
+                    block: 0,
+                })
+                .collect(),
         }
     }
-    let phase = |xs: &[f64]| xs.first().map(|x| x.rem_euclid(l));
-    rows.windows(2)
-        .filter_map(|w| Some((phase(&w[1].1)? - phase(&w[0].1)?).rem_euclid(l)))
-        .collect()
+
+    /// A 40 × 40 mm square at (10, 10): an edge run 1 mm inside at 2.5 mm, under sewing rows
+    /// across (vertical, 2 mm apart), a diagonal travel, then 0° rows `gap` apart with 4 mm
+    /// stitches shifted `shift` per row and row ends on the outline.
+    fn square(gap: f64, shift: f64) -> Vec<(f64, f64)> {
+        square_with(gap, shift, false)
+    }
+
+    /// [`square`]; with `brick`, odd rows leave out their edge points, as PE-DESIGN sews them.
+    fn square_with(gap: f64, shift: f64, brick: bool) -> Vec<(f64, f64)> {
+        let mut p = Vec::new();
+        for k in 0..=15 {
+            p.push((11.0 + 2.5 * k as f64 * 38.0 / 37.5, 49.0));
+        }
+        for (i, x) in (0..20).map(|i| (i, 11.0 + 2.0 * i as f64)) {
+            for k in 0..10 {
+                let y = 11.0 + 38.0 * k as f64 / 9.0;
+                p.push((x, if i % 2 == 0 { 60.0 - y } else { y }));
+            }
+        }
+        for k in 0..20 {
+            let f = k as f64 / 20.0;
+            p.push((49.0 - 39.0 * f, 49.0 - 39.0 * f));
+        }
+        let rows = (40.0 / gap).round() as usize;
+        for r in 0..=rows {
+            let y = ((10.0 + r as f64 * gap) * 10.0).round() / 10.0;
+            let phase = ((r as f64 + 1.0) * shift).rem_euclid(4.0);
+            let mut xs = vec![10.0];
+            let mut x = 10.0 + phase;
+            while x < 50.0 - 1e-9 {
+                if x > 10.0 + 1e-9 {
+                    xs.push(x);
+                }
+                x += 4.0;
+            }
+            xs.push(50.0);
+            if brick && r % 2 == 1 && r < rows {
+                xs.pop();
+                xs.remove(0);
+            }
+            if r % 2 == 1 {
+                xs.reverse();
+            }
+            p.extend(xs.into_iter().map(|x| (x, y)));
+        }
+        p
+    }
+
+    #[test]
+    fn row_shift_skips_under_sewing_and_travel() {
+        for shift in [0.0, 1.0, 2.0] {
+            let shifts = row_shifts(&trace(&square(1.0 / 4.5, shift)), 4.0, [10.0, 50.0]);
+            assert_eq!(shifts.len(), 180, "{shift}");
+            for s in &shifts {
+                let d = (s - shift).rem_euclid(4.0);
+                assert!(d.min(4.0 - d) < 0.08, "{shift}: {shifts:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn stitched_area_of_a_square_with_under_sewing() {
+        for gap in [0.25, 1.0 / 4.5, 0.4] {
+            let a = stitched_area(&trace(&square(gap, 4.0 / 3.0))).expect("rows");
+            assert!((a - 1600.0).abs() < 0.02 * 1600.0, "{gap}: {a}");
+        }
+    }
+
+    #[test]
+    fn stitched_area_counts_rows_whose_edge_points_are_left_out() {
+        let a = stitched_area(&trace(&square_with(1.0 / 4.5, 1.0, true))).expect("rows");
+        assert!((a - 1600.0).abs() < 0.02 * 1600.0, "{a}");
+        let shifts = row_shifts(
+            &trace(&square_with(1.0 / 4.5, 1.0, true)),
+            4.0,
+            [10.0, 50.0],
+        );
+        assert_eq!(shifts.len(), 180);
+    }
+
+    #[test]
+    fn stitched_area_leaves_out_a_hole() {
+        // 40 × 40 mm with a 10 × 10 mm hole in the middle: the left and right parts of the
+        // hole's rows are sewn as separate runs.
+        let gap = 0.25;
+        let mut p = Vec::new();
+        for r in 0..=160 {
+            let y = 10.0 + r as f64 * gap;
+            if (25.0..=35.0).contains(&y) {
+                continue;
+            }
+            p.extend([(10.0, y), (30.0, y), (50.0, y)]);
+        }
+        for (lo, hi) in [(10.0, 25.0), (35.0, 50.0)] {
+            for r in 0..40 {
+                let y = 25.0 + (r as f64 + 0.5) * gap;
+                p.extend([(lo, y), (hi, y)]);
+            }
+        }
+        let a = stitched_area(&trace(&p)).expect("rows");
+        assert!((a - 1500.0).abs() < 0.02 * 1500.0, "{a}");
+    }
 }

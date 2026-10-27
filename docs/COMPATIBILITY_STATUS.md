@@ -10,7 +10,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 | Area | Feature | Tier | Specs |
 |---|---|---|---|
-| Editing | Hole sewing… | internal-regression; reference pending | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
+| Editing | Hole sewing… | internal-regression | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
 | Editing | Manual Punch: shapes made of several sewing-direction lines… | internal-regression; reference pending | `satin-zigzag-column` |
 | Editing | Sewing order editing… | reference | `optimize-entry-exit` |
 | Editing | Thread colour, sew type, straight sewing direction… | reference | `auto-satin-bent-band` |
@@ -31,9 +31,9 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | 3 | internal-regression; reference pending | `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `region-travel-u-satin`, `running-stitch-path-exclusions` |
 | 7 | reference | `auto-satin-bent-band` |
 | 14 | internal-regression; reference pending | `programmable-fill-45` |
-| 15 | internal-regression; reference pending | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default` |
+| 15 | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default` |
 | 16 | reference | `optimize-entry-exit` |
-| 17 | internal-regression; reference pending | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
+| 17 | internal-regression | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
 | 18 | oracle | `pes-thread-chart-roundtrip` |
 | 19 | reference | `pes-design-properties` |
 
@@ -47,18 +47,18 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `pes/pes-thread-chart-roundtrip` | pass | oracle | — | pass | — | — |
 | `stitches/attribute-ranges` | pass | internal-regression | pass | — | — | — |
 | `stitches/auto-satin-bent-band` | pass | reference | pass | — | pass | — |
-| `stitches/fill-frequency-0` | pass | internal-regression | pass | — | pending | — |
-| `stitches/fill-frequency-25` | pass | internal-regression | pass | — | pending | — |
-| `stitches/fill-frequency-50` | pass | internal-regression | pass | — | pending | — |
+| `stitches/fill-frequency-0` | pass | reference | pass | — | pass | — |
+| `stitches/fill-frequency-25` | pass | reference | pass | — | pass | — |
+| `stitches/fill-frequency-50` | pass | reference | pass | — | pass | — |
 | `stitches/fill-frequency-default` | pass | internal-regression | pass | — | — | — |
 | `stitches/hole-sewing-limits` | pass | internal-regression | pass | — | — | — |
-| `stitches/hole-sewing-pentagon-star` | pass | internal-regression | pass | — | pending | — |
+| `stitches/hole-sewing-pentagon-star` | pass | reference | pass | — | pass | — |
 | `stitches/optimize-entry-exit` | pass | reference | pass | — | pass | — |
 | `stitches/programmable-fill-45` | pass | internal-regression | pass | — | pending | — |
-| `stitches/region-travel-u-along-outline` | pass | internal-regression | pass | — | pending | — |
-| `stitches/region-travel-u-fill` | pass | internal-regression | pass | — | pending | — |
+| `stitches/region-travel-u-along-outline` | pass | reference | pass | — | pass | — |
+| `stitches/region-travel-u-fill` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-gradation` | pass | internal-regression | pass | — | pending | — |
-| `stitches/region-travel-u-on-outline` | pass | internal-regression | pass | — | pending | — |
+| `stitches/region-travel-u-on-outline` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-satin` | pass | reference | pass | — | pass | — |
 | `stitches/running-stitch-path-exclusions` | pass | internal-regression | pass | — | — | — |
 | `stitches/satin-zigzag-column` | pass | internal-regression | pass | — | pending | — |

@@ -2,28 +2,16 @@
   "schema": "openstitch-compat-reference/1",
   "files": [
     {
-      "file": "pes/pes-design-properties.pes",
+      "file": "pes/design-property-native.pes",
       "spec": "pes-design-properties",
       "reference": "pe-design",
       "madeBy": "Cristian Onescu",
       "peDesignVersion": "11.50",
       "date": "2026-10-27",
       "os": "Windows 11 Pro 10.0.26200",
-      "settings": "Opened target/compat/work/pes-design-properties/rose.pes (OpenStitch export, header #PES0060) with Open; Design Property viewed and closed with Cancel; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
-      "sha256": "e1eb912b3ae81f7e6aaa3755db9de40256031d3ee900447a6d3e8d717e72ccd3",
-      "notes": "Design Property showed Design Name 'Rose', Category 'Flowers', Keywords 'rose, red, spring' as expected, but Author 'Ana PÃ©rez' (the UTF-8 bytes of 'é' read as two characters) and Comment 'Line oneline two' (the two comment lines run together on one line). File Version 6.0, 40.00 x 29.60 mm, 874 stitches, one colour 5 Brother Red."
-    },
-    {
-      "file": "stitches/optimize-entry-exit.pes",
-      "spec": "optimize-entry-exit",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-27",
-      "os": "Windows 11 Pro 10.0.26200",
-      "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Rectangle tool: line Not Sewn (Line), region Fill Stitch with Under sewing unticked and every other attribute at its default (density 4.5 line/mm, Manual straight line 45 degrees, step pitch 4.0 mm, frequency 30 %, pull compensation 0.0 mm), colour BROTHER EMBROIDERY 800 RED; three 10 x 10 mm squares drawn with top-left corners at (0,0), (50,0), (25,0) mm in that order; Optimize Sewing Order clicked (Sewing Order pane); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
-      "sha256": "b892b243d2561ec410799385e69fc8ad1589b207a524f5b0a37eb07c168bedec",
-      "notes": "Option > Options > Optimize Entry/Exit Points was ON (default here, not changed). 182 stitches per square. The squares sew in drawing order (x 0, 50, 25); the exit of each square and the entry of the next are on the facing corners (jumps 40.0 and 15.0 mm). Black-box tests of the command (gui-optimize-findings in the track notes): with or without the option, Optimize Sewing Order keeps drawing order within a colour, groups colours (red 0, blue 50, red 25 became red 0, red 25, blue 50), and links entry/exit only between same-colour neighbours. Round 1 (PR #34) made the same design with under sewing on: same order, gaps 41.3 and 16.3 mm, because the under sewing starts 1 mm inside the outline."
+      "settings": "File > New (Design Page 100 x 100 mm). Design Property OK is disabled on an empty design, so first one Rectangle tool square 10 x 10 mm (line Not Sewn, Fill Stitch defaults, colour 007 EMBROIDERY PRUSSIAN BLUE). Then Design Property: Design Name Rose, Category Flowers, Author Ana Pérez, Keywords rose, red, spring, Comment Line one, Enter, line two (typed as keystrokes; the Enter stayed in the comment box). OK. Save As PES, default type Layout & Editing Ver.11.0 File (#PES0110). Windows display language en-US, system locale en-US (ANSI code page 1252), user format ro-RO.",
+      "sha256": "d701e4f51fe83bf754662e6641c6375fd7f46fe0c9ccfd243f84bc6c6c8fe226",
+      "notes": "Author stored as Windows-1252 (E9 for é); comment newline CR LF."
     },
     {
       "file": "pes/pes-default-v6.pes",
@@ -38,16 +26,16 @@
       "notes": "Replaces the round-1 file (PR #34, SHA-256 2e0be1a68ebda3170a3ddadb18ad595e586288c68888ef1cb0c0e84016a10fe6), which re-saved the earlier fill-based a.pes: the spec now sews running-stitch lines only, so the reference no longer changes with region generation. a.pes opened with its stitches as two stitch blocks: 40.00 x 30.00 mm, 56 stitches (status bar); Design Property File Version 6.0, Design Name t1, colours 5 Brother Red and 20 Brother Black, 2 colour changes. Before the CSewSeg fix in the same PR, the same design (SHA-256 11dfc91a0dfedb25ccf74bef263dbb80fe8dde373d23bf15f62ddfef39908dd4) opened with 54 stitches: PE-DESIGN sews only the points of CSewSeg stitch runs, so each jump landing that was only in the jump segment was lost; PE's own re-saved file reopened unchanged (54)."
     },
     {
-      "file": "pes/design-property-native.pes",
+      "file": "pes/pes-design-properties.pes",
       "spec": "pes-design-properties",
       "reference": "pe-design",
       "madeBy": "Cristian Onescu",
       "peDesignVersion": "11.50",
       "date": "2026-10-27",
       "os": "Windows 11 Pro 10.0.26200",
-      "settings": "File > New (Design Page 100 x 100 mm). Design Property OK is disabled on an empty design, so first one Rectangle tool square 10 x 10 mm (line Not Sewn, Fill Stitch defaults, colour 007 EMBROIDERY PRUSSIAN BLUE). Then Design Property: Design Name Rose, Category Flowers, Author Ana Pérez, Keywords rose, red, spring, Comment Line one, Enter, line two (typed as keystrokes; the Enter stayed in the comment box). OK. Save As PES, default type Layout & Editing Ver.11.0 File (#PES0110). Windows display language en-US, system locale en-US (ANSI code page 1252), user format ro-RO.",
-      "sha256": "d701e4f51fe83bf754662e6641c6375fd7f46fe0c9ccfd243f84bc6c6c8fe226",
-      "notes": "Author stored as Windows-1252 (E9 for é); comment newline CR LF."
+      "settings": "Opened target/compat/work/pes-design-properties/rose.pes (OpenStitch export, header #PES0060) with Open; Design Property viewed and closed with Cancel; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "e1eb912b3ae81f7e6aaa3755db9de40256031d3ee900447a6d3e8d717e72ccd3",
+      "notes": "Design Property showed Design Name 'Rose', Category 'Flowers', Keywords 'rose, red, spring' as expected, but Author 'Ana PÃ©rez' (the UTF-8 bytes of 'é' read as two characters) and Comment 'Line oneline two' (the two comment lines run together on one line). File Version 6.0, 40.00 x 29.60 mm, 874 stitches, one colour 5 Brother Red."
     },
     {
       "file": "stitches/auto-satin-bent-band.pes",
@@ -60,6 +48,102 @@
       "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); Closed Straight Line tool, points (0,0) (30,0) (30,30) (25,30) (25,5) (0,5) mm; line Not Sewn; Satin Stitch, Direction Auto; other attributes default (density 4.5, under sewing on Medium, pull compensation 0.0); colour BROTHER EMBROIDERY 800 RED; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "5ecdbdbba88a4e8614fb498dbb7ac5402fb21fefd2ba017333d52c627e5feae2",
       "notes": "With Auto, Half Stitch becomes available and is checked by default; Running Stitch Path and Gradation are greyed. 433 stitches shown."
+    },
+    {
+      "file": "stitches/fill-frequency-0.pes",
+      "spec": "fill-frequency-0",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (2.5 mm); Rectangle tool (10,10)-(50,50) mm; line Not Sewn; Fill Stitch, Direction 0 degrees, Step pitch 4.0 mm (default), Frequency 0 %; other attributes default; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "b853886274c695c82bdf8bcaaf2fcaf377752a35c16db720776de151e5a6fcb6",
+      "notes": "2168 stitches shown."
+    },
+    {
+      "file": "stitches/fill-frequency-25.pes",
+      "spec": "fill-frequency-25",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (2.5 mm); Rectangle tool (10,10)-(50,50) mm; line Not Sewn; Fill Stitch, Direction 0 degrees, Step pitch 4.0 mm (default), Frequency 25 %; other attributes default; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "3c85d59fe678bf67eab8d89410d686436a897855b2e60df82e9b2c4f36145af6",
+      "notes": "Same design as fill-frequency-0 with only Frequency changed, then Save As. 2305 stitches shown."
+    },
+    {
+      "file": "stitches/fill-frequency-50.pes",
+      "spec": "fill-frequency-50",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (2.5 mm); Rectangle tool (10,10)-(50,50) mm; line Not Sewn; Fill Stitch, Direction 0 degrees, Step pitch 4.0 mm (default), Frequency 50 %; other attributes default; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "61ab49262b1d278b90e584aebec8060efa95a0c346af13cce370666fd008f7d4",
+      "notes": "Same design as fill-frequency-0 with only Frequency changed, then Save As. 2260 stitches shown."
+    },
+    {
+      "file": "stitches/hole-sewing-pentagon-star.pes",
+      "spec": "hole-sewing-pentagon-star",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Import Patterns > from Vector Image of a hand-written SVG holding only the spec's pentagon (blue) and star (yellow) vertices; Group > UnGroup; both shapes Fill Stitch, Direction 0 degrees, line Not Sewn, other attributes default; then Rectangle tool 10 x 4 mm at (45,62) mm on a 1 mm grid, Fill Stitch, Direction 0 degrees, colour BROTHER EMBROIDERY 800 RED; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "66105083a6afa41c259d018e383e221262f06fa98681e4d25d0468e2130519de",
+      "notes": "The hole sewing pair was made by the SVG import, not by Modify Overlap > Set hole sewing: after import, Modify Overlap showed Cancel hole sewing enabled for the pentagon. Cancelling it and then selecting both shapes and choosing Set hole sewing reported 'Invalid pair was selected!!' every time (also with Ctrl+A), so the import's own pair was kept. The import centres the pentagon and star on the page: the pentagon shows 38.00 x 36.20 mm (spec 38.04 x 36.18 mm), about 1.7 mm lower than the spec's absolute position; the star keeps its place relative to the pentagon. Thread colours mapped by the import were not changed."
+    },
+    {
+      "file": "stitches/optimize-entry-exit.pes",
+      "spec": "optimize-entry-exit",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Rectangle tool: line Not Sewn (Line), region Fill Stitch with Under sewing unticked and every other attribute at its default (density 4.5 line/mm, Manual straight line 45 degrees, step pitch 4.0 mm, frequency 30 %, pull compensation 0.0 mm), colour BROTHER EMBROIDERY 800 RED; three 10 x 10 mm squares drawn with top-left corners at (0,0), (50,0), (25,0) mm in that order; Optimize Sewing Order clicked (Sewing Order pane); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "b892b243d2561ec410799385e69fc8ad1589b207a524f5b0a37eb07c168bedec",
+      "notes": "Option > Options > Optimize Entry/Exit Points was ON (default here, not changed). 182 stitches per square. The squares sew in drawing order (x 0, 50, 25); the exit of each square and the entry of the next are on the facing corners (jumps 40.0 and 15.0 mm). Black-box tests of the command (gui-optimize-findings in the track notes): with or without the option, Optimize Sewing Order keeps drawing order within a colour, groups colours (red 0, blue 50, red 25 became red 0, red 25, blue 50), and links entry/exit only between same-colour neighbours. Round 1 (PR #34) made the same design with under sewing on: same order, gaps 41.3 and 16.3 mm, because the under sewing starts 1 mm inside the outline."
+    },
+    {
+      "file": "stitches/region-travel-u-along-outline.pes",
+      "spec": "region-travel-u-along-outline",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); same U as region-travel-u-fill; Fill Stitch, Direction 0 degrees, Running Stitch Path second button (Along outline); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "6305454d73617250f9497f90ef9d21159da14304bb2a775712be39b7c15cc73c",
+      "notes": "The Running Stitch Path buttons have no tooltips; the second button's hint picture shows the path just inside the outline. 1266 stitches shown."
+    },
+    {
+      "file": "stitches/region-travel-u-fill.pes",
+      "spec": "region-travel-u-fill",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); Closed Straight Line tool, points (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm; line Not Sewn; colour BROTHER EMBROIDERY 800 RED; Fill Stitch, Direction 0 degrees; Running Stitch Path left at default (Inside); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "bbfb037f7b0aa7f51c4377b38a71fab64391890061a9fde267898f68669d7cf9",
+      "notes": "1258 stitches shown."
+    },
+    {
+      "file": "stitches/region-travel-u-on-outline.pes",
+      "spec": "region-travel-u-on-outline",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); same U as region-travel-u-fill; Fill Stitch, Direction 0 degrees, Running Stitch Path third button (On outline); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "b524af27905ea29924966bf9c4ed90af83402ad94385945c5985ff2be0b31492",
+      "notes": "The third button's hint picture shows the path on the outline. 1263 stitches shown."
     },
     {
       "file": "stitches/region-travel-u-satin.pes",
