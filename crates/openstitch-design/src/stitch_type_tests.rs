@@ -428,16 +428,62 @@ fn underlay_styles_layer_inside_the_region() {
 fn gradation_spreads_rows_towards_the_far_side() {
     let c = vec![Contour::rectangle(0.0, 0.0, 100.0, 200.0)];
     let even = crate::region::row_positions(&c, 0.0, 4.0, None);
-    let graded = crate::region::row_positions(&c, 0.0, 4.0, Some(25.0));
+    let graded =
+        crate::region::row_positions(&c, 0.0, 4.0, Some(&crate::Gradation::continuous(25.0)));
     assert_eq!(even.len(), 50);
     assert!(graded.len() < 40 && graded.len() > 25, "{}", graded.len());
     let gaps: Vec<f64> = graded.windows(2).map(|w| w[1] - w[0]).collect();
     assert!(gaps.windows(2).all(|g| g[1] >= g[0]));
     assert!(gaps[gaps.len() - 1] > 3.0 * gaps[0]);
     let mut r = region(RegionType::Satin);
-    r.gradation = Some(25.0);
+    r.gradation = Some(crate::Gradation::continuous(25.0));
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     assert_inside(&runs, &c, "gradation");
+}
+
+#[test]
+fn gradation_pattern_sews_equal_bands_from_edge_to_edge() {
+    // 90 mm tall: nine 10 mm bands at 53, 47, …, 5 % of 4.5 rows/mm (PE-DESIGN's default).
+    let c = vec![Contour::rectangle(0.0, 0.0, 400.0, 900.0)];
+    let spacing = 10.0 / 4.5;
+    let ys = crate::region::row_positions(&c, 0.0, spacing, Some(&crate::Gradation::PE_DEFAULT));
+    // First row on the start edge, last on the far edge (sampled just inside).
+    assert!(ys[0] < 0.01 && ys[ys.len() - 1] > 900.0 - 0.01, "{ys:?}");
+    for (band, pct) in [(0, 53.0), (4, 29.0), (7, 11.0)] {
+        let lo = band as f64 * 100.0;
+        let gap = ys
+            .windows(2)
+            .find(|w| w[0] >= lo + 1.0)
+            .map(|w| w[1] - w[0])
+            .expect("row in band");
+        let expected = spacing / (pct / 100.0);
+        assert!(
+            (gap - expected).abs() < 1e-6,
+            "band {band}: {gap} vs {expected}"
+        );
+    }
+    // The rest before the far edge is split evenly, no step longer than the last gap.
+    let gaps: Vec<f64> = ys.windows(2).map(|w| w[1] - w[0]).collect();
+    let last = gaps[gaps.len() - 1];
+    assert!(last <= spacing / 0.05 + 1e-6, "{gaps:?}");
+    let mut r = region(RegionType::Fill);
+    r.gradation = Some(crate::Gradation::PE_DEFAULT);
+    let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
+    assert_inside(&runs, &c, "gradation pattern");
+}
+
+#[test]
+fn gradation_reads_the_old_single_percentage() {
+    let old: crate::Gradation = serde_json::from_str("40").expect("number");
+    assert_eq!(old, crate::Gradation::continuous(40.0));
+    let pattern = serde_json::to_string(&crate::Gradation::PE_DEFAULT).expect("json");
+    assert_eq!(pattern, r#"{"max":53.0,"min":5.0,"steps":9}"#);
+    let back: crate::Gradation = serde_json::from_str(&pattern).expect("pattern");
+    assert_eq!(back, crate::Gradation::PE_DEFAULT);
+    // Continuous: the density falls linearly, as before patterns.
+    let g = crate::Gradation::continuous(25.0);
+    assert!((g.fraction(0.0) - 1.0).abs() < 1e-12 && (g.fraction(1.0) - 0.25).abs() < 1e-12);
+    assert!((g.fraction(0.5) - 0.625).abs() < 1e-12);
 }
 
 #[test]

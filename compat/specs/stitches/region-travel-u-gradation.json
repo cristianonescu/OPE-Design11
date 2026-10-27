@@ -79,7 +79,7 @@
       "params": {
         "type": "fill",
         "angle": 0,
-        "gradation": 50,
+        "gradationPattern": true,
         "id": 1
       }
     }
@@ -93,7 +93,7 @@
     {
       "id": "pe-design",
       "file": "stitches/region-travel-u-gradation.pes",
-      "make": "On a 100 × 100 mm Design Page draw the closed polygon (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm. Line sewing off; region colour red; region sew type Fill Stitch, Direction 0°, Gradation on at 50 % (Running Stitch Path then cannot be Inside). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+      "make": "On a 100 × 100 mm Design Page draw the closed polygon (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm. Line sewing off; region colour red; region sew type Fill Stitch, Direction 0°, Gradation on with the default Gradation Pattern Setting (the first pattern: Max 53 %, Min 5 %, 9 steps 53/47/41/35/29/23/17/11/5 %, Blend off; Running Stitch Path then cannot be Inside). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
     }
   ],
   "measurements": [
