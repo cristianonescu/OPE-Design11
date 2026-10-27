@@ -21,9 +21,9 @@
       "peDesignVersion": "11.50",
       "date": "2026-10-27",
       "os": "Windows 11 Pro 10.0.26200",
-      "settings": "Opened target/compat/work/pes-default-v6/a.pes (OpenStitch export, header #PES0060, SHA-256 7ec0e1e4404d1ee9fd7e5355e5813ac68701132fa059e48a997ec78340f5bd0c: two open polylines sewn as running stitch, run pitch 2.5 mm, run times 1, no region; Red (20,20)-(60,20)-(60,50)-(20,50) mm, then Black (30,30)-(50,30)-(50,40) mm) with Open, from a copy outside the repository; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
-      "sha256": "ae19e98a1dd543e51d519e7a8b039b768b6c4dba12c09007041fa431e818ef22",
-      "notes": "Replaces the round-1 file (PR #34, SHA-256 2e0be1a68ebda3170a3ddadb18ad595e586288c68888ef1cb0c0e84016a10fe6), which re-saved the earlier fill-based a.pes: the spec now sews running-stitch lines only, so the reference no longer changes with region generation. a.pes opened with its stitches as two stitch blocks: 40.00 x 30.00 mm, 56 stitches (status bar); Design Property File Version 6.0, Design Name t1, colours 5 Brother Red and 20 Brother Black, 2 colour changes. Before the CSewSeg fix in the same PR, the same design (SHA-256 11dfc91a0dfedb25ccf74bef263dbb80fe8dde373d23bf15f62ddfef39908dd4) opened with 54 stitches: PE-DESIGN sews only the points of CSewSeg stitch runs, so each jump landing that was only in the jump segment was lost; PE's own re-saved file reopened unchanged (54)."
+      "settings": "Opened the lines track's target/compat/work/pes-default-v6/a.pes (D:\\_sandboxes\\PE-reference-notes\\round2\\lines\\pes-default-v6-a.pes, OpenStitch export, header #PES0060, SHA-256 f385834340f91d18542ab5c77a0ac925b45bccfeeaa5e368edfa8dba8adb44c3: the spec's two open running-stitch polylines, now with tie-in and lock stitches) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "cadcb9e14c789bc9d5878c0c7e58ac6c5f083ec1a3f094f6d7d6a6db33493006",
+      "notes": "Replaces the #41 file; OpenStitch's lines now carry tie-in and lock stitches. a.pes opened with its stitches as two stitch blocks: 40.00 x 30.00 mm, 64 stitches (status bar), equal to the 64 stitch records in a.pes's PEC block."
     },
     {
       "file": "pes/pes-design-properties.pes",
@@ -213,9 +213,9 @@
       "peDesignVersion": "11.50",
       "date": "2026-10-27",
       "os": "Windows 11 Pro 10.0.26200",
-      "settings": "Opened the OpenStitch export a.pes (#PES0060, SHA-256 74cbaca405d3ebca3ccbf434c2af1dc26901d62cc86367baf6a802202f048e8b, from a copy outside the repository) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
-      "sha256": "b6151f5755f8064433cca627616a1973369d2c7aec26fb9b6afc00c187c483b0",
-      "notes": "a.pes opened with its stitches: 40.00 x 40.00 mm, 32 stitches, one colour; the move between the two lines is drawn as a dash-dot line. View > View Thread Trimming is greyed for this design, and Option > Options > Jump Stitch Trimming ('Add jump stitch trimming to the entered patterns') shows ticked but greyed; neither was changed. The re-save keeps the PEC trim flag on the move (record 17, 0x20 flag on both coordinates). Also saved as Layout & Editing Ver.6.0 (#PES0060; PE asks 'This embroidery data will be saved in the old file format. OK to save the data as stitch data?', answered OK): a-resave-old.pes, SHA-256 7624e86fdab71c7a6397600d5781665637208c6f33fdb7083e4cafc8a3ff04f2, in the notes folder. The 1t file b.pes (PEC only) opened blank, so it was not re-saved."
+      "settings": "Opened the lines track's OpenStitch export (D:\\_sandboxes\\PE-reference-notes\\round2\\lines\\pes-csewseg-trims-a.pes, built from origin/main + #55, header #PES0060, SHA-256 e472541b9abc6af1dd709e3201f3d19bb139594e8046c3023397fde097f83b5f: two Red running lines with a trim between them, now with tie-in and lock stitches) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "caea70d8f80593b9511dfc6fdfee4930a9c4d0b8033f98ebe19749740a3b0a1e",
+      "notes": "Replaces the #53 file; OpenStitch's lines now carry tie-in and lock stitches. a.pes opened with its stitches: 40.00 x 40.00 mm, 40 stitches, one colour; the move between the lines drawn as a dash-dot line. View > View Thread Trimming greyed; Option > Options > Jump Stitch Trimming ('Add jump stitch trimming to the entered patterns') ticked but greyed; neither changed. The re-save keeps the PEC trim flag on the move."
     },
     {
       "file": "stitches/shape-start-points.pes",
@@ -395,6 +395,78 @@
       "os": "Windows 11 Pro 10.0.26200",
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. This file: text \"AB\", size 20.0, region Fill Stitch 800 EMBROIDERY RED, line Running Stitch 900 EMBROIDERY BLACK (Running at its defaults: pitch 2.0, times 1), every other value default. Status after Select: 37,50 x 20,60 mm, Stitches = 1321 (two colour blocks). Sewing Order pane: row 1 (red, frame \"AB\") = 1-1 \"A\" fill, 1-2 \"B\" fill; row 2 (black, frame \"AB\" outline) = 2-1 \"A\" outline, 2-2 \"B\" outline. So PE sews every letter's region first (A, B), then every letter's outline (A, B), one colour block each. Save As PES default type (#PES0110).",
       "sha256": "0ec2415c8c3e43c486cea9f27b1871f6b8f1afd269632b716939c2e643088f0a",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-running-default.pes",
+      "spec": "line-running-default",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (100 x 100 mm page, grid 1 mm, Snap to Grid on, PE restarted earlier this session so tool attributes were at defaults); Shapes > Open Straight Line, clicks (10,20), (50,20), double-click (50,40); line colour set to 800 EMBROIDERY RED with the line selected (the tool had 030 VERMILLION left from an earlier shape); no region (an open line has none). The same line was then switched to each type in turn (Shapes tab > Sew > line sew type) with the line selected; the attributes shown are what PE gave the type on switching (none changed). Save As PES default type (#PES0110). Type: Line sew: Run pitch 2.0 mm, Run time(s) 1. Status: 40,00 x 20,00 mm, Stitches = 35.",
+      "sha256": "9fa77e98c574a829e441d414767aef8b4d0832c42bc6e32c3185b42df57f6f1f",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-triple-default.pes",
+      "spec": "line-triple-default",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (100 x 100 mm page, grid 1 mm, Snap to Grid on, PE restarted earlier this session so tool attributes were at defaults); Shapes > Open Straight Line, clicks (10,20), (50,20), double-click (50,40); line colour set to 800 EMBROIDERY RED with the line selected (the tool had 030 VERMILLION left from an earlier shape); no region (an open line has none). The same line was then switched to each type in turn (Shapes tab > Sew > line sew type) with the line selected; the attributes shown are what PE gave the type on switching (none changed). Save As PES default type (#PES0110). Type: Line sew: Run pitch 2.0 mm (only field). Status: 40,00 x 20,00 mm, Stitches = 95.",
+      "sha256": "04ca7fb996fa49d9085e0dce2eec32e96a46218d1c45dbdf70880b25eaec2738",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-zigzag-default.pes",
+      "spec": "line-zigzag-default",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (100 x 100 mm page, grid 1 mm, Snap to Grid on, PE restarted earlier this session so tool attributes were at defaults); Shapes > Open Straight Line, clicks (10,20), (50,20), double-click (50,40); line colour set to 800 EMBROIDERY RED with the line selected (the tool had 030 VERMILLION left from an earlier shape); no region (an open line has none). The same line was then switched to each type in turn (Shapes tab > Sew > line sew type) with the line selected; the attributes shown are what PE gave the type on switching (none changed). Save As PES default type (#PES0110). Type: Line sew: Under sewing on, Zigzag width 2.0 mm, Density 4.5 line/mm, Half Stitch on, Sharp Corners first (left) button, Miter Limit 0.0 mm. Status: 41,00 x 21,00 mm, Stitches = 312.",
+      "sha256": "5a6f6bc9e5c9a16e627b262060f4c7d0c478ec336424b9a2f70214db19551cdb",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-zigzag-density-max.pes",
+      "spec": "line-zigzag-density-max",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (100 x 100 mm page, grid 1 mm, Snap to Grid on, PE restarted earlier this session so tool attributes were at defaults); Shapes > Open Straight Line, clicks (10,20), (50,20), double-click (50,40); line colour set to 800 EMBROIDERY RED with the line selected (the tool had 030 VERMILLION left from an earlier shape); no region (an open line has none). The same line was then switched to each type in turn (Shapes tab > Sew > line sew type) with the line selected; the attributes shown are what PE gave the type on switching (none changed). Save As PES default type (#PES0110). Type: zigzag defaults but Density 14.0 line/mm (typing 99 clamps to 14,0). Status: 41,00 x 21,00 mm, Stitches = 832.",
+      "sha256": "b60e95dda9569d93f0d0d3ff760522b0ba954282eebbd0fb355ef62f85eaf03c",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-e-default.pes",
+      "spec": "line-e-default",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (100 x 100 mm page, grid 1 mm, Snap to Grid on, PE restarted earlier this session so tool attributes were at defaults); Shapes > Open Straight Line, clicks (10,20), (50,20), double-click (50,40); line colour set to 800 EMBROIDERY RED with the line selected (the tool had 030 VERMILLION left from an earlier shape); no region (an open line has none). The same line was then switched to each type in turn (Shapes tab > Sew > line sew type) with the line selected; the attributes shown are what PE gave the type on switching (none changed). Save As PES default type (#PES0110). Type: line type \"E/V Stitch\", sub-type drop-down \"E Stitch\" (default). Line sew: prong spacing 5.0 mm, prong height 2.5 mm, run pitch 2.0 mm (the three fields on the E diagram), Run time(s) 1, Stroke time(s) 1, Arrange first button. No Start/End Type field. Status: 40,00 x 20,00 mm, Stitches = 67.",
+      "sha256": "618abc23238f7c1ed990a460e14d3e695b62e131a5c19b9d75b498d3d9d2380c",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-v-default.pes",
+      "spec": "line-v-default",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (100 x 100 mm page, grid 1 mm, Snap to Grid on, PE restarted earlier this session so tool attributes were at defaults); Shapes > Open Straight Line, clicks (10,20), (50,20), double-click (50,40); line colour set to 800 EMBROIDERY RED with the line selected (the tool had 030 VERMILLION left from an earlier shape); no region (an open line has none). The same line was then switched to each type in turn (Shapes tab > Sew > line sew type) with the line selected; the attributes shown are what PE gave the type on switching (none changed). Save As PES default type (#PES0110). Type: line type \"E/V Stitch\", sub-type \"V Stitch\" chosen in the drop-down (the only change). Line sew: 5.0 mm, 2.5 mm, 2.0 mm on the V diagram (same values as E), Run time(s) 1, Stroke time(s) 1 greyed, Arrange first button. Status: 40,00 x 20,00 mm, Stitches = 57.",
+      "sha256": "763bed48773523bc99e0105c5b92dc0d979c3b7c607f4fc8b57644ca60856def",
       "notes": "Header #PES0110."
     }
   ]

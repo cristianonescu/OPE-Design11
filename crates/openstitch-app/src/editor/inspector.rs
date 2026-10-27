@@ -729,10 +729,15 @@ pub fn line_controls_with(l: &LineSewing, user: &[Pattern]) -> Vec<Control> {
                 "line.density",
                 "density",
                 l.density,
-                (0.5, 10.0),
+                (0.1, 14.0),
                 0.05,
                 " /mm",
             ),
+            Control::Toggle {
+                label: "Under sewing",
+                param: "underSewing",
+                value: l.underlay,
+            },
             Control::Toggle {
                 label: "Half stitch",
                 param: "halfStitch",

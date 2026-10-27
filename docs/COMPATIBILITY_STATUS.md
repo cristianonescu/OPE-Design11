@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 39 · pass 39 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 45 · pass 45 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -19,7 +19,10 @@ Specs: 39 · pass 39 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Files | PES write v1 and v6… | oracle; reference pending | `pes-csewseg-trims`, `pes-default-v6`, `pes-library-convert-v6` |
 | Lettering | Fit text to outline (text on a path)… | reference | `text-fit-default`, `text-fit-halign-left`, `text-fit-halign-right`, `text-fit-halign-spaced`, `text-fit-orient-upright`, `text-fit-otherside`, `text-fit-valign-below`, `text-fit-valign-center` |
 | Lettering | Text entry and attributes… | reference | `text-line-spacing-100`, `text-line-spacing-150`, `text-line-spacing-50`, `text-sewing-order`, `text-size-h`, `text-size-hg` |
+| Line sew types | Motif (OpenStitch's own motif library… | reference | `line-e-default`, `line-v-default` |
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
+| Line sew types | Running (pitch, run times 1… | reference | `line-running-default`, `line-triple-default` |
+| Line sew types | Zigzag: width, density… | reference | `line-zigzag-default`, `line-zigzag-density-max` |
 | Region sew types | Fill (tatami: angle or auto direction… | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions` |
 | Region sew types | Programmable fill… | reference | `programmable-fill-45` |
 | Region sew types | Satin: a zigzag across the column… | internal-regression; reference pending | `auto-satin-bent-band`, `region-travel-u-satin`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
@@ -56,6 +59,12 @@ Specs: 39 · pass 39 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/fill-frequency-default` | pass | internal-regression | pass | — | — | — |
 | `stitches/hole-sewing-limits` | pass | internal-regression | pass | — | — | — |
 | `stitches/hole-sewing-pentagon-star` | pass | reference | pass | — | pass | — |
+| `stitches/line-e-default` | pass | reference | — | — | pass | — |
+| `stitches/line-running-default` | pass | reference | pass | — | pass | — |
+| `stitches/line-triple-default` | pass | reference | — | — | pass | — |
+| `stitches/line-v-default` | pass | reference | — | — | pass | — |
+| `stitches/line-zigzag-default` | pass | reference | pass | — | pass | — |
+| `stitches/line-zigzag-density-max` | pass | reference | — | — | pass | — |
 | `stitches/optimize-entry-exit` | pass | reference | pass | — | pass | — |
 | `stitches/programmable-fill-45` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-along-outline` | pass | reference | pass | — | pass | — |

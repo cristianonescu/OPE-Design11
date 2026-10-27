@@ -1271,6 +1271,10 @@ pub struct LineSewing {
     /// Zigzag: pull every other inner-side point to the centre where a bend crowds them.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub half_stitch: bool,
+    /// Zigzag: under sewing, a running stitch a quarter of the width to each side of the line
+    /// (PE-DESIGN's default). Older files have none.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub underlay: bool,
     /// Line entry point (PE-DESIGN L1), 0.1 mm: closed outlines start at the nearest point,
     /// open ones from the nearer end.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1278,14 +1282,24 @@ pub struct LineSewing {
 }
 
 impl LineSewing {
+    /// A line of `kind` with the attributes PE-DESIGN 11.50 gives that type (measured from
+    /// compat/reference/stitches/line-*-default.pes): run pitch 2.0 mm for running, triple
+    /// and E/V; zigzag 2.0 mm wide at 4.5 lines/mm with under sewing and half stitch; E/V
+    /// strokes 2.5 mm every 5.0 mm.
     pub fn new(kind: LineType, thread: Thread) -> Self {
+        let zigzag = kind == LineType::Zigzag;
+        let stroke = matches!(kind, LineType::EStitch | LineType::VStitch);
         LineSewing {
             kind,
             thread,
-            pitch: 2.5,
+            pitch: match kind {
+                LineType::Running | LineType::Triple | LineType::Zigzag => 2.0,
+                _ if stroke => 2.0,
+                _ => 2.5,
+            },
             run_times: 1,
-            width: 2.0,
-            density: 3.0,
+            width: if stroke { 2.5 } else { 2.0 },
+            density: if zigzag { 4.5 } else { 3.0 },
             motif: None,
             height: None,
             spacing: None,
@@ -1295,7 +1309,8 @@ impl LineSewing {
             arrange: Arrange::Normal,
             chain_shape: ChainShape::Triangle,
             leave_uncut: false,
-            half_stitch: false,
+            half_stitch: zigzag,
+            underlay: zigzag,
             entry: None,
         }
     }
@@ -1306,7 +1321,7 @@ impl LineSewing {
             LineType::Motif => 0.0,
             LineType::Stem => 1.5,
             LineType::Candlewick => 5.0,
-            LineType::EStitch | LineType::VStitch => 3.0,
+            LineType::EStitch | LineType::VStitch => 5.0,
             _ => 1.0,
         })
     }

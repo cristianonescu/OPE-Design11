@@ -213,10 +213,20 @@ fn e_and_v_strokes_reach_the_stroke_width() {
         Some(v2(300.0, 0.0)),
         "even passes end forward"
     );
+    // PE-DESIGN's V: one apex at every multiple of the interval, start and end included, its
+    // arms meeting the line a fifth of the interval to either side.
     let v = lines::v_stitch(&hline(300.0), &e);
-    let apexes = v.iter().filter(|p| (p.y.abs() - 25.0).abs() < 1e-9).count();
-    assert_eq!(apexes, 10 * 2);
-    assert!(longest(&v) <= 25.0f64.hypot(7.5) + 1e-9);
+    let apexes: Vec<f64> = v
+        .iter()
+        .filter(|p| (p.y.abs() - 25.0).abs() < 1e-9)
+        .map(|p| p.x)
+        .collect();
+    assert_eq!(
+        apexes,
+        (0..=10).map(|k| k as f64 * 30.0).collect::<Vec<_>>()
+    );
+    assert!(longest(&v) <= 25.0f64.hypot(6.0) + 1e-9);
+    assert_eq!(v.first().copied(), Some(v2(0.0, 0.0)));
     assert_eq!(v.last().copied(), Some(v2(300.0, 0.0)));
 }
 

@@ -380,14 +380,24 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
             })
             .collect();
     }
-    let runs = contours
+    let mut runs: Vec<Run> = contours
         .iter()
         .map(|c| {
             let width = line.width * 10.0;
             let spacing = line.spacing_mm() * 10.0;
-            match line.kind {
+            let mut run = if line.kind == LineType::Zigzag && line.underlay {
+                lines::zigzag_underlay(&c.path(), width / 4.0, pitch)
+            } else {
+                Vec::new()
+            };
+            let top = match line.kind {
                 LineType::Running => generate::running(c, pitch, line.run_times),
                 LineType::Triple => generate::triple(c, pitch),
+                // PE-DESIGN's zigzag (rails matched along each leg) on straight-line paths;
+                // curves keep the evenly spaced zigzag, with half stitch where asked.
+                LineType::Zigzag if !c.has_curves() => {
+                    lines::zigzag_rails(&c.path(), width, 10.0 / line.density.max(0.1))
+                }
                 LineType::Zigzag if line.half_stitch => {
                     lines::zigzag_half(&c.path(), width, 10.0 / line.density.max(0.1))
                 }
@@ -448,9 +458,23 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
                     pitch,
                 ),
                 LineType::Cutting => Vec::new(),
-            }
+            };
+            run.extend(top);
+            run.dedup_by(|a, b| a.distance(*b) < 1e-9);
+            run
         })
         .collect();
+    // PE-DESIGN ties in and locks these lines like a satin (line-*-default.pes).
+    if matches!(
+        line.kind,
+        LineType::Running
+            | LineType::Triple
+            | LineType::Zigzag
+            | LineType::EStitch
+            | LineType::VStitch
+    ) {
+        region::tie_and_lock(std::slice::from_mut(&mut runs));
+    }
     vec![Element {
         thread: line.thread.clone(),
         runs,

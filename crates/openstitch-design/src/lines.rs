@@ -32,6 +32,20 @@ fn extend(run: &mut Run, pts: impl IntoIterator<Item = Vec2>) {
     }
 }
 
+/// The side direction at arc length `s`: the normal there, or at a corner the bisector of the
+/// two segments' normals, so a stroke at a corner points straight out of it (PE-DESIGN's E and
+/// V at the corner of line-e-default.pes / line-v-default.pes).
+fn side_at(w: &Walker, s: f64) -> Vec2 {
+    const EPS: f64 = 1e-3;
+    let (a, b) = (
+        normal(w.tangent((s - EPS).max(0.0))),
+        normal(w.tangent((s + EPS).min(w.length()))),
+    );
+    let sum = a + b;
+    let len = (sum.x * sum.x + sum.y * sum.y).sqrt();
+    if len < 1e-9 { a } else { sum * (1.0 / len) }
+}
+
 /// Running stitches along the path between arc lengths `a` and `b` (reversed when `b < a`).
 fn run_between(w: &Walker, a: f64, b: f64, pitch: f64) -> Run {
     if a <= b {
@@ -191,7 +205,7 @@ pub fn e_stitch(path: &[Vec2], e: &StrokeLine) -> Run {
             baseline(&mut run, &w, s - e.interval, s, e.pitch, e.run_times);
         }
         let c = w.at(s);
-        let tip = c + normal(w.tangent(s)) * (e.stroke * side(e.arrange, k));
+        let tip = c + side_at(&w, s) * (e.stroke * side(e.arrange, k));
         for _ in 0..e.stroke_times.max(1) {
             run.push(tip);
             run.push(c);
@@ -204,32 +218,71 @@ pub fn e_stitch(path: &[Vec2], e: &StrokeLine) -> Run {
     run
 }
 
-/// V stitch: a baseline with a V of two strokes every `interval`, the line and the strokes
-/// sewn `run_times`.
+/// V stitch, as PE-DESIGN 11.50 sews it (line-v-default.pes): a V every `interval` along the
+/// line, from the start to the end. Each arm runs from the line a fifth of the interval before
+/// the V's position out to the apex `stroke` to the side and back to the line a fifth after it;
+/// the line between Vs is running stitch, sewn `run_times`. The first and last V have one arm.
 pub fn v_stitch(path: &[Vec2], e: &StrokeLine) -> Run {
     let w = Walker::new(path);
     let len = w.length();
     if len <= 0.0 || e.interval <= 0.0 {
         return path.to_vec();
     }
-    let n = (len / e.interval).floor() as usize;
+    let arm = e.interval / 5.0;
+    let n = (len / e.interval + 1e-9).floor() as usize;
+    let mut stations: Vec<f64> = (0..=n).map(|k| k as f64 * e.interval).collect();
+    if len - stations[n] > arm {
+        stations.push(len);
+    }
     let mut run = vec![w.at(0.0)];
-    let mut s = 0.0;
-    for k in 0..n {
-        let mid = (k as f64 + 0.5) * e.interval;
-        baseline(&mut run, &w, s, mid, e.pitch, e.run_times);
-        s = mid;
-        let c = w.at(mid);
-        let sign = side(e.arrange, k);
-        for apex_at in [mid - e.interval / 4.0, mid + e.interval / 4.0] {
-            let apex = w.at(apex_at) + normal(w.tangent(apex_at)) * (e.stroke * sign);
-            for _ in 0..e.run_times.max(1) {
-                run.push(apex);
-                run.push(c);
+    let mut at = 0.0;
+    for (k, &s) in stations.iter().enumerate() {
+        let before = (s - arm).max(at);
+        if before > at {
+            baseline(&mut run, &w, at, before, e.pitch, e.run_times);
+        }
+        let apex = w.at(s) + side_at(&w, s) * (e.stroke * side(e.arrange, k));
+        let after = (s + arm).min(len);
+        extend(&mut run, [apex, w.at(after)]);
+        at = after;
+    }
+    if at < len {
+        baseline(&mut run, &w, at, len, e.pitch, e.run_times);
+    }
+    run
+}
+
+/// Zigzag under sewing, as PE-DESIGN 11.50 sews it (line-zigzag-default.pes): a running
+/// stitch along the line `offset` to the right (mitred at corners, starting and ending
+/// `offset` in from the line's ends), then across and back the same way on the left side;
+/// stitches split evenly at no more than `pitch`. Empty when the line is too short.
+pub fn zigzag_underlay(path: &[Vec2], offset: f64, pitch: f64) -> Run {
+    let w = Walker::new(path);
+    let len = w.length();
+    if path.len() < 2 || len <= 2.0 * offset {
+        return Vec::new();
+    }
+    let side = |d: f64| -> Vec<Vec2> {
+        let mut pts = vec![w.at(offset) + normal(w.tangent(offset)) * d];
+        let mut s = 0.0;
+        for i in 1..path.len() - 1 {
+            s += path[i - 1].distance(path[i]);
+            if s <= offset || s >= len - offset {
+                continue;
+            }
+            let (n1, n2) = (normal(w.tangent(s - 1e-3)), normal(w.tangent(s + 1e-3)));
+            let k = 1.0 + (n1.x * n2.x + n1.y * n2.y);
+            if k > 1e-6 {
+                pts.push(path[i] + (n1 + n2) * (d / k));
             }
         }
-    }
-    baseline(&mut run, &w, s, len, e.pitch, e.run_times);
+        pts.push(w.at(len - offset) + normal(w.tangent(len - offset)) * d);
+        subdivide(&pts, pitch)
+    };
+    let mut run = side(offset);
+    let mut back = side(-offset);
+    back.reverse();
+    extend(&mut run, back);
     run
 }
 
@@ -369,6 +422,91 @@ pub fn zigzag_half(path: &[Vec2], width: f64, spacing: f64) -> Run {
             continue;
         }
         last_kept[slot] = Some(run[i]);
+    }
+    run
+}
+
+/// Zigzag between two rails, as PE-DESIGN 11.50 sews it (line-zigzag-default.pes and the
+/// density minimum and maximum files): the rails are the line offset `width / 2` to each side,
+/// mitred at corners. Along each straight leg a stitch joins the two rails at the same fraction
+/// of the leg, so stitches lean more and more towards a mitre; consecutive stitches stay
+/// `spacing` apart measured across the leg divided by the lean, which keeps the thread density
+/// the same. It starts on the left rail at the line's start and ends with a stitch exactly at
+/// the line's end.
+pub fn zigzag_rails(path: &[Vec2], width: f64, spacing: f64) -> Run {
+    let pts: Vec<Vec2> = {
+        let mut v: Vec<Vec2> = Vec::new();
+        for &p in path {
+            if v.last().is_none_or(|l| l.distance(p) > 1e-9) {
+                v.push(p);
+            }
+        }
+        v
+    };
+    if pts.len() < 2 || spacing.is_nan() || spacing <= 0.0 {
+        return pts;
+    }
+    let h = width / 2.0;
+    let dir = |i: usize| {
+        let d = pts[i + 1] - pts[i];
+        d * (1.0 / pts[i].distance(pts[i + 1]))
+    };
+    // Rail point at vertex `i` on side `sign` (+1 right, −1 left).
+    let rail = |i: usize, sign: f64| -> Vec2 {
+        let n = if i == 0 {
+            normal(dir(0))
+        } else if i == pts.len() - 1 {
+            normal(dir(i - 1))
+        } else {
+            let (a, b) = (normal(dir(i - 1)), normal(dir(i)));
+            let k = 1.0 + (a.x * b.x + a.y * b.y);
+            if k < 1e-6 {
+                return pts[i] + a * (sign * h);
+            }
+            (a + b) * (1.0 / k)
+        };
+        pts[i] + n * (sign * h)
+    };
+    let mut run = Vec::new();
+    let mut side = -1.0;
+    let mut carry = 0.0;
+    let legs = pts.len() - 1;
+    for i in 0..legs {
+        let len = pts[i].distance(pts[i + 1]);
+        let d = dir(i);
+        let (l0, l1, r0, r1) = (
+            rail(i, -1.0),
+            rail(i + 1, -1.0),
+            rail(i, 1.0),
+            rail(i + 1, 1.0),
+        );
+        let at = |f: f64, s: f64| {
+            if s < 0.0 {
+                l0.lerp(l1, f)
+            } else {
+                r0.lerp(r1, f)
+            }
+        };
+        let mut f = carry / len;
+        while f <= 1.0 + 1e-9 {
+            run.push(at(f.min(1.0), side));
+            side = -side;
+            // The stitch across here leans by the rails' offset along the leg.
+            let rung = at(f.min(1.0), 1.0) - at(f.min(1.0), -1.0);
+            let across = (rung.x * d.y - rung.y * d.x).abs().max(1e-9);
+            let lean = rung.distance(Vec2::default()) / across;
+            f += spacing * lean / len;
+        }
+        carry = (f - 1.0) * len;
+        if i + 1 == legs && carry > 1e-6 {
+            // A last stitch across exactly at the line's end, after the last regular one.
+            let last = run.last().copied();
+            let end = at(1.0, side);
+            if last.is_none_or(|p| p.distance(end) > 1e-9) {
+                run.push(end);
+            }
+            run.push(at(1.0, -side));
+        }
     }
     run
 }
