@@ -50,7 +50,7 @@ SCENES = {
     "simulator": (["--demo", "--simulate", "0.55", "--ribbon", "view"],
                   [("docs/images/rust-editor-sim.png", 1600),
                    ("docs/images/readme/stitch-simulator.png", 1280)]),
-    "drawing": (["drawing.osd", "--select", "1"], [("docs/images/readme/drawing.png", 1280)]),
+    "drawing-readme": (["drawing.osd", "--select", "1"], [("docs/images/readme/drawing.png", 1280)]),
     "monogram": (["monograms.osd", "--select", "1", "--show", "monogram"],
                  [("docs/images/rust-editor-monogram.png", 1600),
                   ("docs/images/readme/monogram.png", 1280)]),
@@ -129,18 +129,18 @@ def app_env(work):
     neutral names instead of the user's own folders."""
     env = dict(os.environ)
     home = work / "home"
-    env.update({"HOME": str(home), "APPDATA": str(home), "XDG_CONFIG_HOME": str(home / ".config"),
+    env.update({"HOME": str(home), "USERPROFILE": str(home), "APPDATA": str(home), "XDG_CONFIG_HOME": str(home / ".config"),
                 "XDG_DATA_HOME": str(home / ".local" / "share"), "OPENSTITCH_PATTERNS": "patterns"})
     return env
 
 
 def build_project(work, example, name):
     """Runs an example script and saves its design as NAME.osd in `work`."""
-    steps = json.loads((ROOT / "examples" / example).read_text())
+    steps = json.loads((ROOT / "examples" / example).read_text(encoding="utf-8"))
     steps = [s for s in steps if s.get("command") != "project.save"]
     steps.append({"command": "project.save", "params": {"path": str(work / f"{name}.osd")}})
     script = work / f"{name}.json"
-    script.write_text(json.dumps(steps))
+    script.write_text(json.dumps(steps), encoding="utf-8")
     run([str(BIN / "stitchtool"), "exec", str(script)], cwd=work)
 
 
@@ -152,10 +152,10 @@ def prepare(work):
                     "name-drop", "ornaments", "sewing-direction", "split-banner", "stamps",
                     "template-wizard", "user-mapped-text"]:
         build_project(work, f"{example}.json", example)
-    patterns = json.loads((ROOT / "examples" / "user-patterns.json").read_text())
+    patterns = json.loads((ROOT / "examples" / "user-patterns.json").read_text(encoding="utf-8"))
     tulip = next(s["params"]["pattern"] for s in patterns
                  if s.get("command") == "pattern.define" and s["params"]["pattern"]["id"] == "tulip")
-    (work / "tulip.json").write_text(json.dumps(tulip))
+    (work / "tulip.json").write_text(json.dumps(tulip), encoding="utf-8")
     shutil.copy(ROOT / "examples" / "digitize" / "badge.png", work / "badge.png")
     shutil.copy(ROOT / "crates" / "openstitch-engine" / "tests" / "fixtures" / "badge-golden.pes",
                 work / "badge.pes")
@@ -170,7 +170,7 @@ def prepare(work):
     for settings in [work / "home" / "Library" / "Application Support" / "OpenStitch",
                      work / "home" / "OpenStitch", work / "home" / ".config" / "openstitch"]:
         settings.mkdir(parents=True)
-        (settings / "user.json").write_text(json.dumps(user))
+        (settings / "user.json").write_text(json.dumps(user), encoding="utf-8")
     samples = work / "home" / "Embroidery"
     samples.mkdir(parents=True)
     for sub in ["Badges", "Flowers", "Lettering"]:
