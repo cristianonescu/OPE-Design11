@@ -841,9 +841,13 @@ Line references are relative to `crates/`.
   running stitch) to L2's element, the shorter way round, backwards if need be. No jumps or
   trims. OpenStitch does the same (`object.setLine` `startEnd`, `object.setEntryExit`
   `lineExit`; ten specs line-{chain,stem,candlewick}-startend-*, all matching PE's needle
-  points in order). Still open: motif (PE's default motif is its own artwork, so no stitch
-  comparison), open lines, chain diamonds, the editor's L2 marker and Feed/Run radio.
-  ([guide](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293444.html))
+  points in order;
+  [guide](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293444.html)).
+  Still open:
+  - Motif lines: PE's default motif is PE-DESIGN's own artwork, so no stitch comparison is
+    possible; a reference with a simple motif drawn in PE would allow one.
+  - Open lines and chain diamonds: not measured; they keep restarting at the entry point.
+  - The editor: no L2 marker and no Feed/Run radio yet (the engine has both).
 - **Line spacing and text size (calibrated 2026-10-27):** PE-DESIGN 11.50's line spacing is
   "% of char height", default 100; its TrueType size is 0.7 em (Lato Bold's H is 1.033 × size)
   and 100 % sets lines the font's Windows ascent apart. Measured in `compat/reference/text`
