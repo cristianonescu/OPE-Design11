@@ -8,7 +8,7 @@ use crate::patterns::{self, Pattern, PatternKind};
 use crate::region;
 use crate::route;
 use crate::stamp;
-use openstitch_core::{Command, Stitch, StitchPattern, Thread};
+use openstitch_core::{Command, Stitch, StitchPattern, Thread, round_coordinate};
 
 /// Turns an editable [`Design`] into a machine [`StitchPattern`].
 ///
@@ -16,6 +16,13 @@ use openstitch_core::{Command, Stitch, StitchPattern, Thread};
 /// between elements is a colour change (after a trim); travel longer than `trim_distance` is a
 /// trim + jump, shorter travel a jump, or a straight stitch inside one element below
 /// `connect_distance`. All distances 0.1 mm.
+///
+/// `trim_distance` is 0 by default: every frame move inside the design is trimmed, as in
+/// PE-DESIGN 11.50's files. In 177 of its PES files (compat/reference and the owner's round-2
+/// folders, 2026-10-27) every interior move carries the PEC trim flag and a plain jump appears only
+/// as the first record and right after a colour change; the shortest trimmed move is 3.0 mm, and
+/// travel shorter than that is sewn across. Multi-needle designs use PE-DESIGN's "minimum jump
+/// stitch length for trimming" setting instead ([`Compiler::for_design`]).
 #[derive(Clone, Copy, Debug)]
 pub struct Compiler {
     pub trim_distance: f64,
@@ -26,7 +33,7 @@ pub struct Compiler {
 impl Default for Compiler {
     fn default() -> Self {
         Compiler {
-            trim_distance: 30.0,
+            trim_distance: 0.0,
             connect_distance: 40.0,
             max_stitch: 120.0,
         }
@@ -53,6 +60,20 @@ struct Writer {
 
 impl Writer {
     fn push(&mut self, p: Vec2, c: Command) {
+        // A stitch on the needle point just sewn would be a zero-length record: a second
+        // penetration in the same hole. PE-DESIGN 11.50 writes none (no PEC record of length 0 in
+        // any of its 177 files measured on 2026-10-27), so generators that end one run where the
+        // next begins, or produce two points within 0.05 mm, sew one needle point. A zero-length
+        // stitch right after a jump is kept: the jump's landing is not a penetration, so that
+        // stitch is the first needle point of the block (PE-DESIGN ties in there instead).
+        if c == Command::Stitch
+            && let Some(last) = self.out.stitches.last()
+            && last.command == Command::Stitch
+            && round_coordinate(last.x) == round_coordinate(p.x)
+            && round_coordinate(last.y) == round_coordinate(p.y)
+        {
+            return;
+        }
         self.out.stitches.push(Stitch::new(p.x, p.y, c));
     }
 

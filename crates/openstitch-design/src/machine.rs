@@ -300,11 +300,16 @@ impl MachineSettings {
         Some(if self.rotate90 { (h, w) } else { (w, h) })
     }
 
-    /// Travel at least this long (0.1 mm) is trimmed by the compiler: the multi-needle setting,
-    /// else `fallback`.
+    /// Multi-needle "minimum jump stitch length for trimming" (mm) when the design sets none.
+    /// PE-DESIGN's own default is not observed yet; 3 mm is what OpenStitch sewed before.
+    pub const DEFAULT_MIN_JUMP_TRIM: f64 = 3.0;
+
+    /// Travel longer than this (0.1 mm) is trimmed by the compiler: on multi-needle machines
+    /// the design's minimum jump length, else `fallback` (the compiler's single-needle rule).
     pub fn trim_distance(&self, fallback: f64) -> f64 {
         match (self.machine, self.min_jump_trim) {
             (MachineType::MultiNeedle, Some(mm)) => mm * 10.0,
+            (MachineType::MultiNeedle, None) => Self::DEFAULT_MIN_JUMP_TRIM * 10.0,
             _ => fallback,
         }
     }

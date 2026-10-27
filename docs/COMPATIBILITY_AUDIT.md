@@ -262,7 +262,10 @@ Line references are relative to `crates/`.
   - `openstitch-design/src/compile.rs:114`: the first run of each element calls
     `travel(.., false)`.
   - `compile.rs:277-286`: underlay, top stitching and outline are separate elements.
-  - `compile.rs:78`: any travel over 3 mm is TRIM+JUMP on every machine type.
+  - `compile.rs` `Writer::travel`: every frame move between elements is TRIM+JUMP on
+    single-needle machines (PE-DESIGN 11.50 trims every interior move: compat spec
+    `machine-formats`, evidence); multi-needle machines trim moves over the design's minimum
+    jump length (3 mm when unset).
   - `openstitch-design/src/machine.rs:305-310`.
 - **Evidence:**
   - Guide, [entry and exit points](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_1858418.html):
@@ -272,8 +275,11 @@ Line references are relative to `crates/`.
   - Measured: a 30×30 rectangle with fill, zigzag underlay and a same-colour outline gives
     trims at stitch indexes 61, 738 and 789 on the default single-needle machine.
 - **REA:** none.
-- **Grade:** Documented, unverified. Whether PE-DESIGN writes trims for single-needle
-  machines needs a reference.
+- **Grade:** Documented, unverified for the routing. The single-needle trim policy is now
+  measured: in 177 PE-DESIGN 11.50 PES files (2026-10-27) every interior frame move carries
+  the PEC trim flag and no plain jump occurs inside the design, so PE-DESIGN does write trims
+  for single-needle machines, for every move it does not sew across (shortest observed trim
+  3.0 mm). OpenStitch's compiler trims every interior move since the `machine-formats` spec.
 - **Test:**
   - Inputs: `shape.rectangle {x:50,y:10,width:30,height:30,fill:"Blue",outline:"Blue"}` →
     `object.setRegion {id:1,type:"fill",angle:0,underlay:true,underlayStyle:"zigzag"}` →

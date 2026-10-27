@@ -2541,9 +2541,16 @@ fn codec_commands() -> Vec<CommandSpec> {
                         format!("{ty} is read only; use {}", names.join(", ")),
                     ));
                 }
-                let pattern = Compiler::for_design(&s.design).compile(&s.design);
+                let mut pattern = Compiler::for_design(&s.design).compile(&s.design);
                 if pattern.count(Command::Stitch) == 0 {
                     return Err(p.failed("design has no stitches"));
+                }
+                // PE-DESIGN 11 labels the machine section with the file name it saves to.
+                if let Some(stem) = std::path::Path::new(&raw_path).file_stem() {
+                    pattern.metadata.insert(
+                        openstitch_formats::pec::LABEL_KEY.into(),
+                        stem.to_string_lossy().into_owned(),
+                    );
                 }
                 let write = |part: &openstitch_core::StitchPattern| match ty {
                     FileType::Pes => openstitch_formats::pes::write_with(part, &pes_options),
