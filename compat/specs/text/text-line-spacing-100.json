@@ -39,6 +39,13 @@
         "align": "left",
         "lineSpacingPercent": 100
       }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill"
+      }
     }
   ],
   "exports": [

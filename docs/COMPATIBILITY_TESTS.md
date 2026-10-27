@@ -349,6 +349,12 @@ at its defaults, 800 RED, Save As default type.
   both files have two points 0.27–0.30 mm outside it that the default window splits.
   Stretched has no spec: PE's file puts the 140 mm text off the page, beyond what the PES
   reader takes in. Spaced evenly centres each character in an equal share of the outline.
+- `text-defaults-h`, `text-defaults-fill`: H at 20 mm with PE's text defaults (Satin,
+  density 5.0, under sewing off), and with only the region switched to Fill (density 5.0,
+  under sewing off, Frequency 30 %). Box exact; stitch counts within 25 % (544 vs 483 Fill,
+  221 vs 285 Satin; see the audit). The other text specs switch their region to Fill as their
+  make text says, since text now defaults to Satin. `text-fit-halign-spaced` has no mid-angle
+  check: evenly spaced letters leave equal gaps, so the polar measure's middle is undefined.
 - `text-sewing-order`: AB with a red fill and a black running outline. PE sews both fills,
   then both outlines, in two colour blocks, as OpenStitch does. The outline block's stitch
   count waits for the lines track's PE line defaults (pitch 2.0 mm, tie-in and lock).

@@ -309,6 +309,40 @@ fn text_transform_presets_are_set_refused_when_fitted_and_cancelled_by_fitting()
 }
 
 #[test]
+fn new_text_takes_pe_design_text_sewing_defaults() {
+    use openstitch_design::RegionType;
+    let mut s = Session::new(temp_dir());
+    run(
+        &mut s,
+        "text.add",
+        json!({"text": "H", "size": 20, "fill": "Red"}),
+    );
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 0, "y": 0, "width": 10, "height": 10}),
+    );
+    let region = |s: &Session, i: usize| s.design().objects[i].region.clone().expect("region");
+    let t = region(&s, 0);
+    assert_eq!(t.kind, RegionType::Satin);
+    assert!(t.density == 5.0 && !t.underlay && t.pull_compensation == 0.0);
+    // Switched to Fill, text takes PE's text Fill; a shape keeps the shape defaults.
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"ids": [1, 2], "type": "fill"}),
+    );
+    let t = region(&s, 0);
+    assert_eq!(t.kind, RegionType::Fill);
+    assert!(
+        t.density == 5.0 && !t.underlay && t.frequency == Some(30.0),
+        "{t:?}"
+    );
+    let r = region(&s, 1);
+    assert!(r.underlay && r.density != 5.0, "{r:?}");
+}
+
+#[test]
 fn convert_to_shapes_keeps_the_stitches() {
     let mut s = Session::new(temp_dir());
     run(

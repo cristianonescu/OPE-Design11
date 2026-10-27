@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 86 · pass 86 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 88 · pass 88 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -19,7 +19,7 @@ Specs: 86 · pass 86 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Files | PES write v1 and v6… | oracle; reference pending | `pes-csewseg-trims`, `pes-default-v6`, `pes-library-convert-v6` |
 | Lettering | Fit text to outline (text on a path)… | reference | `text-fit-default`, `text-fit-halign-left`, `text-fit-halign-right`, `text-fit-halign-spaced`, `text-fit-orient-upright`, `text-fit-otherside`, `text-fit-valign-below`, `text-fit-valign-center` |
 | Lettering | Text Transform… | reference | `text-transform-1`, `text-transform-10`, `text-transform-11`, `text-transform-12`, `text-transform-15`, `text-transform-16`, `text-transform-17`, `text-transform-18`, `text-transform-19`, `text-transform-2`, `text-transform-20`, `text-transform-21`, `text-transform-22`, `text-transform-23`, `text-transform-24`, `text-transform-25`, `text-transform-26`, `text-transform-3`, `text-transform-4`, `text-transform-5`, `text-transform-6`, `text-transform-7`, `text-transform-8`, `text-transform-9` |
-| Lettering | Text entry and attributes… | reference | `text-line-spacing-100`, `text-line-spacing-150`, `text-line-spacing-50`, `text-sewing-order`, `text-size-h`, `text-size-hg` |
+| Lettering | Text entry and attributes… | reference | `text-defaults-fill`, `text-defaults-h`, `text-line-spacing-100`, `text-line-spacing-150`, `text-line-spacing-50`, `text-sewing-order`, `text-size-h`, `text-size-hg` |
 | Line sew types | Motif (OpenStitch's own motif library… | reference | `line-candlewick-default`, `line-chain-default`, `line-e-default`, `line-stem-default`, `line-v-default` |
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
 | Line sew types | Running (pitch, run times 1… | reference | `line-running-default`, `line-triple-default` |
@@ -95,6 +95,8 @@ Specs: 86 · pass 86 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/sweep-fill-pull-0p5` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-pull-1p0` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-pull-max` | pass | reference | pass | — | pass | — |
+| `text/text-defaults-fill` | pass | reference | — | — | pass | — |
+| `text/text-defaults-h` | pass | reference | — | — | pass | — |
 | `text/text-fit-default` | pass | reference | — | — | pass | — |
 | `text/text-fit-halign-left` | pass | reference | — | — | pass | — |
 | `text/text-fit-halign-right` | pass | reference | — | — | pass | — |

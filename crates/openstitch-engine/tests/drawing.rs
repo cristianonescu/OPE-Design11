@@ -382,11 +382,7 @@ fn paste_attributes_text_and_shape_share_only_colours() {
         "shape.rectangle",
         json!({"x": 0, "y": 0, "width": 10, "height": 10, "fill": "Red"}),
     );
-    run(
-        &mut s,
-        "object.setRegion",
-        json!({"id": 1, "type": "satin"}),
-    );
+    // The shape is a Fill; text starts as Satin (PE-DESIGN's text default) and keeps it.
     run(
         &mut s,
         "text.add",
@@ -398,7 +394,7 @@ fn paste_attributes_text_and_shape_share_only_colours() {
         json!({"from": 1, "id": 2}),
     );
     let t = s.design().objects[1].region.clone().expect("region");
-    assert_eq!(t.kind, openstitch_design::RegionType::Fill);
+    assert_eq!(t.kind, openstitch_design::RegionType::Satin);
     assert_eq!(
         Some(t.thread),
         s.design().objects[0].region.clone().map(|r| r.thread)

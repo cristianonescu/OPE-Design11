@@ -1,0 +1,110 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "text-defaults-fill",
+  "area": "text",
+  "title": "Text switched to Fill takes PE-DESIGN's text Fill defaults (density 5.0, no under sewing)",
+  "description": "H in Lato Bold at 20 mm with only the region switched to Fill Stitch: PE-DESIGN's Fill for text is density 5.0, under sewing off, Frequency 30 %.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Lettering",
+        "feature": "Text entry and attributes"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/text/text-defaults-fill.pes, PE-DESIGN 11.50 (pe-gui, T6): Satin and Fill for text show Under sewing off, Density 5.0, Pull 0.0; Fill Frequency 30 %, Step 4.0"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "H",
+        "font": "lato-bold",
+        "size": 20,
+        "x": 50,
+        "y": 50,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "text.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "text/text-defaults-fill.pes",
+      "make": "On a 100 × 100 mm Design Page (File > New), with Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user and used as a TrueType font. Text tool, click at (50, 50) mm, type H, size 20.0 mm, and change nothing else (PE's default region sew type, colour and Sewing Attributes) except the region sew type, switched to Fill Stitch. Save As PES (default type) as compat/reference/text/text-defaults-fill.pes and record every Sewing Attributes value shown in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the stitch count of the default text",
+      "reference": {
+        "tolerance": {
+          "percent": 25
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    }
+  ]
+}

@@ -51,6 +51,13 @@
       }
     },
     {
+      "command": "object.setRegion",
+      "params": {
+        "id": 2,
+        "type": "fill"
+      }
+    },
+    {
       "command": "text.setPath",
       "params": {
         "id": 2,
