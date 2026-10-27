@@ -984,6 +984,126 @@
       "settings": "T6 TEXT SEWING DEFAULTS, 2026-10-27 21:12-21:14, PE-DESIGN 11.50 restarted at 20:41 (the Text tool had not been changed since except its size). Font: Lato-Bold.ttf from crates/openstitch-design/fonts installed for the current Windows user, PE lists 'Lato' (style Bold). App menu > New (100 x 100 mm page, grid 1 mm, Snap on). Home > Text > first tool 'A'; Text tab as PE shows it: font Lato, size set to 20.0 (the only change), line Not Sewn (Line), region Satin Stitch, region colour 800 EMBROIDERY RED; Text Attributes all default (Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, Alignment Left, horizontal, Transform off). Clicked the page at (50, 50) mm (the click sets the baseline-left), typed H, Select tool. Box about (50, 29.4)-(67.4, 50) mm. Save As 'Layout & Editing Ver.11.0 File (*.PES)'. This file: (b) the same text, then (text selected) Text tab > Sew > region type Fill Stitch, nothing else. Sewing Attributes > Region sew for FILL text: Under sewing UNTICKED (Density 'Medium' greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Connection Points greyed (Default); no Direction field. Status: 17,40 x 20,60 mm, Stitches = 483 (same as T1 text-size-h).",
       "sha256": "8b25b4a30f9a185223d11abae33cce80f8bee4eb3c6e6c4cbe9ae5b25ae491a4",
       "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-chain-startend-feed.pes",
+      "spec": "line-chain-startend-feed",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New; Shapes > Closed Straight Line, clicks (10,10), (50,10), (50,30), double-click (10,30); region Not Sewn (Region); line colour 800 RED; Select > Select Entry/Exit Points tool (third icon under the Select button). A closed line has SEPARATE entry (L1) and exit (L2) markers, both at the first clicked point (10,10) when drawn. They move only along the outline (dragged around the corners); a straight drop across the shape does not jump edges. L1 was dragged to the middle of the bottom edge, then L2; PE then shows L1 at about (25.5, 30) and L2 at about (29.8, 30) mm (read from the screen, +-0.3 mm): it kept them about one chain unit apart. With them apart, a dashed feed line is drawn from L2 to L1 while L2 is elsewhere. The same outline was then switched type by type; Start/End Type set with the Feed / Run radio in Sewing Attributes > Line sew. This file: Chain Stitch defaults (triangle, size 4.0, time 5, arrange 1st), Start/End Type Feed. Status: 42,60 x 22,60 mm, Stitches = 690 (same before the points were moved). Save As PES default type (#PES0110).",
+      "sha256": "f6fc18bd3dd5b988bc07ffee86d3ab58f7412ca685fb17a78b1117d032375c92",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-chain-startend-run.pes",
+      "spec": "line-chain-startend-run",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New; Shapes > Closed Straight Line, clicks (10,10), (50,10), (50,30), double-click (10,30); region Not Sewn (Region); line colour 800 RED; Select > Select Entry/Exit Points tool (third icon under the Select button). A closed line has SEPARATE entry (L1) and exit (L2) markers, both at the first clicked point (10,10) when drawn. They move only along the outline (dragged around the corners); a straight drop across the shape does not jump edges. L1 was dragged to the middle of the bottom edge, then L2; PE then shows L1 at about (25.5, 30) and L2 at about (29.8, 30) mm (read from the screen, +-0.3 mm): it kept them about one chain unit apart. With them apart, a dashed feed line is drawn from L2 to L1 while L2 is elsewhere. The same outline was then switched type by type; Start/End Type set with the Feed / Run radio in Sewing Attributes > Line sew. This file: same, Start/End Type Run. Stitches = 691. Save As PES default type (#PES0110).",
+      "sha256": "6dd684f8c3963bf1f172c8f18e8f78b5bc502b821e3fa83082e5405a35121bb1",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-stem-startend-feed.pes",
+      "spec": "line-stem-startend-feed",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New; Shapes > Closed Straight Line, clicks (10,10), (50,10), (50,30), double-click (10,30); region Not Sewn (Region); line colour 800 RED; Select > Select Entry/Exit Points tool (third icon under the Select button). A closed line has SEPARATE entry (L1) and exit (L2) markers, both at the first clicked point (10,10) when drawn. They move only along the outline (dragged around the corners); a straight drop across the shape does not jump edges. L1 was dragged to the middle of the bottom edge, then L2; PE then shows L1 at about (25.5, 30) and L2 at about (29.8, 30) mm (read from the screen, +-0.3 mm): it kept them about one chain unit apart. With them apart, a dashed feed line is drawn from L2 to L1 while L2 is elsewhere. The same outline was then switched type by type; Start/End Type set with the Feed / Run radio in Sewing Attributes > Line sew. This file: Stem defaults (width 2.0, spacing 1.5, angle 45), Feed. Stitches = 324. Save As PES default type (#PES0110).",
+      "sha256": "1cbbfed5e5e293316fbd109e34c7f3f3d61d1b32e0219d9beeb078dddc4d0491",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-stem-startend-run.pes",
+      "spec": "line-stem-startend-run",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New; Shapes > Closed Straight Line, clicks (10,10), (50,10), (50,30), double-click (10,30); region Not Sewn (Region); line colour 800 RED; Select > Select Entry/Exit Points tool (third icon under the Select button). A closed line has SEPARATE entry (L1) and exit (L2) markers, both at the first clicked point (10,10) when drawn. They move only along the outline (dragged around the corners); a straight drop across the shape does not jump edges. L1 was dragged to the middle of the bottom edge, then L2; PE then shows L1 at about (25.5, 30) and L2 at about (29.8, 30) mm (read from the screen, +-0.3 mm): it kept them about one chain unit apart. With them apart, a dashed feed line is drawn from L2 to L1 while L2 is elsewhere. The same outline was then switched type by type; Start/End Type set with the Feed / Run radio in Sewing Attributes > Line sew. This file: same, Run. Stitches = 325. Save As PES default type (#PES0110).",
+      "sha256": "fa11d7d865b6f2e18ce2c7200a82526b77c722c65693a2bd9b98fa029db25964",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-candlewick-startend-feed.pes",
+      "spec": "line-candlewick-startend-feed",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New; Shapes > Closed Straight Line, clicks (10,10), (50,10), (50,30), double-click (10,30); region Not Sewn (Region); line colour 800 RED; Select > Select Entry/Exit Points tool (third icon under the Select button). A closed line has SEPARATE entry (L1) and exit (L2) markers, both at the first clicked point (10,10) when drawn. They move only along the outline (dragged around the corners); a straight drop across the shape does not jump edges. L1 was dragged to the middle of the bottom edge, then L2; PE then shows L1 at about (25.5, 30) and L2 at about (29.8, 30) mm (read from the screen, +-0.3 mm): it kept them about one chain unit apart. With them apart, a dashed feed line is drawn from L2 to L1 while L2 is elsewhere. The same outline was then switched type by type; Start/End Type set with the Feed / Run radio in Sewing Attributes > Line sew. This file: Candlewicking defaults (Medium, size 5.0, spacing 1.0), Feed. Stitches = 550. Save As PES default type (#PES0110).",
+      "sha256": "5efbc156a3a54327971e76edf5d6254f7f810d2ada3b8f85957d5f243f5b9768",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-candlewick-startend-run.pes",
+      "spec": "line-candlewick-startend-run",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New; Shapes > Closed Straight Line, clicks (10,10), (50,10), (50,30), double-click (10,30); region Not Sewn (Region); line colour 800 RED; Select > Select Entry/Exit Points tool (third icon under the Select button). A closed line has SEPARATE entry (L1) and exit (L2) markers, both at the first clicked point (10,10) when drawn. They move only along the outline (dragged around the corners); a straight drop across the shape does not jump edges. L1 was dragged to the middle of the bottom edge, then L2; PE then shows L1 at about (25.5, 30) and L2 at about (29.8, 30) mm (read from the screen, +-0.3 mm): it kept them about one chain unit apart. With them apart, a dashed feed line is drawn from L2 to L1 while L2 is elsewhere. The same outline was then switched type by type; Start/End Type set with the Feed / Run radio in Sewing Attributes > Line sew. This file: same, Run. Stitches = 553. Save As PES default type (#PES0110).",
+      "sha256": "e8848ccd24259452cac10c8b53c81e70a51f7ba7ef290096b6035c634f25efcd",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-chain-startend-mid-feed.pes",
+      "spec": "line-chain-startend-mid-feed",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "MID-LINK RUN (2026-10-27 21:50-21:57, PE-DESIGN 11.50 freshly restarted, so tool attributes at defaults). File > New (100 x 100 page, grid 1 mm, Snap on); Home > Shapes > Outline > Closed Straight Line, clicks (10,10), (50,10), (50,30), double-click (10,30) (the tool drew it with Zigzag line + Fill region by default); Select tool, shape selected; Shapes tab > Sew: region Not Sewn (Region), line Chain Stitch (defaults: Stitch Type triangle, Size 4.0 mm, Time 5, Arrange first button, Start/End Type Feed); line colour 800 EMBROIDERY RED (tool default). Status 42,60 x 22,60 mm, 690 st before the points were moved. Sewing direction as drawn by the chain triangles: down the left edge, +x along the bottom, up the right edge, -x along the top (so along the bottom PE sews towards +x, not -x). Select > Select Entry/Exit Points (third icon under Select). L1 and L2 both start at (10,10). L1 dragged (it follows the outline; a first drag down the left edge slid it along the top edge instead, so it was taken clockwise round the right edge to the bottom): PE shows L1 at about (23.8, 30) mm (screen, +-0.3 mm), i.e. between the bottom links; no visible snap beyond the 1 mm grid. L2 to (19, 30) was NOT possible: dragged down the left edge it stops at the corner (10, 30) and refuses to move onto the bottom edge towards L1 (four tries, slow and fast); it does move up the left edge (tested to (10, 25)). So L2 was left at the corner (10, 30), the nearest reachable point to (19, 30). This file: L1 ~(23.8,30), L2 (10,30), Start/End Type Feed. Stitches = 690 (status bar / counter). Save As PES default type (#PES0110).",
+      "sha256": "904c37e906ccc65778804c591ad8f91e999a9da78828d8e4de6803f8acda4118",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-chain-startend-mid-run.pes",
+      "spec": "line-chain-startend-mid-run",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "MID-LINK RUN (2026-10-27 21:50-21:57, PE-DESIGN 11.50 freshly restarted, so tool attributes at defaults). File > New (100 x 100 page, grid 1 mm, Snap on); Home > Shapes > Outline > Closed Straight Line, clicks (10,10), (50,10), (50,30), double-click (10,30) (the tool drew it with Zigzag line + Fill region by default); Select tool, shape selected; Shapes tab > Sew: region Not Sewn (Region), line Chain Stitch (defaults: Stitch Type triangle, Size 4.0 mm, Time 5, Arrange first button, Start/End Type Feed); line colour 800 EMBROIDERY RED (tool default). Status 42,60 x 22,60 mm, 690 st before the points were moved. Sewing direction as drawn by the chain triangles: down the left edge, +x along the bottom, up the right edge, -x along the top (so along the bottom PE sews towards +x, not -x). Select > Select Entry/Exit Points (third icon under Select). L1 and L2 both start at (10,10). L1 dragged (it follows the outline; a first drag down the left edge slid it along the top edge instead, so it was taken clockwise round the right edge to the bottom): PE shows L1 at about (23.8, 30) mm (screen, +-0.3 mm), i.e. between the bottom links; no visible snap beyond the 1 mm grid. L2 to (19, 30) was NOT possible: dragged down the left edge it stops at the corner (10, 30) and refuses to move onto the bottom edge towards L1 (four tries, slow and fast); it does move up the left edge (tested to (10, 25)). So L2 was left at the corner (10, 30), the nearest reachable point to (19, 30). This file: same points, Start/End Type Run (Sewing Attributes > Line sew radio). Stitches = 695 (counter). Save As PES default type (#PES0110).",
+      "sha256": "299ab4582e3a756e0c0a87076288a52e38a0fefed095d3b8d105dccf559467aa",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-chain-startend-l2side-feed.pes",
+      "spec": "line-chain-startend-l2side-feed",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "MID-LINK RUN (2026-10-27 21:50-21:57, PE-DESIGN 11.50 freshly restarted, so tool attributes at defaults). File > New (100 x 100 page, grid 1 mm, Snap on); Home > Shapes > Outline > Closed Straight Line, clicks (10,10), (50,10), (50,30), double-click (10,30) (the tool drew it with Zigzag line + Fill region by default); Select tool, shape selected; Shapes tab > Sew: region Not Sewn (Region), line Chain Stitch (defaults: Stitch Type triangle, Size 4.0 mm, Time 5, Arrange first button, Start/End Type Feed); line colour 800 EMBROIDERY RED (tool default). Status 42,60 x 22,60 mm, 690 st before the points were moved. Sewing direction as drawn by the chain triangles: down the left edge, +x along the bottom, up the right edge, -x along the top (so along the bottom PE sews towards +x, not -x). Select > Select Entry/Exit Points (third icon under Select). L1 and L2 both start at (10,10). L1 dragged (it follows the outline; a first drag down the left edge slid it along the top edge instead, so it was taken clockwise round the right edge to the bottom): PE shows L1 at about (23.8, 30) mm (screen, +-0.3 mm), i.e. between the bottom links; no visible snap beyond the 1 mm grid. L2 to (19, 30) was NOT possible: dragged down the left edge it stops at the corner (10, 30) and refuses to move onto the bottom edge towards L1 (four tries, slow and fast); it does move up the left edge (tested to (10, 25)). So L2 was left at the corner (10, 30), the nearest reachable point to (19, 30). For the l2side pair L2 was then dragged from (10,30) up the left edge, along the top and down the right edge towards (50, 20): PE put it at the corner (50, 30) and would not move it up the right edge (dragged from (50,30) to (50,20): it stays), so L2 is at (50, 30), not (50, 20). L1 unchanged at about (23.8, 30). This file: Start/End Type Feed. Stitches = 690 (counter). Save As PES default type (#PES0110).",
+      "sha256": "a9789621710c0a46789f407502c256990c14767efda20621de43de320715eb74",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-chain-startend-l2side-run.pes",
+      "spec": "line-chain-startend-l2side-run",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "MID-LINK RUN (2026-10-27 21:50-21:57, PE-DESIGN 11.50 freshly restarted, so tool attributes at defaults). File > New (100 x 100 page, grid 1 mm, Snap on); Home > Shapes > Outline > Closed Straight Line, clicks (10,10), (50,10), (50,30), double-click (10,30) (the tool drew it with Zigzag line + Fill region by default); Select tool, shape selected; Shapes tab > Sew: region Not Sewn (Region), line Chain Stitch (defaults: Stitch Type triangle, Size 4.0 mm, Time 5, Arrange first button, Start/End Type Feed); line colour 800 EMBROIDERY RED (tool default). Status 42,60 x 22,60 mm, 690 st before the points were moved. Sewing direction as drawn by the chain triangles: down the left edge, +x along the bottom, up the right edge, -x along the top (so along the bottom PE sews towards +x, not -x). Select > Select Entry/Exit Points (third icon under Select). L1 and L2 both start at (10,10). L1 dragged (it follows the outline; a first drag down the left edge slid it along the top edge instead, so it was taken clockwise round the right edge to the bottom): PE shows L1 at about (23.8, 30) mm (screen, +-0.3 mm), i.e. between the bottom links; no visible snap beyond the 1 mm grid. L2 to (19, 30) was NOT possible: dragged down the left edge it stops at the corner (10, 30) and refuses to move onto the bottom edge towards L1 (four tries, slow and fast); it does move up the left edge (tested to (10, 25)). So L2 was left at the corner (10, 30), the nearest reachable point to (19, 30). For the l2side pair L2 was then dragged from (10,30) up the left edge, along the top and down the right edge towards (50, 20): PE put it at the corner (50, 30) and would not move it up the right edge (dragged from (50,30) to (50,20): it stays), so L2 is at (50, 30), not (50, 20). L1 unchanged at about (23.8, 30). This file: Start/End Type Run. Stitches = 698 (counter). Save As PES default type (#PES0110).",
+      "sha256": "84cae274dec4a1bc24c10ae9cb148cc67c346860c14fd3b1690c23b22d876b24",
+      "notes": "Header #PES0110."
     }
   ]
 }

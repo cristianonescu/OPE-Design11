@@ -831,8 +831,18 @@ Line references are relative to `crates/`.
     programmable fill density.
   - The guide gives word scales only. Fit the mapping from reference files at slider minimum,
     middle and maximum.
-- **Line Start/End type (Feed/Run):** motif, stem, candlewick and chain lines restart at a
-  moved entry point instead of keeping the pattern in place.
+- **Line Start/End type (Feed/Run) (calibrated 2026-10-27 for stem, candlewick and chain):**
+  PE-DESIGN 11.50 keeps every element of a closed line where it is without the moved points;
+  only where the sewing starts and ends changes. An element belongs to a point when it is the
+  last to begin at or before it. The pattern starts with the exit point's (L2) element and
+  goes round to the one before it, so it also ends there (a stem sews that station again, a
+  candlewick sews that knot last). Feed starts with the pattern; Run starts at the entry
+  point's (L1) element and sews only the leads (link points, stem station centres, candlewick
+  running stitch) to L2's element, the shorter way round, backwards if need be. No jumps or
+  trims. OpenStitch does the same (`object.setLine` `startEnd`, `object.setEntryExit`
+  `lineExit`; ten specs line-{chain,stem,candlewick}-startend-*, all matching PE's needle
+  points in order). Still open: motif (PE's default motif is its own artwork, so no stitch
+  comparison), open lines, chain diamonds, the editor's L2 marker and Feed/Run radio.
   ([guide](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293444.html))
 - **Line spacing and text size (calibrated 2026-10-27):** PE-DESIGN 11.50's line spacing is
   "% of char height", default 100; its TrueType size is 0.7 em (Lato Bold's H is 1.033 × size)

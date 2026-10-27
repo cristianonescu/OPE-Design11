@@ -2,7 +2,8 @@ use crate::generate::{self, Run};
 use crate::geometry::{Contour, Vec2, v2};
 use crate::lines;
 use crate::model::{
-    Design, DesignObject, LineSewing, LineType, ObjectKind, RegionType, StitchBlock,
+    ChainShape, Design, DesignObject, LineSewing, LineType, ObjectKind, RegionType, StartEnd,
+    StitchBlock,
 };
 use crate::patterns::{self, Pattern, PatternKind};
 use crate::region;
@@ -375,12 +376,27 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
 
 fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> Vec<Element> {
     let pitch = line.pitch * 10.0;
+    // Closed stem, candlewick and triangle chain lines keep their elements in place and start
+    // at the entry point as PE-DESIGN's Start/End Type says (see `start_loop` below).
+    let in_place = |c: &Contour| {
+        c.closed
+            && match line.kind {
+                LineType::Stem | LineType::Candlewick => true,
+                LineType::Chain => line.chain_shape == ChainShape::Triangle,
+                _ => false,
+            }
+    };
     // The line entry point (L1): closed outlines start there, open ones from the nearer end.
     let contours: Vec<Contour> = object
         .contours
         .iter()
-        .map(|c| line.entry.map_or_else(|| c.clone(), |p| c.starting_at(p)))
+        .map(|c| match line.entry {
+            Some(p) if !in_place(c) => c.starting_at(p),
+            _ => c.clone(),
+        })
         .collect();
+    // Whether the first line starts with running stitch to the pattern (a shorter tie-in).
+    let mut lead_in = false;
     if line.kind == LineType::Cutting {
         let mut needles: [Vec<Run>; 4] = Default::default();
         for c in &contours {
@@ -401,6 +417,7 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
             })
             .collect();
     }
+    let mut runs_so_far = 0;
     let mut runs: Vec<Run> = contours
         .iter()
         .map(|c| {
@@ -411,6 +428,45 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
             } else {
                 Vec::new()
             };
+            let loop_line = match line.kind {
+                LineType::Stem => Some(lines::LoopLine::Stem {
+                    width,
+                    spacing,
+                    angle: line.angle.unwrap_or(45.0),
+                    single: line.single,
+                }),
+                LineType::Candlewick => Some(lines::LoopLine::Candlewick {
+                    size: width,
+                    points: (line.density * 2.0).round().clamp(4.0, 48.0) as usize,
+                    spacing,
+                    pitch,
+                }),
+                LineType::Chain => Some(lines::LoopLine::Chain {
+                    size: width,
+                    times: line.run_times,
+                    arrange: line.arrange,
+                }),
+                _ => None,
+            };
+            if let (Some(entry), Some(l)) = (line.entry, loop_line)
+                && in_place(c)
+            {
+                let path = c.path();
+                // The pattern starts and ends at the exit point (L2); Run leads in from L1.
+                let exit = lines::arc_of(&path, line.exit.unwrap_or(entry));
+                let run_from = match line.start_end {
+                    StartEnd::Feed => None,
+                    StartEnd::Run => Some(lines::arc_of(&path, entry)),
+                };
+                if let Some((top, lead)) = lines::start_loop(&path, l, exit, run_from) {
+                    lead_in |= lead && runs_so_far == 0;
+                    run.extend(top);
+                    run.dedup_by(|a, b| a.distance(*b) < 1e-9);
+                    runs_so_far += 1;
+                    return run;
+                }
+            }
+            runs_so_far += 1;
             let top = match line.kind {
                 LineType::Running => generate::running(c, pitch, line.run_times),
                 LineType::Triple => generate::triple(c, pitch),
@@ -485,13 +541,16 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
         })
         .collect();
     // PE-DESIGN ties in and locks these lines like a satin (line-*-default.pes); V, stem,
-    // candlewicking and chain tie in with three steps out instead of one.
+    // candlewicking and chain tie in with three steps out instead of one, but not where a
+    // moved entry point starts a stem or candlewick with running stitch
+    // (line-*-startend-*.pes; a chain's lead keeps the long one).
     if !matches!(line.kind, LineType::Motif | LineType::Cutting) {
         region::tie_and_lock(std::slice::from_mut(&mut runs));
         if matches!(
             line.kind,
             LineType::VStitch | LineType::Stem | LineType::Candlewick | LineType::Chain
-        ) && let Some(run) = runs.iter_mut().find(|r| r.len() >= 4)
+        ) && !(lead_in && line.kind != LineType::Chain)
+            && let Some(run) = runs.iter_mut().find(|r| r.len() >= 4)
         {
             long_tie_in(run);
         }
