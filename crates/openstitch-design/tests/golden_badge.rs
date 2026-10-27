@@ -20,9 +20,11 @@ fn golden_project_compiles_to_recorded_statistics() {
     // because plain fill rows run edge to edge, as PE-DESIGN places them (each row moves half
     // a row spacing; the ellipse's end rows change), then 6 more because the satin is
     // PE-DESIGN's sawtooth with a tie-in and end lock (3068 before), then 121 fewer because
-    // the satin's 20 mm crossings stay whole, as PE-DESIGN writes them (3074 before), then 4
-    // more because the running outline ties in and locks as PE-DESIGN's lines do (2953 before).
-    assert_eq!(p.count(Command::Stitch), 2957);
+    // the satin's 20 mm crossings stay whole, as PE-DESIGN writes them (3074 before), 4 more
+    // because the running outline ties in and locks as PE-DESIGN's lines do (2953 before), then
+    // 17 fewer when the satin started at its outline's first point with PE's opening row
+    // (2957 before).
+    assert_eq!(p.count(Command::Stitch), 2940);
     assert_eq!(p.count(Command::Jump), 3);
     assert_eq!(p.count(Command::Trim), 3);
     assert_eq!(p.count(Command::ColorChange), 2);

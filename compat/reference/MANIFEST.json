@@ -468,6 +468,42 @@
       "settings": "File > New (100 x 100 mm page, grid 1 mm, Snap to Grid on, PE restarted earlier this session so tool attributes were at defaults); Shapes > Open Straight Line, clicks (10,20), (50,20), double-click (50,40); line colour set to 800 EMBROIDERY RED with the line selected (the tool had 030 VERMILLION left from an earlier shape); no region (an open line has none). The same line was then switched to each type in turn (Shapes tab > Sew > line sew type) with the line selected; the attributes shown are what PE gave the type on switching (none changed). Save As PES default type (#PES0110). Type: line type \"E/V Stitch\", sub-type \"V Stitch\" chosen in the drop-down (the only change). Line sew: 5.0 mm, 2.5 mm, 2.0 mm on the V diagram (same values as E), Run time(s) 1, Stroke time(s) 1 greyed, Arrange first button. Status: 40,00 x 20,00 mm, Stitches = 57.",
       "sha256": "763bed48773523bc99e0105c5b92dc0d979c3b7c607f4fc8b57644ca60856def",
       "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/satin-lock-column-3p5.pes",
+      "spec": "satin-lock-column-3p5",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 0.5 mm, Snap to Grid on; Shapes > Manual Punch > Straight Block, sew type Satin Stitch; Under sewing unticked, Density 3.0 line/mm, Direction greyed (set by the block), Half Stitch checked (default), Pull compensation 0.0 mm; colour 800 RED; points clicked (10,10), (10,13.5), (15,10), (15,13.5) mm, the last with a double click; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "4a739ed554d5e36b1bb64d10b32985fe3ffd3a55e24bff1c35dc3d49ca9760f1",
+      "notes": "Status bar after selecting the block: Width 5,00 mm, Height 3,50 mm, Stitches = 22. A first try snapped to 3.00 mm high and was undone."
+    },
+    {
+      "file": "stitches/satin-feather.pes",
+      "spec": "satin-feather",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 0.5 mm, Snap to Grid on; Shapes > Rectangle; line Not Sewn (Line); region Satin Stitch; Sewing Attributes > Region sew: Under sewing checkbox (top of the group) unticked, Density 3.0 line/mm; colour BROTHER EMBROIDERY 800 RED; Direction Manual straight line 90 degrees; Feathered edge ticked: first (top) row on, 3.0 mm (default), second row off (3.0 mm greyed), pattern left at the default; Pull compensation 0.0 mm; rectangle dragged from (10,10) to (30,15) mm; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "d7df7b90a5d83795fbcf374b78baf130b34db294c5e50121369327fca1f0231b",
+      "notes": "Status bar: Width 20,00 mm, Height 5,00 mm, Stitches = 79. With Feathered edge on, Gradation and Running Stitch Path are greyed. A first drag snapped to 19.50 mm wide and was undone."
+    },
+    {
+      "file": "stitches/satin-sections-h.pes",
+      "spec": "satin-sections-h",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Shapes > Closed Straight Line, points (0,0) (10,0) (10,12) (20,12) (20,0) (30,0) (30,30) (20,30) (20,18) (10,18) (10,30) (0,30) mm, the last with a double click; line Not Sewn (Line); region Satin Stitch; Sewing Attributes > Region sew: Under sewing checkbox (top of the group) unticked, Density 3.0 line/mm; colour BROTHER EMBROIDERY 800 RED; Direction Manual straight line 0 degrees; Half Stitch greyed (left at its default, ticked); Running Stitch Path first button (default); Pull compensation 0.0 mm; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "f06de4b1dbc3c13563b4dcc81d4e6bcc44d08ddaf85ff893f40ff620b851f679",
+      "notes": "Status bar: Width 30,00 mm, Height 30,00 mm, Stitches = 236."
     }
   ]
 }

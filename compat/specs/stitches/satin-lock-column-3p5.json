@@ -1,0 +1,190 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "satin-lock-column-3p5",
+  "area": "stitches",
+  "title": "Satin tie-in and end lock on a 3.5 mm column",
+  "description": "A 5 × 3.5 mm Manual Punch column in satin at density 3, without under sewing, must start and end as PE-DESIGN 11.50 does: a tie-in of three 0.3 mm steps out along the first rung and two back (the first stitch is longer than 3 mm), and an end lock of one 0.3 mm step back along the last rung (it is shorter than 4.25 mm).",
+  "covers": {
+    "audit": [
+      1
+    ],
+    "featureMatrix": [
+      {
+        "area": "Editing",
+        "feature": "Manual Punch: shapes made of several sewing-direction lines"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-lock-column-3p5.pes (under sewing off, 2026-10-27): the jump lands on the start point, then 21 stitches: tie-in (out to 0.3 mm, the landing move itself, then 0.6 and 0.9 mm, back 0.4 and 0.5 mm: 4 stitches), 8 rungs 5/7 mm apart as a sawtooth (15 crossings), end lock (2). With satin-zigzag-column (2 mm rungs: one tie-in step) and the round-1 satin files (one lock step after ≤ 2 mm, two after 5 and 30 mm) it places the rule's cuts between 2.3 and 3.5 mm (tie-in) and 3.5 and 5 mm (lock)."
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.column",
+      "params": {
+        "lines": [
+          [
+            [
+              10,
+              10
+            ],
+            [
+              10,
+              13.5
+            ]
+          ],
+          [
+            [
+              15,
+              10
+            ],
+            [
+              15,
+              13.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "density": 3,
+        "underlay": false
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "satin.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/satin-lock-column-3p5.pes",
+      "make": "Shapes > Manual Punch > Straight Block (sew type Satin Stitch), punch a 5 mm long, 3.5 mm wide straight column between (10, 10)–(10, 13.5) and (15, 10)–(15, 13.5) mm, density 3.0 lines/mm, Under Sewing off, other attributes default. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchSegments"
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "expected": 21,
+      "tolerance": {
+        "count": 0
+      },
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-lock-column-3p5.pes (under sewing off, 2026-10-27): 21 stitches.",
+      "reference": {
+        "tolerance": {
+          "count": 0
+        }
+      }
+    },
+    {
+      "id": "tie-in",
+      "measure": {
+        "kind": "stitchSegments"
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        },
+        "exclude": {
+          "first": 0,
+          "last": 17
+        }
+      },
+      "expected": 4,
+      "tolerance": {
+        "count": 0
+      },
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-lock-column-3p5.pes (under sewing off, 2026-10-27): after the move to 0.3 mm, the tie-in sews 4 stitches (0.6 and 0.9 mm out, 0.4–0.5 mm back); the column's 15 crossings and 2-stitch lock are left out.",
+      "reference": {
+        "tolerance": {
+          "count": 0
+        }
+      }
+    },
+    {
+      "id": "shortest-stitch",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "min"
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "expected": {
+        "min": 0.25,
+        "max": 0.35
+      },
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-lock-column-3p5.pes (under sewing off, 2026-10-27): the tie-in and lock steps are 0.3 mm."
+    },
+    {
+      "id": "versus-reference",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.3,
+          "boundsMm": 0.3,
+          "counts": {
+            "percent": 10
+          },
+          "sequence": false,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "satin.pes"
+      },
+      "evidence": "PE-DESIGN 11 output of the same column",
+      "reference": {}
+    }
+  ]
+}

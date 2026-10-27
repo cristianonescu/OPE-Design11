@@ -7,7 +7,7 @@ use crate::direction;
 use crate::generate::{self, RegionParams, RowSpan, Run, subdivide};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, subtract, v2};
 use crate::model::{
-    FeatherSide, Gradation, RegionSewing, RegionType, RunningStitchPath, UnderlayStyle,
+    Feather, FeatherSide, Gradation, RegionSewing, RegionType, RunningStitchPath, UnderlayStyle,
 };
 use crate::paths::{OutlineTravel, Rng, TravelGraph, join};
 use crate::patterns::Pattern;
@@ -55,9 +55,10 @@ fn link_underlay(out: &mut Vec<Vec<Run>>, closed: &[Contour], holes: &[Contour])
     // Between under sewing runs the travel follows the inset outline, where PE-DESIGN sews
     // it too; the rest (and the way to the top stitching) is the shortest path inside.
     if let Some(inner) = satin_inset(closed, holes) {
+        // Along the inset outline only where that is not a long way round (between the U's
+        // bar and a leg the outline goes round the whole leg).
         let mut graph = TravelGraph::new(&inner, &[]);
-        graph.outline = Some(OutlineTravel::On);
-        graph.outline_tolerance = 5.0;
+        graph.along_edges = true;
         pieces = join(pieces, Some(&mut graph), SATIN_TRAVEL_PITCH);
     }
     if let (false, Some(start)) = (
@@ -233,6 +234,10 @@ fn layers_inner(
         };
         // Satin as PE-DESIGN 11 sews it: the outline 1 mm in, then rows across the satin
         // (perpendicular to its stitches) 2 mm apart with stitches of the fill length.
+        // PE-DESIGN starts satin at its start point, by default the outline's first point.
+        let satin_start = r
+            .entry
+            .or_else(|| closed.first().and_then(|c| c.points.first().copied()));
         let satin_rows = || -> Vec<Run> {
             let p = RegionParams {
                 angle: angle + 90.0,
@@ -240,16 +245,16 @@ fn layers_inner(
                 stitch_length: params.stitch_length,
                 pull_compensation: -SATIN_UNDERLAY_INSETS[0],
             };
-            satin_underlay_rows(closed, &p, holes)
+            satin_underlay_rows(closed, &p, holes, satin_start)
         };
-        // The outline starts at the entry point, or else where the rows begin.
+        // The outline starts at the start point, or else where the rows begin.
         let satin_edge = |start: Option<Vec2>| -> Vec<Run> {
             let Some(inner) = satin_inset(closed, holes) else {
                 return edge();
             };
             inner
                 .iter()
-                .map(|c| match r.entry.or(start) {
+                .map(|c| match satin_start.or(start) {
                     Some(p) => generate::running(&c.starting_at(p), 25.0, 1),
                     None => generate::running(c, 25.0, 1),
                 })
@@ -285,11 +290,27 @@ fn layers_inner(
         RegionType::Fill if !shaped => {
             generate::fill_edge_to_edge(closed, &params, holes, r.fill_shift(), r.entry)
         }
-        RegionType::Satin if !shaped => sawtooth_satin(closed, r, &params, holes),
+        // A feathered edge alone keeps the sawtooth (PE-DESIGN 11.50, satin-feather).
+        RegionType::Satin
+            if !shaped || (r.sewn_gradation().is_none() && r.split_length.is_none()) =>
+        {
+            sawtooth_satin(closed, r, &params, holes)
+        }
         _ => shaped_rows(closed, r, &params, holes),
     };
     if let Some(path) = r.travel_path() {
-        runs = reroute_with(runs, closed, holes, path, params.pull_compensation);
+        runs = match r.kind {
+            // PE-DESIGN's satin travels in 1.8-2.0 mm stitches (satin-sections-h, the U).
+            RegionType::Satin => {
+                let pieces: Vec<Run> = runs
+                    .into_iter()
+                    .flat_map(|run| split_outside(run, closed, holes))
+                    .collect();
+                let mut graph = travel_graph(closed, holes, path, params.pull_compensation);
+                join(pieces, Some(&mut graph), SATIN_TRAVEL_PITCH)
+            }
+            _ => reroute_with(runs, closed, holes, path, params.pull_compensation),
+        };
     }
     out.push(runs);
     out
@@ -478,7 +499,12 @@ fn split_outside(run: Run, closed: &[Contour], holes: &[Contour]) -> Vec<Run> {
 /// row is cut in two, they are sewn one after the other across the region, each from its end
 /// nearer the last needle point, as PE-DESIGN 11 does; otherwise as fill rows (nearest row
 /// next).
-fn satin_underlay_rows(closed: &[Contour], p: &RegionParams, holes: &[Contour]) -> Vec<Run> {
+fn satin_underlay_rows(
+    closed: &[Contour],
+    p: &RegionParams,
+    holes: &[Contour],
+    start: Option<Vec2>,
+) -> Vec<Run> {
     let Some(inner) = satin_inset(closed, holes) else {
         return generate::fill(closed, p, holes);
     };
@@ -511,7 +537,21 @@ fn satin_underlay_rows(closed: &[Contour], p: &RegionParams, holes: &[Contour]) 
         };
         return generate::fill(&inner, &p, &[]);
     }
-    let mut at: Option<Vec2> = None;
+    // From the side away from the start point towards it, so the under sewing ends near where
+    // the top stitching starts; the first row from its end nearer the start point (where the
+    // outline ends), as PE-DESIGN sews the U and the bent band.
+    let mut rows = rows;
+    let near = |row: &(usize, f64, Vec<Span>)| -> Option<f64> {
+        let s = start?.rotated(-p.angle.to_radians());
+        row.2.first().map(|_| (row.1 - s.y).abs())
+    };
+    let (first, last) = (rows.iter().find_map(near), rows.iter().rev().find_map(near));
+    if let (Some(f), Some(l)) = (first, last)
+        && f < l
+    {
+        rows.reverse();
+    }
+    let mut at: Option<Vec2> = start;
     let mut runs = Vec::new();
     for (i, y, spans) in rows {
         let Some(span) = spans.first() else {
@@ -524,7 +564,7 @@ fn satin_underlay_rows(closed: &[Contour], p: &RegionParams, holes: &[Contour]) 
             xs.reverse();
         }
         let mut run: Run = xs.iter().map(|&x| unrotate(x, y, p.angle)).collect();
-        if at.is_none() {
+        if runs.is_empty() {
             // PE-DESIGN sews the first row there and back.
             let back: Run = run.iter().rev().skip(1).copied().collect();
             run.extend(back);
@@ -559,30 +599,265 @@ fn sawtooth_satin(
     let pitch = 2.0 * p.row_spacing;
     if let Some(run) = r
         .entry
-        .and_then(|e| split_satin(closed, holes, p, pitch, e))
+        .and_then(|e| split_satin(closed, holes, p, pitch, e, r.sewn_feather()))
     {
         return vec![run];
     }
-    let spans: Vec<RowSpan> = edge_rows(closed, p.angle, pitch)
+    let rows: Vec<(f64, Vec<Span>)> = edge_rows(closed, p.angle, pitch)
         .into_iter()
-        .enumerate()
-        .flat_map(|(row, y)| {
-            pulled_spans(closed, holes, p, y)
-                .into_iter()
-                .map(move |range| RowSpan { row, y, range })
-        })
+        .map(|y| (y, pulled_spans(closed, holes, p, y)))
         .collect();
-    let p = RegionParams {
-        row_spacing: pitch,
-        ..*p
-    };
-    generate::chain_sawtooth_spans(&spans, &p, |span, _, forward| {
-        if forward {
-            vec![*span.start(), *span.end()]
-        } else {
-            vec![*span.end(), *span.start()]
+    // PE-DESIGN starts (and ends) a region at its start point, by default the outline's first
+    // point: the sections are sewn from there and travel to the first one.
+    let first = closed.first().and_then(|c| c.points.first().copied());
+    let start = r.entry.or(first);
+    let exit = r.exit.or(start);
+    let rad = p.angle.to_radians();
+    let mut runs: Vec<Run> = Vec::new();
+    if let Some(s) = start.map(|s| crate::route::snap(closed, s)) {
+        // PE-DESIGN first sews across the start point's edge row and back (from the row end
+        // nearer the start point, the same needle points as that row's satin).
+        let at = s.rotated(-rad);
+        let row = rows
+            .iter()
+            .min_by(|a, b| (a.0 - at.y).abs().total_cmp(&(b.0 - at.y).abs()));
+        let ends = row.and_then(|(y, spans)| {
+            spans
+                .iter()
+                .find(|r| at.x >= r.start() - 1.0 && at.x <= r.end() + 1.0)
+                .map(|r| {
+                    let (near, far) = if (at.x - r.start()).abs() <= (at.x - r.end()).abs() {
+                        (*r.start(), *r.end())
+                    } else {
+                        (*r.end(), *r.start())
+                    };
+                    (unrotate(near, *y, p.angle), unrotate(far, *y, p.angle))
+                })
+        });
+        runs.push(match ends {
+            Some((near, far)) if near.distance(far) > 1.0 => vec![near, far, near],
+            _ => vec![s],
+        });
+    }
+    // Outline corners in order, rotated: a leg is entered at the tip corner that comes first.
+    let corners: Vec<Vec2> = closed
+        .first()
+        .map(|c| c.points.iter().map(|q| q.rotated(-rad)).collect())
+        .unwrap_or_default();
+    runs.extend(
+        sections_in_order(
+            &rows,
+            start.map(|s| s.rotated(-rad)),
+            exit.map(|e| e.rotated(-rad)),
+            &corners,
+            pitch,
+        )
+        .into_iter()
+        .map(|rows| {
+            let n = rows.len();
+            rows.into_iter()
+                .enumerate()
+                .flat_map(|(k, (y, from, to))| {
+                    let (from, to) = feathered(from, to, k, k + 1 == n, r.sewn_feather());
+                    [unrotate(from, y, p.angle), unrotate(to, y, p.angle)]
+                })
+                .collect()
+        }),
+    );
+    runs
+}
+
+/// A run of consecutive rows whose spans continue one another (rotated space): one leg, bar or
+/// block of a satin region, with the sections it touches at its first and last row.
+struct Section {
+    rows: Vec<(f64, Span)>,
+    before: Vec<usize>,
+    after: Vec<usize>,
+}
+
+/// Splits rows of spans (rotated space, in row order) into sections: a section continues while
+/// exactly one span of the next row overlaps its last span and that span overlaps nothing else.
+fn sections(rows: &[(f64, Vec<Span>)]) -> Vec<Section> {
+    let overlap = |a: &Span, b: &Span| a.start() < b.end() && b.start() < a.end();
+    let mut out: Vec<Section> = Vec::new();
+    let mut open: Vec<usize> = Vec::new();
+    for (y, spans) in rows {
+        let mut next = Vec::new();
+        let mut taken = vec![false; spans.len()];
+        for &s in &open {
+            let last = &out[s].rows[out[s].rows.len() - 1].1;
+            let hits: Vec<usize> = (0..spans.len())
+                .filter(|&i| overlap(last, &spans[i]))
+                .collect();
+            if let [i] = hits[..]
+                && open
+                    .iter()
+                    .filter(|&&o| overlap(&out[o].rows[out[o].rows.len() - 1].1, &spans[i]))
+                    .count()
+                    == 1
+            {
+                out[s].rows.push((*y, spans[i].clone()));
+                taken[i] = true;
+                next.push(s);
+            }
         }
-    })
+        for (_, span) in spans.iter().enumerate().filter(|(i, _)| !taken[*i]) {
+            let id = out.len();
+            let before: Vec<usize> = open
+                .iter()
+                .copied()
+                .filter(|&o| !next.contains(&o))
+                .filter(|&o| overlap(&out[o].rows[out[o].rows.len() - 1].1, span))
+                .collect();
+            for &b in &before {
+                out[b].after.push(id);
+            }
+            out.push(Section {
+                rows: vec![(*y, span.clone())],
+                before,
+                after: Vec::new(),
+            });
+            next.push(id);
+        }
+        open = next;
+    }
+    out
+}
+
+/// The rows of a sawtooth satin as PE-DESIGN 11.50 orders them (region-travel-u-satin,
+/// satin-sections-h): section by section from the far end of the rows back (the last row's
+/// side first, and across a row from its far end), every leg from its tip towards the section
+/// it joins, a section between others from the side already sewn; the section holding the
+/// exit point (rotated space) comes last and ends there. Each row is (y, from, to), every row
+/// of a section sewn in the same direction.
+fn sections_in_order(
+    rows: &[(f64, Vec<Span>)],
+    start: Option<Vec2>,
+    exit: Option<Vec2>,
+    corners: &[Vec2],
+    pitch: f64,
+) -> Vec<Vec<(f64, f64, f64)>> {
+    let all = sections(rows);
+    if all.is_empty() {
+        return Vec::new();
+    }
+    let middle = |s: &Section| {
+        let (y0, y1) = (s.rows[0].0, s.rows[s.rows.len() - 1].0);
+        let span = &s.rows[s.rows.len() / 2].1;
+        ((y0 + y1) / 2.0, (span.start() + span.end()) / 2.0)
+    };
+    let holds = |s: &Section, e: Vec2| {
+        let (y0, y1) = (s.rows[0].0, s.rows[s.rows.len() - 1].0);
+        let pad = if s.rows.len() > 1 {
+            (y1 - y0) / (s.rows.len() - 1) as f64
+        } else {
+            1.0
+        };
+        e.y >= y0 - pad
+            && e.y <= y1 + pad
+            && s.rows
+                .iter()
+                .any(|(_, r)| e.x >= r.start() - pad && e.x <= r.end() + pad)
+    };
+    // (A region of one section is simply sewn from the start point's side.)
+    let last = exit.filter(|_| all.len() > 1).and_then(|e| {
+        (0..all.len())
+            .filter(|&i| holds(&all[i], e))
+            .min_by(|&a, &b| {
+                let d = |i: usize| {
+                    let (y, x) = middle(&all[i]);
+                    (y - e.y).hypot(x - e.x)
+                };
+                d(a).total_cmp(&d(b))
+            })
+    });
+    let mut order: Vec<usize> = (0..all.len()).filter(|&i| Some(i) != last).collect();
+    order.sort_by(|&a, &b| {
+        let ((ya, xa), (yb, xb)) = (middle(&all[a]), middle(&all[b]));
+        yb.total_cmp(&ya).then(xb.total_cmp(&xa))
+    });
+    order.extend(last);
+    let mut done = vec![false; all.len()];
+    let mut at: Option<Vec2> = start;
+    let mut out = Vec::new();
+    for &i in &order {
+        let s = &all[i];
+        let sewn = |n: &[usize]| n.iter().any(|&j| done[j]);
+        // Rows in their order (first row first) or reversed.
+        let forward = if let Some(e) = exit.filter(|_| Some(i) == last) {
+            (e.y - s.rows[s.rows.len() - 1].0).abs() <= (e.y - s.rows[0].0).abs()
+        } else if s.before.is_empty() != s.after.is_empty() {
+            // A leg: from its tip, the end that touches nothing.
+            s.before.is_empty()
+        } else if sewn(&s.before) != sewn(&s.after) {
+            sewn(&s.before)
+        } else {
+            at.is_none_or(|a| (a.y - s.rows[0].0).abs() <= (a.y - s.rows[s.rows.len() - 1].0).abs())
+        };
+        let rows: Vec<&(f64, Span)> = if forward {
+            s.rows.iter().collect()
+        } else {
+            s.rows.iter().rev().collect()
+        };
+        // Across each row from the end nearer the needle (the far end for the first section).
+        let (y0, first) = (rows[0].0, &rows[0].1);
+        // The outline corner (index) at a row end, if one is within a row of it.
+        let corner = |x: f64| {
+            corners
+                .iter()
+                .position(|c| (c.x - x).abs() <= pitch && (c.y - y0).abs() <= pitch)
+        };
+        let leg = s.before.is_empty() != s.after.is_empty() && Some(i) != last;
+        let from_start = match (leg, corner(*first.start()), corner(*first.end())) {
+            (true, Some(a), Some(b)) => a < b,
+            _ => match at {
+                Some(a) => (a.x - first.start()).abs() <= (a.x - first.end()).abs(),
+                None => false,
+            },
+        };
+        let n = rows.len();
+        let sewn_rows: Vec<(f64, f64, f64)> = rows
+            .iter()
+            .enumerate()
+            .map(|(k, (y, r))| {
+                // A last row closer than a row's pitch is reached along the far edge and sewn
+                // back across (PE: the H's top-right leg).
+                let partial = k + 1 == n && n > 1 && (y - rows[k - 1].0).abs() < 0.75 * pitch;
+                if from_start != partial {
+                    (*y, *r.start(), *r.end())
+                } else {
+                    (*y, *r.end(), *r.start())
+                }
+            })
+            .collect();
+        at = sewn_rows.last().map(|&(y, _, to)| v2(to, y));
+        done[i] = true;
+        out.push(sewn_rows);
+    }
+    out
+}
+
+/// PE-DESIGN 11.50's feathered edge on satin: the rows' ends move in by these shares of the
+/// feather width, row after row, the pattern restarting with each run of rows; the first and
+/// last row keep their ends (satin-feather: 3 mm, rows 0.7 mm apart).
+const FEATHER_PATTERN: [f64; 12] = [0.9, 0.2, 0.5, 1.0, 0.5, 0.1, 0.6, 0.3, 0.8, 0.0, 0.7, 0.4];
+
+/// A satin row sewn from `from` to `to` (rotated space), its ends feathered: `Start` moves the
+/// end the row starts from, `End` the one it ends at, by [`FEATHER_PATTERN`]'s share for row
+/// `k` of the feather width, at most 90 % of the row.
+fn feathered(from: f64, to: f64, k: usize, last: bool, feather: Option<Feather>) -> (f64, f64) {
+    let Some(f) = feather.filter(|_| k > 0 && !last) else {
+        return (from, to);
+    };
+    let len = to - from;
+    let d = (FEATHER_PATTERN[(k - 1) % FEATHER_PATTERN.len()] * f.width * 10.0)
+        .min(len.abs() * 0.9)
+        * len.signum();
+    match f.side {
+        FeatherSide::Start => (from + d, to),
+        FeatherSide::End => (from, to - d),
+        FeatherSide::Both => (from + d, to - d),
+    }
 }
 
 /// Row positions (rotated space) `pitch` apart from just inside the region's first edge, and
@@ -631,6 +906,7 @@ fn split_satin(
     p: &RegionParams,
     pitch: f64,
     entry: Vec2,
+    feather: Option<Feather>,
 ) -> Option<Run> {
     if closed.len() != 1 || !holes.is_empty() {
         return None;
@@ -680,6 +956,7 @@ fn split_satin(
         let n = rows.len();
         for (k, (y, s)) in rows.iter().enumerate() {
             let (near, far) = ends(s);
+            let (near, far) = feathered(near, far, k, k + 1 == n, feather);
             if k > 0 && k + 1 < n {
                 run.push(pt(near, *y));
             }
@@ -694,18 +971,28 @@ fn split_satin(
     Some(run)
 }
 
-/// Tie-in and end lock of a satin object, as PE-DESIGN 11 sews them: from the start point the
-/// needle goes 0.3 mm along the first stitch (at most its length) and back, then sews on over
-/// that stitch; at the end it steps back along the last stitch, 0.3 mm at a time (at most the
-/// stitch's length), and returns: two steps after a long stitch, one after a short one (PE: one
-/// after 0.2 and 2.0 mm stitches, two after 5 and 30 mm ones; the cut is taken at 3 mm).
+/// Tie-in and end lock of a satin object, as PE-DESIGN 11.50 sews them. From the start point
+/// the needle steps 0.3 mm along the first stitch (at most its length) and back, then sews on
+/// over that stitch; after a first stitch longer than 3 mm it steps out three times (0.9 mm)
+/// and comes back in stitches of at most 0.5 mm. At the end it steps back along the last
+/// stitch, 0.3 mm at a time, and returns the same way: twice after a last stitch longer than
+/// 4.25 mm, once otherwise. (PE: one tie-in step after 1.2–2.3 mm first stitches, three after
+/// 3.5 mm; one lock step after 0.2–3.5 mm last stitches, two after 5 and 30 mm ones.)
 pub fn tie_and_lock(layers: &mut [Vec<Run>]) {
     const STEP: f64 = 3.0;
     if let Some(run) = layers.iter_mut().flatten().find(|r| r.len() >= 2) {
         let (a, b) = (run[0], run[1]);
         let len = a.distance(b);
         if len > 1e-9 {
-            run.splice(1..1, [a + (b - a) * (STEP.min(len) / len), a]);
+            let unit = (b - a) * (1.0 / len);
+            let steps = if len > 30.0 { 3 } else { 1 };
+            let out = (STEP * steps as f64).min(len);
+            let mut tie: Vec<Vec2> = (1..=steps)
+                .map(|k| a + unit * (out * k as f64 / steps as f64))
+                .collect();
+            let tip = a + unit * out;
+            tie.extend(subdivide(&[tip, a], 5.0).into_iter().skip(1));
+            run.splice(1..1, tie);
         }
     }
     if let Some(run) = layers
@@ -719,7 +1006,7 @@ pub fn tie_and_lock(layers: &mut [Vec<Run>]) {
         let len = a.distance(b);
         if len > 1e-9 {
             let back = (a - b) * (STEP.min(len) / len);
-            let steps = if len > 30.0 { 2 } else { 1 };
+            let steps = if len > 42.5 { 2 } else { 1 };
             run.extend((1..=steps).map(|k| b + back * k as f64));
             run.extend((0..steps).rev().map(|k| b + back * k as f64));
         }
