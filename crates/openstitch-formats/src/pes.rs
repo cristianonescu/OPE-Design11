@@ -61,6 +61,8 @@ pub struct ObjectSection {
     /// The v5+ thread table (empty for older versions).
     pub threads: Vec<Thread>,
     pub objects: Vec<EmbOne>,
+    /// PE-DESIGN 11 (`#PES0110`) editable shapes (`CEmbLine`), in file order.
+    pub shapes: Vec<crate::pes11::Shape>,
     /// The first object class that was not parsed, if any.
     pub unparsed: Option<String>,
 }
@@ -275,13 +277,16 @@ pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
         "0100" => Some((14, Some(38), 34)),
         // PE-DESIGN 11 (`#PES0110`). The header up to the metadata has the same documented shape
         // as 0040+ (pec offset, `01 00`, a two-char code, then the five length-prefixed strings),
-        // confirmed against owner reference files in compat/reference/pes/. The thread-table and
-        // object offsets after the metadata are not publicly described for this version, so read
-        // only the metadata and return; stitches and chart colours still come from the PEC
-        // section. See docs/COMPATIBILITY_TESTS.md.
+        // confirmed against owner reference files in compat/reference/pes/. After it, the
+        // editable shapes of the object list (crate::pes11; the hoop, page and thread-table
+        // fields in between are not all mapped). Stitches and chart colours still come from the
+        // PEC section. See docs/FILE_FORMATS.md.
         "0110" => {
             r.skip(4)?;
             read_metadata(&mut r, &mut section)?;
+            let (shapes, unparsed) = crate::pes11::read_objects(data, r.offset, pec_offset)?;
+            section.shapes = shapes;
+            section.unparsed = unparsed;
             return Ok(section);
         }
         _ => None,

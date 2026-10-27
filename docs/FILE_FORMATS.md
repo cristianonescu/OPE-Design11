@@ -124,13 +124,66 @@ compiling, so v4+ output carries them; `stitches.import` offers the file's field
 into a design that has none (`adoptProperties` overrides).
 `pes::read_objects` exposes the parsed objects (transform, size, stitch runs, colour log).
 
-What does not survive: PE-DESIGN's editable shape, text and fill objects (`CSewFigSeg`,
-`CEmbRect`, `CEmbLine`, `CEmbPunch`, lettering, programmable fills, motifs). No public
-description exists, so the reader stops at the first such class (`ObjectSection::unparsed`)
-and OpenStitch writes its shapes as stitches. Blocked on reference files from a licensed
-PE-DESIGN and the legal opinion on studying its output (LEGAL_AND_LICENSING.md). Likewise
-unverified: whether PE-DESIGN accepts several `CEmbOne` objects in one file, so the writer
-emits one for the whole design.
+PE-DESIGN's editable objects have no public description. Their mapping, from the owner's own
+PE-DESIGN files, is in "PES 0110 object list" below. The reader reads `CEmbLine` shapes and
+stops at the first other class (`ObjectSection::unparsed`). OpenStitch still writes its shapes
+as stitches (a `CEmbOne` stitch group). Unverified: whether PE-DESIGN accepts several `CEmbOne`
+objects in one file, so the writer emits one for the whole design.
+
+### PES 0110 object list
+
+Facts only, from PE-DESIGN 11.50 files the owner made, compared with each other. The files are
+minimal designs that vary one property at a time; PE-DESIGN's program files are not analysed
+(project policy, [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md)). Evidence:
+`crates/openstitch-formats/tests/fixtures/pe11` (provenance and SHA-256 in its `PROVENANCE.md`)
+and the round-1 compat references. Reader: `crates/openstitch-formats/src/pes11.rs`; each fact
+below is pinned by a test in `tests/pes11.rs`.
+
+- **Only `#PES0110` keeps editable objects.** PE-DESIGN's Ver.6.0 save of a rectangle is a
+  `CEmbOne`/`CSewSeg` stitch group (it warns that the data is saved as stitch data).
+- **The object section has no stitches.** Changing Fill to Satin changes one byte of the object
+  section while the PEC stitches change entirely: objects hold geometry and attributes, and
+  PE-DESIGN regenerates stitches from them.
+- **Object list:** a u16 object count, then MFC `CArchive` objects. The first object of a class
+  starts with `FFFF`, a u16 schema (0) and the u16-length ASCII class name. A later object of an
+  already named class starts with `0x8000 | n`, where n counts classes in order of first
+  appearance, from 1. The reader finds the list by the first `FFFF 0000` + class name after the
+  header strings; the hoop, page and thread-table fields in between are not all mapped.
+- **Strings** in the thread table are MFC Unicode strings (`FF FE FF`, u8 length in UTF-16
+  units, UTF-16LE).
+- **Coordinates** are 0.1 mm with the page's top-left corner at (500, 500), y down, in every
+  file so far (all on a 100 × 100 mm page).
+- Classes seen: `CEmbLine` (Shape tools: rectangle, ellipse, open and closed lines), `CEmbNText`
+  with one `CTTFLetter` per letter (text), `CEmbSpecialShape` (Shapes gallery presets).
+
+`CEmbLine` body, offsets from the byte after the class name or tag (u16 unless noted):
+
+| Offset | Field | Evidence (each file differs from the baseline only here) |
+|---|---|---|
+| 0 | bounds `x0 y0 x1 y1` (i16) | r02 width, r03 position |
+| 8 | sewn extent `x0 y0 x1 y1` (i16): the bounds plus half the line width | r07 (equals the bounds when the line is not sewn) |
+| 16 | transform, 6 × f32 (identity so far) | all |
+| 40 | 0 closed, 1 open | r11 line |
+| 42 | line sewn 1, not sewn 0 | r07 |
+| 44 | line sew type: 0 Zigzag, 1 Running, 3 E or V stitch, 4 Triple, 9 while not sewn | r07, the `line-*-default` references |
+| 134 | region sew type: 0 Satin, 1 Fill, 2 Programmable fill (11 on the inner copy of a hole-sewing pair) | r04, programmable-fill-45, hole-sewing-pentagon-star |
+| 136 | region density, 0.1 line/mm | r09 (4.5 → 6.0) |
+| 138 | gradation 0 off, 1 on | region-travel-u-gradation |
+| 168 | region direction, degrees | r08 (45 → 90) |
+| 174 | Fill Frequency, % (default 30) | fill-frequency-0/25/50 |
+| 180 | region under sewing 1 on, 0 off | r06 |
+| 186 | Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline | region-travel-u-* |
+| 4432 | geometry: an 84-byte header with three handle marks (f64 and f32 x, y each), a u32 vertex count n, then n vertices | all |
+
+Each vertex is 28 bytes: x, y and two cubic Bézier handles (6 × f32), then a u32 kind (0 corner,
+`0x11` smooth). A rectangle starts in the middle of its bottom edge and runs round the corners;
+an ellipse is four smooth vertices whose handles lie 0.5523 × the radius along the tangent. The
+record ends after its last vertex. After the list come 52 or more bytes not mapped yet.
+
+Not mapped yet: the region colour's link to the thread table, the line's own width, density and
+colour, the fields that differ between E and V, the three handle marks, `CEmbNText`/`CTTFLetter`
+(text, font name, scale), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the
+reader refuses), and the trailer.
 
 ## DST
 
