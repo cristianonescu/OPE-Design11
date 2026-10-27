@@ -37,7 +37,16 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
 
 pub(crate) fn read_section(reader: &mut ByteReader<'_>) -> Result<StitchPattern> {
     let mut pattern = StitchPattern::new();
-    reader.skip(3)?;
+    // Every PEC section starts with its `LA:` label. PE-DESIGN 11 saves a design that lies off
+    // the page without one (the PES header's PEC offset points at zeros), and its stitches are
+    // then only in the object section; decoding those zeros would give an empty design.
+    if reader.read(3)? != b"LA:" {
+        return Err(FormatError::UnsupportedFormat(
+            "no PEC section (no `LA:` label at the PEC offset): PE-DESIGN writes none for a \
+             design that lies off the page; move it onto the page and save it again"
+                .into(),
+        ));
+    }
     let label = String::from_utf8_lossy(reader.read(16)?).into_owned();
     let label = trim_horizontal(&label);
     if !label.is_empty() {

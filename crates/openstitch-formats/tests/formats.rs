@@ -446,6 +446,25 @@ fn pes_unknown_object_classes_are_reported_not_fatal() {
 }
 
 #[test]
+fn pes_without_a_pec_section_is_an_error_not_an_empty_design() {
+    // PE-DESIGN 11 saves a design that lies off the page with a PEC offset that points at
+    // zeros (no `LA:` label); the stitches are then only in the object section.
+    let mut data = b"#PES0110".to_vec();
+    data.extend_from_slice(&16u32.to_le_bytes());
+    data.extend_from_slice(&[0, 0, 0, 0]);
+    data.extend(std::iter::repeat_n(0u8, 0x300));
+    let err = pes::read(&data).expect_err("no PEC section");
+    assert!(
+        matches!(&err, FormatError::UnsupportedFormat(m) if m.contains("no PEC section")),
+        "{err}"
+    );
+    // A stand-alone PEC without its label is refused the same way.
+    let mut pec_data = b"#PEC0001".to_vec();
+    pec_data.extend(std::iter::repeat_n(0u8, 0x300));
+    assert!(pec::read(&pec_data).is_err());
+}
+
+#[test]
 fn pes_version_is_recorded() {
     let pattern = pes::read(&data("oracle.pes")).expect("read");
     assert_eq!(
