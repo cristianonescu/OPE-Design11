@@ -90,7 +90,11 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
         String::from_utf8_lossy(&magic[4..]).into_owned(),
     );
     if let Ok(section) = read_objects(data) {
-        apply_thread_table(&mut pattern, &section.threads);
+        // A PE-DESIGN 11 table may list colours no block sews (an unused attribute's default),
+        // so it is not mapped onto the PEC blocks one to one; it stays in the object section.
+        if section.version != "0110" {
+            apply_thread_table(&mut pattern, &section.threads);
+        }
         pattern.metadata.extend(section.metadata);
     }
     Ok(pattern)
@@ -206,7 +210,7 @@ pub fn decode_header_string(bytes: &[u8]) -> String {
 /// u16 for 255 or more, `FFFF` then a u32 beyond that) and single-byte text, or, for Unicode,
 /// `FF FEFF` first and then the length in UTF-16 units and UTF-16LE text. PE-DESIGN 11 writes
 /// the v6 thread table's strings in the Unicode form (tests/fixtures/pe_design_v6_trims.pes).
-fn read_string8(r: &mut ByteReader) -> Result<Option<String>> {
+pub(crate) fn read_string8(r: &mut ByteReader) -> Result<Option<String>> {
     let mut unicode = false;
     let mut len = u32::from(r.u8()?);
     if len == 0xFF {
@@ -284,9 +288,10 @@ pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
         "0110" => {
             r.skip(4)?;
             read_metadata(&mut r, &mut section)?;
-            let (shapes, unparsed) = crate::pes11::read_objects(data, r.offset, pec_offset)?;
-            section.shapes = shapes;
-            section.unparsed = unparsed;
+            let objects = crate::pes11::read_objects(data, r.offset, pec_offset)?;
+            section.threads = objects.threads;
+            section.shapes = objects.shapes;
+            section.unparsed = objects.unparsed;
             return Ok(section);
         }
         _ => None,

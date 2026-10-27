@@ -3,14 +3,18 @@
 //!
 //! The list is a u16 object count, then MFC `CArchive` objects: an object of a class not seen
 //! before starts with `FFFF`, a u16 schema and the u16-length class name; a later object of an
-//! already named class starts with `0x8000 | n`, n counting classes in order of first
-//! appearance from 1. Only `CEmbLine` (shapes and lines drawn with the shape and line tools) is
+//! already named class starts with `0x8000 | n`, where n is the class's entry in the archive's
+//! map. MFC numbers classes and objects in one sequence from 1 (each new class takes the next
+//! number, then each object), so after a text and its letters a class's number is not its
+//! order of appearance. Only `CEmbLine` (shapes and lines drawn with the shape and line tools) is
 //! read. Reading stops at the first other class, or at a `CEmbLine` whose geometry doesn't fit
 //! its bounds (a variant not mapped yet, such as a Manual Punch block), and records the class in
 //! [`super::ObjectSection::unparsed`].
 
 use crate::Result;
 use crate::io::ByteReader;
+use openstitch_core::Thread;
+use std::borrow::Cow;
 
 const EMB_LINE: &str = "CEmbLine";
 /// Bytes of a `CEmbLine` body before its geometry, in every reference file mapped so far.
@@ -52,6 +56,16 @@ pub struct Vertex {
     pub kind: u32,
 }
 
+/// What [`read_objects`] found after the header strings.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Objects {
+    /// The thread table, in its file order (the shapes' colour indexes point into it).
+    pub threads: Vec<Thread>,
+    pub shapes: Vec<Shape>,
+    /// The first object class that was not read, if any.
+    pub unparsed: Option<String>,
+}
+
 /// A `CEmbLine`: an outline with line sewing and, when closed, region sewing.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Shape {
@@ -62,7 +76,18 @@ pub struct Shape {
     /// Line sew type code: 0 Zigzag (PE's default), 1 Running, 3 E or V stitch, 4 Triple,
     /// 9 while not sewn. Other codes, and how E and V differ, are not mapped yet.
     pub line_type: u16,
+    /// Line colour: an index into [`Objects::threads`].
+    pub line_color: u16,
+    /// Zigzag width, mm.
+    pub zigzag_width: f32,
+    /// Zigzag density, line/mm.
+    pub zigzag_density: f32,
+    /// Running stitch pitch, mm. Kept while another line type is chosen, as PE's tool keeps it.
+    pub run_pitch: f32,
+    pub line_under_sewing: bool,
     pub region: RegionSewType,
+    /// Region colour: an index into [`Objects::threads`].
+    pub region_color: u16,
     /// Region density, line/mm.
     pub density: f32,
     pub gradation: bool,
@@ -93,21 +118,63 @@ fn list_offset(data: &[u8], from: usize, end: usize) -> Option<usize> {
         .map(|i| i - 2)
 }
 
-/// Reads the object list's shapes. `from` is the offset after the header strings, `end` the
-/// PEC offset. Returns the shapes read and the first class not read, if any.
-pub(crate) fn read_objects(
-    data: &[u8],
-    from: usize,
-    end: usize,
-) -> Result<(Vec<Shape>, Option<String>)> {
+/// The thread table that ends right where the object list starts: u16 count, then per thread
+/// the catalogue number, RGB and a pad byte, u32 colour type, the PEC chart index (as a
+/// string), brand and chart name, strings as MFC strings. The fields between the header
+/// strings and the table are not all mapped (their length varies: a machine-model string), so
+/// this tries each start and keeps the one that parses to exactly `list`.
+fn read_threads(data: &[u8], from: usize, list: usize) -> Option<Vec<Thread>> {
+    let parse = |start: usize| -> Result<Vec<Thread>> {
+        let mut r = ByteReader::new(&data[..list]);
+        r.offset = start;
+        let count = r.u16le()?;
+        let mut out = Vec::new();
+        for _ in 0..count {
+            let catalog = crate::pes::read_string8(&mut r)?;
+            let rgb = r.read(4)?;
+            let kind = r.u32le()?;
+            let _pec_index = crate::pes::read_string8(&mut r)?;
+            let brand = crate::pes::read_string8(&mut r)?;
+            let chart = crate::pes::read_string8(&mut r)?;
+            let mut t =
+                Thread::rgb(u32::from(rgb[0]) << 16 | u32::from(rgb[1]) << 8 | u32::from(rgb[2]));
+            t.catalog_number = catalog.map(Cow::Owned);
+            t.brand = brand.map(Cow::Owned);
+            t.chart = chart.map(Cow::Owned);
+            t.kind = Some(kind).filter(|&k| k != Thread::CUSTOM_KIND);
+            out.push(t);
+        }
+        if r.offset == list && count > 0 {
+            Ok(out)
+        } else {
+            Err(crate::FormatError::ValueOutOfRange(String::new()))
+        }
+    };
+    (from..list.saturating_sub(2))
+        .rev()
+        .find_map(|s| parse(s).ok())
+}
+
+/// Reads the thread table and the object list's shapes. `from` is the offset after the header
+/// strings, `end` the PEC offset.
+pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objects> {
     let Some(at) = list_offset(data, from, end) else {
-        return Ok((Vec::new(), None));
+        return Ok(Objects::default());
+    };
+    let threads = read_threads(data, from, at).unwrap_or_default();
+    let done = |shapes, unparsed| {
+        Ok(Objects {
+            threads: threads.clone(),
+            shapes,
+            unparsed,
+        })
     };
     let end = end.min(data.len());
     let mut r = ByteReader::new(&data[..end]);
     r.offset = at;
     let count = r.u16le()?;
-    let mut classes: Vec<String> = Vec::new();
+    // The archive map: classes by name, objects as `None`, numbered from 1.
+    let mut map: Vec<Option<String>> = Vec::new();
     let mut shapes = Vec::new();
     for _ in 0..count {
         let tag = r.u16le()?;
@@ -115,28 +182,29 @@ pub(crate) fn read_objects(
             r.u16le()?; // schema
             let n = r.u16le()? as usize;
             let name = String::from_utf8_lossy(r.read(n)?).into_owned();
-            classes.push(name.clone());
+            map.push(Some(name.clone()));
             name
         } else if tag & 0x8000 != 0 {
             match ((tag & 0x7FFF) as usize)
                 .checked_sub(1)
-                .and_then(|i| classes.get(i))
+                .and_then(|i| map.get(i))
             {
-                Some(c) => c.clone(),
-                None => return Ok((shapes, Some(format!("object tag {tag:#06x}")))),
+                Some(Some(c)) => c.clone(),
+                _ => return done(shapes, Some(format!("object tag {tag:#06x}"))),
             }
         } else {
-            return Ok((shapes, Some(format!("object tag {tag:#06x}"))));
+            return done(shapes, Some(format!("object tag {tag:#06x}")));
         };
+        map.push(None);
         if class != EMB_LINE {
-            return Ok((shapes, Some(class)));
+            return done(shapes, Some(class));
         }
         match read_line(&mut r)? {
             Some(shape) => shapes.push(shape),
-            None => return Ok((shapes, Some(format!("{EMB_LINE} (unmapped variant)")))),
+            None => return done(shapes, Some(format!("{EMB_LINE} (unmapped variant)"))),
         }
     }
-    Ok((shapes, None))
+    done(shapes, None)
 }
 
 fn u16_at(b: &[u8], i: usize) -> u16 {
@@ -187,7 +255,13 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         closed: u16_at(body, 40) == 0,
         line_sewn: u16_at(body, 42) != 0,
         line_type: u16_at(body, 44),
+        line_color: u16_at(body, 46),
+        zigzag_width: f32::from(u16_at(body, 48)) / 10.0,
+        zigzag_density: f32::from(u16_at(body, 50)) / 10.0,
+        run_pitch: f32::from(u16_at(body, 52)) / 10.0,
+        line_under_sewing: u16_at(body, 60) != 0,
         region: RegionSewType::from_raw(u16_at(body, 134)),
+        region_color: u16_at(body, 170),
         density: f32::from(u16_at(body, 136)) / 10.0,
         gradation: u16_at(body, 138) != 0,
         direction: u16_at(body, 168),
