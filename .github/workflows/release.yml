@@ -1,10 +1,11 @@
 name: Release
 
-# Runs only when the owner pushes a version tag. Agents never create tags.
+# Runs when a version tag is pushed: by the owner, or by the coordinating agent the owner
+# authorised on 2026-10-27 to cut releases once every PR has landed and CI is green on main.
 # - vMAJOR.MINOR.PATCH: a version the owner declared stable.
 # - vMAJOR.MINOR.PATCH-alpha.N, -beta.N or -rc.N: a pre-release, marked as such on GitHub.
 # MAJOR.MINOR.PATCH must equal the workspace version in Cargo.toml. The release is created as a
-# draft for the owner to review and publish. Its notes start with docs/releases/<tag>.md when that
+# draft to review and publish. Its notes start with docs/releases/<tag>.md when that
 # file exists, followed by GitHub's generated list of changes.
 
 on:
