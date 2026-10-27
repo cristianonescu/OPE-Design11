@@ -167,6 +167,17 @@ pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
         "0080" => Some((38, None, 26)),
         "0090" => Some((14, Some(30), 34)),
         "0100" => Some((14, Some(38), 34)),
+        // PE-DESIGN 11 (`#PES0110`). The header up to the metadata has the same documented shape
+        // as 0040+ (pec offset, `01 00`, a two-char code, then the five length-prefixed strings),
+        // confirmed against owner reference files in compat/reference/pes/. The thread-table and
+        // object offsets after the metadata are not publicly described for this version, so read
+        // only the metadata and return; stitches and chart colours still come from the PEC
+        // section. See docs/COMPATIBILITY_TESTS.md.
+        "0110" => {
+            r.skip(4)?;
+            read_metadata(&mut r, &mut section)?;
+            return Ok(section);
+        }
         _ => None,
     };
     let Some((first, hoop_then, before_counts)) = layout else {
@@ -601,4 +612,38 @@ fn segments(pattern: &StitchPattern, version: Version, min_x: f64, max_y: f64) -
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn string8(s: &str) -> Vec<u8> {
+        let mut v = vec![s.len() as u8];
+        v.extend_from_slice(s.as_bytes());
+        v
+    }
+
+    #[test]
+    fn pes_0110_header_metadata_is_read() {
+        // Minimal `#PES0110` (PE-DESIGN 11) header: pec offset, `01 00`, a two-char code, then
+        // the five length-prefixed metadata strings, in METADATA_KEYS order. The layout up to the
+        // metadata matches the documented 0040+ shape and is confirmed against the owner's
+        // PE-DESIGN 11 reference files in compat/reference/pes/. Before the 0110 branch the reader
+        // left this metadata unparsed and the harness fell back to the PEC label.
+        let mut data = b"#PES0110".to_vec();
+        data.extend_from_slice(&32u32.to_le_bytes()); // pec offset (unused by the 0110 branch)
+        data.extend_from_slice(&[0x01, 0x00, b'0', b'1']);
+        for s in ["Rose", "Flowers", "Ana", "red", "hi"] {
+            data.extend(string8(s));
+        }
+        let section = read_objects(&data).expect("read_objects");
+        assert_eq!(section.version, "0110");
+        let get = |k: &str| section.metadata.get(k).map(String::as_str);
+        assert_eq!(get("name"), Some("Rose"));
+        assert_eq!(get("category"), Some("Flowers"));
+        assert_eq!(get("author"), Some("Ana"));
+        assert_eq!(get("keywords"), Some("red"));
+        assert_eq!(get("comments"), Some("hi"));
+    }
 }

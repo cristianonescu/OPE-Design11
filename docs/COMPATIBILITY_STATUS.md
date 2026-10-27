@@ -14,7 +14,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Editing | Manual Punch: shapes made of several sewing-direction lines… | internal-regression; reference pending | `satin-zigzag-column` |
 | Editing | Sewing order editing… | internal-regression; reference pending | `optimize-entry-exit` |
 | Editing | Thread colour, sew type, straight sewing direction… | internal-regression; reference pending | `auto-satin-bent-band` |
-| Files | Design Property… | internal-regression; reference pending | `pes-design-properties` |
+| Files | Design Property… | reference | `pes-design-properties` |
 | Files | PES v6 thread table… | oracle | `pes-thread-chart-roundtrip` |
 | Files | PES write v1 and v6… | internal-regression; reference pending | `pes-default-v6`, `pes-library-convert-v6` |
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
@@ -35,14 +35,14 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | 16 | internal-regression; reference pending | `optimize-entry-exit` |
 | 17 | internal-regression; reference pending | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
 | 18 | oracle | `pes-thread-chart-roundtrip` |
-| 19 | internal-regression; reference pending | `pes-design-properties` |
+| 19 | reference | `pes-design-properties` |
 
 ## By spec
 
 | Spec | Status | Tier | Internal regression | Oracle | Reference | Machine |
 |---|---|---|---|---|---|---|
 | `pes/pes-default-v6` | pass | internal-regression | pass | — | pending | pending |
-| `pes/pes-design-properties` | pass | internal-regression | pass | — | pending | — |
+| `pes/pes-design-properties` | pass | reference | pass | — | pass | — |
 | `pes/pes-library-convert-v6` | pass | oracle | pass | pass | — | — |
 | `pes/pes-thread-chart-roundtrip` | pass | oracle | — | pass | — | — |
 | `stitches/attribute-ranges` | pass | internal-regression | pass | — | — | — |
