@@ -640,7 +640,7 @@ pub fn about_window(app: &mut EditorApp, ctx: &egui::Context) {
             ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
             ui.label("An open-source embroidery design suite for macOS, Windows and Linux.");
             ui.label("Reads and writes PES, PEC, DST, EXP, JEF, VP3 and more.");
-            ui.hyperlink("https://github.com/cristianonescu/OPE-Design11");
+            ui.hyperlink("https://github.com/cristianonescu/OpenStitch");
         });
     app.ui.about_open = open;
 }

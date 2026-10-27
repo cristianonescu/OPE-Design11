@@ -334,8 +334,8 @@ impl Host<DbAction> for EditorApp {
     }
 }
 
-const MANUAL: &str = "https://github.com/cristianonescu/OPE-Design11#readme";
-const SUPPORT: &str = "https://github.com/cristianonescu/OPE-Design11/issues";
+const MANUAL: &str = "https://github.com/cristianonescu/OpenStitch#readme";
+const SUPPORT: &str = "https://github.com/cristianonescu/OpenStitch/issues";
 
 /// Toolbar buttons that show their label (the others are icons, as in the guide's toolbar).
 fn labelled(a: DbAction) -> bool {

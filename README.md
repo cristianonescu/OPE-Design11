@@ -90,8 +90,8 @@ Stable releases and pre-releases (alpha, beta, rc) are published from tags; see
 ### Build
 
 ```bash
-git clone https://github.com/cristianonescu/OPE-Design11.git
-cd OPE-Design11
+git clone https://github.com/cristianonescu/OpenStitch.git
+cd OpenStitch
 cargo build --release
 ```
 

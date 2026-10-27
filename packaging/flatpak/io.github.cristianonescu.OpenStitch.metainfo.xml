@@ -21,11 +21,11 @@
     </p>
   </description>
   <launchable type="desktop-id">io.github.cristianonescu.OpenStitch.desktop</launchable>
-  <url type="homepage">https://github.com/cristianonescu/OPE-Design11</url>
-  <url type="bugtracker">https://github.com/cristianonescu/OPE-Design11/issues</url>
+  <url type="homepage">https://github.com/cristianonescu/OpenStitch</url>
+  <url type="bugtracker">https://github.com/cristianonescu/OpenStitch/issues</url>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/cristianonescu/OPE-Design11/main/docs/images/readme/editor.png</image>
+      <image>https://raw.githubusercontent.com/cristianonescu/OpenStitch/main/docs/images/readme/editor.png</image>
       <caption>The editor with the ribbon, sewing order, design page and stitch simulator</caption>
     </screenshot>
   </screenshots>
