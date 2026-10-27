@@ -259,6 +259,7 @@ fn main() -> eframe::Result {
             .with_title("OpenStitch")
             .with_icon(window_icon()),
         renderer: eframe::Renderer::Wgpu,
+        wgpu_options: wgpu_options(),
         ..Default::default()
     };
     eframe::run_native(
@@ -275,6 +276,22 @@ fn main() -> eframe::Result {
             Ok(Box::new(app))
         }),
     )
+}
+
+/// wgpu's default backends, except on Windows: DirectX 12, then OpenGL. Some Windows Vulkan
+/// drivers crash while wgpu starts (seen on Windows 11 with every launch), and DirectX 12 is
+/// the system's own API. `WGPU_BACKEND` (e.g. `vulkan`) still chooses any backend.
+fn wgpu_options() -> eframe::egui_wgpu::WgpuConfiguration {
+    #[allow(unused_mut)]
+    let mut config = eframe::egui_wgpu::WgpuConfiguration::default();
+    #[cfg(windows)]
+    if std::env::var_os("WGPU_BACKEND").is_none()
+        && let eframe::egui_wgpu::WgpuSetup::CreateNew(setup) = &mut config.wgpu_setup
+    {
+        setup.instance_descriptor.backends =
+            eframe::wgpu::Backends::DX12 | eframe::wgpu::Backends::GL;
+    }
+    config
 }
 
 #[cfg(test)]
