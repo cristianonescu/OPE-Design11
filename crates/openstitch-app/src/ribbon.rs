@@ -1012,7 +1012,7 @@ pub fn options_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
 pub fn help_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
     if ui.button("Instruction Manual").clicked() {
         ui.ctx().open_url(egui::OpenUrl::new_tab(
-            "https://github.com/cristianonescu/OPE-Design11#readme",
+            "https://github.com/cristianonescu/OpenStitch#readme",
         ));
     }
     if ui.button("Keyboard Shortcuts").clicked() {
