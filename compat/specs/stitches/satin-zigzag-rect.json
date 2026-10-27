@@ -24,6 +24,10 @@
       "kind": "guide",
       "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
       "note": "Region sewing attributes: satin is shown only in pictures"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 round-1 reference (PR #34) was made with under sewing on, PE's default: 40 stitches, of which 13-15 are under sewing. Under sewing is off here so the spec tests the top satin's shape only (coordinator decision, 2026-10-27); the reference is to be remade with under sewing off."
     }
   ],
   "script": [
@@ -49,7 +53,8 @@
         "id": 1,
         "type": "satin",
         "angle": 90,
-        "density": 3
+        "density": 3,
+        "underlay": false
       }
     }
   ],
@@ -62,7 +67,7 @@
     {
       "id": "pe-design",
       "file": "stitches/satin-zigzag-rect.pes",
-      "make": "In Layout & Editing, on a 100 × 100 mm Design Page, draw a rectangle 5 mm wide and 2 mm high with its top-left corner at (10, 10) mm. Line sewing off; region sew type Satin Stitch, Direction 90°, Density 3.0 lines/mm, every other attribute at its default (note under sewing and pull compensation in the manifest). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+      "make": "In Layout & Editing, on a 100 × 100 mm Design Page, draw a rectangle 5 mm wide and 2 mm high with its top-left corner at (10, 10) mm. Line sewing off; region sew type Satin Stitch, Direction 90°, Density 3.0 lines/mm, Under Sewing off, every other attribute at its default (note pull compensation in the manifest). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
     }
   ],
   "machine": {

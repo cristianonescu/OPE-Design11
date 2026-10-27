@@ -213,7 +213,9 @@ pub fn satin(s: &Skeleton, spacing: f64, pull: f64) -> Run {
 /// The rungs of [`satin`] filling the closed region `contours`, [left, right] in sewing
 /// order: each rung reaches from the centre line to the region's outline along the rung (at
 /// most 0.5 mm beyond the skeleton's half width), so the column covers the region where a
-/// derived width is only approximate; then it is lengthened by `pull` at both ends. Empty for
+/// derived width is only approximate; then it is lengthened by `pull` at both ends. The rungs
+/// are `spacing` apart along the column's longer side, as PE-DESIGN 11 spaces Auto satin: on
+/// a bend the outer edge keeps the density and the rungs crowd on the inner edge. Empty for
 /// a degenerate skeleton.
 pub fn rungs_within(s: &Skeleton, contours: &[Contour], spacing: f64, pull: f64) -> Vec<[Vec2; 2]> {
     let Some(c) = Centre::new(s) else {
@@ -225,20 +227,51 @@ pub fn rungs_within(s: &Skeleton, contours: &[Contour], spacing: f64, pull: f64)
         .flat_map(Contour::edges)
         .collect();
     let pull = if pull.is_finite() { pull } else { 0.0 };
-    c.rungs(spacing, 0.0)
-        .into_iter()
-        .map(|[l, r]| {
-            let centre = l.lerp(r, 0.5);
-            let half = l.distance(centre);
-            if half < 1e-6 || !crate::geometry::contains(centre, contours) {
-                return [l, r];
-            }
-            let reach = |end: Vec2| {
-                let dir = (end - centre) * (1.0 / half);
-                let d = ray(centre, dir, &edges).map_or(half, |d| d.min(half + 5.0));
-                centre + dir * (d + pull).max(0.0)
+    let spacing = if spacing.is_finite() {
+        spacing.max(0.1)
+    } else {
+        1.0
+    };
+    let rung_at = |s: f64| -> [Vec2; 2] {
+        let (centre, t, half) = c.station(s);
+        let left = v2(t.y, -t.x);
+        let (l, r) = (centre + left * half, centre - left * half);
+        if half < 1e-6 || !crate::geometry::contains(centre, contours) {
+            return [l, r];
+        }
+        let reach = |end: Vec2| {
+            let dir = (end - centre) * (1.0 / half);
+            let d = ray(centre, dir, &edges).map_or(half, |d| d.min(half + 5.0));
+            centre + dir * (d + pull).max(0.0)
+        };
+        [reach(l), reach(r)]
+    };
+    // Sample the column finely, measure along the longer side, then space the rungs evenly
+    // on that measure.
+    let length = c.length();
+    let fine = ((4.0 * length / spacing).ceil() as usize).clamp(1, MAX_RUNGS);
+    let at: Vec<f64> = (0..=fine)
+        .map(|k| length * k as f64 / fine as f64)
+        .collect();
+    let samples: Vec<[Vec2; 2]> = at.iter().map(|&s| rung_at(s)).collect();
+    let mut side = vec![0.0];
+    for w in samples.windows(2) {
+        let step = w[0][0].distance(w[1][0]).max(w[0][1].distance(w[1][1]));
+        side.push(side[side.len() - 1] + step);
+    }
+    let total = side[fine];
+    let n = ((total / spacing).ceil() as usize).clamp(1, MAX_RUNGS);
+    (0..=n)
+        .map(|i| {
+            let target = total * i as f64 / n as f64;
+            let j = side.partition_point(|&m| m < target).clamp(1, fine);
+            let span = side[j] - side[j - 1];
+            let f = if span > 1e-9 {
+                ((target - side[j - 1]) / span).clamp(0.0, 1.0)
+            } else {
+                0.0
             };
-            [reach(l), reach(r)]
+            rung_at(at[j - 1] + (at[j] - at[j - 1]) * f)
         })
         .collect()
 }

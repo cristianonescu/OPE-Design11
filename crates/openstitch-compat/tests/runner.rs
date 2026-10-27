@@ -70,7 +70,7 @@ fn satin(id: &str) -> Value {
         "script": [
             {"command": "design.new", "params": {"width": 100, "height": 100}},
             {"command": "shape.rectangle", "params": {"x": 10, "y": 10, "width": 5, "height": 2}},
-            {"command": "object.setRegion", "params": {"id": 1, "type": "satin", "angle": 90, "density": 3}}
+            {"command": "object.setRegion", "params": {"id": 1, "type": "satin", "angle": 90, "density": 3, "underlay": false}}
         ],
         "exports": [{"path": "satin.pes"}],
         "references": [{"id": "pe-design", "file": format!("stitches/{id}.pes"), "make": "Draw the column."}],

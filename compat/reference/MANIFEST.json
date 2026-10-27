@@ -48,6 +48,30 @@
       "settings": "File > New (Design Page 100 x 100 mm). Design Property OK is disabled on an empty design, so first one Rectangle tool square 10 x 10 mm (line Not Sewn, Fill Stitch defaults, colour 007 EMBROIDERY PRUSSIAN BLUE). Then Design Property: Design Name Rose, Category Flowers, Author Ana Pérez, Keywords rose, red, spring, Comment Line one, Enter, line two (typed as keystrokes; the Enter stayed in the comment box). OK. Save As PES, default type Layout & Editing Ver.11.0 File (#PES0110). Windows display language en-US, system locale en-US (ANSI code page 1252), user format ro-RO.",
       "sha256": "d701e4f51fe83bf754662e6641c6375fd7f46fe0c9ccfd243f84bc6c6c8fe226",
       "notes": "Author stored as Windows-1252 (E9 for é); comment newline CR LF."
+    },
+    {
+      "file": "stitches/auto-satin-bent-band.pes",
+      "spec": "auto-satin-bent-band",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); Closed Straight Line tool, points (0,0) (30,0) (30,30) (25,30) (25,5) (0,5) mm; line Not Sewn; Satin Stitch, Direction Auto; other attributes default (density 4.5, under sewing on Medium, pull compensation 0.0); colour BROTHER EMBROIDERY 800 RED; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "5ecdbdbba88a4e8614fb498dbb7ac5402fb21fefd2ba017333d52c627e5feae2",
+      "notes": "With Auto, Half Stitch becomes available and is checked by default; Running Stitch Path and Gradation are greyed. 433 stitches shown."
+    },
+    {
+      "file": "stitches/region-travel-u-satin.pes",
+      "spec": "region-travel-u-satin",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); same U as region-travel-u-fill; Satin Stitch, Direction 0 degrees, Density 4.5 (default), Running Stitch Path left at default (Inside); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "719fc7e141d58d37b359ed942fb824184ace3130b3908ed246208d5fcd68496d",
+      "notes": "470 stitches shown."
     }
   ]
 }

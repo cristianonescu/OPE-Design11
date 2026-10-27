@@ -13,10 +13,11 @@ fn golden_project_compiles_to_recorded_statistics() {
         serde_json::from_value(envelope["design"].clone()).expect("golden design decodes");
     let p = Compiler::default().compile(&design);
     // 3055 until 2026-10-27: one zero-length stitch less where each of the 4 jumps lands
-    // (compat pes-default-v6).
-    assert_eq!(p.count(Command::Stitch), 3051);
-    assert_eq!(p.count(Command::Jump), 4);
-    assert_eq!(p.count(Command::Trim), 4);
+    // (compat pes-default-v6), then the satin's under sewing travels inside the region to the
+    // top satin instead of trimming and jumping there (4 jumps and 4 trims before).
+    assert_eq!(p.count(Command::Stitch), 3071);
+    assert_eq!(p.count(Command::Jump), 3);
+    assert_eq!(p.count(Command::Trim), 3);
     assert_eq!(p.count(Command::ColorChange), 2);
     let hex: Vec<String> = p.threads.iter().map(|t| t.hex()).collect();
     assert_eq!(hex, ["#ffff00", "#000000", "#ed171f"]);

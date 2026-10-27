@@ -24,6 +24,10 @@
       "kind": "guide",
       "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
       "note": "Region sewing attributes: satin is shown only in pictures"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 round-1 reference (PR #34) was made with under sewing on, PE's default: 40 stitches, of which 13-15 are under sewing. Under sewing is off here so the spec tests the top satin's shape only (coordinator decision, 2026-10-27); the reference is to be remade with under sewing off."
     }
   ],
   "script": [
@@ -60,6 +64,14 @@
           ]
         ]
       }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "density": 3,
+        "underlay": false
+      }
     }
   ],
   "exports": [
@@ -71,7 +83,7 @@
     {
       "id": "pe-design",
       "file": "stitches/satin-zigzag-column.pes",
-      "make": "With the Manual Punch tool (Semi-Auto, satin), punch a 5 mm long, 2 mm wide straight column between (10, 10)–(10, 12) and (15, 10)–(15, 12) mm, density 3.0 lines/mm, other attributes default. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+      "make": "With Shapes > Manual Punch > Straight Block (sew type Satin Stitch), punch a 5 mm long, 2 mm wide straight column between (10, 10)–(10, 12) and (15, 10)–(15, 12) mm, density 3.0 lines/mm, Under Sewing off, other attributes default. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
     }
   ],
   "measurements": [
