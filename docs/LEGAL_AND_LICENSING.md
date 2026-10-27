@@ -26,8 +26,15 @@ the project keeps:
 
 - **Reproduced:** the arrangement of commands, their names, grouping and workflow, as described
   in Brother's public online guide. These are functional: they are how a user finds a command.
-- **Our own:** every icon (drawn in code in `crates/openstitch-app/src/icons.rs`), the
-  Application button mark, colours, spacing and the rest of the visual style.
+- **Our own:** every icon, the Application button mark, colours, spacing and the rest of the
+  visual style. The command icons are the SVGs in `assets/icons/commands`, generated for
+  OpenStitch with Higgsfield (Recraft V4.1, vector output) under the project owner's account
+  and cleaned by `tools/clean_icons.py`. Every prompt is in `assets/icons/commands/prompts.tsv`:
+  each describes a generic object (a folder, scissors, a needle) in OpenStitch's own palette,
+  and none names or describes Brother, PE-DESIGN or their icons; no reference images were
+  used. The vector shapes in `crates/openstitch-app/src/icons.rs` are the fallback when an SVG
+  cannot be rendered. The application icon (`assets/icons/openstitch*`) is drawn by
+  `tools/gen_icons.py` and the Application button mark in code.
 - **Never in the repository:** Brother artwork, icons, logos, fonts or screenshots of
   PE-DESIGN. Documentation screenshots show OpenStitch only.
 - **Naming:** "PE-DESIGN" is not used as product branding in the user interface. Compatibility

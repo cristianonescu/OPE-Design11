@@ -27,6 +27,8 @@ serde_json.workspace = true
 # Defaults: wgpu renderer, winit with X11 + Wayland (dlopen, so no system -dev packages), accesskit, clipboard, system font fallback.
 eframe = "0.37"
 rfd = "0.17"
+# Renders the command icons (assets/icons/commands); same usvg as openstitch-engine.
+resvg = { version = "0.48.1", default-features = false }
 
 [lints]
 workspace = true

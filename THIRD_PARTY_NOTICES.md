@@ -32,10 +32,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## usvg — https://github.com/linebender/resvg
+## usvg and resvg — https://github.com/linebender/resvg
 
-Linked into `openstitch-engine` (feature `formats`) to parse SVG for `import.svg`.
-Dual-licensed MIT OR Apache-2.0; no files copied.
+usvg is linked into `openstitch-engine` (feature `formats`) to parse SVG for `import.svg`;
+resvg (with usvg and tiny-skia) is linked into the editor to render the command icons.
+Dual-licensed MIT OR Apache-2.0 (tiny-skia: BSD-3-Clause); no files copied.
+
+## Command icons — generated with Higgsfield
+
+The SVGs in `assets/icons/commands` were generated for OpenStitch with Higgsfield
+(https://higgsfield.ai, Recraft V4.1 vector model) from the prompts in
+`assets/icons/commands/prompts.tsv`, under the project owner's account and Higgsfield's terms
+for it, then cleaned by `tools/clean_icons.py` (generator metadata and background removed,
+fills snapped to the palette). They contain no third-party artwork and are distributed under
+the repository's licence. See docs/LEGAL_AND_LICENSING.md.
 
 ## arboard — https://github.com/1Password/arboard
 

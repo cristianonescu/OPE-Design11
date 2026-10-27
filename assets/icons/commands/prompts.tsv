@@ -1,0 +1,76 @@
+name	colours	subject
+page	2B2F36 2E9D58	a blank white document page with a folded top right corner and a bold green plus sign in its lower right
+folder	2B2F36 E0A21B	a closed file folder, filled golden yellow
+disk	2B2F36 2A7AD8	a floppy disk for saving, filled blue with a white label
+disk_pen	2B2F36 2A7AD8 D8433A	a blue floppy disk with a white label and a red pencil laid diagonally across its lower right corner
+printer	2B2F36 2A7AD8	a printer with a light grey body, a small blue light and a white sheet of paper coming out of the top
+info	2B2F36 2A7AD8	an information symbol: a solid blue circle with a bold white lowercase letter i
+gear	2B2F36 A0A6AE	a cog wheel with eight square teeth and a round hole in the middle, light grey fill
+palette	2B2F36 D8433A 2A7AD8 2E9D58 E0A21B	a painter's colour palette with a thumb hole and four round paint dots in red, blue, green and yellow
+wand	2B2F36 E0A21B	a magic wand, a charcoal stick with a white tip, and three golden sparkle stars
+export	2B2F36 2A7AD8	an open tray with a thick blue arrow pointing up and out of it
+exit	2B2F36 D8433A	an open door frame with a thick red arrow pointing right, out of the door
+undo	2B2F36 2A7AD8	a thick blue curved arrow bending back to the left, counterclockwise
+redo	2B2F36 2A7AD8	a thick blue curved arrow bending forward to the right, clockwise
+help	2B2F36 2A7AD8	a help symbol: a solid blue circle with a bold white question mark
+database	2B2F36 2A7AD8	a database drum made of three stacked blue cylinder discs
+cursor	2B2F36	a classic mouse pointer arrow tilted to the left, white fill
+point_edit	2B2F36 D8433A	a mouse pointer arrow beside a curved line that has small square red edit handles on it
+select_all	2B2F36 2A7AD8	a dashed rectangle selection marquee with small solid blue square handles at its four corners
+scissors	2B2F36 D8433A	open scissors with large red handles and thick charcoal blades, seen diagonally
+copy	2B2F36 2A7AD8	two overlapping white document sheets offset diagonally, the front sheet with blue text lines
+clipboard	2B2F36 E0A21B	a clipboard with a golden board, a charcoal clip at the top and a white sheet of paper
+duplicate	2B2F36 2A7AD8	two overlapping rounded squares offset diagonally, the front one blue with a white plus sign
+trash	2B2F36 D8433A	a trash can with a lid and vertical ribs, red body
+arrange_copy	2B2F36 2A7AD8	a grid of nine small identical blue squares in three rows and three columns
+dropper	2B2F36 2A7AD8	an eyedropper pipette tilted diagonally with a blue drop at its tip
+text	2B2F36 2A7AD8	a bold blue capital letter A
+font	2B2F36 8A52C8	a bold purple serif capital letter A next to a smaller lowercase letter a
+text_path	2B2F36 2A7AD8	a single bold blue capital letter T standing on a thick charcoal curved arc line that sweeps from lower left to lower right
+shapes	2B2F36 D8433A 2A7AD8 E0A21B	a red circle, a blue square and a golden triangle overlapping each other
+rect	2B2F36 2A7AD8	a solid blue rectangle with slightly rounded corners, wider than tall
+ellipse	2B2F36 2E9D58	a horizontal oval ellipse shape filled green, smoothly curved with no corners, twice as wide as tall
+polygon	2B2F36 E0A21B	a solid golden irregular pentagon
+curve	2B2F36 2A7AD8 D8433A	a smooth closed blob shape with light blue fill and small square red nodes along its edge
+pencil	2B2F36 E0A21B	a pencil tilted diagonally with a yellow body, a pink eraser and a sharpened tip
+open_line	2B2F36 2A7AD8	a zigzag open line of four segments with small square blue nodes at each corner
+zoom_in	2B2F36 2A7AD8	a magnifying glass with a thick dark charcoal ring and handle, white lens with a bold blue plus sign
+zoom_out	2B2F36 2A7AD8	a magnifying glass with a thick dark charcoal ring and handle, white lens with a bold blue minus sign
+zoom	2B2F36 2A7AD8	a magnifying glass with a thick dark charcoal ring and handle and a pale blue lens
+hand	2B2F36	an open hand palm with five fingers spread, white fill
+ruler	2B2F36 E0A21B	a straight ruler tilted diagonally with tick marks, golden yellow
+import	2B2F36 2E9D58	an open tray with a thick green arrow pointing down into it
+align	2B2F36 2A7AD8	three horizontal blue bars of different lengths aligned against a vertical line on their left
+rotate	2B2F36 2A7AD8	a square tilted 20 degrees with a thick blue circular arrow curving around it
+size	2B2F36 2A7AD8	a square with a thick blue diagonal double-headed arrow from bottom left to top right
+group	2B2F36 2A7AD8 E0A21B	a blue circle and a golden square enclosed together inside one dashed rectangle
+ungroup	2B2F36 2A7AD8 E0A21B	a blue circle and a golden square pulled apart with a wide gap and small arrows pointing outward
+stamp	2B2F36 D8433A	a rubber stamp with a round red handle pressing onto a flat surface
+overlap	2B2F36 D8433A	two overlapping white circles, the area where they overlap filled red
+frame	2B2F36 E0A21B	an ornate decorative picture frame in gold with a white centre
+wizard_background	2B2F36 2E9D58	a paint bucket tilted to the right pouring one smooth wide stream of green paint into a flat green puddle
+wizard_applique	2B2F36 D8433A	a red heart-shaped fabric patch with a dashed stitched border sewn on a white cloth square
+wizard_patch	2B2F36 E0A21B	a round badge patch in gold with a thick stitched border
+wizard_cutwork	2B2F36 8A52C8	a square of purple cloth with a lace pattern of small cut-out holes
+needle	2B2F36 2A7AD8	a thick diagonal sewing needle with a large eye, a blue thread through the eye curving into a row of three short thick dashes below
+image	2B2F36 2A7AD8 2E9D58 E0A21B	a landscape picture: a rectangle with a blue sky, a green hill and a golden sun
+photo	2B2F36 2A7AD8	a camera body with a large round blue lens
+cross	2B2F36 D8433A	a square grid of red cross-stitch X marks
+eye	2B2F36 2A7AD8	an open eye with a blue iris
+pane	2B2F36 2A7AD8	an application window with a title bar and a blue side panel on the right
+grid	2B2F36 2A7AD8	a square divided into a three by three grid of equal cells, light blue fill
+magnet	2B2F36 D8433A	a horseshoe magnet with a red body and white tips
+guide	2B2F36 D8433A	a dashed red horizontal guideline crossing a dashed red vertical guideline, with small triangle markers at the edges
+swatch_line	2B2F36 2A7AD8	a thread spool wound with blue thread
+swatch_region	2B2F36 D8433A	a solid red square colour swatch with rounded corners
+sew_line	2B2F36 2A7AD8	a zigzag satin stitch line in blue thread
+sew_region	2B2F36 2E9D58	a square filled with parallel diagonal green fill stitches
+blocks	2B2F36 2A7AD8 E0A21B	two adjoining four-sided blocks, one blue and one golden, forming a bent strip
+outline	2B2F36 2A7AD8	a blue oval outline with a dashed running stitch line beneath it
+split	2B2F36 2A7AD8 E0A21B D8433A	a blue square and a golden square separated by a red dashed vertical cut line
+direction	2B2F36 D8433A	a light grey square with a thick red arrow pointing diagonally up and to the right
+point	2B2F36 D8433A	a bent line shaped like a roof with a single red square node at its peak
+offset	2B2F36 2A7AD8 2E9D58 E0A21B	three nested concentric rounded square outlines in blue, green and gold
+flower	2B2F36 F28CB8 E0A21B	a simple flower with six round pink petals and a golden centre
+entry_exit	2B2F36 2A7AD8 2E9D58 D8433A	a blue ring with a green dot at its upper left start and a red dot at its lower right end
+hoop	2B2F36 D8433A	a rectangular frame with rounded corners and a thick dark charcoal border, white inside, with a red dashed horizontal line across its middle
