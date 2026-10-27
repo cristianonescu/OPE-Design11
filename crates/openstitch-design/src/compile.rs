@@ -356,7 +356,8 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
             {
                 layers = vec![region::join_layers(layers, &closed, holes, path)];
             }
-            if region.kind == RegionType::Satin {
+            // Satin and fill tie in and lock as PE-DESIGN 11 sews them.
+            if matches!(region.kind, RegionType::Satin | RegionType::Fill) {
                 region::tie_and_lock(&mut layers);
             }
             for runs in layers {

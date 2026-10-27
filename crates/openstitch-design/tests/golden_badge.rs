@@ -24,8 +24,11 @@ fn golden_project_compiles_to_recorded_statistics() {
     // because the running outline ties in and locks as PE-DESIGN's lines do (2953 before), then
     // 17 fewer when the satin started at its outline's first point with PE's opening row
     // (2957 before), then 3 fewer because a stitch that repeats the needle point just sewn is
-    // dropped, as PE-DESIGN writes no zero-length stitch record (2940 before).
-    assert_eq!(p.count(Command::Stitch), 2937);
+    // dropped, as PE-DESIGN writes no zero-length stitch record (2940 before), then 161 fewer
+    // when fill took PE-DESIGN's row order: halves from the start point, rows sewn backwards
+    // without edge points, straight 2 mm travel, a tie-in and lock (2937 before; this version-1
+    // file stores no Frequency, so its fills keep the 1/3 stagger).
+    assert_eq!(p.count(Command::Stitch), 2776);
     assert_eq!(p.count(Command::Jump), 3);
     assert_eq!(p.count(Command::Trim), 3);
     assert_eq!(p.count(Command::ColorChange), 2);

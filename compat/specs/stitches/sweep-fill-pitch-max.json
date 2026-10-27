@@ -1,0 +1,120 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "sweep-fill-pitch-max",
+  "area": "stitches",
+  "title": "Fill step pitch 10 mm: stitches of the pitch on a 30 % grid",
+  "description": "A 40 × 40 mm fill at 0°, step pitch 10 mm: the row stitches are 10 mm and the grid moves 30 % of a stitch per row, as in PE-DESIGN's file.",
+  "covers": {
+    "audit": [
+      15
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Fill (tatami: angle or auto direction"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Fill Stitch: Direction, Density, Step pitch, Frequency"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference stitches/sweep-fill-pitch-max.pes (stitch-sweeps track)"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 40
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "underlay": false,
+        "angle": 0,
+        "stitchLength": 10.0
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "fill.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/sweep-fill-pitch-max.pes",
+      "make": "On a 100 × 100 mm Design Page (grid 1 mm, Snap to Grid) draw a 40 × 40 mm square from (10, 10) to (50, 50) mm with the Rectangle tool. Line Not Sewn; colour 800 RED; region sew type Fill Stitch, Direction Manual 0°, Step pitch at its maximum (10.0 mm), Under sewing unticked, every other region attribute at PE-DESIGN's default (Density 4.5, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge and Gradation off). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "row-stitch",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "median"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "expected": 10.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "evidence": "most stitches are row stitches of the step pitch",
+      "reference": {}
+    },
+    {
+      "id": "same-stitches",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.15,
+          "boundsMm": 0.15,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file, needle point for needle point (±0.15 mm): the row order in halves from the start point, the out-and-back first row, brick row ends, straight ≤ 2 mm travel, Frequency grid from the bounding box and the 0.3 mm tie-in and lock (stitch-rules F3/F6)",
+      "reference": {}
+    }
+  ]
+}
