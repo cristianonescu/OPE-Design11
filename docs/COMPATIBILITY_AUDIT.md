@@ -821,9 +821,14 @@ Line references are relative to `crates/`.
   along / upright, and "the other side"; a circle's outline starts at its bottom, and only one
   text fits an outline. OpenStitch now does the same: specs text-fit-* (eight files) at the
   reference tier; stretched is implemented but has no comparable reference (PE's file is far
-  off the page). Fitted texts block Text Transform in PE: OpenStitch has no Text Transform yet.
+  off the page). Fitted texts take no Text Transform, as in PE.
   ([guide](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/05_1810870.html))
-- **Text Transform (envelope presets):** missing.
+- **Text Transform (calibrated 2026-10-27):** PE-DESIGN 11.50 has 26 presets (two arches,
+  then a 4 × 6 grid; ticking Transform applies preset 3; fitted text cannot be transformed,
+  and fitting cancels it). OpenStitch lays out 24 of them, from envelopes fitted to PE's
+  output by `tools/fit_envelopes.py` (specs text-transform-N, reference tier: bounds within
+  0.5 mm, every H stem's top and bottom within 0.5 mm). Still open: 13 and 14 (fan out / in),
+  which skew each letter differently.
 - **Sewing order inside a text (checked 2026-10-27):** not a gap. PE-DESIGN 11.50 also sews
   every letter's region first, then every letter's outline, one colour block each (spec
   text-sewing-order, reference tier). Still open: the guide disables "some editing of

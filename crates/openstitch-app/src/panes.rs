@@ -304,6 +304,99 @@ fn pane_menu(app: &mut EditorApp, ui: &mut egui::Ui, a: Action) {
     egui::Popup::menu(&r).show(|ui| ribbon::menu(app, a, ui));
 }
 
+/// Text Attributes ▸ Transform: the check box and PE-DESIGN's 26 presets (the two arches,
+/// then four a row), each drawn from its own envelope. Ticking it applies preset 3, as in
+/// PE-DESIGN; fitted text cannot be transformed.
+fn transform_palette(app: &mut EditorApp, ui: &mut egui::Ui, spec: &openstitch_design::TextSpec) {
+    use openstitch_design::text;
+    let fitted = spec.path.is_some();
+    let mut on = spec.envelope.is_some();
+    let r = ui
+        .add_enabled(!fitted, egui::Checkbox::new(&mut on, "Transform"))
+        .on_disabled_hover_text("Release the text from its outline first");
+    if r.changed() {
+        let v = if on {
+            serde_json::json!(3)
+        } else {
+            serde_json::Value::Null
+        };
+        ribbon::set_text(app, serde_json::json!({ "envelope": v }));
+    }
+    if !on || fitted {
+        return;
+    }
+    let fg = ui.visuals().text_color();
+    let accent = ui.visuals().selection.bg_fill;
+    let mut chosen = None;
+    let rows: [&[u8]; 7] = [
+        &[1, 2],
+        &[3, 4, 5, 6],
+        &[7, 8, 9, 10],
+        &[11, 12, 13, 14],
+        &[15, 16, 17, 18],
+        &[19, 20, 21, 22],
+        &[23, 24, 25, 26],
+    ];
+    for row in rows {
+        ui.horizontal(|ui| {
+            for &n in row {
+                let edges = text::envelope_edges(n);
+                let size = egui::vec2(38.0, 22.0);
+                let (rect, resp) = ui.allocate_exact_size(size, egui::Sense::click());
+                let selected = spec.envelope == Some(n);
+                let p = ui.painter();
+                if selected {
+                    p.rect_filled(rect, 3.0, accent.gamma_multiply(0.35));
+                } else if resp.hovered() && edges.is_some() {
+                    p.rect_filled(rect, 3.0, ui.visuals().widgets.hovered.weak_bg_fill);
+                }
+                let inner = rect.shrink2(egui::vec2(5.0, 4.0));
+                let at = |q: openstitch_design::Vec2| {
+                    egui::pos2(
+                        inner.min.x + q.x as f32 * inner.width(),
+                        inner.min.y + q.y as f32 * inner.height(),
+                    )
+                };
+                match &edges {
+                    Some((top, bottom)) => {
+                        let stroke = egui::Stroke::new(1.4, fg);
+                        let line = |e: &[openstitch_design::Vec2]| -> Vec<egui::Pos2> {
+                            e.iter().map(|&q| at(q)).collect()
+                        };
+                        p.add(egui::Shape::line(line(top), stroke));
+                        p.add(egui::Shape::line(line(bottom), stroke));
+                        for (a, b) in [
+                            (top[0], bottom[0]),
+                            (top[top.len() - 1], bottom[bottom.len() - 1]),
+                        ] {
+                            p.line_segment([at(a), at(b)], stroke);
+                        }
+                    }
+                    None => {
+                        p.rect_stroke(
+                            inner,
+                            2.0,
+                            egui::Stroke::new(1.0, fg.gamma_multiply(0.3)),
+                            egui::StrokeKind::Inside,
+                        );
+                    }
+                }
+                let tip = if edges.is_some() {
+                    format!("Preset {n}")
+                } else {
+                    format!("Preset {n}: not yet available in OpenStitch")
+                };
+                if resp.on_hover_text(tip).clicked() && edges.is_some() {
+                    chosen = Some(n);
+                }
+            }
+        });
+    }
+    if let Some(n) = chosen.filter(|&n| spec.envelope != Some(n)) {
+        ribbon::set_text(app, serde_json::json!({ "envelope": n }));
+    }
+}
+
 fn text_tab(app: &mut EditorApp, ui: &mut egui::Ui) {
     let d = app.session.design();
     let first = crate::convert_ui::texts(app)
@@ -378,6 +471,7 @@ fn text_tab(app: &mut EditorApp, ui: &mut egui::Ui) {
             }
             ui.end_row();
         });
+    transform_palette(app, ui, &spec);
     ui.separator();
     ui.horizontal_wrapped(|ui| {
         for a in [

@@ -1,0 +1,166 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "text-transform-6",
+  "area": "text",
+  "title": "Text Transform preset 6: mild taper, mirror of 5 (small at right)",
+  "description": "HHHHHHH in Lato Bold, 10 mm, centred at (50, 50) mm, with Text Transform preset 6 (mild taper, mirror of 5 (small at right)). OpenStitch's envelope comes from tools/fit_envelopes.py, fitted to PE-DESIGN's files.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Lettering",
+        "feature": "Text Transform"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md, Next 11: Text Transform (envelope presets)"
+    },
+    {
+      "kind": "measured",
+      "note": "compat/reference/text/text-transform-6.pes, PE-DESIGN 11.50 (pe-gui); 26 presets, survey in the text track notes"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "HHHHHHH",
+        "font": "lato-bold",
+        "size": 10,
+        "x": 50,
+        "y": 50,
+        "fill": "Red",
+        "envelope": 6
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "underlay": false,
+        "density": 5
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "text.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "text/text-transform-6.pes",
+      "make": "On a 100 × 100 mm Design Page (File > New), with Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user and used as a TrueType font. Text tool, click at (50, 50) mm and type HHHHHHH: Lato, size 10.0 mm, alignment Center, region Fill Stitch in 800 RED with the text's own Sewing Attributes (under sewing off, density 5.0), line Not Sewn. Text Attributes > Transform on, preset 6 of the palette in reading order (the two arches first, then the grid row by row). Keep the text inside the page. Save As PES (default type) as compat/reference/text/text-transform-6.pes and record in compat/reference/MANIFEST.json the PE-DESIGN version, date, OS, the font as PE lists it, the preset and its box (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "bounds-min-x",
+      "measure": {
+        "kind": "bounds",
+        "property": "minX"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the transformed text's box",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "bounds-max-x",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxX"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the transformed text's box",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "bounds-min-y",
+      "measure": {
+        "kind": "bounds",
+        "property": "minY"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the transformed text's box",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "bounds-max-y",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxY"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the transformed text's box",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "stem-columns",
+      "measure": {
+        "kind": "columns",
+        "x": [
+          13.65,
+          20.45,
+          24.65,
+          31.45,
+          35.65,
+          42.45,
+          46.65,
+          53.45,
+          57.55,
+          64.35,
+          68.55,
+          75.35,
+          79.55,
+          86.35
+        ],
+        "halfWidth": 1.05
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: top and bottom of each H stem (1.9 mm wide; straight text 39.7 and 50.0 mm), the envelope's shape",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    }
+  ]
+}

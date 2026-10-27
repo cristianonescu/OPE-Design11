@@ -261,6 +261,54 @@ fn fit_text_to_outline_options_and_one_text_per_outline() {
 }
 
 #[test]
+fn text_transform_presets_are_set_refused_when_fitted_and_cancelled_by_fitting() {
+    let mut s = Session::new(temp_dir());
+    run(
+        &mut s,
+        "shape.ellipse",
+        json!({"cx": 50, "cy": 50, "rx": 30}),
+    );
+    run(
+        &mut s,
+        "text.add",
+        json!({"text": "HELLO", "size": 10, "envelope": 3}),
+    );
+    let envelope = |s: &Session| s.design().objects[1].text.as_ref().expect("text").envelope;
+    assert_eq!(envelope(&s), Some(3));
+    run(
+        &mut s,
+        "object.setText",
+        json!({"ids": [2], "envelope": 22}),
+    );
+    assert_eq!(envelope(&s), Some(22));
+    for bad in [json!(0), json!(27), json!(13), json!("arch")] {
+        assert!(
+            s.execute(
+                "object.setText",
+                Some(&json!({"ids": [2], "envelope": bad}))
+            )
+            .is_err(),
+            "{bad}"
+        );
+    }
+    // Fitting to an outline cancels it; a fitted text takes none.
+    run(&mut s, "text.setPath", json!({"id": 2, "path": 1}));
+    assert_eq!(envelope(&s), None);
+    let e = s
+        .execute("object.setText", Some(&json!({"ids": [2], "envelope": 3})))
+        .expect_err("fitted");
+    assert!(e.to_string().contains("fitted"), "{e}");
+    run(&mut s, "text.setPath", json!({"id": 2, "path": null}));
+    run(&mut s, "object.setText", json!({"ids": [2], "envelope": 1}));
+    run(
+        &mut s,
+        "object.setText",
+        json!({"ids": [2], "envelope": null}),
+    );
+    assert_eq!(envelope(&s), None);
+}
+
+#[test]
 fn convert_to_shapes_keeps_the_stitches() {
     let mut s = Session::new(temp_dir());
     run(
