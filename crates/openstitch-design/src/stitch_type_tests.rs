@@ -466,7 +466,14 @@ fn feathered_edges_shorten_row_ends_deterministically() {
 #[test]
 fn long_satin_stitches_split_and_stagger() {
     let c = vec![Contour::rectangle(0.0, 0.0, 200.0, 40.0)];
-    let mut r = region(RegionType::Satin);
+    // Top satin only, rows 1/3 mm apart.
+    let plain_satin = || {
+        let mut r = region(RegionType::Satin);
+        r.density = 3.0;
+        r.underlay = false;
+        r
+    };
+    let mut r = plain_satin();
     r.split_length = Some(5.0);
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     // The first stitch of a row comes from the previous row's edge, one row (1/3 mm) away.
@@ -475,7 +482,7 @@ fn long_satin_stitches_split_and_stagger() {
         assert!(longest(run) <= slant + 1e-6);
     }
     assert_inside(&runs, &c, "split");
-    let plain = crate::region::layers(&c, &region(RegionType::Satin), &[]);
+    let plain = crate::region::layers(&c, &plain_satin(), &[]);
     assert!(
         longest(&plain[0][0]) > 190.0,
         "without split a row is one stitch"

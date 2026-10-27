@@ -55,6 +55,16 @@ fn assert_zigzag_column(pts: &[(f64, f64)], what: &str) {
     );
 }
 
+/// The audit's column is sewn at density 3 without under sewing (the satin defaults are
+/// PE-DESIGN's 4.5 lines/mm with under sewing on), as in the satin-zigzag-* specs.
+fn top_satin_at_density_3(s: &mut Session) {
+    run(
+        s,
+        "object.setRegion",
+        json!({"id": 1, "density": 3, "underlay": false}),
+    );
+}
+
 #[test]
 fn region_satin_sews_a_zigzag_across_the_column() {
     let mut s = session();
@@ -66,7 +76,7 @@ fn region_satin_sews_a_zigzag_across_the_column() {
     run(
         &mut s,
         "object.setRegion",
-        json!({"id": 1, "type": "satin", "angle": 90, "density": 3}),
+        json!({"id": 1, "type": "satin", "angle": 90, "density": 3, "underlay": false}),
     );
     let pts = needle_points(&mut s, 1);
     assert_zigzag_column(&pts, "region satin");
@@ -80,6 +90,7 @@ fn manual_punch_column_sews_a_zigzag() {
         "shape.column",
         json!({"lines": [[[10, 10], [10, 12]], [[15, 10], [15, 12]]]}),
     );
+    top_satin_at_density_3(&mut s);
     let pts = needle_points(&mut s, 1);
     assert_zigzag_column(&pts, "shape.column");
 }
@@ -92,6 +103,7 @@ fn skeleton_satin_sews_a_zigzag() {
         "shape.skeletonSatin",
         json!({"points": [[10, 11], [15, 11]], "width": 2}),
     );
+    top_satin_at_density_3(&mut s);
     let pts = needle_points(&mut s, 1);
     assert_zigzag_column(&pts, "shape.skeletonSatin");
 }
@@ -107,7 +119,7 @@ fn pull_compensation_widens_the_zigzag() {
     run(
         &mut s,
         "object.setRegion",
-        json!({"id": 1, "type": "satin", "angle": 90, "density": 3, "pullCompensation": 0.2}),
+        json!({"id": 1, "type": "satin", "angle": 90, "density": 3, "pullCompensation": 0.2, "underlay": false}),
     );
     let pts = needle_points(&mut s, 1);
     for w in pts.windows(2) {
