@@ -422,15 +422,15 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
                     &c.path(),
                     width,
                     spacing,
-                    // Stored counter-clockwise from the line on screen; the geometry's y points
-                    // down.
-                    180.0 - line.angle.unwrap_or(45.0),
+                    // Counter-clockwise from the line on screen, as stored.
+                    line.angle.unwrap_or(45.0),
                     line.single,
                 ),
+                // PE-DESIGN's Medium knot is a star of 24 points (density 12).
                 LineType::Candlewick => lines::candlewick(
                     &c.path(),
                     width,
-                    (line.density * 2.0).round().clamp(3.0, 16.0) as usize,
+                    (line.density * 2.0).round().clamp(4.0, 48.0) as usize,
                     spacing,
                     pitch,
                 ),
@@ -455,7 +455,6 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
                     line.chain_shape,
                     line.run_times,
                     line.arrange,
-                    pitch,
                 ),
                 LineType::Cutting => Vec::new(),
             };
@@ -464,22 +463,36 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
             run
         })
         .collect();
-    // PE-DESIGN ties in and locks these lines like a satin (line-*-default.pes).
-    if matches!(
-        line.kind,
-        LineType::Running
-            | LineType::Triple
-            | LineType::Zigzag
-            | LineType::EStitch
-            | LineType::VStitch
-    ) {
+    // PE-DESIGN ties in and locks these lines like a satin (line-*-default.pes); V, stem,
+    // candlewicking and chain tie in with three steps out instead of one.
+    if !matches!(line.kind, LineType::Motif | LineType::Cutting) {
         region::tie_and_lock(std::slice::from_mut(&mut runs));
+        if matches!(
+            line.kind,
+            LineType::VStitch | LineType::Stem | LineType::Candlewick | LineType::Chain
+        ) && let Some(run) = runs.iter_mut().find(|r| r.len() >= 4)
+        {
+            long_tie_in(run);
+        }
     }
     vec![Element {
         thread: line.thread.clone(),
         runs,
         whole: false,
     }]
+}
+
+/// Turns the tie-in that [`region::tie_and_lock`] put at the start of `run` (start, 0.3 mm
+/// out, start) into PE-DESIGN's longer one for V, stem, candlewicking and chain: 0.3, 0.6 and
+/// 0.9 mm out along the first stitch (at most its length), back to 0.5 mm, then the start.
+fn long_tie_in(run: &mut Run) {
+    let (a, b) = (run[0], run[3]);
+    let len = a.distance(b);
+    if len <= 1e-9 || run[2].distance(a) > 1e-9 {
+        return;
+    }
+    let at = |d: f64| a + (b - a) * (d.min(len) / len);
+    run.splice(1..3, [at(3.0), at(6.0), at(9.0), at(5.0), a]);
 }
 
 /// Thread of cutwork needle `n` (0–3, blade at n × 45°): the line's colour, named after the

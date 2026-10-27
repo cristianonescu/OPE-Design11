@@ -808,6 +808,16 @@ Line references are relative to `crates/`.
     gives the new type's defaults, as PE-DESIGN does. Lines tie in and lock like a satin. PE's
     zigzag is sewn between mitred rails, matched along each leg. Its V puts a V at every
     multiple of the spacing, with arms to ±1/5 of it.
+  - Then stem, candlewicking and chain (`line-stem-default`, `line-candlewick-default`,
+    `line-chain-default`, each matching PE's needle points):
+    - Stem: 2.0 mm wide, stations every 1.5 mm per leg, 45°, each sewn top, bottom, top,
+      bottom 0.14 mm apart.
+    - Candlewicking: 5.0 mm knots 1.0 mm apart per leg; a Medium knot is a {24/11} star.
+    - Chain: 4.0 mm triangles sewn 5 times, every 0.75 × size per leg.
+    - V, stem, candlewicking and chain tie in with three 0.3 mm steps.
+  - Still open: the motif line's defaults. PE's default motif is PE-DESIGN's own artwork, so no
+    stitch comparison is possible; candlewicking Low and High, and the chain diamond, are not
+    measured.
   - Calibrated from the PE-DESIGN 11.50 reference files (2026-10-27): fill 4.5 rows/mm with
     under sewing on (`EdgeFill`: edge run 1 mm inside the outline at <= 2.5 mm, then tatami
     rows across the fill, 2 mm apart, 4 mm stitches, 30 % shift, 1 mm inset), also on for
