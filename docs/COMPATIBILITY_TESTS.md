@@ -311,3 +311,12 @@ stitch, and stitch objects re-sewn from a file start each run at the jump's end.
 no longer adds pyembroidery's `00 00` padding before a diagonal first stitch after a jump
 (PE-DESIGN's files have none). It still writes any zero-length stitch it is given, so
 pyembroidery's files still rewrite byte for byte.
+
+Remade the same day (pe-gui): the spec now sews two open polylines as running stitch (run pitch
+2.5 mm, run times 1, no region), so the reference no longer changes when region generation does.
+PE-DESIGN opened the first export with 54 stitches where OpenStitch's file had 56. PE-DESIGN reads
+the `CSewSeg` runs and sews only the points of stitch runs: OpenStitch put each jump's landing
+only in the jump segment, so after the change above that needle point was lost (the zero-length
+stitch had carried it before). PE-DESIGN's own re-saved file reopened unchanged. Each stitch run
+after a jump now starts at the landing; PE-DESIGN then reported 56 stitches, and that re-save is
+the reference.

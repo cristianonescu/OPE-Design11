@@ -632,7 +632,9 @@ fn write_blocks(w: &mut ByteWriter, pattern: &StitchPattern, version: Version) -
 }
 
 /// The stitch stream as `CSewSeg` runs: consecutive stitches form one run, a run of jumps
-/// becomes a two-point jump from the last stitch, colour changes switch the thread.
+/// becomes a two-point jump from the last stitch, colour changes switch the thread. A run
+/// after a jump starts at the jump's landing point: PE-DESIGN 11 sews only the points of
+/// stitch runs, so without it the needle never goes down where the jump lands.
 fn segments(pattern: &StitchPattern, version: Version, min_x: f64, max_y: f64) -> Vec<SewSegment> {
     let chart: Vec<Option<Thread>> = match version {
         Version::V1 => PEC_CHART.to_vec(),
@@ -654,6 +656,7 @@ fn segments(pattern: &StitchPattern, version: Version, min_x: f64, max_y: f64) -
     let mut thread = 0;
     let mut color = code(0);
     let (mut sx, mut sy) = (0.0, 0.0);
+    let mut landing = None;
     let mut out = Vec::new();
     let stitches = &pattern.stitches;
     let mut start = 0;
@@ -668,6 +671,7 @@ fn segments(pattern: &StitchPattern, version: Version, min_x: f64, max_y: f64) -
         match command {
             Command::Jump => {
                 let last = run[run.len() - 1];
+                landing = Some(point(last.x, last.y));
                 out.push(SewSegment {
                     flag: 1,
                     color,
@@ -681,10 +685,16 @@ fn segments(pattern: &StitchPattern, version: Version, min_x: f64, max_y: f64) -
             Command::Stitch => {
                 let last = run[run.len() - 1];
                 (sx, sy) = (last.x, last.y);
+                let mut points: Vec<_> = run.iter().map(|s| point(s.x, s.y)).collect();
+                if let Some(p) = landing.take()
+                    && points.first() != Some(&p)
+                {
+                    points.insert(0, p);
+                }
                 out.push(SewSegment {
                     flag: 0,
                     color,
-                    points: run.iter().map(|s| point(s.x, s.y)).collect(),
+                    points,
                 });
             }
             _ => {}
@@ -724,5 +734,32 @@ mod tests {
         assert_eq!(get("author"), Some("Ana"));
         assert_eq!(get("keywords"), Some("red"));
         assert_eq!(get("comments"), Some("hi"));
+    }
+
+    #[test]
+    fn stitch_runs_after_a_jump_start_at_the_landing() {
+        // PE-DESIGN 11.50 sews only the points of CSewSeg stitch runs: a run that started after
+        // the jump's landing lost that needle point when PE-DESIGN reopened the file
+        // (compat/reference/pes/pes-default-v6.pes, MANIFEST notes).
+        let mut p = StitchPattern::new();
+        p.jump_to(0.0, 0.0);
+        p.stitch_to(25.0, 0.0);
+        p.stitch_to(50.0, 0.0);
+        p.jump_to(100.0, 0.0);
+        p.stitch_to(125.0, 0.0);
+        let segs = segments(&p, Version::V6, 0.0, 0.0);
+        let runs: Vec<_> = segs.iter().filter(|s| s.flag == 0).collect();
+        assert_eq!(runs[0].points, [(0, 0), (25, 0), (50, 0)]);
+        assert_eq!(runs[1].points, [(100, 0), (125, 0)]);
+        // A run that already starts at the landing is not given a second copy.
+        let mut q = StitchPattern::new();
+        q.jump_to(0.0, 0.0);
+        q.stitch_to(0.0, 0.0);
+        q.stitch_to(25.0, 0.0);
+        let segs = segments(&q, Version::V6, 0.0, 0.0);
+        assert_eq!(
+            segs.iter().find(|s| s.flag == 0).unwrap().points,
+            [(0, 0), (25, 0)]
+        );
     }
 }

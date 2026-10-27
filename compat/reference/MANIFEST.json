@@ -33,9 +33,9 @@
       "peDesignVersion": "11.50",
       "date": "2026-10-27",
       "os": "Windows 11 Pro 10.0.26200",
-      "settings": "Opened target/compat/work/pes-default-v6/a.pes (OpenStitch export, header #PES0060) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
-      "sha256": "2e0be1a68ebda3170a3ddadb18ad595e586288c68888ef1cb0c0e84016a10fe6",
-      "notes": "a.pes opened with its stitches (not blank): two stitch blocks, 40.00 x 30.00 mm, 930 stitches; Design Property File Version 6.0, Design Name t1, colours 5 Brother Red and 20 Brother Black; Design Settings showed Hoop Size 100 x 100 mm, first machine type. The blocks opened as stitch data (Stitches tab), not editable shapes."
+      "settings": "Opened target/compat/work/pes-default-v6/a.pes (OpenStitch export, header #PES0060, SHA-256 7ec0e1e4404d1ee9fd7e5355e5813ac68701132fa059e48a997ec78340f5bd0c: two open polylines sewn as running stitch, run pitch 2.5 mm, run times 1, no region; Red (20,20)-(60,20)-(60,50)-(20,50) mm, then Black (30,30)-(50,30)-(50,40) mm) with Open, from a copy outside the repository; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "ae19e98a1dd543e51d519e7a8b039b768b6c4dba12c09007041fa431e818ef22",
+      "notes": "Replaces the round-1 file (PR #34, SHA-256 2e0be1a68ebda3170a3ddadb18ad595e586288c68888ef1cb0c0e84016a10fe6), which re-saved the earlier fill-based a.pes: the spec now sews running-stitch lines only, so the reference no longer changes with region generation. a.pes opened with its stitches as two stitch blocks: 40.00 x 30.00 mm, 56 stitches (status bar); Design Property File Version 6.0, Design Name t1, colours 5 Brother Red and 20 Brother Black, 2 colour changes. Before the CSewSeg fix in the same PR, the same design (SHA-256 11dfc91a0dfedb25ccf74bef263dbb80fe8dde373d23bf15f62ddfef39908dd4) opened with 54 stitches: PE-DESIGN sews only the points of CSewSeg stitch runs, so each jump landing that was only in the jump segment was lost; PE's own re-saved file reopened unchanged (54)."
     },
     {
       "file": "pes/design-property-native.pes",

@@ -41,14 +41,73 @@
       }
     },
     {
-      "command": "shape.rectangle",
+      "command": "shape.polygon",
       "params": {
-        "x": 20,
-        "y": 20,
-        "width": 40,
-        "height": 30,
-        "fill": "Red",
+        "points": [
+          [
+            20,
+            20
+          ],
+          [
+            60,
+            20
+          ],
+          [
+            60,
+            50
+          ],
+          [
+            20,
+            50
+          ]
+        ],
+        "closed": false,
+        "outline": "Red"
+      }
+    },
+    {
+      "command": "shape.polygon",
+      "params": {
+        "points": [
+          [
+            30,
+            30
+          ],
+          [
+            50,
+            30
+          ],
+          [
+            50,
+            40
+          ]
+        ],
+        "closed": false,
         "outline": "Black"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "ids": [
+          1
+        ],
+        "type": "running",
+        "color": "Red",
+        "pitch": 2.5,
+        "runTimes": 1
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "ids": [
+          2
+        ],
+        "type": "running",
+        "color": "Black",
+        "pitch": 2.5,
+        "runTimes": 1
       }
     }
   ],
@@ -65,7 +124,7 @@
     {
       "id": "pe-design",
       "file": "pes/pes-default-v6.pes",
-      "make": "Run `stitchtool compat --only pes-default-v6` and open target/compat/work/pes-default-v6/a.pes in PE-DESIGN 11. If it opens blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead. If it opens with its stitches, save it unchanged as PES. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+      "make": "Run `stitchtool compat --only pes-default-v6` and open target/compat/work/pes-default-v6/a.pes in PE-DESIGN 11 (two open polylines sewn as running stitch, run pitch 2.5 mm, run times 1: (20,20)–(60,20)–(60,50)–(20,50) mm in Red, then (30,30)–(50,30)–(50,40) mm in Black; no region, so the file does not change when region generation does). If it opens blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead. If it opens with its stitches, save it unchanged as PES. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
     }
   ],
   "machine": {
