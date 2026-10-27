@@ -119,13 +119,91 @@ fn apply_thread_table(pattern: &mut StitchPattern, table: &[Thread]) {
     }
 }
 
+// MARK: Header strings
+
+/// Windows-1252 characters for bytes 0x80–0x9F (`None`: unassigned); every other byte is the
+/// Latin-1 code point.
+const CP1252_HIGH: [Option<char>; 32] = [
+    Some('€'),
+    None,
+    Some('‚'),
+    Some('ƒ'),
+    Some('„'),
+    Some('…'),
+    Some('†'),
+    Some('‡'),
+    Some('ˆ'),
+    Some('‰'),
+    Some('Š'),
+    Some('‹'),
+    Some('Œ'),
+    None,
+    Some('Ž'),
+    None,
+    None,
+    Some('‘'),
+    Some('’'),
+    Some('“'),
+    Some('”'),
+    Some('•'),
+    Some('–'),
+    Some('—'),
+    Some('˜'),
+    Some('™'),
+    Some('š'),
+    Some('›'),
+    Some('œ'),
+    None,
+    Some('ž'),
+    Some('Ÿ'),
+];
+
+/// Header strings (Design Property, thread names) in the form PE-DESIGN 11 shows them: one
+/// byte per character in Windows-1252, line breaks as CR LF. PE-DESIGN 11.50 showed
+/// OpenStitch's former UTF-8 `é` as `Ã©` and a bare LF as no line break
+/// (compat/reference/MANIFEST.json, pes-design-properties). A character outside Windows-1252
+/// becomes `?`, as Windows' own conversion does.
+pub fn encode_header_string(s: &str) -> Vec<u8> {
+    let mut out = Vec::with_capacity(s.len());
+    let mut previous = None;
+    for c in s.chars() {
+        if c == '\n' && previous != Some('\r') {
+            out.push(b'\r');
+        }
+        previous = Some(c);
+        out.push(match u32::from(c) {
+            v @ (0..=0x7F | 0xA0..=0xFF) => v as u8,
+            _ => CP1252_HIGH
+                .iter()
+                .position(|&h| h == Some(c))
+                .map_or(b'?', |i| 0x80 + i as u8),
+        });
+    }
+    out
+}
+
+/// The inverse of [`encode_header_string`]: CR LF becomes `\n`. Valid UTF-8 is read as UTF-8,
+/// so files from earlier OpenStitch versions and from pyembroidery (both UTF-8) still read as
+/// written; anything else is Windows-1252. The one string this misreads is Windows-1252 text
+/// that happens to be valid UTF-8 (such as a literal `Ã©`).
+pub fn decode_header_string(bytes: &[u8]) -> String {
+    let s = match std::str::from_utf8(bytes) {
+        Ok(s) => s.to_owned(),
+        Err(_) => bytes
+            .iter()
+            .map(|&b| match b {
+                0x80..=0x9F => CP1252_HIGH[usize::from(b - 0x80)].unwrap_or('\u{FFFD}'),
+                _ => char::from(b),
+            })
+            .collect(),
+    };
+    s.replace("\r\n", "\n")
+}
+
 fn read_string8(r: &mut ByteReader) -> Result<Option<String>> {
     let len = usize::from(r.u8()?);
     let bytes = r.read(len)?;
-    Ok(std::str::from_utf8(bytes)
-        .ok()
-        .filter(|s| !s.is_empty())
-        .map(str::to_owned))
+    Ok(Some(decode_header_string(bytes)).filter(|s| !s.is_empty()))
 }
 
 fn read_string16(r: &mut ByteReader) -> Result<String> {
@@ -433,12 +511,13 @@ fn write_string8(w: &mut ByteWriter, s: Option<&str>) {
         w.u8(0);
         return;
     };
-    let mut end = s.len().min(255);
-    while !s.is_char_boundary(end) {
-        end -= 1;
+    let mut bytes = encode_header_string(s);
+    bytes.truncate(255);
+    if bytes.last() == Some(&b'\r') {
+        bytes.pop(); // don't leave half a line break
     }
-    w.u8(end as i64);
-    w.append(&s.as_bytes()[..end]);
+    w.u8(bytes.len() as i64);
+    w.append(&bytes);
 }
 
 fn write_string16(w: &mut ByteWriter, s: &str) {

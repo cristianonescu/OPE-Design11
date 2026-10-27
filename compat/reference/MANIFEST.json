@@ -24,6 +24,30 @@
       "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Rectangle tool: line Not Sewn (Line), region Fill Stitch with Under sewing unticked and every other attribute at its default (density 4.5 line/mm, Manual straight line 45 degrees, step pitch 4.0 mm, frequency 30 %, pull compensation 0.0 mm), colour BROTHER EMBROIDERY 800 RED; three 10 x 10 mm squares drawn with top-left corners at (0,0), (50,0), (25,0) mm in that order; Optimize Sewing Order clicked (Sewing Order pane); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "b892b243d2561ec410799385e69fc8ad1589b207a524f5b0a37eb07c168bedec",
       "notes": "Option > Options > Optimize Entry/Exit Points was ON (default here, not changed). 182 stitches per square. The squares sew in drawing order (x 0, 50, 25); the exit of each square and the entry of the next are on the facing corners (jumps 40.0 and 15.0 mm). Black-box tests of the command (gui-optimize-findings in the track notes): with or without the option, Optimize Sewing Order keeps drawing order within a colour, groups colours (red 0, blue 50, red 25 became red 0, red 25, blue 50), and links entry/exit only between same-colour neighbours. Round 1 (PR #34) made the same design with under sewing on: same order, gaps 41.3 and 16.3 mm, because the under sewing starts 1 mm inside the outline."
+    },
+    {
+      "file": "pes/pes-default-v6.pes",
+      "spec": "pes-default-v6",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Opened target/compat/work/pes-default-v6/a.pes (OpenStitch export, header #PES0060) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "2e0be1a68ebda3170a3ddadb18ad595e586288c68888ef1cb0c0e84016a10fe6",
+      "notes": "a.pes opened with its stitches (not blank): two stitch blocks, 40.00 x 30.00 mm, 930 stitches; Design Property File Version 6.0, Design Name t1, colours 5 Brother Red and 20 Brother Black; Design Settings showed Hoop Size 100 x 100 mm, first machine type. The blocks opened as stitch data (Stitches tab), not editable shapes."
+    },
+    {
+      "file": "pes/design-property-native.pes",
+      "spec": "pes-design-properties",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm). Design Property OK is disabled on an empty design, so first one Rectangle tool square 10 x 10 mm (line Not Sewn, Fill Stitch defaults, colour 007 EMBROIDERY PRUSSIAN BLUE). Then Design Property: Design Name Rose, Category Flowers, Author Ana Pérez, Keywords rose, red, spring, Comment Line one, Enter, line two (typed as keystrokes; the Enter stayed in the comment box). OK. Save As PES, default type Layout & Editing Ver.11.0 File (#PES0110). Windows display language en-US, system locale en-US (ANSI code page 1252), user format ro-RO.",
+      "sha256": "d701e4f51fe83bf754662e6641c6375fd7f46fe0c9ccfd243f84bc6c6c8fe226",
+      "notes": "Author stored as Windows-1252 (E9 for é); comment newline CR LF."
     }
   ]
 }

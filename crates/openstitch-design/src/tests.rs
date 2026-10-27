@@ -236,6 +236,19 @@ fn compiler_colour_changes_trims_end_and_max_stitch() {
 }
 
 #[test]
+fn no_zero_length_stitch_where_a_jump_lands() {
+    // The jump's end is the first needle point. PE-DESIGN 11 never writes a zero-length stitch
+    // there and drops one on open (compat pes-default-v6: 932 → 930 stitches).
+    let p = Compiler::default().compile(&two_squares());
+    assert!(p.count(Command::Jump) >= 2);
+    for w in p.stitches.windows(2) {
+        if w[0].command == Command::Jump && w[1].command == Command::Stitch {
+            assert_ne!((w[0].x, w[0].y), (w[1].x, w[1].y), "{w:?}");
+        }
+    }
+}
+
+#[test]
 fn hidden_objects_are_not_sewn() {
     let mut d = two_squares();
     d.objects[1].visible = false;
@@ -258,7 +271,16 @@ fn imported_stitches_keep_colour_blocks() {
     d.add(DesignObject::stitches(StitchBlock::from(&p)));
     let out = Compiler::default().compile(&d);
     assert_eq!(out.threads, vec![RED, BLUE]);
-    assert_eq!(out.count(Command::Stitch), 4);
+    // Each block's first point is where its jump lands, not a zero-length stitch after it
+    // (PE-DESIGN 11 counts it the same way, compat pes-default-v6); every point is still there.
+    assert_eq!(out.count(Command::Stitch), 2);
+    let points: Vec<(f64, f64)> = out
+        .stitches
+        .iter()
+        .filter(|s| matches!(s.command, Command::Stitch | Command::Jump))
+        .map(|s| (s.x, s.y))
+        .collect();
+    assert_eq!(points, [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]);
 }
 
 #[test]
