@@ -86,7 +86,7 @@ dearest:
 | 13 | No per-character colour or multi-character selection | Fonts | 4 | Documented difference | Colour grouping |
 | 14 | Programmable fill defaults to 0° instead of 45° (**fixed**, internal regression; type change rule pending) | Stitches | 3 | Documented difference | No |
 | 15 | Missing fill, satin and zigzag attributes; wrong ranges (**partly fixed**: Frequency and ranges; Stitch Type, Half Stitch, Miter limit pending) | Stitches | 3 | Documented difference | Geometry |
-| 16 | Optimize Sewing Order does not move entry and exit points (**fixed**, internal regression) | Stitches | 3 | Documented difference | No |
+| 16 | Optimize Sewing Order does not move entry and exit points (**fixed**, reference) | Stitches | 3 | Documented difference | No |
 | 17 | Hole sewing not validated or paired (**fixed**, internal regression) | Stitches | 3 | Documented difference | No |
 | 18 | PES thread table drops chart names and colour type (**fixed**: round trip; chart strings pending) | PES | 3 | Documented difference | Chart strings |
 | 19 | Design Property metadata cannot be set; lost on import (**fixed**, internal regression) | PES | 3 | Documented difference | No |
@@ -590,7 +590,8 @@ Line references are relative to `crates/`.
 - **Impact:** severity 3. After optimising, travel between same-coloured objects is longer than
   in PE-DESIGN, giving more and longer jumps and trims.
 - **Module:** `openstitch-engine/src/order.rs:168,175-224`: nearest object by bounding-box
-  centre; `entry`/`exit` are never changed.
+  centre; `entry`/`exit` are never changed. (The nearest-object sort was itself a difference:
+  see the PE-DESIGN behaviour below.)
 - **Evidence:** Guide:
   - [optimise order](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_1827935.html):
     rearranges the order **and** entry/exit points so neighbours connect at their closest
@@ -600,22 +601,35 @@ Line references are relative to `crates/`.
 - **REA:** none.
 - **Grade:** Documented difference.
 - **Test:**
-  - Inputs: three same-colour 10 mm squares at x = 0, 50, 25, in that drawing order →
-    `order.optimize` → `design.generate`.
-  - Assert: the order is 0, 25, 50, and each jump equals the gap between outlines (10 mm ±0.5).
+  - Inputs: three same-colour 10 mm squares at x = 0, 50, 25, in that drawing order, under
+    sewing off → `order.optimize` → `design.generate`.
+  - Assert (corrected 2026-10-27 after the PE-DESIGN reference): the order stays 0, 50, 25, and
+    each jump equals the gap between outlines in that order (40 and 15 mm ±0.5). The first
+    version of this item assumed the optimiser also sorts same-colour objects left to right
+    (0, 25, 50); PE-DESIGN 11.50 does not.
 - **Fix:**
   - After reordering, set each entry to the outline point nearest the previous exit and each
     exit to the point nearest the next entry.
   - Add the persistent option, applied when shapes are created.
-- **Status:** fixed at the internal-regression tier (not verified against PE-DESIGN output).
-  `order.optimize` sets each exit and the next entry to the closest points of the two
-  outlines; Options ▸ Optimize Entry/Exit Points (`options.set {optimizeEntryExit}`, user
+- **PE-DESIGN 11.50 behaviour** (black-box, 2026-10-27; reference
+  `compat/reference/stitches/optimize-entry-exit.pes` and its MANIFEST notes):
+  - Optimize Sewing Order groups colours but keeps drawing order within a colour. It does not
+    sort same-colour objects by distance. Red 0, blue 50, red 25 becomes red 0, red 25, blue 50.
+  - It moves the exit of each object and the entry of the next to the facing points, but only
+    between neighbours of the same colour. Across a colour change it leaves the default points.
+  - Options ▸ Optimize Entry/Exit Points (on in the reference install) does the same linking
+    as each shape is drawn; clicking Optimize Sewing Order with it off gives the same stitches.
+  - With under sewing on (its default), each move is about 1.3 mm longer, because the under
+    sewing starts 1 mm inside the outline. The spec turns under sewing off to keep that out.
+- **Status:** fixed at the reference tier (spec `optimize-entry-exit`). `order.optimize` keeps
+  drawing order within a colour and sets each exit and the next same-colour entry to the
+  closest points of the two outlines; Options ▸ Optimize Entry/Exit Points (`options.set {optimizeEntryExit}`, user
   settings, default off — the PE-DESIGN default is unverified) links each new shape the same
   way. Tests in `openstitch-engine/tests/order_holes.rs`:
   `optimize_moves_entry_and_exit_to_the_closest_points`,
-  `optimize_entry_exit_option_persists_and_applies_to_new_shapes`. 10 mm squares 25 mm apart
-  leave a 15 mm gap, so the test asserts 15 mm ±0.5 (measured 15.0 and 15.0; 41.1 and 36.3
-  before).
+  `optimize_entry_exit_option_persists_and_applies_to_new_shapes`,
+  `optimize_keeps_colour_groups_and_overlap_order`. The squares keep their order 0, 50, 25, and
+  the jumps measure 40.0 and 15.0 mm, as in PE-DESIGN (50.0 and 25.0 without linking).
 
 ## 17. Hole sewing is not validated or paired
 

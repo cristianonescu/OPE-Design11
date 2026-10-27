@@ -4,7 +4,7 @@
 
 use crate::commands::{CommandSpec, Effect, indexes, opt, req, spec};
 use openstitch_design::boolean::{self, BoolOp};
-use openstitch_design::{Design, DesignObject, ObjectKind, Rect, Vec2};
+use openstitch_design::{Design, DesignObject, ObjectKind, Vec2};
 use serde_json::json;
 
 pub fn commands() -> Vec<CommandSpec> {
@@ -97,7 +97,7 @@ pub fn commands() -> Vec<CommandSpec> {
         ),
         spec(
             "order.optimize",
-            "Optimise the sewing order: same colours together, nearest object next, but an object never moves before one it overlaps that was sewn earlier; then each shape's entry and exit points move to where it comes closest to the shapes sewn before and after it",
+            "Optimise the sewing order: same colours together, in drawing order within a colour, but an object never moves before one it overlaps that was sewn earlier; then each shape's entry and exit points move to where it comes closest to the same-colour shapes sewn before and after it",
             Effect::Edit,
             vec![],
             |s, _| {
@@ -167,13 +167,10 @@ fn overlaps(a: &DesignObject, b: &DesignObject, exact: bool) -> bool {
     !boolean::combine(&a.contours, &b.contours, BoolOp::Intersection).is_empty()
 }
 
-fn centre(o: &DesignObject) -> Option<openstitch_design::Vec2> {
-    o.bounds().map(|b: Rect| b.center())
-}
-
-/// New order (indexes into `d.objects`): greedy, keeping the current colour while an object of
-/// it is free to sew (nearest first), else the earliest free object. An object is free once
-/// every earlier object it overlaps has been placed.
+/// New order (indexes into `d.objects`): keeps the current colour while an object of it is free
+/// to sew, else takes the earliest free object; within a colour the drawing order stays, as in
+/// PE-DESIGN 11, which groups colours but does not sort same-colour objects by distance. An
+/// object is free once every earlier object it overlaps has been placed.
 pub fn optimized(d: &Design) -> Vec<usize> {
     let n = d.objects.len();
     let exact = n <= EXACT_OVERLAP_LIMIT;
@@ -200,19 +197,7 @@ pub fn optimized(d: &Design) -> Vec<usize> {
                 .collect(),
             None => Vec::new(),
         };
-        let next = match (last.and_then(|l| centre(&d.objects[l])), same.is_empty()) {
-            (Some(at), false) => same
-                .iter()
-                .copied()
-                .min_by(|&a, &b| {
-                    let da = centre(&d.objects[a]).map_or(f64::MAX, |c| c.distance(at));
-                    let db = centre(&d.objects[b]).map_or(f64::MAX, |c| c.distance(at));
-                    da.total_cmp(&db).then(a.cmp(&b))
-                })
-                .expect("non-empty"),
-            (None, false) => same[0],
-            _ => free[0],
-        };
+        let next = same.first().copied().unwrap_or(free[0]);
         placed[next] = true;
         out.push(next);
     }
@@ -357,14 +342,20 @@ fn set_exit(o: &mut DesignObject, p: Vec2) {
 }
 
 /// PE-DESIGN's optimised entry and exit points: for each object `k` in `pairs` and the one
-/// sewn after it, the exit of `k` and the entry of the next move to where the two outlines
-/// come closest, so the travel between them is the gap between their outlines. Text, stitch
-/// patterns and hidden objects are left alone.
+/// sewn after it in the same colour, the exit of `k` and the entry of the next move to where
+/// the two outlines come closest, so the travel between them is the gap between their
+/// outlines. A colour change between them leaves both points alone, as in PE-DESIGN 11. Text,
+/// stitch patterns and hidden objects are left alone.
 pub fn link_entry_exit(d: &mut Design, pairs: std::ops::Range<usize>) {
     let n = d.objects.len();
     for k in pairs {
         if k + 1 >= n {
             break;
+        }
+        if crate::drawing::first_colour(&d.objects[k])
+            != crate::drawing::first_colour(&d.objects[k + 1])
+        {
+            continue;
         }
         let (Some(a), Some(b)) = (ends(&d.objects[k]), ends(&d.objects[k + 1])) else {
             continue;

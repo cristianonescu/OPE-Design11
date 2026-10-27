@@ -2,8 +2,8 @@
   "schema": "openstitch-compat/1",
   "id": "optimize-entry-exit",
   "area": "stitches",
-  "title": "Optimize Sewing Order moves entry and exit points",
-  "description": "Three same-colour 10 mm squares drawn at x = 0, 50 and 25 mm: Optimize Sewing Order sews them left to right and moves each exit and the next entry to the facing sides, so each move crosses only the 15 mm gap between neighbours.",
+  "title": "Optimize Sewing Order keeps drawing order and links entry and exit points",
+  "description": "Three same-colour 10 mm squares with under sewing off, drawn at x = 0, 50 and 25 mm: like PE-DESIGN 11, Optimize Sewing Order keeps their drawing order (it groups colours but does not sort same-colour objects by distance) and moves each exit and the next entry to the facing corners, so each move crosses only the gap between the two outlines (40 and 15 mm).",
   "covers": {
     "audit": [
       16
@@ -18,12 +18,16 @@
   "evidence": [
     {
       "kind": "audit",
-      "note": "docs/COMPATIBILITY_AUDIT.md item 16 (the audit's 10 mm assumed 20 mm spacing; 25 mm spacing leaves 15 mm)"
+      "note": "docs/COMPATIBILITY_AUDIT.md item 16, corrected 2026-10-27 after the PE-DESIGN reference"
     },
     {
       "kind": "guide",
       "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/04_1827935.html",
       "note": "rearranges the order and the entry/exit points"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 black-box tests, 2026-10-27 (compat/reference/MANIFEST.json notes for this file): Optimize Sewing Order keeps drawing order within a colour, groups colours, and links entry/exit only between same-colour neighbours; under sewing on adds about 1.3 mm per move because it starts 1 mm inside the outline"
     }
   ],
   "script": [
@@ -65,6 +69,17 @@
       }
     },
     {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          1,
+          2,
+          3
+        ],
+        "underlay": false
+      }
+    },
+    {
       "command": "order.optimize",
       "params": {}
     },
@@ -82,7 +97,7 @@
     {
       "id": "pe-design",
       "file": "stitches/optimize-entry-exit.pes",
-      "make": "On a 100 × 100 mm Design Page draw three 10 × 10 mm squares, red fill, no line sewing, with top-left corners at (0, 0), (50, 0) and (25, 0) mm in that order. Run Optimize Sewing Order (record whether Options ▸ Optimize Entry/Exit Points was on). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+      "make": "On a 100 × 100 mm Design Page draw three 10 × 10 mm squares, red fill, no line sewing, Fill Stitch with Under sewing off (other attributes default), with top-left corners at (0, 0), (50, 0) and (25, 0) mm in that order. Run Optimize Sewing Order (record whether Options ▸ Optimize Entry/Exit Points was on). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
     }
   ],
   "measurements": [
@@ -98,10 +113,10 @@
       },
       "expected": [
         1,
-        3,
-        2
+        2,
+        3
       ],
-      "evidence": "audit item 16: sewn left to right (x = 0, 25, 50)"
+      "evidence": "PE-DESIGN 11.50 reference (MANIFEST notes): same-colour objects keep drawing order (x = 0, 50, 25)"
     },
     {
       "id": "travel",
@@ -112,13 +127,13 @@
         "export": "squares.pes"
       },
       "expected": [
-        15,
+        40,
         15
       ],
       "tolerance": {
         "mm": 0.5
       },
-      "evidence": "audit item 16: each move crosses the gap between outlines, ±0.5 mm",
+      "evidence": "PE-DESIGN 11.50 reference: jumps of 40.0 and 15.0 mm between facing corners (the gaps between the outlines in drawing order), ±0.5 mm",
       "reference": {}
     },
     {
