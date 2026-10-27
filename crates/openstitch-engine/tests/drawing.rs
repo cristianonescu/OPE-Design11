@@ -815,15 +815,22 @@ fn bad_shape_operation_parameters_fail_cleanly() {
     }
 }
 
-/// Needle positions (mm) of the first and last stitch of the design.
+/// Needle positions (mm) of the first and last stitch of the design. The design starts with a
+/// jump whose end is the first needle point.
 fn first_and_last_stitch(s: &Session) -> ((f64, f64), (f64, f64)) {
+    use openstitch_core::Command;
     let p = Compiler::default().compile(s.design());
     let st: Vec<_> = p
         .stitches
         .iter()
-        .filter(|x| x.command == openstitch_core::Command::Stitch)
+        .filter(|x| matches!(x.command, Command::Stitch | Command::Jump))
         .collect();
-    let (a, b) = (st[0], st[st.len() - 1]);
+    let b = p
+        .stitches
+        .iter()
+        .rfind(|x| x.command == Command::Stitch)
+        .expect("stitches");
+    let a = st[0];
     ((a.x / 10.0, a.y / 10.0), (b.x / 10.0, b.y / 10.0))
 }
 

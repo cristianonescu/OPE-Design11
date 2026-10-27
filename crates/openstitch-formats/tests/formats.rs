@@ -292,6 +292,104 @@ fn pes_v6_keeps_rgb_threads_names_and_metadata() {
 }
 
 #[test]
+fn pec_writes_no_zero_length_record_after_a_jump() {
+    // PE-DESIGN 11 files go straight from a jump record to the first stitch, also a diagonal
+    // one (pyembroidery pads that with `00 00`).
+    let mut p = StitchPattern::new();
+    p.stitches.push(Stitch::new(100.0, 50.0, Command::Jump));
+    p.stitch_to(103.0, 54.0);
+    p.push(Command::End);
+    let bytes = pec::write(&p).expect("write");
+    let stitches = &bytes[8 + 512 + 16..];
+    assert_eq!(&stitches[..6], [0x90, 0x64, 0x90, 0x32, 0x03, 0x04]);
+}
+
+#[test]
+fn pes_design_property_is_windows_1252_with_crlf_line_breaks() {
+    // PE-DESIGN 11.50 showed OpenStitch's UTF-8 author "Ana Pérez" as "Ana PÃ©rez" and the
+    // comment "Line one\nline two" on one line (compat/reference/MANIFEST.json,
+    // pes-design-properties): it reads these bytes as a Windows code page and breaks lines on
+    // CR LF.
+    let mut p = StitchPattern::new();
+    p.metadata.insert("author".into(), "Ana Pérez".into());
+    p.metadata
+        .insert("comments".into(), "Line one\nline two €".into());
+    p.metadata.insert("keywords".into(), "rosa, 薔薇".into());
+    p.stitch_to(0.0, 0.0);
+    p.stitch_to(10.0, 0.0);
+    p.push(Command::End);
+    let bytes = pes::write(&p).expect("write");
+    let header = |s: &[u8]| {
+        let mut v = vec![s.len() as u8];
+        v.extend_from_slice(s);
+        bytes.windows(v.len()).any(|w| w == v)
+    };
+    assert!(header(b"Ana P\xE9rez"));
+    assert!(header(b"Line one\r\nline two \x80"));
+    assert!(header(b"rosa, ??"), "outside Windows-1252: ?");
+
+    let back = pes::read(&bytes).expect("read");
+    let get = |k: &str| back.metadata.get(k).map(String::as_str);
+    assert_eq!(get("author"), Some("Ana Pérez"));
+    assert_eq!(get("comments"), Some("Line one\nline two €"));
+}
+
+#[test]
+fn pes_design_property_matches_a_pe_design_11_authored_file() {
+    // Typed into PE-DESIGN 11.50's Design Property on a Windows-1252 system and saved as PES
+    // (compat/reference/MANIFEST.json, design-property-native.pes).
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../compat/reference/pes/design-property-native.pes"
+    );
+    let native = std::fs::read(path).expect("reference file");
+    let back = pes::read(&native).expect("read");
+    let get = |k: &str| back.metadata.get(k).map(String::as_str);
+    assert_eq!(get("author"), Some("Ana Pérez"));
+    assert_eq!(get("comments"), Some("Line one\nline two"));
+    for s in [
+        "Rose",
+        "Flowers",
+        "Ana Pérez",
+        "rose, red, spring",
+        "Line one\nline two",
+    ] {
+        let mut field = pes::encode_header_string(s);
+        field.insert(0, field.len() as u8);
+        assert!(
+            native[..128].windows(field.len()).any(|w| w == field),
+            "{s:?}"
+        );
+    }
+}
+
+#[test]
+fn pes_header_strings_read_windows_1252_and_utf8() {
+    assert_eq!(pes::decode_header_string(b"Ana P\xE9rez"), "Ana Pérez");
+    assert_eq!(pes::decode_header_string(b"a\r\nb\x93c\x94"), "a\nb“c”");
+    // Earlier OpenStitch versions and pyembroidery wrote UTF-8.
+    assert_eq!(
+        pes::decode_header_string("Ana Pérez".as_bytes()),
+        "Ana Pérez"
+    );
+    assert_eq!(pes::encode_header_string("a\r\nb\nc"), b"a\r\nb\r\nc");
+}
+
+#[test]
+fn pes_header_strings_stop_at_255_bytes_without_half_a_line_break() {
+    let mut p = StitchPattern::new();
+    p.metadata
+        .insert("comments".into(), format!("{}\nx", "a".repeat(254)));
+    p.stitch_to(0.0, 0.0);
+    p.push(Command::End);
+    let back = pes::read(&pes::write(&p).expect("write")).expect("read");
+    assert_eq!(
+        back.metadata.get("comments").map(String::as_str),
+        Some("a".repeat(254).as_str())
+    );
+}
+
+#[test]
 fn pes_unknown_object_classes_are_reported_not_fatal() {
     let mut bytes = data("oracle_v1.pes");
     let at = bytes

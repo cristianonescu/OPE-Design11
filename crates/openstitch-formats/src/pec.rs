@@ -308,10 +308,10 @@ fn encode_stitches(stitches: &[Stitch], w: &mut ByteWriter) {
                         value(w, 0, true, FLAG_TRIM);
                         pending_trim = false;
                     }
-                    if dx != 0 && dy != 0 {
-                        value(w, 0, false, 0);
-                        value(w, 0, false, 0);
-                    }
+                    // pyembroidery pads a diagonal first stitch after a jump with a `00 00`
+                    // record. PE-DESIGN 11 never writes one (its files go straight from the jump
+                    // to the stitch), so neither does OpenStitch. A file that has the padding
+                    // still rewrites byte for byte: it reads as a zero-length stitch.
                     jumping = false;
                 }
                 value(w, dx, false, 0);

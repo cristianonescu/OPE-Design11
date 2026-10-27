@@ -112,7 +112,16 @@ impl Writer {
         self.thread = Some(element.thread);
         for (i, run) in runs.iter().enumerate() {
             self.travel(run[0], i > 0);
-            if self.position.is_none() || self.cut {
+            // A jump already ends on the run's first needle point: PE-DESIGN 11 never writes a
+            // zero-length stitch there and drops one when it opens a file (compat pes-default-v6).
+            let landed = self
+                .out
+                .stitches
+                .last()
+                .is_some_and(|s| s.command == Command::Jump && v2(s.x, s.y) == run[0]);
+            if landed {
+                self.cut = false;
+            } else if self.position.is_none() || self.cut {
                 self.push(run[0], Command::Stitch);
                 self.position = Some(run[0]);
                 self.cut = false;
@@ -226,15 +235,32 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
             .cloned()
             .unwrap_or(Thread::rgb(0))
     };
+    // Where the last jump landed: the first needle point of the run after it (PE-DESIGN files
+    // and compiled patterns have no zero-length stitch there).
+    let mut landing: Option<Vec2> = None;
     for s in &block.stitches {
         match s.command {
-            Command::Stitch => pending.last_mut().expect("non-empty").push(v2(s.x, s.y)),
+            Command::Stitch => {
+                let run = pending.last_mut().expect("non-empty");
+                let p = v2(s.x, s.y);
+                if let Some(l) = landing.take()
+                    && run.is_empty()
+                    && l != p
+                {
+                    run.push(l);
+                }
+                run.push(p);
+            }
             Command::Jump | Command::Trim => {
                 if pending.last().is_some_and(|r| !r.is_empty()) {
                     pending.push(Vec::new());
                 }
+                if s.command == Command::Jump {
+                    landing = Some(v2(s.x, s.y));
+                }
             }
             Command::ColorChange => {
+                landing = None;
                 w.sew(Element {
                     thread: thread_for(block_index),
                     runs: std::mem::replace(&mut pending, vec![Vec::new()]),

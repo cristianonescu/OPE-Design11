@@ -287,7 +287,27 @@ five Design Property fields read back from a PE-DESIGN 11 file. The thread-table
 offsets after the metadata are not publicly described for this version; they are left unparsed,
 and stitches and chart colours still come from the PEC section.
 
-Also observed, not yet fixed (needs a clean PE-DESIGN-authored sample to settle the target
-encoding, so left as a follow-up): PE-DESIGN preserves the string bytes on save but *displays*
-them through a legacy code page, so OpenStitch's UTF-8 `é` shows as `Ã©` in the Design Property
-dialog, and a `\n` in the comment is shown as no line break.
+Also observed: PE-DESIGN preserves the string bytes on save but *displays* them through the
+Windows code page, so OpenStitch's former UTF-8 `é` showed as `Ã©` in the Design Property dialog,
+and a bare LF in the comment showed as no line break. A Design Property typed into PE-DESIGN
+itself (`pes/design-property-native.pes`, system locale en-US, ANSI code page 1252) settles the
+convention: `é` is the single byte `E9` (Windows-1252) and the comment line break is `0D 0A`
+(CR LF). Public descriptions don't cover this (pyembroidery reads and writes UTF-8; edutechwiki
+says ASCII). OpenStitch now writes PES header strings (Design Property and thread-table strings)
+as Windows-1252 with CR LF, with `?` for characters outside that code page. It reads CR LF back
+as LF, and reads valid UTF-8 as UTF-8 so its own earlier files and pyembroidery's still read
+as written. A unit test checks the writer's bytes against the native file.
+
+### `pes-default-v6` — reference, 2026-10-27
+
+Made in PE-DESIGN 11.50 like the file above: OpenStitch's `a.pes` (`#PES0060`) opened with its
+stitches (not blank) and was re-saved unchanged with Save As (`#PES0110`). PE-DESIGN reported 930
+stitches where OpenStitch's file had 932. OpenStitch's design compiler pushed a zero-length stitch
+at the point each jump landed on (the start of each colour block), and the PEC writer encoded it
+as a `00 00` record. None of the 16 PE-DESIGN reference files has a zero-length stitch record:
+each block starts with a jump record followed by real stitches, so the jump's end is the first
+needle point. PE-DESIGN dropped the two records on open. The compiler no longer emits that
+stitch, and stitch objects re-sewn from a file start each run at the jump's end. The PEC encoder
+no longer adds pyembroidery's `00 00` padding before a diagonal first stitch after a jump
+(PE-DESIGN's files have none). It still writes any zero-length stitch it is given, so
+pyembroidery's files still rewrite byte for byte.
