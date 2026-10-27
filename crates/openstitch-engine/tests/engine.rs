@@ -434,7 +434,8 @@ fn commands_documented_and_unique() {
 /// jump landings (compat pes-default-v6; otherwise identical), and again when satin took
 /// PE-DESIGN's defaults (4.5 lines/mm, under sewing linked to the top satin), when fill did
 /// (the ellipse: 4.5 rows/mm, under sewing on, rows edge to edge), and when satin became PE's
-/// sawtooth with a tie-in and end lock. The same design
+/// sawtooth with a tie-in and end lock, and when direction angles turned counter-clockwise
+/// (the script's 45° ellipse fill now rises to the right). The same design
 /// exported as `1t`
 /// must keep writing the identical bytes; the
 /// script's default export is now version 6 with objects and sews the same stitches.

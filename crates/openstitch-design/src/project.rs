@@ -7,7 +7,9 @@ use crate::{Design, text};
 use serde::{Deserialize, Serialize};
 
 pub const FORMAT: &str = "openstitch.design";
-pub const VERSION: u32 = 1;
+/// 2: direction angles are counter-clockwise on screen (PE-DESIGN's convention); version 1
+/// stored them clockwise (see [`migrate_v1_angles`]).
+pub const VERSION: u32 = 2;
 pub const EXTENSION: &str = "osd";
 pub const MAX_SIZE: usize = 64 << 20;
 
@@ -48,10 +50,31 @@ pub fn decode(data: &[u8]) -> Result<Design, String> {
             header.version
         ));
     }
-    let env: Envelope =
+    let mut env: Envelope =
         serde_json::from_slice(data).map_err(|e| format!("damaged design file: {e}"))?;
     validate(&env.design)?;
+    if header.version < 2 {
+        migrate_v1_angles(&mut env.design);
+    }
     Ok(env.design)
+}
+
+/// Version 1 files stored direction angles clockwise on screen (from +x towards +y, y down).
+/// Since version 2 they turn counter-clockwise, as in PE-DESIGN, so a version-1 file sews the
+/// same stitches after loading: region angles are negated (0 ≤ a < 360) and stem line slants,
+/// measured from the line, become 180 − a (an unset slant, 45°, becomes 135°).
+pub fn migrate_v1_angles(design: &mut Design) {
+    for o in &mut design.objects {
+        if let Some(r) = &mut o.region {
+            r.angle = crate::region::stored_angle(r.angle);
+        }
+        if let Some(l) = &mut o.line
+            && l.kind == crate::model::LineType::Stem
+        {
+            // Unset meant 45° from the line, clockwise.
+            l.angle = Some(180.0 - l.angle.unwrap_or(45.0));
+        }
+    }
 }
 
 /// Checks a design read from an untrusted source (objects, coordinates, text, fonts).
@@ -131,4 +154,70 @@ fn validate_fonts(fonts_in: &[DesignFont]) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::geometry::Contour;
+    use crate::model::{DesignObject, DesignPage, LineSewing, LineType, RegionSewing, RegionType};
+    use crate::{Compiler, Design};
+    use openstitch_core::Thread;
+
+    /// A 30° fill square and a stem-stitch outline, angles in the version-2 convention.
+    fn design() -> Design {
+        let mut d = Design::new("angles", DesignPage::default());
+        let mut r = RegionSewing::new(RegionType::Fill, Thread::rgb(0xff0000));
+        r.angle = 30.0;
+        let mut l = LineSewing::new(LineType::Stem, Thread::rgb(0));
+        l.angle = Some(60.0);
+        d.add(DesignObject::shape(
+            vec![Contour::rectangle(0.0, 0.0, 300.0, 200.0)],
+            Some(r),
+            Some(l),
+        ));
+        d
+    }
+
+    #[test]
+    fn version_2_keeps_angles() {
+        let bytes = encode(&design()).expect("encode");
+        let v: serde_json::Value = serde_json::from_slice(&bytes).expect("json");
+        assert_eq!(v["version"], 2);
+        let back = decode(&bytes).expect("decode");
+        assert_eq!(back, design());
+    }
+
+    #[test]
+    fn version_1_angles_are_migrated_and_sew_the_same() {
+        // The same design as a version-1 file wrote it: angles clockwise on screen.
+        let mut v: serde_json::Value =
+            serde_json::from_slice(&encode(&design()).expect("encode")).expect("json");
+        v["version"] = serde_json::json!(1);
+        let o = &mut v["design"]["objects"][0];
+        o["region"]["angle"] = serde_json::json!(-30.0);
+        o["line"]["angle"] = serde_json::json!(120.0);
+        let old = decode(&serde_json::to_vec(&v).expect("bytes")).expect("decode");
+        let (r, l) = (
+            old.objects[0].region.as_ref().expect("region"),
+            old.objects[0].line.as_ref().expect("line"),
+        );
+        assert_eq!((r.angle, l.angle), (30.0, Some(60.0)));
+        let c = Compiler::default();
+        assert_eq!(c.compile(&old).stitches, c.compile(&design()).stitches);
+        // An unset stem slant was 45° clockwise: 135° now.
+        o_unset(&mut v);
+        let old = decode(&serde_json::to_vec(&v).expect("bytes")).expect("decode");
+        assert_eq!(
+            old.objects[0].line.as_ref().expect("line").angle,
+            Some(135.0)
+        );
+    }
+
+    fn o_unset(v: &mut serde_json::Value) {
+        v["design"]["objects"][0]["line"]
+            .as_object_mut()
+            .expect("line")
+            .remove("angle");
+    }
 }

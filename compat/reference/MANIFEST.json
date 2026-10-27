@@ -110,6 +110,18 @@
       "notes": "Option > Options > Optimize Entry/Exit Points was ON (default here, not changed). 182 stitches per square. The squares sew in drawing order (x 0, 50, 25); the exit of each square and the entry of the next are on the facing corners (jumps 40.0 and 15.0 mm). Black-box tests of the command (gui-optimize-findings in the track notes): with or without the option, Optimize Sewing Order keeps drawing order within a colour, groups colours (red 0, blue 50, red 25 became red 0, red 25, blue 50), and links entry/exit only between same-colour neighbours. Round 1 (PR #34) made the same design with under sewing on: same order, gaps 41.3 and 16.3 mm, because the under sewing starts 1 mm inside the outline."
     },
     {
+      "file": "stitches/programmable-fill-45.pes",
+      "spec": "programmable-fill-45",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (2.5 mm); Rectangle tool (10,10)-(50,50) mm; line Not Sewn; region Prog. Fill Stitch, direction and pattern left at default (Manual straight line 45 degrees, pattern net1, tile 7.5 x 7.5 mm, pattern direction 0, offset row 0 %); colour left at tool default; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "6455541402b2b19e308f420566b83004e44beb4f25c10ef0785513e95a1e4b64",
+      "notes": "Default pattern name shown in the Browse dialog: net1. 4077 stitches shown in the status bar."
+    },
+    {
       "file": "stitches/region-travel-u-along-outline.pes",
       "spec": "region-travel-u-along-outline",
       "reference": "pe-design",

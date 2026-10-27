@@ -1030,7 +1030,11 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     "Region sew type",
                 ),
                 opt("color", "color", "Thread"),
-                opt("angle", "degrees", "Sewing direction"),
+                opt(
+                    "angle",
+                    "degrees",
+                    "Sewing direction, counter-clockwise on screen as in PE-DESIGN (0 = horizontal)",
+                ),
                 opt("density", "rows/mm", "Row density"),
                 opt("stitchLength", "mm", "Fill stitch length"),
                 opt("pullCompensation", "mm", "Row end extension"),
@@ -1375,7 +1379,11 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     "mm",
                     "Gap between motifs (0-20), stem stitches, knots, E/V strokes (0.5-20)",
                 ),
-                opt("angle", "degrees", "Stem stitch angle to the line, 45-135"),
+                opt(
+                    "angle",
+                    "degrees",
+                    "Stem stitch angle to the line, counter-clockwise, 45-135",
+                ),
                 opt("single", "bool", "Stem: single instead of triple stitches"),
                 opt(
                     "strokeTimes",

@@ -19,7 +19,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Files | PES write v1 and v6… | oracle; reference pending | `pes-default-v6`, `pes-library-convert-v6` |
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
 | Region sew types | Fill (tatami: angle or auto direction… | internal-regression; reference pending | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions` |
-| Region sew types | Programmable fill… | internal-regression; reference pending | `programmable-fill-45` |
+| Region sew types | Programmable fill… | reference | `programmable-fill-45` |
 | Region sew types | Satin: a zigzag across the column… | internal-regression; reference pending | `auto-satin-bent-band`, `region-travel-u-satin`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
 
 ## By audit item
@@ -30,7 +30,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | 2 | oracle; reference pending | `pes-default-v6`, `pes-library-convert-v6` |
 | 3 | internal-regression; reference pending | `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `region-travel-u-satin`, `running-stitch-path-exclusions` |
 | 7 | reference | `auto-satin-bent-band` |
-| 14 | internal-regression; reference pending | `programmable-fill-45` |
+| 14 | reference | `programmable-fill-45` |
 | 15 | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default` |
 | 16 | reference | `optimize-entry-exit` |
 | 17 | internal-regression | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
@@ -54,7 +54,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/hole-sewing-limits` | pass | internal-regression | pass | — | — | — |
 | `stitches/hole-sewing-pentagon-star` | pass | reference | pass | — | pass | — |
 | `stitches/optimize-entry-exit` | pass | reference | pass | — | pass | — |
-| `stitches/programmable-fill-45` | pass | internal-regression | pass | — | pending | — |
+| `stitches/programmable-fill-45` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-along-outline` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-fill` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-gradation` | pass | internal-regression | pass | — | pending | — |

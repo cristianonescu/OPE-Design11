@@ -158,7 +158,13 @@ fn to_shapes() -> CommandSpec {
     fn shape(areas: &[Area], thread: &Thread, kind: RegionType) -> Option<DesignObject> {
         let main = areas.iter().max_by(|a, b| a.area.total_cmp(&b.area))?;
         let mut region = RegionSewing::new(kind, thread.clone());
-        region.angle = main.angle;
+        // Area angles are measured with y pointing down; region angles are stored
+        // counter-clockwise on screen, as PE-DESIGN gives them.
+        region.angle = if main.angle >= 90.0 {
+            90.0
+        } else {
+            -main.angle + 0.0
+        };
         let contours = areas
             .iter()
             .flat_map(|a| a.contours.iter().cloned())

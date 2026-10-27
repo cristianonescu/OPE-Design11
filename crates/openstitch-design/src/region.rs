@@ -195,7 +195,7 @@ fn layers_inner(
     let angle = if r.auto_direction {
         auto_angle(closed)
     } else {
-        r.angle
+        geometry_angle(r.angle)
     };
     let params = RegionParams {
         angle,
@@ -349,6 +349,20 @@ fn fill_underlay(
         Some(&mut TravelGraph::new(closed, holes)),
         25.0,
     )]
+}
+
+/// A stored direction angle (degrees counter-clockwise on screen, as PE-DESIGN's Sewing
+/// Attributes give it) as the angle the geometry code rotates by (from +x towards +y, the
+/// design's y axis pointing down).
+pub fn geometry_angle(stored: f64) -> f64 {
+    -stored
+}
+
+/// The stored direction angle (counter-clockwise on screen, 0 ≤ a < 360) of a geometry angle
+/// (+x towards +y, y down), for directions derived from a shape.
+pub fn stored_angle(geometry: f64) -> f64 {
+    let a = (-geometry).rem_euclid(360.0);
+    if a >= 360.0 - 1e-9 { 0.0 } else { a + 0.0 }
 }
 
 /// Joins a region's layers (under sewing, then the top stitching) with running stitches, as

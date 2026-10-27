@@ -104,7 +104,7 @@ pub fn commands() -> Vec<CommandSpec> {
             opt(
                 "angle",
                 "degrees",
-                "Crosshatch / stripes: line angle 45-90 (default 45)",
+                "Crosshatch / stripes: line angle 45-90, counter-clockwise (default 45)",
             ),
             opt(
                 "skipOverlap",
@@ -173,7 +173,12 @@ fn background_fill(s: &mut EngineState, p: &Params) -> crate::params::CommandRes
             }
             let mut pieces = Vec::new();
             for a in angles {
-                pieces.extend(hatch(&region, a, gap));
+                // Counter-clockwise on screen, as region directions are.
+                pieces.extend(hatch(
+                    &region,
+                    openstitch_design::region::geometry_angle(a),
+                    gap,
+                ));
                 if pieces.len() > MAX_PIECES {
                     return Err(p.failed("the line spacing is too small for this area"));
                 }

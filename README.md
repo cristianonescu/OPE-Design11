@@ -127,7 +127,9 @@ cargo run -p openstitch-mcp -- --root ~/Embroidery     # MCP server on stdio (se
 ```
 
 A command script is a JSON array of `{"command": …, "params": {…}}` steps; see `examples/`.
-Lengths are in millimetres and angles in degrees.
+Lengths are in millimetres and angles in degrees. Sewing directions turn counter-clockwise on
+screen, as in PE-DESIGN (45 = rows rising to the right); `.osd` files from before format
+version 2 stored them clockwise and are converted when opened.
 
 ### Test
 

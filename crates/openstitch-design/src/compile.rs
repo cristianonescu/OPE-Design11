@@ -384,7 +384,9 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
                     &c.path(),
                     width,
                     spacing,
-                    line.angle.unwrap_or(45.0),
+                    // Stored counter-clockwise from the line on screen; the geometry's y points
+                    // down.
+                    180.0 - line.angle.unwrap_or(45.0),
                     line.single,
                 ),
                 LineType::Candlewick => lines::candlewick(
