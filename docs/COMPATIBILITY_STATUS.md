@@ -12,7 +12,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 |---|---|---|---|
 | Editing | Hole sewing… | internal-regression; reference pending | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
 | Editing | Manual Punch: shapes made of several sewing-direction lines… | internal-regression; reference pending | `satin-zigzag-column` |
-| Editing | Sewing order editing… | internal-regression; reference pending | `optimize-entry-exit` |
+| Editing | Sewing order editing… | reference | `optimize-entry-exit` |
 | Editing | Thread colour, sew type, straight sewing direction… | internal-regression; reference pending | `auto-satin-bent-band` |
 | Files | Design Property… | reference | `pes-design-properties` |
 | Files | PES v6 thread table… | oracle | `pes-thread-chart-roundtrip` |
@@ -32,7 +32,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | 7 | internal-regression; reference pending | `auto-satin-bent-band` |
 | 14 | internal-regression; reference pending | `programmable-fill-45` |
 | 15 | internal-regression; reference pending | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default` |
-| 16 | internal-regression; reference pending | `optimize-entry-exit` |
+| 16 | reference | `optimize-entry-exit` |
 | 17 | internal-regression; reference pending | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
 | 18 | oracle | `pes-thread-chart-roundtrip` |
 | 19 | reference | `pes-design-properties` |
@@ -53,7 +53,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/fill-frequency-default` | pass | internal-regression | pass | — | — | — |
 | `stitches/hole-sewing-limits` | pass | internal-regression | pass | — | — | — |
 | `stitches/hole-sewing-pentagon-star` | pass | internal-regression | pass | — | pending | — |
-| `stitches/optimize-entry-exit` | pass | internal-regression | pass | — | pending | — |
+| `stitches/optimize-entry-exit` | pass | reference | pass | — | pass | — |
 | `stitches/programmable-fill-45` | pass | internal-regression | pass | — | pending | — |
 | `stitches/region-travel-u-along-outline` | pass | internal-regression | pass | — | pending | — |
 | `stitches/region-travel-u-fill` | pass | internal-regression | pass | — | pending | — |

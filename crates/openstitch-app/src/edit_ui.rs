@@ -629,7 +629,7 @@ pub fn order_controls(app: &mut EditorApp, ui: &mut egui::Ui) -> Option<CommandR
         }
         if ui
             .button("Optimise")
-            .on_hover_text("Group colours and shorten travel; overlapping objects keep their order")
+            .on_hover_text("Group colours (drawing order within a colour) and link entry and exit points; overlapping objects keep their order")
             .clicked()
         {
             out = Some(CommandRequest::new("order.optimize", serde_json::json!({})));

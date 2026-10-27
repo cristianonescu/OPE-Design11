@@ -1,6 +1,7 @@
 //! Compatibility audit items 16 (Optimize Sewing Order moves entry and exit points; the
-//! "Optimize Entry/Exit Points" option) and 17 (hole sewing is a validated pair). Internal
-//! regressions built from the PE-DESIGN 11 online guide; not verified against PE-DESIGN output.
+//! "Optimize Entry/Exit Points" option) and 17 (hole sewing is a validated pair). Item 16 follows
+//! PE-DESIGN 11.50's output (spec `optimize-entry-exit`); the rest are internal regressions built
+//! from the PE-DESIGN 11 online guide.
 
 use openstitch_core::{Command, Stitch};
 use openstitch_design::Compiler;
@@ -54,14 +55,15 @@ fn optimize_moves_entry_and_exit_to_the_closest_points() {
     three_squares(&mut s);
     let plain = jumps(&s);
     run(&mut s, "order.optimize", json!({}));
-    assert_eq!(order(&s), [1, 3, 2], "sewn left to right: x = 0, 25, 50");
+    // PE-DESIGN 11 keeps the drawing order of same-colour objects (x = 0, 50, 25).
+    assert_eq!(order(&s), [1, 2, 3]);
     let j = jumps(&s);
     assert_eq!(j.len(), 2, "one jump between neighbours: {j:?}");
-    // Neighbours are 15 mm apart (10 mm squares 25 mm apart): each jump crosses the gap.
-    for d in &j {
+    // Each jump crosses the gap between the outlines: 40 mm, then 15 mm.
+    for (d, gap) in j.iter().zip([40.0, 15.0]) {
         assert!(
-            (d - 15.0).abs() <= 0.5,
-            "jump {d} mm, expected the 15 mm gap ({j:?})"
+            (d - gap).abs() <= 0.5,
+            "jump {d} mm, expected the {gap} mm gap ({j:?})"
         );
     }
     assert!(j.iter().sum::<f64>() < plain.iter().sum::<f64>());
@@ -69,9 +71,9 @@ fn optimize_moves_entry_and_exit_to_the_closest_points() {
     let d = s.design();
     let r = |i: usize| d.objects[i].region.as_ref().expect("region");
     assert_eq!(r(0).exit.map(|p| p.x), Some(100.0));
-    assert_eq!(r(1).entry.map(|p| p.x), Some(250.0));
-    assert_eq!(r(1).exit.map(|p| p.x), Some(350.0));
-    assert_eq!(r(2).entry.map(|p| p.x), Some(500.0));
+    assert_eq!(r(1).entry.map(|p| p.x), Some(500.0));
+    assert_eq!(r(1).exit.map(|p| p.x), Some(500.0));
+    assert_eq!(r(2).entry.map(|p| p.x), Some(350.0));
     assert!(r(0).entry.is_none() && r(2).exit.is_none());
 }
 
@@ -96,6 +98,19 @@ fn optimize_keeps_colour_groups_and_overlap_order() {
     assert_eq!(o[..2], [1, 3], "the reds sew together: {o:?}");
     let at = |id| o.iter().position(|&x| x == id).expect("kept");
     assert!(at(4) > at(1), "the overlapping square stays on top: {o:?}");
+    // Entry and exit points link only same-colour neighbours, as in PE-DESIGN 11.
+    let d = s.design();
+    let r = |id: u64| {
+        d.objects[d.index_of(id).expect("kept")]
+            .region
+            .as_ref()
+            .expect("region")
+    };
+    assert!(
+        r(1).exit.is_some() && r(3).entry.is_some(),
+        "red to red is linked"
+    );
+    assert!(r(3).exit.is_none(), "red to blue is not linked: {o:?}");
 }
 
 #[test]
