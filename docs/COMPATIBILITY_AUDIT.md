@@ -834,9 +834,11 @@ Line references are relative to `crates/`.
   the default width is PE-DESIGN 11.50's 3.0 mm. Still different: PE-DESIGN's top/bottom row
   switches and patterns versus OpenStitch's start/end/both with one width, and programmable
   fill (PE offers it; OpenStitch refuses it until it sews it).
-- **Gradation:** the pattern is PE-DESIGN's since 2026-10-27: Max/Min density over equal steps
-  (default Max 53 %, Min 5 %, 9 steps), rows from edge to edge; region-travel-u-gradation passes
-  at the reference tier. Designs saved with the old single far-side percentage still sew a
+- **Gradation:** the pattern is PE-DESIGN's since 2026-10-27: Max/Min density with evenly
+  spaced step values (default Max 53 %, Min 5 %, 9 steps), the density falling linearly across
+  the region, each gap at the density halfway across it, rows from edge to edge.
+  region-travel-u-gradation passes at the reference tier; its top rows lie 0.06 mm from PE's
+  on average (0.24 mm with equal bands). Designs saved with the old single far-side percentage still sew a
   continuous fall from 100 %. The guide's exclusions apply: not with a feathered edge, Auto
   direction or text (refused when set, not sewn when a file holds them anyway). Still missing:
   other preset patterns, per-step editing, Blend (two-colour blending), the gradation direction

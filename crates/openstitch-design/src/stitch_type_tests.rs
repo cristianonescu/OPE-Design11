@@ -452,26 +452,23 @@ fn gradation_spreads_rows_towards_the_far_side() {
 }
 
 #[test]
-fn gradation_pattern_sews_equal_bands_from_edge_to_edge() {
-    // 90 mm tall: nine 10 mm bands at 53, 47, …, 5 % of 4.5 rows/mm (PE-DESIGN's default).
+fn gradation_pattern_sews_from_edge_to_edge_with_the_density_halfway_across_each_gap() {
+    // 90 mm tall, PE-DESIGN's default pattern: 53 % of 4.5 rows/mm at the top falling linearly
+    // to 5 % at the bottom.
     let c = vec![Contour::rectangle(0.0, 0.0, 400.0, 900.0)];
     let spacing = 10.0 / 4.5;
-    let ys = crate::region::row_positions(&c, 0.0, spacing, Some(&crate::Gradation::PE_DEFAULT));
+    let g = crate::Gradation::PE_DEFAULT;
+    let ys = crate::region::row_positions(&c, 0.0, spacing, Some(&g));
     // First row on the start edge, last on the far edge (sampled just inside).
     assert!(ys[0] < 0.01 && ys[ys.len() - 1] > 900.0 - 0.01, "{ys:?}");
-    for (band, pct) in [(0, 53.0), (4, 29.0), (7, 11.0)] {
-        let lo = band as f64 * 100.0;
-        let gap = ys
-            .windows(2)
-            .find(|w| w[0] >= lo + 1.0)
-            .map(|w| w[1] - w[0])
-            .expect("row in band");
-        let expected = spacing / (pct / 100.0);
-        assert!(
-            (gap - expected).abs() < 1e-6,
-            "band {band}: {gap} vs {expected}"
-        );
+    // Every gap but the last ones sews the density at its own middle.
+    for w in ys.windows(2).skip(1).take(ys.len() / 2) {
+        let gap = w[1] - w[0];
+        let middle = (w[0] + gap / 2.0) / 900.0;
+        let expected = spacing / g.fraction(middle);
+        assert!((gap - expected).abs() < 1e-3, "{w:?}: {gap} vs {expected}");
     }
+    assert!((g.fraction(0.5) - 0.29).abs() < 1e-12);
     // The rest before the far edge is split evenly, no step longer than the last gap.
     let gaps: Vec<f64> = ys.windows(2).map(|w| w[1] - w[0]).collect();
     let last = gaps[gaps.len() - 1];

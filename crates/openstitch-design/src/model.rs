@@ -764,11 +764,14 @@ fn running_stitch_path<'de, D: serde::Deserializer<'de>>(
     })
 }
 
-/// Gradation pattern (PE-DESIGN's Gradation Pattern Setting): the region is split into
-/// `steps` equal bands across the rows, and band k of n sews at
-/// `max − (max − min)·k/(n − 1)` % of the region's density. Without `steps` the density changes
-/// continuously from `max` to `min`: how designs saved before the pattern (a single far-side
-/// percentage, stored as a number) sew, and still read.
+/// Gradation pattern (PE-DESIGN's Gradation Pattern Setting): `steps` values, evenly spaced
+/// across the rows from `max` % of the region's density at the start side to `min` % at the
+/// far side, with the density interpolated between them. PE-DESIGN 11.50's default pattern
+/// sews that way: its rows' density falls linearly from 53 % to 5 % across the region
+/// (region-travel-u-gradation reference), not in equal bands. With evenly spaced step values
+/// the steps do not change the density; they are kept for the pattern's own values. Without
+/// `steps` the gradation is how designs saved before patterns (a single far-side percentage,
+/// stored as a number) sew, and still read: from 100 % down to that percentage.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Gradation {
@@ -776,7 +779,7 @@ pub struct Gradation {
     pub max: f64,
     /// Density at the far side, % (5–100).
     pub min: f64,
-    /// Number of bands (2–20); `None`: continuous.
+    /// Number of step values (2–20); `None`: a gradation saved before patterns.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub steps: Option<u32>,
 }
@@ -799,14 +802,10 @@ impl Gradation {
         }
     }
 
-    /// Density at `f` (0 = start side, 1 = far side) as a fraction of the region's density.
+    /// Density at `f` (0 = start side, 1 = far side) as a fraction of the region's density:
+    /// linear between the evenly spaced step values, so linear from `max` to `min`.
     pub fn fraction(&self, f: f64) -> f64 {
-        let f = f.clamp(0.0, 1.0);
-        let t = match self.steps {
-            Some(n) if n >= 2 => ((f * n as f64).floor().min(n as f64 - 1.0)) / (n as f64 - 1.0),
-            Some(_) => 0.0,
-            None => f,
-        };
+        let t = f.clamp(0.0, 1.0);
         ((self.max + (self.min - self.max) * t) / 100.0).clamp(0.05, 1.0)
     }
 }
