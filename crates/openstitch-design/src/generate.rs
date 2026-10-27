@@ -167,6 +167,9 @@ pub fn fill_shifted(
     })
 }
 
+/// Shortest row span [`fill_edge_to_edge`] sews, 0.1 mm.
+const MIN_EDGE_ROW_SPAN: f64 = 3.0;
+
 /// [`fill_shifted`] with PE-DESIGN's row placement: the first row lies on one edge of the
 /// region and the last on the other (a 40 mm square at 4.5 rows/mm has 181 rows), instead of
 /// starting half a row spacing in. Rows on an edge are sampled just inside it.
@@ -188,7 +191,9 @@ pub fn fill_edge_to_edge(
 }
 
 /// Rows from the rotated bounds' minimum to their maximum, `row_spacing` apart, both ends
-/// included, lengthened by the pull compensation.
+/// included, lengthened by the pull compensation. Spans shorter than
+/// [`MIN_EDGE_ROW_SPAN`] are left out: an end row that only touches a curved outline at its
+/// tip would otherwise be a stitch a fraction of a millimetre long.
 fn edge_row_spans(contours: &[Contour], p: &RegionParams, holes: &[Contour]) -> Vec<RowSpan> {
     let Some(b) = crate::region::rotated_bounds(contours, p.angle) else {
         return Vec::new();
@@ -207,7 +212,7 @@ fn edge_row_spans(contours: &[Contour], p: &RegionParams, holes: &[Contour]) -> 
                 .filter_map(move |sp| {
                     let lo = sp.start() - p.pull_compensation;
                     let hi = sp.end() + p.pull_compensation;
-                    (hi > lo).then_some(RowSpan {
+                    (hi - lo >= MIN_EDGE_ROW_SPAN).then_some(RowSpan {
                         row,
                         y,
                         range: lo..=hi,
