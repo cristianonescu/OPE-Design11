@@ -11,6 +11,8 @@ policy: docs/LEGAL_AND_LICENSING.md. Each rN file is the baseline B with one pro
 
 **Text tool (r12–r15):** Home > Text > first tool "A"; as the freshly restarted tool shows it: font Lato (the repo's Lato-Bold.ttf, installed per-user earlier; PE lists "Lato", style Bold), size 10.0, line Not Sewn (Line), region Satin Stitch, region colour 800 EMBROIDERY RED, Text Attributes all default (Kerning 0, Vertical Offset 0, Rotate 0, Character Spacing 0, Line Spacing 100 %, Alignment Left, horizontal, Transform off). The click sets the baseline-left of the text. A first r12 placed with the click at (10,10) put the letter at y 0..10 mm; Save As warned "Please change the object size or position. Do you want to save the data anyway?" -> No (discarded), so the click was made at (10,20) instead: the letter's top-left is at about (10,10).
 
+**Round 2:** (2026-10-27 22:24-22:33): PE-DESIGN 11.50 freshly restarted at 22:24 (it had closed), so tool attributes were at defaults again; same COMMON and BASELINE B as above. Colours are set in the Color pane (Line / Region radio, BROTHER EMBROIDERY chart). Tools remember the last colour/type, so each file was checked and set back to B before its one change.
+
 | File | SHA-256 | Made as |
 |---|---|---|
 | `r01-rect.pes` | `97acefa9c7e11b1966093e067444dcb0b1934a0fd9e5808007c3730c7b466c38` | B. 12,00 x 12,00 mm, 471 st. |
@@ -29,3 +31,9 @@ policy: docs/LEGAL_AND_LICENSING.md. Each rN file is the baseline B with one pro
 | `r14-text-ab.pes` | `a1e941016670496f251799e46bdee13243cf305698a66f0f7545a3dba4f990a9` | "AB" (size set back to 10.0 on the tool), click (10,20). 18,80 x 10,30 mm, 363 st. |
 | `r15-rect-text.pes` | `e06980cb3a1fec55ece376f50897a430d68a6dd04f9cfc1b52d50857846a0b63` | B, then Text tool "A" size 10 with the click at (40,50) (top-left about (40,40)). Whole design 41,00 x 41,00 mm, 626 st; Sewing Order: 1 fill silver; 2 red = zigzag + A (same colour, one block). |
 | `r16-two-rects.pes` | `c79ddb9b51d78a7337fce6b4fe70a3c2e22ef14b15945e74490bced9633b7827` | B, then a second Rectangle (40,10)-(50,20), same attributes. 42,00 x 12,00 mm, 944 st; Sewing Order 1 silver, 2 red, 3 silver, 4 red. |
+| `r17-line-silver.pes` | `d5d9ce74499647568d12ef8d45e2d7fa144305338bb80227f1aa800b394bf361` | B, Color pane > Line > 005 EMBROIDERY SILVER (same as the region). PE then shows ONE colour block (Sewing Order 1 item with both). 12,00 x 12,00 mm, 467 st. |
+| `r18-colours-swapped.pes` | `9f656206e6884199bbdbd01e2eda39135435a9f1dfc48a985cba8710091fa007` | B, region 800 EMBROIDERY RED and line 005 EMBROIDERY SILVER. 12,00 x 12,00 mm, 471 st (blocks: 1 red fill, 2 silver zigzag). |
+| `r19-line-running.pes` | `13c8942d2ef77b97399d87d52d97ee118b5ccfcbc9b1573e13a2930407114c33` | B, Shapes tab > Sew > line type Running Stitch (defaults Run pitch 2.0 mm, Run time(s) 1). 10,00 x 10,00 mm, 256 st. |
+| `r20-line-running-pitch.pes` | `87ee85d649052fc934e9e019e5e1b64eb8df5720f155c3f6a11f7f4f5b78e1b6` | r19 (same design), Run pitch 3.0 mm. 10,00 x 10,00 mm, 251 st. |
+| `r21-zigzag-width.pes` | `4217cc26142986c7a81a40b69befdc0995ca8a6d538a14f0cbec2c73f85242ce` | B, line Zigzag width 3.0 mm (default 2.0). 13,00 x 13,00 mm, 484 st. |
+| `r22-line-noUnder.pes` | `84a72272dd2b3d7fefa688f7e453822c121e478721460d0ce2c36e3570259b0e` | B, Sewing Attributes > Line sew > Under sewing unticked. 12,00 x 12,00 mm, 426 st. |

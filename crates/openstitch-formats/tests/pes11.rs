@@ -154,3 +154,74 @@ fn unmapped_layouts_stop_reading_instead_of_misreading() {
         assert!(pes::read(&bytes).is_ok(), "{name}");
     }
 }
+
+#[test]
+fn thread_table_and_colour_indexes() {
+    // r01: region 005 SILVER, line 800 RED. The table is in sewing order (region first).
+    let section = pes::read_objects(&data("pe11/r01-rect.pes")).expect("objects");
+    let table: Vec<(String, Option<&str>)> = section
+        .threads
+        .iter()
+        .map(|t| (t.hex(), t.catalog_number.as_deref()))
+        .collect();
+    assert_eq!(
+        table,
+        [
+            ("#a8a8a8".into(), Some("005")),
+            ("#ed171f".into(), Some("800"))
+        ]
+    );
+    assert_eq!(section.threads[0].brand.as_deref(), Some("EMBROIDERY"));
+    let s = &section.shapes[0];
+    assert_eq!((s.region_color, s.line_color), (0, 1));
+    // r17: the line takes the region's silver.
+    assert_eq!(one("r17-line-silver").line_color, 0);
+    // r18: colours swapped; the table swaps with them, so the indexes stay.
+    let swapped = pes::read_objects(&data("pe11/r18-colours-swapped.pes")).expect("objects");
+    assert_eq!(swapped.threads[0].hex(), "#ed171f");
+    let s = &swapped.shapes[0];
+    assert_eq!((s.region_color, s.line_color), (0, 1));
+    // Three shapes in three colours (compat reference shape-start-points).
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../compat/reference/stitches/shape-start-points.pes"
+    );
+    let section = pes::read_objects(&std::fs::read(path).expect("reference")).expect("objects");
+    let colours: Vec<String> = section
+        .shapes
+        .iter()
+        .map(|s| section.threads[usize::from(s.region_color)].hex())
+        .collect();
+    let catalog: Vec<&str> = section
+        .shapes
+        .iter()
+        .filter_map(|s| {
+            section.threads[usize::from(s.region_color)]
+                .catalog_number
+                .as_deref()
+        })
+        .collect();
+    assert_eq!(catalog, ["800", "007", "027"], "{colours:?}");
+}
+
+#[test]
+fn line_attributes() {
+    let b = one("r01-rect");
+    assert_eq!(
+        (
+            b.zigzag_width,
+            b.zigzag_density,
+            b.run_pitch,
+            b.line_under_sewing
+        ),
+        (2.0, 4.5, 2.0, true)
+    );
+    let running = one("r19-line-running");
+    assert_eq!((running.line_type, running.run_pitch), (1, 2.0));
+    assert_eq!(one("r20-line-running-pitch").run_pitch, 3.0);
+    let wide = one("r21-zigzag-width");
+    assert_eq!(wide.zigzag_width, 3.0);
+    // The outline's bounds don't change with the zigzag width (only the sewn extent does).
+    assert_eq!(wide.bounds, [600, 600, 700, 700]);
+    assert!(!one("r22-line-noUnder").line_under_sewing);
+}

@@ -146,11 +146,20 @@ below is pinned by a test in `tests/pes11.rs`.
   PE-DESIGN regenerates stitches from them.
 - **Object list:** a u16 object count, then MFC `CArchive` objects. The first object of a class
   starts with `FFFF`, a u16 schema (0) and the u16-length ASCII class name. A later object of an
-  already named class starts with `0x8000 | n`, where n counts classes in order of first
-  appearance, from 1. The reader finds the list by the first `FFFF 0000` + class name after the
+  already named class starts with `0x8000 | n`, where n is the class's entry in the archive
+  map. MFC numbers classes and objects in one sequence from 1: in r14 (`AB`), `CEmbNText` is
+  1, the text object 2, `CTTFLetter` 3 and the letter `A` 4, so `B` starts `03 80`; in r16 the
+  second rectangle starts `01 80`. The reader finds the list by the first `FFFF 0000` + class name after the
   header strings; the hoop, page and thread-table fields in between are not all mapped.
-- **Strings** in the thread table are MFC Unicode strings (`FF FE FF`, u8 length in UTF-16
-  units, UTF-16LE).
+- **Thread table** (right before the object list): u16 count, then per thread the catalogue
+  number, RGB and a pad byte, a u32 colour type (10), the PEC chart index as a string ("16" for
+  005 SILVER, "5" for 800 RED, matching the PEC colour blocks), the brand ("EMBROIDERY") and the
+  chart name. Strings are MFC Unicode strings (`FF FE FF`, u8 length in UTF-16 units,
+  UTF-16LE). The entries are in sewing order, and the table can list colours no block sews (an
+  unused attribute's default, below), so `pes::read` keeps PEC chart colours for 0110 files and
+  the table stays in `ObjectSection::threads`. The fields between the header strings and the
+  table include a machine-model string (`nv880e-M`) and are not all mapped, so the reader
+  locates the table as the one that parses to exactly where the object list starts.
 - **Coordinates** are 0.1 mm with the page's top-left corner at (500, 500), y down, in every
   file so far (all on a 100 × 100 mm page).
 - Classes seen: `CEmbLine` (Shape tools: rectangle, ellipse, open and closed lines), `CEmbNText`
@@ -165,11 +174,18 @@ below is pinned by a test in `tests/pes11.rs`.
 | 16 | transform, 6 × f32 (identity so far) | all |
 | 40 | 0 closed, 1 open | r11 line |
 | 42 | line sewn 1, not sewn 0 | r07 |
-| 44 | line sew type: 0 Zigzag, 1 Running, 3 E or V stitch, 4 Triple, 9 while not sewn | r07, the `line-*-default` references |
+| 44 | line sew type: 0 Zigzag, 1 Running, 3 E or V stitch, 4 Triple, 9 while not sewn | r07, r19, the `line-*-default` references |
+| 46 | line colour, a thread-table index | r17 (red 1 → silver 0) |
+| 48 | zigzag width, 0.1 mm | r21 (2.0 → 3.0 mm) |
+| 50 | zigzag density, 0.1 line/mm | r01 (4.5) |
+| 52 | running stitch pitch, 0.1 mm; kept while another line type is chosen | r20 (2.0 → 3.0 mm) |
+| 60 | line under sewing 1 on, 0 off | r22 |
 | 134 | region sew type: 0 Satin, 1 Fill, 2 Programmable fill (11 on the inner copy of a hole-sewing pair) | r04, programmable-fill-45, hole-sewing-pentagon-star |
 | 136 | region density, 0.1 line/mm | r09 (4.5 → 6.0) |
 | 138 | gradation 0 off, 1 on | region-travel-u-gradation |
+| 162 | a thread-table index for an attribute not identified yet: it points at 800 RED (PE's default colour) in every file, even when nothing sews red | r17, r18, round-1 references |
 | 168 | region direction, degrees | r08 (45 → 90) |
+| 170 | region colour, a thread-table index | shape-start-points (three shapes: 0, 2, 3 = 800, 007, 027), hole-sewing-pentagon-star |
 | 174 | Fill Frequency, % (default 30) | fill-frequency-0/25/50 |
 | 180 | region under sewing 1 on, 0 off | r06 |
 | 186 | Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline | region-travel-u-* |
@@ -180,8 +196,7 @@ Each vertex is 28 bytes: x, y and two cubic Bézier handles (6 × f32), then a u
 an ellipse is four smooth vertices whose handles lie 0.5523 × the radius along the tangent. The
 record ends after its last vertex. After the list come 52 or more bytes not mapped yet.
 
-Not mapped yet: the region colour's link to the thread table, the line's own width, density and
-colour, the fields that differ between E and V, the three handle marks, `CEmbNText`/`CTTFLetter`
+Not mapped yet: the fields that differ between E and V, the line's run times, the three handle marks, `CEmbNText`/`CTTFLetter`
 (text, font name, scale), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the
 reader refuses), and the trailer.
 
