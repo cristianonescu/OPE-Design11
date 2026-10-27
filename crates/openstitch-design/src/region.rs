@@ -275,7 +275,8 @@ fn layers_inner(
             UnderlayStyle::EdgeFill => out.extend(fill_underlay(closed, r, angle, holes)),
         }
     }
-    let shaped = r.gradation.is_some() || r.feather.is_some() || r.split_length.is_some();
+    let shaped =
+        r.sewn_gradation().is_some() || r.sewn_feather().is_some() || r.split_length.is_some();
     if !row_based {
         out.extend(regions::generate(closed, r, angle, holes, user));
         return out;
@@ -732,7 +733,8 @@ const AUTO_COVERAGE: f64 = 0.85;
 /// Auto-direction satin along a skeleton derived from the single closed contour `closed`;
 /// `None` where it does not apply (see [`layers_with`]).
 fn auto_satin(closed: &[Contour], r: &RegionSewing, holes: &[Contour]) -> Option<Run> {
-    let shaped = r.gradation.is_some() || r.feather.is_some() || r.split_length.is_some();
+    let shaped =
+        r.sewn_gradation().is_some() || r.sewn_feather().is_some() || r.split_length.is_some();
     if closed.len() != 1 || !holes.is_empty() || shaped {
         return None;
     }
@@ -805,7 +807,7 @@ fn shaped_rows(
     p: &RegionParams,
     holes: &[Contour],
 ) -> Vec<Run> {
-    let ys = row_positions(closed, p.angle, p.row_spacing, r.gradation.as_ref());
+    let ys = row_positions(closed, p.angle, p.row_spacing, r.sewn_gradation());
     let mut spans = Vec::new();
     for (row, &y) in ys.iter().enumerate() {
         for s in spans_at(closed, holes, p.angle, y) {
@@ -823,7 +825,7 @@ fn shaped_rows(
     let l = p.stitch_length;
     let split = r.split_length.map(|s| s * 10.0);
     let satin = r.kind == RegionType::Satin;
-    let feather = r.feather;
+    let feather = r.sewn_feather();
     let shift = r.fill_shift();
     // Rows are ordered on their full spans; feathering then shortens the ends, so the
     // sewing order does not depend on the random ends.
