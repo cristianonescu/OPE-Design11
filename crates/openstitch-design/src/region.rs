@@ -910,9 +910,9 @@ pub fn rotated_bounds(contours: &[Contour], angle: f64) -> Option<Rect> {
 /// Row positions (rotated space): `spacing` apart, or with gradation `spacing` divided by the
 /// gradation's density fraction where the row is (see [`Gradation::fraction`]).
 ///
-/// A stepped (PE-DESIGN) gradation places its first row on the start edge and its last on the
-/// far edge, and splits what is left before the far edge evenly, as PE-DESIGN 11.50 does
-/// (region-travel-u-gradation reference). A continuous one keeps the placement designs saved
+/// A pattern (PE-DESIGN) gradation places its first row on the start edge and its last on the
+/// far edge, takes each gap's density halfway across the gap, and splits what is left before
+/// the far edge evenly, as PE-DESIGN 11.50 does (region-travel-u-gradation reference). A continuous one keeps the placement designs saved
 /// before patterns had: rows from half a spacing in.
 pub fn row_positions(
     contours: &[Contour],
@@ -932,11 +932,20 @@ pub fn row_positions(
     if gradation.is_some_and(|g| g.steps.is_some()) {
         // Rows on an edge are sampled just inside it.
         let inside = 1e-3_f64.min(h / 4.0);
+        // Each gap takes the density halfway across it, as PE-DESIGN's rows do (within 0.07 mm
+        // on its default pattern, against 0.31 mm for the density at the row).
+        let mid_gap = |y: f64| {
+            let mut g = gap(y);
+            for _ in 0..12 {
+                g = gap(y + g / 2.0);
+            }
+            g
+        };
         let mut y = b.min_y;
-        let mut last_gap = gap(y);
+        let mut last_gap = mid_gap(y);
         while ys.len() < 100_000 {
             ys.push(y.clamp(b.min_y + inside, b.max_y - inside));
-            let g = gap(y);
+            let g = mid_gap(y);
             if y + g >= b.max_y - 1e-9 {
                 // The rest up to the far edge, in equal steps no longer than the last gap.
                 let rest = b.max_y - y;

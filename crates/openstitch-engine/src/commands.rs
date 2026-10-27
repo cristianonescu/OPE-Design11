@@ -1106,7 +1106,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 opt(
                     "gradationSteps",
                     "int",
-                    "Gradation pattern: number of equal bands (2-20)",
+                    "Gradation pattern: number of step values (2-20)",
                 ),
                 opt(
                     "featherSide",
