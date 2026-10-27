@@ -172,22 +172,32 @@ const MIN_EDGE_ROW_SPAN: f64 = 3.0;
 
 /// [`fill_shifted`] with PE-DESIGN's row placement: the first row lies on one edge of the
 /// region and the last on the other (a 40 mm square at 4.5 rows/mm has 181 rows), instead of
-/// starting half a row spacing in. Rows on an edge are sampled just inside it.
+/// starting half a row spacing in. Rows on an edge are sampled just inside it. With an
+/// `entry` point (design space) the rows chain from the row end nearest it, so the fill starts
+/// at the entry instead of travelling along the outline to the first row.
 pub fn fill_edge_to_edge(
     contours: &[Contour],
     p: &RegionParams,
     holes: &[Contour],
     shift: Option<f64>,
+    entry: Option<Vec2>,
 ) -> Vec<Run> {
     let l = p.stitch_length;
     let spans = edge_row_spans(contours, p, holes);
-    chain_spans(&spans, p, |span, row, forward| {
-        let mut xs = tatami_xs(span, row_phase(row, shift) * l, l);
-        if !forward {
-            xs.reverse();
-        }
-        xs
-    })
+    let start = entry.map(|e| e.rotated(-p.angle.to_radians()));
+    chain(
+        &spans,
+        p,
+        |span, row, forward| {
+            let mut xs = tatami_xs(span, row_phase(row, shift) * l, l);
+            if !forward {
+                xs.reverse();
+            }
+            xs
+        },
+        false,
+        start,
+    )
 }
 
 /// Rows from the rotated bounds' minimum to their maximum, `row_spacing` apart, both ends
@@ -294,7 +304,7 @@ pub fn chain_spans(
     p: &RegionParams,
     points: impl Fn(&Span, usize, bool) -> Vec<f64>,
 ) -> Vec<Run> {
-    chain(spans, p, points, false)
+    chain(spans, p, points, false, None)
 }
 
 /// [`chain_spans`] for satin: when a row follows the previous one along the same edge (the
@@ -307,7 +317,7 @@ pub fn chain_satin_spans(
     p: &RegionParams,
     points: impl Fn(&Span, usize, bool) -> Vec<f64>,
 ) -> Vec<Run> {
-    chain(spans, p, points, true)
+    chain(spans, p, points, true, None)
 }
 
 fn chain(
@@ -315,6 +325,7 @@ fn chain(
     p: &RegionParams,
     points: impl Fn(&Span, usize, bool) -> Vec<f64>,
     satin: bool,
+    start: Option<Vec2>,
 ) -> Vec<Run> {
     let Some(first) = spans.first() else {
         return Vec::new();
@@ -322,7 +333,7 @@ fn chain(
     let mut used = vec![false; spans.len()];
     let mut runs: Vec<Run> = Vec::new();
     let mut current: Run = Vec::new();
-    let mut position = v2(*first.range.start(), first.y);
+    let mut position = start.unwrap_or(v2(*first.range.start(), first.y));
     let join_limit = p.row_spacing * 3.0 + p.stitch_length;
     let mut last_row: Option<(usize, f64)> = None;
     for _ in 0..spans.len() {

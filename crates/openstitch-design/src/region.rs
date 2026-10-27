@@ -280,7 +280,7 @@ fn layers_inner(
     }
     let mut runs = match r.kind {
         RegionType::Fill if !shaped => {
-            generate::fill_edge_to_edge(closed, &params, holes, r.fill_shift())
+            generate::fill_edge_to_edge(closed, &params, holes, r.fill_shift(), r.entry)
         }
         RegionType::Satin if !shaped => generate::satin(closed, &params, holes),
         _ => shaped_rows(closed, r, &params, holes),
