@@ -114,6 +114,8 @@ pub struct UiPrefs {
     pub recent: Vec<PathBuf>,
     pub realistic: RealisticSettings,
     pub font_filter: FontFilter,
+    /// Startup splash on an interactive start.
+    pub splash: bool,
 }
 
 impl Default for UiPrefs {
@@ -126,6 +128,7 @@ impl Default for UiPrefs {
             recent: Vec::new(),
             realistic: RealisticSettings::default(),
             font_filter: FontFilter::default(),
+            splash: true,
         }
     }
 }
@@ -160,6 +163,7 @@ impl UiPrefs {
                 "brightness": self.realistic.brightness,
             },
             "fontFilter": { "on": self.font_filter.on, "hidden": self.font_filter.hidden },
+            "showSplash": self.splash,
         })
     }
 
@@ -225,6 +229,7 @@ impl UiPrefs {
                     })
                     .unwrap_or_default(),
             },
+            splash: v["showSplash"].as_bool().unwrap_or(d.splash),
         }
     }
 
@@ -285,6 +290,7 @@ mod tests {
         p.realistic.thread_width_mm = 0.6;
         p.font_filter.on = true;
         p.font_filter.set_shown("lato-bold", false);
+        p.splash = false;
         for i in 0..12 {
             p.add_recent(Path::new(&format!("/d/{i}.osd")));
         }

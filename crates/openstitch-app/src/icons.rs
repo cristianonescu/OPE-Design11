@@ -1053,8 +1053,97 @@ fn paint_shapes(painter: &egui::Painter, r: Rect, a: Action, fg: Color32, enable
     }
 }
 
-/// The OpenStitch mark for the Application button: a needle and a running stitch.
+/// The OpenStitch logo (generated with Higgsfield, cleaned by tools/clean_logo.py): the mark
+/// alone, and the wordmark for light and dark backgrounds.
+pub const MARK: &str = include_str!("../../../assets/brand/openstitch-mark.svg");
+pub const WORDMARK: &str = include_str!("../../../assets/brand/openstitch-wordmark.svg");
+pub const WORDMARK_DARK: &str = include_str!("../../../assets/brand/openstitch-wordmark-dark.svg");
+
+/// Logo SVG `src` rasterised `w` pixels wide (height from its aspect), cached per `name`.
+pub fn logo_texture(
+    ctx: &egui::Context,
+    name: &'static str,
+    src: &str,
+    w: u32,
+) -> Option<egui::TextureHandle> {
+    let key = (name, w, [0; 4]);
+    let id = egui::Id::unique("openstitch-icons");
+    if let Some(t) = ctx.data(|d| {
+        d.get_temp::<Textures>(id)
+            .and_then(|c| c.0.get(&key).cloned())
+    }) {
+        return t;
+    }
+    let t = rasterize_logo(src, w).map(|img| {
+        ctx.load_texture(
+            format!("logo-{name}-{w}"),
+            img,
+            egui::TextureOptions::LINEAR,
+        )
+    });
+    ctx.data_mut(|d| {
+        d.get_temp_mut_or_default::<Textures>(id)
+            .0
+            .insert(key, t.clone())
+    });
+    t
+}
+
+fn rasterize_logo(src: &str, w: u32) -> Option<egui::ColorImage> {
+    use resvg::{tiny_skia, usvg};
+    // Below 48 px the thread would be thinner than a pixel: outline the needle and thread in
+    // their own colour so the mark stays readable (tools/gen_icons.py does the same).
+    let src = if w < 48 {
+        let scale: f32 = src
+            .split("scale(")
+            .nth(1)
+            .and_then(|s| s.split(')').next())
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(1.0);
+        let width = 1.2 * 1024.0 / (w as f32 * scale);
+        let mut out = src.to_string();
+        for c in ["#e2445c", "#f6f1e7"] {
+            out = out.replace(
+                &format!("<path fill=\"{c}\""),
+                &format!("<path fill=\"{c}\" stroke=\"{c}\" stroke-width=\"{width:.0}\" stroke-linejoin=\"round\""),
+            );
+        }
+        out
+    } else {
+        src.to_string()
+    };
+    let tree = usvg::Tree::from_str(&src, &usvg::Options::default()).ok()?;
+    let k = w as f32 / tree.size().width();
+    let h = (tree.size().height() * k).round() as u32;
+    let mut pixmap = tiny_skia::Pixmap::new(w, h)?;
+    resvg::render(
+        &tree,
+        tiny_skia::Transform::from_scale(k, k),
+        &mut pixmap.as_mut(),
+    );
+    Some(egui::ColorImage::from_rgba_premultiplied(
+        [w as usize, h as usize],
+        pixmap.data(),
+    ))
+}
+
+/// Draws logo SVG `src` (cached as `name`) into `r`, at the screen's pixel density.
+pub fn paint_svg_logo(painter: &egui::Painter, r: Rect, name: &'static str, src: &str) -> bool {
+    let px = (r.width() * painter.ctx().pixels_per_point()).round() as u32;
+    let Some(t) = logo_texture(painter.ctx(), name, src, px) else {
+        return false;
+    };
+    let uv = Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0));
+    painter.image(t.id(), r, uv, Color32::WHITE);
+    true
+}
+
+/// The OpenStitch mark for the Application button; a code-drawn needle and running stitch
+/// if the SVG cannot be rendered.
 pub fn paint_logo(painter: &egui::Painter, r: Rect, bg: Color32) {
+    if paint_svg_logo(painter, r, "mark", MARK) {
+        return;
+    }
     painter.rect_filled(r, CornerRadius::same(4), bg);
     let s = r.width();
     let p = |x: f32, y: f32| pos2(r.min.x + x * s, r.min.y + y * s);
@@ -1098,5 +1187,23 @@ mod tests {
             })
             .collect();
         assert_eq!(used, files);
+    }
+
+    #[test]
+    fn the_logo_renders_at_every_size() {
+        for (name, src) in [
+            ("mark", MARK),
+            ("wordmark", WORDMARK),
+            ("dark", WORDMARK_DARK),
+        ] {
+            for w in [16, 20, 64, 512] {
+                let img = rasterize_logo(src, w).unwrap_or_else(|| panic!("{name} {w}"));
+                let inked = img.pixels.iter().filter(|p| p.a() > 128).count();
+                assert!(
+                    inked * 20 >= img.pixels.len(),
+                    "{name} {w}: draws too little"
+                );
+            }
+        }
     }
 }

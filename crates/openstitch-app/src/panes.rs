@@ -636,7 +636,15 @@ pub fn about_window(app: &mut EditorApp, ctx: &egui::Context) {
         .open(&mut open)
         .resizable(false)
         .show(ctx, |ui| {
-            ui.heading("OpenStitch");
+            let (name, src) = if ui.visuals().dark_mode {
+                ("wordmark-dark", crate::icons::WORDMARK_DARK)
+            } else {
+                ("wordmark", crate::icons::WORDMARK)
+            };
+            let (r, _) = ui.allocate_exact_size(egui::vec2(260.0, 58.0), egui::Sense::hover());
+            if !crate::icons::paint_svg_logo(ui.painter(), r, name, src) {
+                ui.heading("OpenStitch");
+            }
             ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
             ui.label("An open-source embroidery design suite for macOS, Windows and Linux.");
             ui.label("Reads and writes PES, PEC, DST, EXP, JEF, VP3 and more.");

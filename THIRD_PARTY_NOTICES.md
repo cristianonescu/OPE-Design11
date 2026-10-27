@@ -57,6 +57,17 @@ owner's account and Higgsfield's terms for it. The SVGs were cleaned by `tools/c
 down. They contain no third-party artwork and are distributed under the repository's licence.
 See docs/LEGAL_AND_LICENSING.md.
 
+## OpenStitch logo — generated with Higgsfield
+
+The logo (the needle-and-thread mark and the "OpenStitch" lettering in `assets/brand`, and the
+app icons in `assets/icons/openstitch*` made from them) was generated for OpenStitch with
+Higgsfield (https://higgsfield.ai, Recraft V4.1 vector model) from the prompts in
+`assets/brand/README.md`, under the project owner's account and Higgsfield's terms for it,
+then cleaned by `tools/clean_logo.py` (generator metadata, background and tile removed, the mark
+put on a new tile) and rasterised by `tools/gen_icons.py`. It contains no third-party artwork,
+is the project's own and is distributed under the repository's licence. See
+docs/LEGAL_AND_LICENSING.md.
+
 ## arboard — https://github.com/1Password/arboard
 
 Linked into the editor for clipboard images (already a dependency of eframe). MIT OR

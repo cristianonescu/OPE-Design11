@@ -62,6 +62,32 @@ pub struct Launch {
     pub pane: Option<crate::ribbon::PaneTab>,
     /// Colour theme (`--theme`); otherwise the saved preference.
     pub theme: Option<openstitch_app::editor::prefs::Theme>,
+    /// `--no-splash`: no startup splash (also set by `main` for `--listen`).
+    pub no_splash: bool,
+}
+
+impl Launch {
+    /// Whether the startup splash may show: a plain interactive start, at most with a file to
+    /// open. Screenshots, scripts, the automation socket and every option that sets up a
+    /// particular view start straight away.
+    pub fn splash_allowed(&self) -> bool {
+        !self.no_splash
+            && self.screenshot.is_none()
+            && self.script.is_empty()
+            && self.listen.is_none()
+            && !self.demo
+            && self.select.is_empty()
+            && self.simulate.is_none()
+            && self.tool.is_none()
+            && self.zoom.is_none()
+            && self.show.is_empty()
+            && self.image.is_none()
+            && self.pattern.is_none()
+            && self.wizard.is_none()
+            && self.database.is_none()
+            && self.ribbon.is_none()
+            && self.pane.is_none()
+    }
 }
 
 /// Values `--show` accepts.
@@ -165,6 +191,8 @@ pub struct EditorApp {
     pub printed: Option<PathBuf>,
     /// Loopback automation socket; its requests run in [`EditorApp::serve_remote`].
     pub remote: Option<openstitch_remote::Server>,
+    /// Startup splash while it shows (see [`crate::splash`]).
+    pub splash: Option<crate::splash::Splash>,
     /// Ribbon, Quick Access Toolbar, panes and window preferences.
     pub ui: crate::ribbon::RibbonState,
 }
@@ -236,6 +264,7 @@ impl EditorApp {
             print_job: None,
             printed: None,
             remote: None,
+            splash: None,
             ui: Default::default(),
         };
         app.refresh();
@@ -245,6 +274,7 @@ impl EditorApp {
     }
 
     fn launch(&mut self, l: Launch) {
+        let splash = l.splash_allowed();
         if let Some(path) = &l.user_settings
             && let Err(e) = self.session.with_user_settings(path)
         {
@@ -260,6 +290,9 @@ impl EditorApp {
         }
         if let Some(t) = l.theme {
             self.ui.prefs.theme = t;
+        }
+        if splash && self.ui.prefs.splash {
+            self.splash = Some(crate::splash::Splash::default());
         }
         if l.demo {
             for r in demo_design() {
@@ -1115,6 +1148,11 @@ impl eframe::App for EditorApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
         self.ui.apply_theme(&ctx);
+        if let Some(s) = &mut self.splash
+            && !s.show(&ctx)
+        {
+            self.splash = None;
+        }
         self.serve_remote();
         self.poll_print(&ctx);
         if self.database.open || self.creator.open || self.sewing.open {
