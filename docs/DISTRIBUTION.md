@@ -93,11 +93,19 @@ Limits:
 
 ## Icons
 
-Original artwork (an embroidery hoop with a satin-stitched star and a threaded needle), drawn in
-code by `tools/gen_icons.py` (Pillow): `assets/icons/openstitch.svg` (same geometry, Linux
-scalable icon), PNGs 16–1024, `openstitch.ico`, `openstitch.icns` and `openstitch-64.rgba`, which
-the app embeds as its window icon. Re-run the script after changing the artwork; it uses no
-third-party images or fonts.
+The OpenStitch logo (a needle and its thread on a navy tile), generated with Higgsfield; see
+`assets/brand/README.md`. `assets/icons/openstitch.svg` is the vector master and the Linux
+scalable icon. `tools/gen_icons.py` (Pillow, plus resvg or Inkscape to rasterise) writes from it
+the PNGs 16–1024, `openstitch.ico`, `openstitch.icns` and `openstitch-64.rgba`, which the app
+embeds as its window icon; at 32 px and below the needle and thread are drawn bolder so they
+stay visible. Re-run the script after changing the SVG. On Windows (MSVC) the build also embeds
+`openstitch.ico` in `openstitch.exe` (`crates/openstitch-app/build.rs`), which the taskbar,
+Alt+Tab and Explorer show.
+
+The editor shows the logo as a splash for about a second on a plain start (no options, or only
+a file to open). Click or press a key to skip it. It never shows with `--screenshot`,
+`--script`, `--listen` or any option that sets up a view; `--no-splash` and Options ▸ "Show
+splash at startup" turn it off.
 
 ## Opening files
 
@@ -109,8 +117,9 @@ under Known limits.
 ## Known limits
 
 - **MSI validation.** `light` runs with `-sice:ICE50` because the Start-menu shortcut uses
-  `openstitch.ico` while `openstitch.exe` has no embedded icon resource. Embedding the icon in
-  the exe (a Windows resource at build time) removes the need for the suppression.
+  `openstitch.ico` rather than the icon inside `openstitch.exe`. The exe now embeds the same
+  icon (`crates/openstitch-app/build.rs` links it as a resource with the MSVC toolchain), so the
+  shortcut can point at the exe and the suppression can go.
 - **Not signed for distribution.** macOS builds are ad-hoc signed (Gatekeeper asks on first
   launch); Windows builds carry no Authenticode signature. Signing needs certificates from the
   owner (Apple Developer ID + notarisation; a code-signing certificate for Windows).

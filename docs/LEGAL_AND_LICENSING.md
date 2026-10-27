@@ -33,8 +33,14 @@ the project keeps:
   each describes a generic object (a folder, scissors, a needle) in OpenStitch's own palette,
   and none names or describes Brother, PE-DESIGN or their icons; no reference images were
   used. The vector shapes in `crates/openstitch-app/src/icons.rs` are the fallback when an SVG
-  cannot be rendered. The application icon (`assets/icons/openstitch*`) is drawn by
-  `tools/gen_icons.py` and the Application button mark in code.
+  cannot be rendered. The OpenStitch logo (the app icon `assets/icons/openstitch*`, the
+  Application button mark, the About window, the startup splash and the README header, all
+  from `assets/brand`) is the project's own: it was generated for OpenStitch with Higgsfield
+  (Recraft V4.1, vector output) under the project owner's account, from the two prompts in
+  `assets/brand/README.md` (a generic needle and thread, and the word "OpenStitch"), with no
+  reference images, and cleaned by `tools/clean_logo.py`; `tools/gen_icons.py` writes the
+  raster and package formats. Neither prompt names or describes Brother, PE-DESIGN or any
+  other vendor's branding, and the mark does not resemble them.
 - **Illustrations and textures:** the spot illustrations in `assets/illustrations` (empty
   states, thumbnail placeholders, wizard headers) and the Realistic view's cloth
   (`assets/textures/fabric_cotton.png`) were generated for OpenStitch with Higgsfield (Recraft

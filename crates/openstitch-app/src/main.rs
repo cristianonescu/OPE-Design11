@@ -13,8 +13,10 @@
 //!            [--database FOLDER|FILE [--db-view large|small|details] [--db-dialog search|convert|catalog|delete|newfolder]]
 //!            [--listen PORT [--listen-read-only] [--listen-no-files] [--listen-root DIR]... [--listen-read-root DIR]...]
 //!            [--ribbon home|image|view|text|outline|rectangle|punch|shapes|stitches|hoop]
-//!            [--pane import|color|attributes|text] [--theme light|dark|system]
+//!            [--pane import|color|attributes|text] [--theme light|dark|system] [--no-splash]
 //! ```
+//! A plain start (at most a FILE) shows the logo splash for about a second; any other option
+//! above, or `--no-splash`, starts without it (see `Launch::splash_allowed`).
 //! `--listen` opens the loopback automation socket on `127.0.0.1:PORT` (`0`: any free port) so
 //! `stitchtool connect` and `openstitch-mcp --live` can drive this session. It prints the
 //! address, the per-launch token and the endpoint file holding both. Clients get no file access
@@ -51,6 +53,7 @@ mod script;
 mod sections_ui;
 mod settings_ui;
 mod sewing_ui;
+mod splash;
 mod suite_chrome;
 mod theme;
 mod transfer_ui;
@@ -72,6 +75,7 @@ fn parse(args: impl Iterator<Item = String>) -> Result<(Launch, [f32; 2]), Strin
         let mut value = |name: &str| args.next().ok_or_else(|| format!("{name} needs a value"));
         match a.as_str() {
             "--demo" => l.demo = true,
+            "--no-splash" => l.no_splash = true,
             "--show" => {
                 for v in value("--show")?.split(',') {
                     let v = v.trim().to_string();
@@ -223,7 +227,7 @@ fn listen(
     Ok(server)
 }
 
-/// The app icon (assets/icons, drawn by tools/gen_icons.py) as 64×64 RGBA.
+/// The app icon (assets/icons, written by tools/gen_icons.py from the logo) as 64×64 RGBA.
 fn window_icon() -> egui::IconData {
     egui::IconData {
         rgba: include_bytes!("../../../assets/icons/openstitch-64.rgba").to_vec(),
@@ -240,12 +244,14 @@ fn main() -> eframe::Result {
                 eprintln!("openstitch: {e}");
             }
             eprintln!(
-                "usage: openstitch [FILE] [--demo] [--select ID,ID] [--simulate F] [--tool NAME] [--size WxH] [--zoom F] [--show VIEWS] [--script STEPS] [--screenshot OUT.png] [--image IMAGE [--convert METHOD]] [--pattern PATTERN.json] [--wizard NAME [--apply]] [--database PATH [--db-view VIEW] [--db-dialog NAME]] [--listen PORT [--listen-read-only] [--listen-no-files] [--listen-root DIR] [--listen-read-root DIR]] [--ribbon TAB] [--pane TAB] [--theme THEME]"
+                "usage: openstitch [FILE] [--demo] [--select ID,ID] [--simulate F] [--tool NAME] [--size WxH] [--zoom F] [--show VIEWS] [--script STEPS] [--screenshot OUT.png] [--image IMAGE [--convert METHOD]] [--pattern PATTERN.json] [--wizard NAME [--apply]] [--database PATH [--db-view VIEW] [--db-dialog NAME]] [--listen PORT [--listen-read-only] [--listen-no-files] [--listen-root DIR] [--listen-read-root DIR]] [--ribbon TAB] [--pane TAB] [--theme THEME] [--no-splash]"
             );
             std::process::exit(2);
         }
     };
     launch.user_settings = openstitch_engine::user::default_path();
+    // The automation socket is taken out of `launch` below; it never gets a splash either.
+    launch.no_splash |= launch.listen.is_some();
     let remote = match launch.listen.take().map(listen).transpose() {
         Ok(r) => r,
         Err(e) => {
@@ -365,6 +371,25 @@ mod tests {
             Some((4100, false))
         );
         assert!(parse(args("--listen")).is_err());
+        // The splash: a plain start or a file only; never automation or a set-up view.
+        assert!(parse(args("a.pes")).expect("ok").0.splash_allowed());
+        assert!(
+            !parse(args("a.pes --no-splash"))
+                .expect("ok")
+                .0
+                .splash_allowed()
+        );
+        for a in [
+            "--screenshot o.png",
+            "--script click:1,2",
+            "--listen 0",
+            "--demo",
+            "--show appmenu",
+            "--database /tmp",
+            "--ribbon view",
+        ] {
+            assert!(!parse(args(a)).expect("ok").0.splash_allowed(), "{a}");
+        }
         assert!(parse(args("--listen x")).is_err());
         assert!(parse(args("--listen-no-files")).is_err());
     }

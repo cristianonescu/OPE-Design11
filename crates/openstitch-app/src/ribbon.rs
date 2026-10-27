@@ -1004,6 +1004,9 @@ pub fn options_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
             "Quick Access Toolbar below the Ribbon",
         )
         .changed();
+    changed |= ui
+        .checkbox(&mut app.ui.prefs.splash, "Show splash at startup")
+        .changed();
     if changed {
         app.ui.save_prefs();
     }

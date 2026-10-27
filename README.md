@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/openstitch-wordmark-dark.svg">
+    <img src="assets/brand/openstitch-wordmark.svg" alt="OpenStitch" width="420">
+  </picture>
+</p>
+
 # OpenStitch
 
 An independent, cross-platform (macOS, Windows, Linux) embroidery design application written in
