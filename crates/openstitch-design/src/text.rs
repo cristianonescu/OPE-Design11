@@ -100,6 +100,9 @@ pub struct TextSpec {
     /// Shape object whose first contour the text follows (text on a path).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub path: Option<u64>,
+    /// How text on a path sits on it (Fit Text to Outline settings).
+    #[serde(default, skip_serializing_if = "PathFit::is_default")]
+    pub fit: PathFit,
     /// Placement after layout. Straight text is laid out with the first baseline on y = 0
     /// and the alignment point at x = 0; text on a path is laid out in page coordinates.
     #[serde(default = "identity")]
@@ -211,6 +214,67 @@ impl CharEdit {
     }
 }
 
+/// Fit Text to Outline settings: where text on a path sits across it, which way its letters
+/// stand, and which side of the path it runs on. Along the path it is placed by
+/// [`TextSpec::align`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PathFit {
+    /// Across the path: the baseline on it (`Bottom`), the capitals centred on it (`Middle`),
+    /// or their tops on it (`Top`).
+    #[serde(default = "bottom")]
+    pub valign: VAlign,
+    /// Letters stay upright instead of turning with the path.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub upright: bool,
+    /// Spread along the whole path instead of being placed by [`TextSpec::align`].
+    #[serde(default, skip_serializing_if = "Spread::is_none")]
+    pub spread: Spread,
+    /// The path is followed the other way, so the text runs on its other side.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub other_side: bool,
+}
+
+impl Default for PathFit {
+    fn default() -> Self {
+        PathFit {
+            valign: VAlign::Bottom,
+            upright: false,
+            spread: Spread::None,
+            other_side: false,
+        }
+    }
+}
+
+/// Fit Text to Outline's last two horizontal alignments: the text spread over the whole path.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Spread {
+    /// Placed by the text's alignment (left, center, right).
+    #[default]
+    None,
+    /// Characters spaced evenly, each in the middle of an equal share of the path.
+    Even,
+    /// Letters scaled up (or down) until the text fills the path.
+    Fill,
+}
+
+impl Spread {
+    pub fn is_none(&self) -> bool {
+        *self == Spread::None
+    }
+}
+
+impl PathFit {
+    pub fn is_default(&self) -> bool {
+        *self == PathFit::default()
+    }
+}
+
+fn bottom() -> VAlign {
+    VAlign::Bottom
+}
+
 /// Vertical placement in a Name Drop box.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -293,6 +357,7 @@ impl TextSpec {
             line_spacing: 0.0,
             align: TextAlign::Left,
             path: None,
+            fit: PathFit::default(),
             transform: Transform::IDENTITY,
             glyphs: Vec::new(),
             name_drop: None,
@@ -1106,7 +1171,7 @@ pub fn layout_in(
 
     let glyph_scale = font.units(scale);
     let mut placed = Vec::new();
-    match path.map(PathWalker::new) {
+    match path.map(|c| PathWalker::new(c, spec.fit.other_side)) {
         Some(walker) => {
             let line = shaped_lines.concat();
             let run = Run::along(&line, spec, scale, spacing, false, cap);
@@ -1115,11 +1180,38 @@ pub fn layout_in(
                 TextAlign::Center => (walker.length - run.length) / 2.0,
                 TextAlign::Right => walker.length - run.length,
             };
+            // Stretched: the letters grow until the text fills the whole path.
+            let grow = match spec.fit.spread {
+                Spread::Fill if run.length > 0.0 => walker.length / run.length,
+                _ => 1.0,
+            };
+            // Glyphs stand on y = 0 with capitals up (−y): move them down across the path, by
+            // the size (PE-DESIGN 11.50 hangs 8 mm Lato Bold 8.0 mm below an outline, not its
+            // 8.26 mm capital height; compat text-fit-valign-*).
+            let drop = match spec.fit.valign {
+                VAlign::Bottom => 0.0,
+                VAlign::Middle => spec.size * 10.0 / 2.0,
+                VAlign::Top => spec.size * 10.0,
+            };
+            // Spaced evenly: each character in the middle of its share of the path.
+            let mut clusters: Vec<usize> = line.iter().map(|g| g.cluster).collect();
+            clusters.dedup();
             for (g, p) in line.iter().zip(&run.glyphs) {
-                let (q, angle) = walker.at(shift + p.anchor.x);
+                let along = match spec.fit.spread {
+                    Spread::None => shift + p.anchor.x,
+                    Spread::Fill => p.anchor.x * grow,
+                    Spread::Even => {
+                        let k = clusters.iter().position(|&c| c == g.cluster).unwrap_or(0);
+                        walker.length * (k as f64 + 0.5) / clusters.len().max(1) as f64
+                    }
+                };
+                let (q, angle) = walker.at(along);
+                let turn = if spec.fit.upright { 0.0 } else { angle };
                 let at = glyph_scale
                     .then(&p.local)
-                    .then(&Transform::rotation(angle.to_degrees(), v2(0.0, 0.0)))
+                    .then(&Transform::translation(0.0, drop))
+                    .then(&Transform::scaling(grow, grow, v2(0.0, 0.0)))
+                    .then(&Transform::rotation(turn.to_degrees(), v2(0.0, 0.0)))
                     .then(&Transform::translation(q.x, q.y));
                 placed.push(Placed {
                     ch: char_of(g.cluster),
@@ -1213,9 +1305,13 @@ struct PathWalker {
 }
 
 impl PathWalker {
-    fn new(contour: &Contour) -> Self {
+    /// Walks `contour` from its start, or from its end backwards when `reverse`.
+    fn new(contour: &Contour, reverse: bool) -> Self {
         let mut points = contour.path();
         points.dedup();
+        if reverse {
+            points.reverse();
+        }
         let mut at = Vec::with_capacity(points.len());
         let mut walked = 0.0;
         for (i, p) in points.iter().enumerate() {
@@ -1470,6 +1566,90 @@ H",
             for (p, q) in a.points.iter().zip(&b.points) {
                 assert!(p.distance(*q) < 1e-6);
             }
+        }
+    }
+
+    #[test]
+    fn fit_options_place_text_across_and_on_the_other_side_of_the_path() {
+        let path = Contour::new(vec![v2(0.0, 300.0), v2(2000.0, 300.0)], false);
+        let on = |fit: PathFit| {
+            let mut spec = TextSpec::new("HH", DEFAULT_FONT, 10.0);
+            spec.fit = fit;
+            let l = layout(&spec, Some(&path)).expect("layout");
+            bounds(&l.contours())
+        };
+        // Above the line: the capitals (10.33 mm at size 10) stand on the path (y down).
+        let base = on(PathFit::default());
+        assert!(
+            (base.max_y - 300.0).abs() < 1.0 && (base.min_y - 196.7).abs() < 1.0,
+            "{base:?}"
+        );
+        // Centred and below move the text down by half the size and by the size, as PE-DESIGN.
+        let middle = on(PathFit {
+            valign: VAlign::Middle,
+            ..PathFit::default()
+        });
+        assert!((middle.max_y - 350.0).abs() < 1.0, "{middle:?}");
+        let top = on(PathFit {
+            valign: VAlign::Top,
+            ..PathFit::default()
+        });
+        assert!((top.max_y - 400.0).abs() < 1.0, "{top:?}");
+        // The other side: followed from its end, the text hangs below the path, upside down,
+        // starting at the far end.
+        let other = on(PathFit {
+            other_side: true,
+            ..PathFit::default()
+        });
+        assert!((other.min_y - 300.0).abs() < 1.0, "{other:?}");
+        assert!(other.min_x > 1700.0, "{other:?}");
+        assert!((other.width() - base.width()).abs() < 1.0);
+    }
+
+    #[test]
+    fn spaced_and_stretched_text_spread_over_the_whole_path() {
+        let path = Contour::new(vec![v2(0.0, 0.0), v2(1000.0, 0.0)], false);
+        let glyphs = |spread: Spread| {
+            let mut spec = TextSpec::new("HHHH", DEFAULT_FONT, 10.0);
+            spec.fit.spread = spread;
+            let l = layout(&spec, Some(&path)).expect("layout");
+            l.glyphs
+                .iter()
+                .map(|g| bounds(&g.contours))
+                .collect::<Vec<_>>()
+        };
+        // Spaced: each letter in the middle of a quarter of the 100 mm path.
+        for (k, b) in glyphs(Spread::Even).iter().enumerate() {
+            assert!(
+                (b.center().x - 125.0 - 250.0 * k as f64).abs() < 1.0,
+                "{k}: {b:?}"
+            );
+        }
+        // Stretched: the letters grow until the text is as long as the path.
+        let plain = glyphs(Spread::None);
+        let fill = glyphs(Spread::Fill);
+        let k = fill[0].height() / plain[0].height();
+        assert!(k > 2.0, "{k}");
+        // From end to end of the path, less the letters' side bearings.
+        assert!(fill[0].min_x > 0.0 && fill[0].min_x < 40.0, "{:?}", fill[0]);
+        assert!(
+            fill[3].max_x < 1000.0 && fill[3].max_x > 960.0,
+            "{:?}",
+            fill[3]
+        );
+    }
+
+    #[test]
+    fn upright_letters_do_not_turn_with_the_path() {
+        let circle = Contour::ellipse(v2(500.0, 500.0), 300.0, 300.0, 180);
+        let mut spec = TextSpec::new("HHHHHHHH", DEFAULT_FONT, 8.0);
+        spec.fit.upright = true;
+        let l = layout(&spec, Some(&circle)).expect("layout");
+        let straight = bounds(&lay("H", 8.0).contours());
+        for g in &l.glyphs {
+            let b = bounds(&g.contours);
+            assert!((b.width() - straight.width()).abs() < 0.5, "{b:?}");
+            assert!((b.height() - straight.height()).abs() < 0.5, "{b:?}");
         }
     }
 

@@ -7,6 +7,7 @@ use openstitch_app::editor::CommandRequest;
 use openstitch_app::editor::lettering::{
     self, FontChoice, FontsForm, MonogramForm, NameDropForm, TemplateWizard, TextForm,
 };
+use openstitch_design::{PathFit, Spread, TextAlign, VAlign};
 use serde_json::json;
 
 /// Dialog state of the Lettering menu.
@@ -17,6 +18,160 @@ pub struct LetteringState {
     pub monogram: MonogramForm,
     pub name_drop: NameDropForm,
     pub templates: TemplateWizard,
+    pub fit: FitForm,
+}
+
+/// Fit Text to Outline Attribute Setting: the text and outline it applies to, and its options.
+pub struct FitForm {
+    /// (text, outline) while the dialog is open.
+    pub open: Option<(u64, u64)>,
+    pub align: TextAlign,
+    /// Spaced evenly or stretched instead of `align`.
+    pub spread: Spread,
+    pub valign: VAlign,
+    pub upright: bool,
+    pub other_side: bool,
+}
+
+impl Default for FitForm {
+    /// The dialog's defaults: centred, above the line, along it, this side.
+    fn default() -> Self {
+        let fit = PathFit::default();
+        FitForm {
+            open: None,
+            align: TextAlign::Center,
+            spread: fit.spread,
+            valign: fit.valign,
+            upright: fit.upright,
+            other_side: fit.other_side,
+        }
+    }
+}
+
+/// Home ▸ Edit ▸ Fit Text ▸ Fit Text to Outline…: the dialog shows a fitted text's settings,
+/// else the last choices (as PE-DESIGN's dialog remembers them).
+pub fn open_fit(app: &mut EditorApp, text: u64, outline: u64) {
+    let d = app.session.design();
+    let Some(t) = d.index_of(text).and_then(|i| d.objects[i].text.as_ref()) else {
+        return;
+    };
+    let (path, align, fit) = (t.path, t.align, t.fit);
+    let f = &mut app.lettering.fit;
+    if path.is_some() {
+        (f.align, f.spread, f.valign) = (align, fit.spread, fit.valign);
+        (f.upright, f.other_side) = (fit.upright, fit.other_side);
+    }
+    f.open = Some((text, outline));
+}
+
+/// The request the dialog's OK sends.
+pub fn fit_request(f: &FitForm, text: u64, outline: u64) -> CommandRequest {
+    let align = match (f.spread, f.align) {
+        (Spread::Even, _) => "spaced",
+        (Spread::Fill, _) => "stretch",
+        (Spread::None, TextAlign::Left) => "left",
+        (Spread::None, TextAlign::Center) => "center",
+        (Spread::None, TextAlign::Right) => "right",
+    };
+    let valign = match f.valign {
+        VAlign::Bottom => "bottom",
+        VAlign::Middle => "middle",
+        VAlign::Top => "top",
+    };
+    CommandRequest::new(
+        "text.setPath",
+        json!({
+            "id": text, "path": outline, "align": align, "valign": valign,
+            "upright": f.upright, "otherSide": f.other_side,
+        }),
+    )
+}
+
+fn fit_window(app: &mut EditorApp, ctx: &egui::Context) {
+    let Some((text, outline)) = app.lettering.fit.open else {
+        return;
+    };
+    let mut open = true;
+    let (mut ok, mut cancel) = (false, false);
+    egui::Window::new("Fit Text to Outline Attribute Setting")
+        .open(&mut open)
+        .resizable(false)
+        .collapsible(false)
+        .show(ctx, |ui| {
+            let f = &mut app.lettering.fit;
+            egui::Grid::new("fit-text").num_columns(2).show(ui, |ui| {
+                ui.label("Horizontal Alignment");
+                ui.horizontal(|ui| {
+                    let mut h = (f.spread, f.align);
+                    for (v, label, tip) in [
+                        (
+                            (Spread::None, TextAlign::Left),
+                            "Left",
+                            "From the outline's start",
+                        ),
+                        (
+                            (Spread::None, TextAlign::Center),
+                            "Center",
+                            "Centred on the outline",
+                        ),
+                        (
+                            (Spread::None, TextAlign::Right),
+                            "Right",
+                            "Ending at the outline's end",
+                        ),
+                        (
+                            (Spread::Fill, f.align),
+                            "Stretch",
+                            "Letters scaled to fill the outline",
+                        ),
+                        (
+                            (Spread::Even, f.align),
+                            "Spaced",
+                            "Spaced evenly round the outline",
+                        ),
+                    ] {
+                        let on = h.0 == v.0 && (v.0 != Spread::None || h.1 == v.1);
+                        if ui.radio(on, label).on_hover_text(tip).clicked() {
+                            h = v;
+                        }
+                    }
+                    (f.spread, f.align) = h;
+                });
+                ui.end_row();
+                ui.label("Vertical Alignment");
+                ui.horizontal(|ui| {
+                    ui.radio_value(&mut f.valign, VAlign::Bottom, "Above")
+                        .on_hover_text("The text stands on the outline");
+                    ui.radio_value(&mut f.valign, VAlign::Middle, "Centered")
+                        .on_hover_text("The text is centred on the outline");
+                    ui.radio_value(&mut f.valign, VAlign::Top, "Below")
+                        .on_hover_text("The text hangs below the outline");
+                });
+                ui.end_row();
+                ui.label("Text Orientation");
+                ui.horizontal(|ui| {
+                    ui.radio_value(&mut f.upright, false, "Along the outline");
+                    ui.radio_value(&mut f.upright, true, "Upright");
+                });
+                ui.end_row();
+                ui.label("");
+                ui.checkbox(&mut f.other_side, "The other side")
+                    .on_hover_text("Run on the other side of the outline, reading the other way");
+                ui.end_row();
+            });
+            ui.separator();
+            ui.horizontal(|ui| {
+                ok = ui.button("OK").clicked();
+                cancel = ui.button("Cancel").clicked();
+            });
+        });
+    if ok {
+        let r = fit_request(&app.lettering.fit, text, outline);
+        app.execute(&r);
+    }
+    if ok || cancel || !open {
+        app.lettering.fit.open = None;
+    }
 }
 
 /// The fonts `fonts.list` reports for the open design.
@@ -91,6 +246,7 @@ pub fn windows(app: &mut EditorApp, ctx: &egui::Context) {
     name_drop_window(app, ctx);
     template_window(app, ctx);
     fonts_window(app, ctx);
+    fit_window(app, ctx);
 }
 
 /// What the Fonts window asked for this frame.

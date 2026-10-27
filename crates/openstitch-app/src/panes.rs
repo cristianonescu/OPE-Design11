@@ -390,7 +390,7 @@ fn text_tab(app: &mut EditorApp, ui: &mut egui::Ui) {
         }
     });
     ui.horizontal_wrapped(|ui| {
-        pane_command(app, ui, Action::FitTextToOutline);
+        pane_menu(app, ui, Action::FitTextToOutline);
         pane_command(app, ui, Action::ConvertToOutline);
         pane_command(app, ui, Action::ConvertToStitches);
     });

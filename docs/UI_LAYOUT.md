@@ -130,7 +130,7 @@ Behaviour follows the guide's pages
 | Edit | Size |  | `Action::Size` | `object.scale` | yes |
 | Edit | Group | `Ctrl+G` | `Action::Group` | `object.group` | yes |
 | Edit | Ungroup | `Ctrl+Shift+G` | `Action::Ungroup` | `object.ungroup` | yes |
-| Edit | Fit Text to outline |  | `Action::FitTextToOutline` | `text.setPath` | yes |
+| Edit | Fit Text ▾ (Fit Text to Outline…, Release Text from Outline) |  | `Action::FitTextToOutline` | `text.setPath` | yes |
 | Edit | Stamp/Emboss |  | `Action::StampEmboss` | `shape.emboss` | yes |
 | Edit | Modify Overlap |  | `Action::ModifyOverlap` | `shape.combine` | yes |
 | Edit | Decorative Frame |  | `Action::DecorativeFrame` | `shape.decorative` | yes |
@@ -197,7 +197,7 @@ Behaviour follows the guide's pages
 | Color / Sew Type | Region color |  | `Action::RegionColor` | `object.setRegion` | yes |
 | Color / Sew Type | Region sew type |  | `Action::RegionSewType` | `object.setRegion` | yes |
 | Edit | Edit Text |  | `Action::EditText` | `object.setText` | yes |
-| Edit | Fit Text to outline |  | `Action::FitTextToOutline` | `text.setPath` | yes |
+| Edit | Fit Text ▾ (Fit Text to Outline…, Release Text from Outline) |  | `Action::FitTextToOutline` | `text.setPath` | yes |
 | Edit | Edit Character |  | `Action::EditCharacter` | `text.setCharacter` | yes |
 | Edit | Convert to Blocks |  | `Action::ConvertToBlocks` | `object.toShapes` | yes |
 | Edit | Convert to Stitches |  | `Action::ConvertToStitches` | `object.toStitches` | yes |
