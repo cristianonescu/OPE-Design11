@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 89 · pass 89 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 99 · pass 99 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -28,7 +28,7 @@ Specs: 89 · pass 89 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Lettering | Fit text to outline (text on a path)… | reference | `text-fit-default`, `text-fit-halign-left`, `text-fit-halign-right`, `text-fit-halign-spaced`, `text-fit-orient-upright`, `text-fit-otherside`, `text-fit-valign-below`, `text-fit-valign-center` |
 | Lettering | Text Transform… | reference | `text-transform-1`, `text-transform-10`, `text-transform-11`, `text-transform-12`, `text-transform-15`, `text-transform-16`, `text-transform-17`, `text-transform-18`, `text-transform-19`, `text-transform-2`, `text-transform-20`, `text-transform-21`, `text-transform-22`, `text-transform-23`, `text-transform-24`, `text-transform-25`, `text-transform-26`, `text-transform-3`, `text-transform-4`, `text-transform-5`, `text-transform-6`, `text-transform-7`, `text-transform-8`, `text-transform-9` |
 | Lettering | Text entry and attributes… | reference | `text-defaults-fill`, `text-defaults-h`, `text-line-spacing-100`, `text-line-spacing-150`, `text-line-spacing-50`, `text-sewing-order`, `text-size-h`, `text-size-hg` |
-| Line sew types | Motif (OpenStitch's own motif library… | reference | `line-candlewick-default`, `line-chain-default`, `line-e-default`, `line-stem-default`, `line-v-default` |
+| Line sew types | Motif (OpenStitch's own motif library… | reference | `line-candlewick-default`, `line-candlewick-startend-feed`, `line-candlewick-startend-run`, `line-chain-default`, `line-chain-startend-feed`, `line-chain-startend-l2side-feed`, `line-chain-startend-l2side-run`, `line-chain-startend-mid-feed`, `line-chain-startend-mid-run`, `line-chain-startend-run`, `line-e-default`, `line-stem-default`, `line-stem-startend-feed`, `line-stem-startend-run`, `line-v-default` |
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
 | Line sew types | Running (pitch, run times 1… | reference | `line-running-default`, `line-triple-default` |
 | Line sew types | Zigzag: width, density… | reference | `line-zigzag-default`, `line-zigzag-density-max` |
@@ -70,10 +70,20 @@ Specs: 89 · pass 89 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/hole-sewing-limits` | pass | internal-regression | pass | — | — | — |
 | `stitches/hole-sewing-pentagon-star` | pass | reference | pass | — | pass | — |
 | `stitches/line-candlewick-default` | pass | reference | — | — | pass | — |
+| `stitches/line-candlewick-startend-feed` | pass | reference | — | — | pass | — |
+| `stitches/line-candlewick-startend-run` | pass | reference | — | — | pass | — |
 | `stitches/line-chain-default` | pass | reference | — | — | pass | — |
+| `stitches/line-chain-startend-feed` | pass | reference | — | — | pass | — |
+| `stitches/line-chain-startend-l2side-feed` | pass | reference | — | — | pass | — |
+| `stitches/line-chain-startend-l2side-run` | pass | reference | — | — | pass | — |
+| `stitches/line-chain-startend-mid-feed` | pass | reference | — | — | pass | — |
+| `stitches/line-chain-startend-mid-run` | pass | reference | — | — | pass | — |
+| `stitches/line-chain-startend-run` | pass | reference | — | — | pass | — |
 | `stitches/line-e-default` | pass | reference | — | — | pass | — |
 | `stitches/line-running-default` | pass | reference | pass | — | pass | — |
 | `stitches/line-stem-default` | pass | reference | — | — | pass | — |
+| `stitches/line-stem-startend-feed` | pass | reference | — | — | pass | — |
+| `stitches/line-stem-startend-run` | pass | reference | — | — | pass | — |
 | `stitches/line-triple-default` | pass | reference | — | — | pass | — |
 | `stitches/line-v-default` | pass | reference | — | — | pass | — |
 | `stitches/line-zigzag-default` | pass | reference | pass | — | pass | — |
