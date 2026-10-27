@@ -36,6 +36,9 @@ impl Default for Compiler {
 struct Element {
     thread: Thread,
     runs: Vec<Run>,
+    /// Stitches longer than `max_stitch` stay whole: satin, whose crossings PE-DESIGN 11
+    /// writes as one stitch however wide the column (30 mm in region-travel-u-satin).
+    whole: bool,
 }
 
 struct Writer {
@@ -54,8 +57,13 @@ impl Writer {
     }
 
     fn stitch_line(&mut self, p: Vec2) {
+        self.stitch_split(p, self.cfg.max_stitch);
+    }
+
+    /// A stitch to `p`, split into equal stitches no longer than `max`.
+    fn stitch_split(&mut self, p: Vec2, max: f64) {
         let from = self.position.unwrap_or(p);
-        let n = ((from.distance(p) / self.cfg.max_stitch).ceil() as usize).max(1);
+        let n = ((from.distance(p) / max).ceil() as usize).max(1);
         for k in 1..=n {
             self.push(from.lerp(p, k as f64 / n as f64), Command::Stitch);
         }
@@ -94,6 +102,11 @@ impl Writer {
     }
 
     fn sew(&mut self, element: Element) {
+        let max = if element.whole {
+            f64::INFINITY
+        } else {
+            self.cfg.max_stitch
+        };
         let runs: Vec<Run> = element.runs.into_iter().filter(|r| !r.is_empty()).collect();
         if runs.is_empty() {
             return;
@@ -129,7 +142,7 @@ impl Writer {
                 self.cut = false;
             }
             for &p in &run[1..] {
-                self.stitch_line(p);
+                self.stitch_split(p, max);
             }
         }
     }
@@ -266,6 +279,7 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
                 w.sew(Element {
                     thread: thread_for(block_index),
                     runs: std::mem::replace(&mut pending, vec![Vec::new()]),
+                    whole: false,
                 });
                 block_index += 1;
             }
@@ -275,6 +289,7 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
     w.sew(Element {
         thread: thread_for(block_index),
         runs: pending,
+        whole: false,
     });
 }
 
@@ -315,6 +330,7 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
                 out.push(Element {
                     thread: region.thread.clone(),
                     runs,
+                    whole: region.kind == RegionType::Satin,
                 });
             }
         }
@@ -349,6 +365,7 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
             .map(|(n, runs)| Element {
                 thread: cutwork_needle(&line.thread, n),
                 runs,
+                whole: false,
             })
             .collect();
     }
@@ -426,6 +443,7 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
     vec![Element {
         thread: line.thread.clone(),
         runs,
+        whole: false,
     }]
 }
 

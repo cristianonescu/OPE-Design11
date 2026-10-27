@@ -483,9 +483,15 @@ fn satin_underlay_rows(closed: &[Contour], p: &RegionParams, holes: &[Contour]) 
         .into_iter()
         .enumerate()
         .map(|(i, y)| {
-            // Spans that touch (a row along an edge between two parts) are one span.
+            // Spans that touch (a row along an edge between two parts) are one span. A row on
+            // an edge of the inset region takes the side where it is longer, so a row on a
+            // leg's inner edge runs the leg's length (PE-DESIGN does so on one leg of
+            // region-travel-u-satin's U; on the other it sews only the bar part).
+            let side = |d: f64| spans_at(&inner, &[], p.angle, y + d);
+            let length = |s: &[Span]| s.iter().map(|s| s.end() - s.start()).sum::<f64>();
+            let (lo, hi) = (side(-EDGE_ROW_INSET), side(EDGE_ROW_INSET));
             let mut merged: Vec<Span> = Vec::new();
-            for s in spans_at(&inner, &[], p.angle, y) {
+            for s in if length(&hi) > length(&lo) { hi } else { lo } {
                 match merged.last_mut() {
                     Some(m) if s.start() - m.end() < 1e-6 => *m = *m.start()..=*s.end(),
                     _ => merged.push(s),
@@ -514,7 +520,12 @@ fn satin_underlay_rows(closed: &[Contour], p: &RegionParams, holes: &[Contour]) 
         if reverse {
             xs.reverse();
         }
-        let run: Run = xs.iter().map(|&x| unrotate(x, y, p.angle)).collect();
+        let mut run: Run = xs.iter().map(|&x| unrotate(x, y, p.angle)).collect();
+        if at.is_none() {
+            // PE-DESIGN sews the first row there and back.
+            let back: Run = run.iter().rev().skip(1).copied().collect();
+            run.extend(back);
+        }
         at = run.last().copied();
         runs.push(run);
     }
