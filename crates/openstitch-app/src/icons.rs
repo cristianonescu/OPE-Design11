@@ -1054,9 +1054,8 @@ fn paint_shapes(painter: &egui::Painter, r: Rect, a: Action, fg: Color32, enable
 }
 
 /// The OpenStitch logo (generated with Higgsfield, cleaned by tools/clean_logo.py): the app
-/// icon (mark on its tile), the mark alone, and the wordmark for light and dark backgrounds.
+/// icon (mark on its tile) and the wordmark for light and dark backgrounds.
 pub const APP_ICON: &str = include_str!("../../../assets/icons/openstitch.svg");
-pub const MARK: &str = include_str!("../../../assets/brand/openstitch-mark.svg");
 pub const WORDMARK: &str = include_str!("../../../assets/brand/openstitch-wordmark.svg");
 pub const WORDMARK_DARK: &str = include_str!("../../../assets/brand/openstitch-wordmark-dark.svg");
 
@@ -1194,7 +1193,6 @@ mod tests {
     fn the_logo_renders_at_every_size() {
         for (name, src) in [
             ("icon", APP_ICON),
-            ("mark", MARK),
             ("wordmark", WORDMARK),
             ("dark", WORDMARK_DARK),
         ] {
