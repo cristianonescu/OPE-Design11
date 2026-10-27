@@ -213,9 +213,9 @@
       "peDesignVersion": "11.50",
       "date": "2026-10-27",
       "os": "Windows 11 Pro 10.0.26200",
-      "settings": "Opened the OpenStitch export a.pes (#PES0060, SHA-256 74cbaca405d3ebca3ccbf434c2af1dc26901d62cc86367baf6a802202f048e8b, from a copy outside the repository) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
-      "sha256": "b6151f5755f8064433cca627616a1973369d2c7aec26fb9b6afc00c187c483b0",
-      "notes": "a.pes opened with its stitches: 40.00 x 40.00 mm, 32 stitches, one colour; the move between the two lines is drawn as a dash-dot line. View > View Thread Trimming is greyed for this design, and Option > Options > Jump Stitch Trimming ('Add jump stitch trimming to the entered patterns') shows ticked but greyed; neither was changed. The re-save keeps the PEC trim flag on the move (record 17, 0x20 flag on both coordinates). Also saved as Layout & Editing Ver.6.0 (#PES0060; PE asks 'This embroidery data will be saved in the old file format. OK to save the data as stitch data?', answered OK): a-resave-old.pes, SHA-256 7624e86fdab71c7a6397600d5781665637208c6f33fdb7083e4cafc8a3ff04f2, in the notes folder. The 1t file b.pes (PEC only) opened blank, so it was not re-saved."
+      "settings": "Opened the lines track's OpenStitch export (D:\\_sandboxes\\PE-reference-notes\\round2\\lines\\pes-csewseg-trims-a.pes, built from origin/main + #55, header #PES0060, SHA-256 e472541b9abc6af1dd709e3201f3d19bb139594e8046c3023397fde097f83b5f: two Red running lines with a trim between them, now with tie-in and lock stitches) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "caea70d8f80593b9511dfc6fdfee4930a9c4d0b8033f98ebe19749740a3b0a1e",
+      "notes": "Replaces the #53 file; OpenStitch's lines now carry tie-in and lock stitches. a.pes opened with its stitches: 40.00 x 40.00 mm, 40 stitches, one colour; the move between the lines drawn as a dash-dot line. View > View Thread Trimming greyed; Option > Options > Jump Stitch Trimming ('Add jump stitch trimming to the entered patterns') ticked but greyed; neither changed. The re-save keeps the PEC trim flag on the move."
     },
     {
       "file": "stitches/shape-start-points.pes",
