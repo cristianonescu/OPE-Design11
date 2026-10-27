@@ -749,6 +749,26 @@ Line references are relative to `crates/`.
     spacing 2 mm, line pitch 2.5 mm.
   - The guide gives word scales only. Fit the mapping from reference files at slider minimum,
     middle and maximum.
+  - 2026-10-27, observed in PE-DESIGN 11.50 UI (Sewing Attributes pane, Shapes ▸ Rectangle).
+    Every value below is a number field with a default (house) button, not a slider. Under
+    sewing density is a drop-down. The house buttons restored these values.
+
+    | Sew type | Attribute | Shown |
+    |---|---|---|
+    | Fill | Density | 4.5 line/mm |
+    | Fill | Step pitch | 4.0 mm |
+    | Fill | Frequency | 30 % |
+    | Fill | Under sewing | on, first of two types, Density "Medium" |
+    | Fill | Pull compensation | 0.0 mm |
+    | Fill | Direction | Manual straight line, 45° |
+    | Satin | Density | 4.5 line/mm |
+    | Satin | Under sewing | on, first type, Density "Medium" |
+    | Satin | Pull compensation | 0.0 mm |
+    | Satin | Direction | Manual straight line, 45° |
+    | Running line | Run pitch | 2.0 mm; run time(s) 1 |
+    | Zigzag line | Zigzag width | 2.0 mm |
+    | Zigzag line | Density | 4.5 line/mm; under sewing on; Half Stitch on |
+    | Programmable fill | Direction | Manual straight line, 45°; pattern direction 0°; tile 7.5 × 7.5 mm |
 - **Line Start/End type (Feed/Run):** motif, stem, candlewick and chain lines restart at a
   moved entry point instead of keeping the pattern in place.
   ([guide](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293444.html))

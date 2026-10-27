@@ -1,4 +1,197 @@
 {
   "schema": "openstitch-compat-reference/1",
-  "files": []
+  "files": [
+    {
+      "file": "pes/pes-default-v6.pes",
+      "spec": "pes-default-v6",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Opened target/compat/work/pes-default-v6/a.pes (OpenStitch export, header #PES0060) with Open; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "2e0be1a68ebda3170a3ddadb18ad595e586288c68888ef1cb0c0e84016a10fe6",
+      "notes": "a.pes opened with its stitches (not blank): two stitch blocks, 40.00 x 30.00 mm, 930 stitches; Design Property File Version 6.0, Design Name t1, colours 5 Brother Red and 20 Brother Black; Design Settings showed Hoop Size 100 x 100 mm, first machine type. The blocks opened as stitch data (Stitches tab), not editable shapes."
+    },
+    {
+      "file": "pes/pes-design-properties.pes",
+      "spec": "pes-design-properties",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Opened target/compat/work/pes-design-properties/rose.pes (OpenStitch export, header #PES0060) with Open; Design Property viewed and closed with Cancel; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "e1eb912b3ae81f7e6aaa3755db9de40256031d3ee900447a6d3e8d717e72ccd3",
+      "notes": "Design Property showed Design Name 'Rose', Category 'Flowers', Keywords 'rose, red, spring' as expected, but Author 'Ana PÃ©rez' (the UTF-8 bytes of 'é' read as two characters) and Comment 'Line oneline two' (the two comment lines run together on one line). File Version 6.0, 40.00 x 29.60 mm, 874 stitches, one colour 5 Brother Red."
+    },
+    {
+      "file": "stitches/auto-satin-bent-band.pes",
+      "spec": "auto-satin-bent-band",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); Closed Straight Line tool, points (0,0) (30,0) (30,30) (25,30) (25,5) (0,5) mm; line Not Sewn; Satin Stitch, Direction Auto; other attributes default (density 4.5, under sewing on Medium, pull compensation 0.0); colour BROTHER EMBROIDERY 800 RED; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "5ecdbdbba88a4e8614fb498dbb7ac5402fb21fefd2ba017333d52c627e5feae2",
+      "notes": "With Auto, Half Stitch becomes available and is checked by default; Running Stitch Path and Gradation are greyed. 433 stitches shown."
+    },
+    {
+      "file": "stitches/fill-frequency-0.pes",
+      "spec": "fill-frequency-0",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (2.5 mm); Rectangle tool (10,10)-(50,50) mm; line Not Sewn; Fill Stitch, Direction 0 degrees, Step pitch 4.0 mm (default), Frequency 0 %; other attributes default; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "b853886274c695c82bdf8bcaaf2fcaf377752a35c16db720776de151e5a6fcb6",
+      "notes": "2168 stitches shown."
+    },
+    {
+      "file": "stitches/fill-frequency-25.pes",
+      "spec": "fill-frequency-25",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (2.5 mm); Rectangle tool (10,10)-(50,50) mm; line Not Sewn; Fill Stitch, Direction 0 degrees, Step pitch 4.0 mm (default), Frequency 25 %; other attributes default; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "3c85d59fe678bf67eab8d89410d686436a897855b2e60df82e9b2c4f36145af6",
+      "notes": "Same design as fill-frequency-0 with only Frequency changed, then Save As. 2305 stitches shown."
+    },
+    {
+      "file": "stitches/fill-frequency-50.pes",
+      "spec": "fill-frequency-50",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (2.5 mm); Rectangle tool (10,10)-(50,50) mm; line Not Sewn; Fill Stitch, Direction 0 degrees, Step pitch 4.0 mm (default), Frequency 50 %; other attributes default; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "61ab49262b1d278b90e584aebec8060efa95a0c346af13cce370666fd008f7d4",
+      "notes": "Same design as fill-frequency-0 with only Frequency changed, then Save As. 2260 stitches shown."
+    },
+    {
+      "file": "stitches/hole-sewing-pentagon-star.pes",
+      "spec": "hole-sewing-pentagon-star",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Import Patterns > from Vector Image of a hand-written SVG holding only the spec's pentagon (blue) and star (yellow) vertices; Group > UnGroup; both shapes Fill Stitch, Direction 0 degrees, line Not Sewn, other attributes default; then Rectangle tool 10 x 4 mm at (45,62) mm on a 1 mm grid, Fill Stitch, Direction 0 degrees, colour BROTHER EMBROIDERY 800 RED; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "66105083a6afa41c259d018e383e221262f06fa98681e4d25d0468e2130519de",
+      "notes": "The hole sewing pair was made by the SVG import, not by Modify Overlap > Set hole sewing: after import, Modify Overlap showed Cancel hole sewing enabled for the pentagon. Cancelling it and then selecting both shapes and choosing Set hole sewing reported 'Invalid pair was selected!!' every time (also with Ctrl+A), so the import's own pair was kept. The import centres the pentagon and star on the page: the pentagon shows 38.00 x 36.20 mm (spec 38.04 x 36.18 mm), about 1.7 mm lower than the spec's absolute position; the star keeps its place relative to the pentagon. Thread colours mapped by the import were not changed."
+    },
+    {
+      "file": "stitches/optimize-entry-exit.pes",
+      "spec": "optimize-entry-exit",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); three Rectangle tool squares 10 x 10 mm, top-left (0,0), (50,0), (25,0) mm, drawn in that order; line Not Sewn; Fill Stitch with default attributes; colour BROTHER EMBROIDERY 800 RED; Optimize Sewing Order clicked; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "84772b42468718d94433fd86d48d4a2c72e008823def40f97514f2e7c8b489d3",
+      "notes": "Option > Options > Optimize Entry/Exit Points was ON (not changed). Optimize Sewing Order is a toggle button in the Sewing Order pane; after it the pane still listed the squares in drawing order (x 0, x 50, x 25)."
+    },
+    {
+      "file": "stitches/programmable-fill-45.pes",
+      "spec": "programmable-fill-45",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (2.5 mm); Rectangle tool (10,10)-(50,50) mm; line Not Sewn; region Prog. Fill Stitch, direction and pattern left at default (Manual straight line 45 degrees, pattern net1, tile 7.5 x 7.5 mm, pattern direction 0, offset row 0 %); colour left at tool default; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "6455541402b2b19e308f420566b83004e44beb4f25c10ef0785513e95a1e4b64",
+      "notes": "Default pattern name shown in the Browse dialog: net1. 4077 stitches shown in the status bar."
+    },
+    {
+      "file": "stitches/region-travel-u-along-outline.pes",
+      "spec": "region-travel-u-along-outline",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); same U as region-travel-u-fill; Fill Stitch, Direction 0 degrees, Running Stitch Path second button (Along outline); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "6305454d73617250f9497f90ef9d21159da14304bb2a775712be39b7c15cc73c",
+      "notes": "The Running Stitch Path buttons have no tooltips; the second button's hint picture shows the path just inside the outline. 1266 stitches shown."
+    },
+    {
+      "file": "stitches/region-travel-u-fill.pes",
+      "spec": "region-travel-u-fill",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); Closed Straight Line tool, points (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm; line Not Sewn; colour BROTHER EMBROIDERY 800 RED; Fill Stitch, Direction 0 degrees; Running Stitch Path left at default (Inside); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "bbfb037f7b0aa7f51c4377b38a71fab64391890061a9fde267898f68669d7cf9",
+      "notes": "1258 stitches shown."
+    },
+    {
+      "file": "stitches/region-travel-u-gradation.pes",
+      "spec": "region-travel-u-gradation",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); same U as region-travel-u-fill; Fill Stitch, Direction 0 degrees, Running Stitch Path Inside, then Gradation on with the default Gradation Pattern Setting (first pattern, Max 53 %, Min 5 %, steps 53/47/41/35/29/23/17/11/5 %, Blend off, density 4.5 line/mm, direction 0); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "bed54ddae36a0b9f68410b8f401066c9621fbf749d4fc09ed7ac801b301048c9",
+      "notes": "PE-DESIGN has no single gradation percentage, so the spec's '50 %' could not be entered; the default gradation pattern was kept. With Gradation on, the Inside button stays selected but greyed and no other Running Stitch Path button is highlighted; the hint shows a straight dashed travel line. 623 stitches shown."
+    },
+    {
+      "file": "stitches/region-travel-u-on-outline.pes",
+      "spec": "region-travel-u-on-outline",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); same U as region-travel-u-fill; Fill Stitch, Direction 0 degrees, Running Stitch Path third button (On outline); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "b524af27905ea29924966bf9c4ed90af83402ad94385945c5985ff2be0b31492",
+      "notes": "The third button's hint picture shows the path on the outline. 1263 stitches shown."
+    },
+    {
+      "file": "stitches/region-travel-u-satin.pes",
+      "spec": "region-travel-u-satin",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); same U as region-travel-u-fill; Satin Stitch, Direction 0 degrees, Density 4.5 (default), Running Stitch Path left at default (Inside); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "719fc7e141d58d37b359ed942fb824184ace3130b3908ed246208d5fcd68496d",
+      "notes": "470 stitches shown."
+    },
+    {
+      "file": "stitches/satin-zigzag-column.pes",
+      "spec": "satin-zigzag-column",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); Shapes > Manual Punch > Straight Block, sew type Satin Stitch, Density 3.0 line/mm, other attributes default (under sewing on, Density Medium; direction Auto, as the tool sets it); points clicked (10,10), (10,12), (15,10), (15,12) mm, the last with a double click; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "71ac3bf0cd79f0481d4ff998c677291019af97bd65902dac85d2f6932c3e5c72",
+      "notes": "PE-DESIGN 11.50's Manual Punch tab offers Straight, Curve, Feed and Running inputs; no 'Semi-Auto' option was found, so Straight Block was used. The status bar shows 4.70 x 2.00 mm and 48 stitches for the result (5 mm was clicked)."
+    },
+    {
+      "file": "stitches/satin-zigzag-rect.pes",
+      "spec": "satin-zigzag-rect",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); Rectangle tool (10,10)-(15,12) mm = 5.00 x 2.00 mm; line Not Sewn; Satin Stitch, Direction 90 degrees, Density 3.0 line/mm; under sewing left at default (on, first type, Density Medium); pull compensation left at default 0.0 mm; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "fe078a203a9c03a72b75ec1899aabce7905be86e86aee22925107b50271ce7f4",
+      "notes": "44 stitches shown."
+    }
+  ]
 }

@@ -263,9 +263,47 @@ Fuzz locally (nightly + `cargo install cargo-fuzz`):
 
 ## Reference tier (PE-DESIGN 11)
 
-None yet. It needs a licensed PE-DESIGN installation (ROADMAP.md, "Blocked").
+Round 1, 2026-10-27: PE-DESIGN 11 Layout & Editing 11.50 on Windows 11 Pro 10.0.26200, by the
+owner. All 16 specs with a `references[].make` now have a reference file in `compat/reference/`,
+with provenance in [MANIFEST.json](../compat/reference/MANIFEST.json). PE-DESIGN's default Save
+As type is "Layout & Editing Ver.11.0 File"; every reference file has the header `#PES0110`.
+None of the 16 reaches the reference tier yet: each fails at least one reference check, and the
+differences are listed in `target/compat/summary.md` after a run. 2 sew-outs are still pending.
 
-16 specs are ready for reference files, and 2 of them also for a sew-out. Each has a
-`references[].make` instruction, and `target/compat/summary.md` lists the files they wait for.
-Add them as [compat/reference/README.md](../compat/reference/README.md) describes. Observations
-that are not files go here. Example: a PES that PE-DESIGN opens blank.
+Deviations from the `make` text, also in the manifest notes:
+
+- `region-travel-u-gradation`: PE-DESIGN has no single gradation percentage. Its Gradation
+  Pattern Setting is a pattern with Max/Min sliders and nine steps (default Max 53 %, Min 5 %).
+  The default was kept. With gradation on, the Inside button stays selected but greyed.
+- `satin-zigzag-column`: the Manual Punch tab has Straight, Curve, Feed and Running inputs. No
+  "Semi-Auto" option was found, so Straight Block was used. PE-DESIGN shows 4.70 × 2.00 mm.
+- `hole-sewing-pentagon-star`: the vertices were imported from an SVG (Import Patterns ▸ from
+  Vector Image). The import made the pentagon/star hole-sewing pair itself. After Cancel hole
+  sewing, Set hole sewing on the two shapes always reported "Invalid pair was selected!!", so the
+  import's pair was kept. The import centres the shapes, about 1.7 mm below the spec's position.
+- `optimize-entry-exit`: Optimize Entry/Exit Points was on. After Optimize Sewing Order the
+  Sewing Order pane still listed the squares in drawing order (x = 0, 50, 25).
+
+### OpenStitch PES files opened in PE-DESIGN 11.50
+
+| File (OpenStitch export) | Opens as | Hoop shown | Thread colours shown | Design Property |
+|---|---|---|---|---|
+| `pes-default-v6/a.pes` (v6) | stitches, 2 blocks, 930 stitches | 100 × 100 mm | 5 Brother Red; 20 Brother Black | v6.0, name `t1` |
+| the `a.pes` design, `pesVersion` `1t` | blank | 100 × 100 mm | none | v1.0, empty |
+| same design, `pesVersion` `1` | stitches, 2 blocks, 930 stitches | 130 × 180 mm | 800 EMBROIDERY RED; 900 EMBROIDERY BLACK | v1.0, empty |
+| same design, `pesVersion` `6t` | blank | 100 × 100 mm | none | v6.0, name `small` |
+| same design, `pesVersion` `6` | stitches, 2 blocks, 930 stitches | 100 × 100 mm | 5 Brother Red; 20 Brother Black | v6.0, name `small` |
+| two separate rectangles, v6 | stitches, 2 blocks, 648 stitches | 100 × 100 mm | 5 Brother Red; 2 Brother Blue | v6.0, name `two` |
+| `pes-library-convert-v6/oracle.pes` (v6) | stitches, 2 blocks, 35 stitches | 100 × 100 mm | 1 Brother Prussian Blue; 2 Brother Blue | v6.0, name `oracle` |
+| `pes-design-properties/rose.pes` (v6) | stitches, 1 block, 874 stitches | — | 5 Brother Red | see below |
+
+- Every file that opened did so as stitch data (the Stitches tab), never as editable shapes. For
+  v6, the thread chart box in the Color pane was empty.
+- `rose.pes`: Design Name `Rose`, Category `Flowers` and Keywords `rose, red, spring` show as
+  written. Author shows `Ana PÃ©rez`: the UTF-8 bytes of "é" are read as two characters.
+  Comment shows `Line oneline two`: the two lines run together on one line.
+- The PE-DESIGN re-save of `rose.pes` (`pes-design-properties.pes`) reads back in the harness
+  as name `pes-desi` and no category, author, keywords or comments. Not yet explained.
+- Stitch view shows each move between blocks as one dashed line: corner to corner across the
+  fill for `a.pes` and `small-6`, and between the two rectangles for the two-object file. The
+  Stitch Simulator was opened but gave no trim or jump count, so trims were not checked there.

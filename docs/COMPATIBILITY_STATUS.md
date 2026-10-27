@@ -4,63 +4,63 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 23 · pass 7 · fail 16 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
 | Area | Feature | Tier | Specs |
 |---|---|---|---|
-| Editing | Hole sewing… | internal-regression; reference pending | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
-| Editing | Manual Punch: shapes made of several sewing-direction lines… | internal-regression; reference pending | `satin-zigzag-column` |
-| Editing | Sewing order editing… | internal-regression; reference pending | `optimize-entry-exit` |
-| Editing | Thread colour, sew type, straight sewing direction… | internal-regression; reference pending | `auto-satin-bent-band` |
-| Files | Design Property… | internal-regression; reference pending | `pes-design-properties` |
+| Editing | Hole sewing… | **failing** | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
+| Editing | Manual Punch: shapes made of several sewing-direction lines… | **failing** | `satin-zigzag-column` |
+| Editing | Sewing order editing… | **failing** | `optimize-entry-exit` |
+| Editing | Thread colour, sew type, straight sewing direction… | **failing** | `auto-satin-bent-band` |
+| Files | Design Property… | **failing** | `pes-design-properties` |
 | Files | PES v6 thread table… | oracle | `pes-thread-chart-roundtrip` |
-| Files | PES write v1 and v6… | internal-regression; reference pending | `pes-default-v6`, `pes-library-convert-v6` |
+| Files | PES write v1 and v6… | **failing** | `pes-default-v6`, `pes-library-convert-v6` |
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
-| Region sew types | Fill (tatami: angle or auto direction… | internal-regression; reference pending | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions` |
-| Region sew types | Programmable fill… | internal-regression; reference pending | `programmable-fill-45` |
-| Region sew types | Satin: a zigzag across the column… | internal-regression; reference pending | `auto-satin-bent-band`, `region-travel-u-satin`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
+| Region sew types | Fill (tatami: angle or auto direction… | **failing** | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions` |
+| Region sew types | Programmable fill… | **failing** | `programmable-fill-45` |
+| Region sew types | Satin: a zigzag across the column… | **failing** | `auto-satin-bent-band`, `region-travel-u-satin`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
 
 ## By audit item
 
 | Item | Tier | Specs |
 |---|---|---|
-| 1 | internal-regression; reference pending | `satin-zigzag-column`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
-| 2 | internal-regression; reference pending | `pes-default-v6`, `pes-library-convert-v6` |
-| 3 | internal-regression; reference pending | `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `region-travel-u-satin`, `running-stitch-path-exclusions` |
-| 7 | internal-regression; reference pending | `auto-satin-bent-band` |
-| 14 | internal-regression; reference pending | `programmable-fill-45` |
-| 15 | internal-regression; reference pending | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default` |
-| 16 | internal-regression; reference pending | `optimize-entry-exit` |
-| 17 | internal-regression; reference pending | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
+| 1 | **failing** | `satin-zigzag-column`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
+| 2 | **failing** | `pes-default-v6`, `pes-library-convert-v6` |
+| 3 | **failing** | `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `region-travel-u-satin`, `running-stitch-path-exclusions` |
+| 7 | **failing** | `auto-satin-bent-band` |
+| 14 | **failing** | `programmable-fill-45` |
+| 15 | **failing** | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default` |
+| 16 | **failing** | `optimize-entry-exit` |
+| 17 | **failing** | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
 | 18 | oracle | `pes-thread-chart-roundtrip` |
-| 19 | internal-regression; reference pending | `pes-design-properties` |
+| 19 | **failing** | `pes-design-properties` |
 
 ## By spec
 
 | Spec | Status | Tier | Internal regression | Oracle | Reference | Machine |
 |---|---|---|---|---|---|---|
-| `pes/pes-default-v6` | pass | internal-regression | pass | — | pending | pending |
-| `pes/pes-design-properties` | pass | internal-regression | pass | — | pending | — |
+| `pes/pes-default-v6` | fail | — | pass | — | fail | pending |
+| `pes/pes-design-properties` | fail | — | pass | — | fail | — |
 | `pes/pes-library-convert-v6` | pass | oracle | pass | pass | — | — |
 | `pes/pes-thread-chart-roundtrip` | pass | oracle | — | pass | — | — |
 | `stitches/attribute-ranges` | pass | internal-regression | pass | — | — | — |
-| `stitches/auto-satin-bent-band` | pass | internal-regression | pass | — | pending | — |
-| `stitches/fill-frequency-0` | pass | internal-regression | pass | — | pending | — |
-| `stitches/fill-frequency-25` | pass | internal-regression | pass | — | pending | — |
-| `stitches/fill-frequency-50` | pass | internal-regression | pass | — | pending | — |
+| `stitches/auto-satin-bent-band` | fail | — | pass | — | fail | — |
+| `stitches/fill-frequency-0` | fail | — | pass | — | fail | — |
+| `stitches/fill-frequency-25` | fail | — | pass | — | fail | — |
+| `stitches/fill-frequency-50` | fail | — | pass | — | fail | — |
 | `stitches/fill-frequency-default` | pass | internal-regression | pass | — | — | — |
 | `stitches/hole-sewing-limits` | pass | internal-regression | pass | — | — | — |
-| `stitches/hole-sewing-pentagon-star` | pass | internal-regression | pass | — | pending | — |
-| `stitches/optimize-entry-exit` | pass | internal-regression | pass | — | pending | — |
-| `stitches/programmable-fill-45` | pass | internal-regression | pass | — | pending | — |
-| `stitches/region-travel-u-along-outline` | pass | internal-regression | pass | — | pending | — |
-| `stitches/region-travel-u-fill` | pass | internal-regression | pass | — | pending | — |
-| `stitches/region-travel-u-gradation` | pass | internal-regression | pass | — | pending | — |
-| `stitches/region-travel-u-on-outline` | pass | internal-regression | pass | — | pending | — |
-| `stitches/region-travel-u-satin` | pass | internal-regression | pass | — | pending | — |
+| `stitches/hole-sewing-pentagon-star` | fail | — | pass | — | fail | — |
+| `stitches/optimize-entry-exit` | fail | — | pass | — | fail | — |
+| `stitches/programmable-fill-45` | fail | — | pass | — | fail | — |
+| `stitches/region-travel-u-along-outline` | fail | — | pass | — | fail | — |
+| `stitches/region-travel-u-fill` | fail | — | pass | — | fail | — |
+| `stitches/region-travel-u-gradation` | fail | — | pass | — | fail | — |
+| `stitches/region-travel-u-on-outline` | fail | — | pass | — | fail | — |
+| `stitches/region-travel-u-satin` | fail | — | pass | — | fail | — |
 | `stitches/running-stitch-path-exclusions` | pass | internal-regression | pass | — | — | — |
-| `stitches/satin-zigzag-column` | pass | internal-regression | pass | — | pending | — |
-| `stitches/satin-zigzag-rect` | pass | internal-regression | pass | — | pending | pending |
+| `stitches/satin-zigzag-column` | fail | — | pass | — | fail | — |
+| `stitches/satin-zigzag-rect` | fail | — | pass | — | fail | pending |
 | `stitches/satin-zigzag-skeleton` | pass | internal-regression | pass | — | — | — |
