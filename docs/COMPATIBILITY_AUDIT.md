@@ -806,8 +806,11 @@ Line references are relative to `crates/`.
   off the page). Fitted texts block Text Transform in PE: OpenStitch has no Text Transform yet.
   ([guide](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/05_1810870.html))
 - **Text Transform (envelope presets):** missing.
-- **Sewing order inside a text:** all fills first, then all outlines. Character edits are
-  allowed on user-mapped text, which the guide disables.
+- **Sewing order inside a text (checked 2026-10-27):** not a gap. PE-DESIGN 11.50 also sews
+  every letter's region first, then every letter's outline, one colour block each (spec
+  text-sewing-order, reference tier). Still open: the guide disables "some editing of
+  individual characters" on user-mapped text without naming them; checking which needs
+  characters registered with Brother's tools, which the project does not use.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.
