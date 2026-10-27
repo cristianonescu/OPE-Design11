@@ -802,12 +802,18 @@ Line references are relative to `crates/`.
 - **CSewSeg drops trims:** PEC keeps them.
 - **PES writer:** only v1 and v6.
 - **Wide satin:** stitches over 12 mm are split along the same line.
-- **Feathered edge:** the options and exclusions differ from the guide.
+- **Feathered edge:** the guide's exclusions apply since 2026-10-27: not with gradation, Auto
+  direction, hole sewing or text (refused when set, not sewn when a file holds them anyway), and
+  the default width is PE-DESIGN 11.50's 3.0 mm. Still different: PE-DESIGN's top/bottom row
+  switches and patterns versus OpenStitch's start/end/both with one width, and programmable
+  fill (PE offers it; OpenStitch refuses it until it sews it).
 - **Gradation:** the pattern is PE-DESIGN's since 2026-10-27: Max/Min density over equal steps
   (default Max 53 %, Min 5 %, 9 steps), rows from edge to edge; region-travel-u-gradation passes
   at the reference tier. Designs saved with the old single far-side percentage still sew a
-  continuous fall from 100 %. Still missing: other preset patterns, per-step editing, Blend
-  (two-colour blending), and the guide's exclusions.
+  continuous fall from 100 %. The guide's exclusions apply: not with a feathered edge, Auto
+  direction or text (refused when set, not sewn when a file holds them anyway). Still missing:
+  other preset patterns, per-step editing, Blend (two-colour blending), the gradation direction
+  arrow, and programmable fill (PE offers it; OpenStitch refuses it until it sews it).
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 

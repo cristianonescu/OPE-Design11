@@ -304,7 +304,18 @@ fn holes_above(object: &DesignObject, design: &Design) -> Vec<Contour> {
 
 fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<Element> {
     let mut out = Vec::new();
-    if let (Some(region), true) = (&object.region, object.has_closed_contour()) {
+    if let (Some(stored), true) = (&object.region, object.has_closed_contour()) {
+        // The guide's exclusions: no gradation or feathered edge on text, no feathered edge
+        // with hole sewing. Values a file holds anyway are kept, not sewn.
+        let text = object.kind == crate::model::ObjectKind::Text;
+        let mut sewn = stored.clone();
+        if text {
+            sewn.gradation = None;
+        }
+        if text || !holes.is_empty() {
+            sewn.feather = None;
+        }
+        let region = &sewn;
         // A shape is one region; text is one region per glyph, sewn letter by letter.
         for group in object.glyph_groups() {
             let closed: Vec<Contour> = group.iter().filter(|c| c.closed).cloned().collect();

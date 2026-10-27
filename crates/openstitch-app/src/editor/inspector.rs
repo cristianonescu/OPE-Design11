@@ -325,78 +325,84 @@ pub fn region_controls_with(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> 
                 ));
             }
         }
-        v.push(toggle(
-            "Gradation",
-            "gradationPattern",
-            r.gradation.is_some(),
-        ));
-        match r.gradation {
-            // Saved before gradation patterns: one far-side percentage.
-            Some(g) if g.steps.is_none() => v.push(num(
-                "Gradation (far side)",
-                "region.gradation",
-                "gradation",
-                g.min,
-                (5.0, 100.0),
-                0.5,
-                " %",
-            )),
-            Some(g) => {
-                v.push(num(
-                    "Gradation max",
-                    "region.gradationMax",
-                    "gradationMax",
-                    g.max,
-                    (5.0, 100.0),
-                    1.0,
-                    " %",
-                ));
-                v.push(num(
-                    "Gradation min",
-                    "region.gradationMin",
-                    "gradationMin",
+        // The guide's exclusions: Gradation and Feathered edge exclude each other and Auto
+        // direction.
+        if r.gradation_unavailable().is_none() {
+            v.push(toggle(
+                "Gradation",
+                "gradationPattern",
+                r.gradation.is_some(),
+            ));
+            match r.gradation {
+                // Saved before gradation patterns: one far-side percentage.
+                Some(g) if g.steps.is_none() => v.push(num(
+                    "Gradation (far side)",
+                    "region.gradation",
+                    "gradation",
                     g.min,
                     (5.0, 100.0),
-                    1.0,
+                    0.5,
                     " %",
-                ));
-                v.push(num(
-                    "Gradation steps",
-                    "region.gradationSteps",
-                    "gradationSteps",
-                    g.steps.unwrap_or(9) as f64,
-                    (2.0, 20.0),
-                    1.0,
-                    "",
+                )),
+                Some(g) => {
+                    v.push(num(
+                        "Gradation max",
+                        "region.gradationMax",
+                        "gradationMax",
+                        g.max,
+                        (5.0, 100.0),
+                        1.0,
+                        " %",
+                    ));
+                    v.push(num(
+                        "Gradation min",
+                        "region.gradationMin",
+                        "gradationMin",
+                        g.min,
+                        (5.0, 100.0),
+                        1.0,
+                        " %",
+                    ));
+                    v.push(num(
+                        "Gradation steps",
+                        "region.gradationSteps",
+                        "gradationSteps",
+                        g.steps.unwrap_or(9) as f64,
+                        (2.0, 20.0),
+                        1.0,
+                        "",
+                    ));
+                }
+                None => {}
+            }
+        }
+        if r.feather_unavailable().is_none() {
+            let feather = r.feather.unwrap_or(Feather {
+                side: FeatherSide::Start,
+                width: 0.0,
+            });
+            v.push(num(
+                "Feathered edge",
+                "region.featherWidth",
+                "featherWidth",
+                feather.width,
+                (0.0, 10.0),
+                0.05,
+                " mm",
+            ));
+            if r.feather.is_some() {
+                let side = match feather.side {
+                    FeatherSide::Start => "start",
+                    FeatherSide::End => "end",
+                    FeatherSide::Both => "both",
+                };
+                v.push(choice(
+                    "Feather side",
+                    "featherSide",
+                    side,
+                    &[("start", "Start"), ("end", "End"), ("both", "Both")],
                 ));
             }
-            None => {}
-        }
-        let feather = r.feather.unwrap_or(Feather {
-            side: FeatherSide::Start,
-            width: 0.0,
-        });
-        v.push(num(
-            "Feathered edge",
-            "region.featherWidth",
-            "featherWidth",
-            feather.width,
-            (0.0, 10.0),
-            0.05,
-            " mm",
-        ));
-        if r.feather.is_some() {
-            let side = match feather.side {
-                FeatherSide::Start => "start",
-                FeatherSide::End => "end",
-                FeatherSide::Both => "both",
-            };
-            v.push(choice(
-                "Feather side",
-                "featherSide",
-                side,
-                &[("start", "Start"), ("end", "End"), ("both", "Both")],
-            ));
         }
         if r.kind == RegionType::Satin {
             v.push(num(

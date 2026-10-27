@@ -1021,7 +1021,55 @@ impl RegionSewing {
     pub fn running_stitch_path_available(&self) -> bool {
         matches!(self.kind, RegionType::Fill | RegionType::Satin)
             && !self.auto_direction
-            && self.feather.is_none()
+            && self.sewn_feather().is_none()
+    }
+
+    /// Why Gradation cannot be set on this region, if it cannot (the guide: a manual straight
+    /// direction, no feathered edge; text, which the caller knows, is excluded too). PE-DESIGN
+    /// also offers it for programmable fill, which OpenStitch does not sew yet.
+    pub fn gradation_unavailable(&self) -> Option<&'static str> {
+        if !matches!(self.kind, RegionType::Fill | RegionType::Satin) {
+            Some("is only for fill and satin")
+        } else if self.auto_direction {
+            Some("is not available with Auto direction")
+        } else if self.feather.is_some() {
+            Some("is not available with a feathered edge")
+        } else {
+            None
+        }
+    }
+
+    /// Why Feathered edge cannot be set on this region, if it cannot (the guide: not with
+    /// gradation or Auto direction; text and hole sewing, which the caller knows, are excluded
+    /// too). PE-DESIGN also offers it for programmable fill, which OpenStitch does not sew yet.
+    pub fn feather_unavailable(&self) -> Option<&'static str> {
+        if !matches!(self.kind, RegionType::Fill | RegionType::Satin) {
+            Some("is only for fill and satin")
+        } else if self.auto_direction {
+            Some("is not available with Auto direction")
+        } else if self.gradation.is_some() {
+            Some("is not available with gradation")
+        } else {
+            None
+        }
+    }
+
+    /// The gradation actually sewn: none where it is unavailable (another sew type, Auto
+    /// direction). A stored gradation stays, so switching back restores it.
+    pub fn sewn_gradation(&self) -> Option<&Gradation> {
+        self.gradation.as_ref().filter(|_| {
+            matches!(self.kind, RegionType::Fill | RegionType::Satin) && !self.auto_direction
+        })
+    }
+
+    /// The feathered edge actually sewn: none where it is unavailable (another sew type, Auto
+    /// direction, or with gradation, which wins in files that hold both).
+    pub fn sewn_feather(&self) -> Option<Feather> {
+        self.feather.filter(|_| {
+            matches!(self.kind, RegionType::Fill | RegionType::Satin)
+                && !self.auto_direction
+                && self.gradation.is_none()
+        })
     }
 
     /// The travel actually sewn between parts, `None` for jumps. Where the attribute is not
@@ -1037,7 +1085,7 @@ impl RegionSewing {
             RunningStitchPath::Inside
         };
         Some(match path {
-            RunningStitchPath::Inside if self.gradation.is_some() => {
+            RunningStitchPath::Inside if self.sewn_gradation().is_some() => {
                 RunningStitchPath::AlongOutline
             }
             p => p,

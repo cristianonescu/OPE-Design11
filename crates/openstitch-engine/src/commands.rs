@@ -1276,9 +1276,10 @@ fn attribute_commands() -> Vec<CommandSpec> {
                                 o.id
                             )));
                         }
+                        // PE-DESIGN 11.50's default width is 3.0 mm.
                         let current = r.feather.unwrap_or(Feather {
                             side: FeatherSide::Start,
-                            width: 1.0,
+                            width: 3.0,
                         });
                         let width = p.opt("featherWidth", current.width, 0.0, 10.0)?;
                         r.feather = (width > 0.0).then_some(Feather {
@@ -1372,6 +1373,35 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         r.random_shift = Some(p.req("randomShift", 0.0, 50.0)?);
                     }
                     r.base_sewing = p.bool("baseSewing", Some(r.base_sewing))?;
+                    // The guide's exclusions, for an option this call turns on or changes.
+                    let text = o.kind == ObjectKind::Text;
+                    let gradation_keys = [
+                        "gradation",
+                        "gradationPattern",
+                        "gradationMax",
+                        "gradationMin",
+                        "gradationSteps",
+                    ];
+                    if r.gradation.is_some() && gradation_keys.iter().any(|k| p.has(k)) {
+                        let why = if text {
+                            Some("is not available for text")
+                        } else {
+                            r.gradation_unavailable()
+                        };
+                        if let Some(why) = why {
+                            return Err(p.invalid("gradation", why));
+                        }
+                    }
+                    if r.feather.is_some() && (p.has("featherWidth") || p.has("featherSide")) {
+                        let why = if text {
+                            Some("is not available for text")
+                        } else {
+                            r.feather_unavailable()
+                        };
+                        if let Some(why) = why {
+                            return Err(p.invalid("featherWidth", why));
+                        }
+                    }
                     o.region = Some(r);
                 }
                 Ok(Value::Null)

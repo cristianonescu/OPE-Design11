@@ -1183,6 +1183,22 @@ fn region_option_controls_are_accepted_by_the_engine() {
             };
             let mut params = c.params(v);
             params["id"] = json!(1);
+            // Each control on its own: from the type's defaults with the feathered edge of `r`
+            // (some options exclude others, as in the guide).
+            s.execute("object.setRegion", Some(&json!({"id": 1, "type": "none"})))
+                .expect("clear");
+            s.execute(
+                "object.setRegion",
+                Some(&json!({"id": 1, "type": kind.id()})),
+            )
+            .expect("type");
+            if r.feather_unavailable().is_none() {
+                s.execute(
+                    "object.setRegion",
+                    Some(&json!({"id": 1, "featherWidth": 1.0})),
+                )
+                .expect("feather");
+            }
             s.execute("object.setRegion", Some(&params))
                 .unwrap_or_else(|e| panic!("{kind:?} {params}: {e}"));
         }
