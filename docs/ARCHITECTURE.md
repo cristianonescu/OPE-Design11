@@ -1,9 +1,9 @@
 # Architecture
 
 **OpenStitch** runs on macOS, Windows and Linux. It is a Rust Cargo workspace: an embroidery
-engine plus one cross-platform desktop app (egui/eframe on wgpu: Metal on macOS, DirectX 12 /
-Vulkan on Windows, Vulkan/GL on Linux), following PhotoCraft's engine-first design. There is
-no web runtime.
+engine plus one cross-platform desktop app (egui/eframe on wgpu: Metal on macOS, DirectX 12 on
+Windows with OpenGL as the fallback, Vulkan/GL on Linux), following PhotoCraft's engine-first
+design. There is no web runtime.
 
 ## Crates (`crates/`)
 
@@ -669,8 +669,9 @@ openstitch_app::editor (lib, no egui, unit-tested)
 - **No MCP SDK dependency.** The stdio server needs five methods; implementing them directly keeps
   the security-relevant parts (size caps, path checks, error mapping) in this repository and
   tested. Revisit if HTTP transport, sampling or elicitation is needed.
-- **Tests compare against fixtures from an independent implementation** (pyembroidery) now, and
-  against PE-DESIGN reference fixtures once a licensed installation is available.
+- **Tests compare against fixtures from an independent implementation** (pyembroidery) and,
+  through the compatibility harness, against files saved by a licensed PE-DESIGN 11.50
+  (`compat/reference/`, each with a provenance record).
 - **Round half to even** for coordinate rounding, matching the reference fixtures.
 - **Commands take millimetres and degrees**; the model stores 0.1 mm (machine units), so
   conversion happens once, at the boundary.
@@ -712,8 +713,10 @@ openstitch_app::editor (lib, no egui, unit-tested)
   `settings` effect: they need the edit capability, are not undo steps, and the file is written
   (temporary file + rename) before the change takes effect. Automation front ends keep the
   settings in memory unless given a file.
-- **Default sewing attributes are placeholders** (fill 2.5 rows/mm, 4 mm stitches; satin
-  3 rows/mm; running 2.5 mm) until calibrated against PE-DESIGN output.
+- **Default sewing attributes follow PE-DESIGN 11.50's**, measured from its reference files
+  (fill and satin 4.5 lines/mm with under sewing on, 4 mm fill stitches; running 2.0 mm; text
+  Satin at density 5.0 with under sewing off). The remaining uncalibrated values are listed in
+  [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDIT.md) ("Next 11").
 
 ## Design Database
 

@@ -3,12 +3,12 @@
 | Phase | Goal | State |
 |---|---|---|
 | 1 Tooling | Rust workspace, CI on three OSes, fixture generators | Done. |
-| 2 Reference research | Guide-based feature inventory; Windows VM with a licensed PE-DESIGN; reference fixtures | Inventory done. Reference fixtures need a licensed PE-DESIGN installation. |
+| 2 Reference research | Guide-based feature inventory; reference files from a licensed PE-DESIGN 11 | Done: inventory from the public guide; reference files made in a licensed PE-DESIGN 11.50 since 2026-10-27 (`compat/reference/`, provenance in `MANIFEST.json`). |
 | 3 Core engine | Stitch model, threads, document operations, stitch generation | Done: design model, all guide sew types, compiler, command registry, undo, `.osd` projects, CLI and JSON control, MCP. |
-| 4 File interoperability | Every format PE-DESIGN 11 reads or writes; round-trip tests | PES, PEC, DST, EXP, JEF, PCS, SEW, XXX, HUS at oracle tier with fuzzing; VIP spec-derived; SHV, PHC, CSD read-only; PES v1/v6 object section; SVG and image import; split exports. |
+| 4 File interoperability | Every format PE-DESIGN 11 reads or writes; round-trip tests | PES, PEC, DST, EXP, JEF, PCS, SEW, XXX, HUS at oracle tier with fuzzing; VIP spec-derived; SHV, PHC, CSD read-only; PES v1/v6 object section; PE-DESIGN 11 (`#PES0110`) metadata, thread table and editable shapes read; SVG and image import; split exports. |
 | 5 Desktop interface | Cross-platform editor (egui) | Done: drawing, Bézier pen and point editing, selection, inspector, object list, undo, simulator, wizards, Design Database mode, Stitch Creator, Stitch Design Factory, printing, USB transfer. |
 | 6 Advanced | Digitizing, lettering, complex fills, suite programs | Done as independent approximations: Auto Punch, Cross Stitch, Photo Stitch, Design Center; full lettering suite and Font Creator. |
-| 7 Validation | Full reference suite, gap closing | Not started; needs a licensed PE-DESIGN installation. |
+| 7 Validation | Reference suite, gap closing | In progress: the compatibility harness (`stitchtool compat`) compares OpenStitch's output with PE-DESIGN 11.50's files spec by spec; [COMPATIBILITY_STATUS.md](COMPATIBILITY_STATUS.md) shows the tier each row has reached. No sew-out on a machine yet. |
 
 ## Platform decision (2026-10-18)
 
@@ -56,39 +56,84 @@ for macOS, Windows and Linux. CI builds and tests all three.
   MSI + zip, Linux tarball with thumbnailer, Linux AppImage with per-user desktop integration);
   Flatpak manifest built in CI; tag-only draft releases.
 
+## Done (2026-10-27)
+
+Everything below was measured black-box on a licensed PE-DESIGN 11.50 through its normal
+interface, with the resulting files committed under `compat/reference/` and compared by the
+harness. The details per item are in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDIT.md) and
+[COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md).
+
+- **Fill:** PE-DESIGN's defaults (4.5 lines/mm, under sewing on), its under sewing structure,
+  density and pull-compensation ranges and effects, Frequency as a row-to-row needle shift,
+  gradation as PE's Max/Min pattern with a linear fall, the feathered edge's width and the
+  guide's exclusions.
+- **Satin:** PE-DESIGN's sawtooth, tie-in and lock, under sewing, section order, split at the
+  start point, feathered edge; Auto satin's spacing, corner fan, band ends and start travel.
+- **Lines:** PE-DESIGN's defaults, tie-in and lock for running, triple, zigzag (mitred rails,
+  under sewing, half stitch), E/V, stem, candlewicking and chain.
+- **Lettering:** text size (0.7 em) and line spacing (% of the character height), the text
+  tool's sewing defaults (Satin, density 5.0, no under sewing), sewing order inside a text, Fit
+  Text to Outline's options, 24 of the 26 Text Transform presets.
+- **Shapes and order:** the shape tools' start and end points; Optimize Sewing Order keeps the
+  drawing order within a colour; direction angles turn counter-clockwise on screen.
+- **PES:** PE-DESIGN opens OpenStitch's v6 files with their stitches, colours and Design
+  Property; Design Property strings in Windows-1252 with CR LF; no zero-length stitch records;
+  trims kept PEC-only as PE-DESIGN does; the reader parses PE-DESIGN 11's `#PES0110` metadata,
+  thread table and editable shapes (`CEmbLine`; chapter "PES 0110 object list" in
+  [FILE_FORMATS.md](FILE_FORMATS.md)); a missing PEC section is an error.
+- **Editor and project:** OpenStitch logo, command icons and illustrations generated with
+  Higgsfield (code-drawn icons as the fallback); DirectX 12 on Windows with OpenGL as the
+  fallback; a gitleaks job in CI; the repository renamed to `cristianonescu/OpenStitch`;
+  releases v0.1.0-alpha.1 and v0.1.0-alpha.2 ([docs/releases](releases/)).
+
 ## Still to do
 
-1. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
+Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDIT.md):
+
+1. **Fill:** PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
+   Frequency default); the programmable fill density; Stitch Type (turning ends) and Half
+   Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend.
+2. **Satin:** Half Stitch for Auto satin (the corner fan now produces the crowding it acts
+   on); the remaining density-3 differences on bends; Miter limit.
+3. **Lines:** Start/End Type Feed/Run for stem, candlewicking and chain, with the L2 marker and
+   the Feed/Run choice in the editor; open lines and chain diamonds; candlewicking Low and
+   High. The motif line cannot be compared: PE-DESIGN's default motif is Brother's own artwork.
+4. **Lettering:** Text Transform presets 13 and 14 (fan out / in); per-character colour and
+   multi-character selection; Connection Points; minimum font sizes and small-text fonts;
+   kerning that reflows the line; editing several characters at once on the canvas; shaping for
+   embroidery fonts.
+5. **Machine stream:** trim every interior jump as PE-DESIGN does, no repeated needle points,
+   the PEC label from the file name; per-format compares of DST, EXP, JEF, PCS, SEW, XXX, HUS
+   and VIP against PE-DESIGN's exports.
+6. **PES:** turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
+   write editable shapes and text; PES v7–v11 and the hoop and Design Page fields (from the
+   owner's own files only, as [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
+7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
    stroke only) and an exact medial axis instead of the grid approximation.
-2. **Lettering:** editing several characters at once on the canvas; shaping embroidery fonts.
-3. **Formats:** CSD export (no public writer); editable PES shapes and text (no public
-   description; needs reference files and the legal opinion).
-4. **Design Database:** done: printing through the OS print dialog (Linux opens the PDF
-   viewer) and the Writing List to USB media. Card Reading is Blocked (below).
-5. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo
-   sources, owner's account). Blocked on `unsafe` FFI, which the workspace forbids: macOS
-   Apple-Event file opening (winit 0.30/eframe 0.37 deliver no file-open event; a delegate
-   needs objc2 `define_class!` with `unsafe` blocks, see DISTRIBUTION.md "macOS double-click")
-   and PES thumbnails on macOS and Windows.
-6. **Reference tier:** once a licensed PE-DESIGN is available (VM_PLAN.md), generate fixtures,
-   calibrate defaults and estimates, and promote rows to Verified Compatible.
+8. **Formats:** CSD export (no public writer).
+9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
+   in `compat/machine/`. No spec has reached this tier.
+10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo
+    sources, owner's account). Blocked on `unsafe` FFI, which the workspace forbids: macOS
+    Apple-Event file opening (winit 0.30/eframe 0.37 deliver no file-open event; a delegate
+    needs objc2 `define_class!` with `unsafe` blocks, see DISTRIBUTION.md "macOS double-click")
+    and PES thumbnails on macOS and Windows.
 
-Wireless transfer, Link and the Design Database's Card Reading (Brother's USB card
-reader/writer) are Blocked: their protocols are undocumented and will not be reverse-engineered.
+## Blocked
 
-## Blocked on a licensed PE-DESIGN installation
-
-| Task | Blocked part | Proceeding meanwhile |
-|---|---|---|
-| Verified Compatible status for any row | Reference outputs | Oracle tests, public specs |
-| Stitch-generation parameter calibration (running, satin, fill) | Reference stitch files | Algorithms from first principles, unit tests |
-| PE-DESIGN default DST jumps-for-trim, colour mapping, PES object section | Reference files | Configurable defaults |
-| Wizard behaviour (Auto Punch, Photo Stitch) | Observation | Independent algorithms, documented as approximations |
+Wireless transfer, Link, USB Link, network machine settings and the Design Database's Card
+Reading (Brother's USB card reader/writer) are Blocked: their protocols are undocumented and
+will not be reverse-engineered. PHX and PEN import are Blocked for the same reason (PEN is an
+encrypted purchase format). See the Blocked rows in [FEATURE_MATRIX.md](FEATURE_MATRIX.md).
 
 ## Dependencies on the owner
 
-- Reference tier: a licensed PE-DESIGN installation (VM_PLAN.md).
-- Legal opinion on studying PE-DESIGN output files for undocumented format fields (EU Directive
-  2009/24 Art. 5(3)/6/8).
-- Real PES files from the owner's own designs for reader tests.
-- A test sew-out of an OpenStitch-written file on the owner's Brother machine.
+- New reference files, made in the owner's licensed PE-DESIGN 11.50 for the specs that ask for
+  one ([compat/reference/README.md](../compat/reference/README.md)).
+- A test sew-out of an OpenStitch-written file on the owner's Brother machine (the machine
+  tier).
+- A lawyer's review of the policy on studying PE-DESIGN output files (allowed as project policy
+  since 2026-10-27; [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md)).
+- Code-signing certificates (macOS, Windows) and a Flathub account.
+- The decision on `unsafe` in one small, audited crate per OS (macOS file opening, Quick Look
+  and Explorer thumbnails).
