@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 pub const FORMAT: &str = "openstitch.design";
 /// 2: direction angles are counter-clockwise on screen (PE-DESIGN's convention); version 1
 /// stored them clockwise (see [`migrate_v1_angles`]).
-pub const VERSION: u32 = 2;
+/// 3: text size and line spacing follow PE-DESIGN's metrics; texts of older files keep the
+/// capital-height metrics they were made with (see [`migrate_v2_text`]).
+pub const VERSION: u32 = 3;
 pub const EXTENSION: &str = "osd";
 pub const MAX_SIZE: usize = 64 << 20;
 
@@ -56,7 +58,18 @@ pub fn decode(data: &[u8]) -> Result<Design, String> {
     if header.version < 2 {
         migrate_v1_angles(&mut env.design);
     }
+    if header.version < 3 {
+        migrate_v2_text(&mut env.design);
+    }
     Ok(env.design)
+}
+
+/// Before version 3 a text's size was its capital height and 100 % line spacing the font's
+/// line height. Those texts keep [`text::TextMetrics::CapHeight`], so they lay out unchanged.
+pub fn migrate_v2_text(design: &mut Design) {
+    for t in design.objects.iter_mut().filter_map(|o| o.text.as_mut()) {
+        t.metrics = text::TextMetrics::CapHeight;
+    }
 }
 
 /// Version 1 files stored direction angles clockwise on screen (from +x towards +y, y down).
@@ -104,9 +117,14 @@ pub fn validate(d: &Design) -> Result<(), String> {
     let text_ok = d.objects.iter().all(|o| {
         o.text.as_ref().is_none_or(|t| {
             t.transform.is_finite()
-                && [t.size, t.letter_spacing, t.line_spacing]
-                    .iter()
-                    .all(|v| v.is_finite())
+                && [
+                    t.size,
+                    t.letter_spacing,
+                    t.line_spacing,
+                    t.line_spacing_percent,
+                ]
+                .iter()
+                .all(|v| v.is_finite())
                 && t.characters.windows(2).all(|w| w[0].index < w[1].index)
                 && t.characters.iter().all(|e| {
                     [e.x, e.y, e.rotation].iter().all(|v| v.is_finite())
@@ -183,7 +201,7 @@ mod tests {
     fn version_2_keeps_angles() {
         let bytes = encode(&design()).expect("encode");
         let v: serde_json::Value = serde_json::from_slice(&bytes).expect("json");
-        assert_eq!(v["version"], 2);
+        assert_eq!(v["version"], 3);
         let back = decode(&bytes).expect("decode");
         assert_eq!(back, design());
     }
@@ -211,6 +229,29 @@ mod tests {
         assert_eq!(
             old.objects[0].line.as_ref().expect("line").angle,
             Some(135.0)
+        );
+    }
+
+    #[test]
+    fn version_2_texts_keep_their_capital_height_metrics() {
+        let mut d = Design::new("t", DesignPage::default());
+        let spec = text::TextSpec::new("H", text::DEFAULT_FONT, 10.0);
+        let (o, _) = DesignObject::text(spec, None, None).expect("text");
+        d.add(o);
+        let mut v: serde_json::Value =
+            serde_json::from_slice(&encode(&d).expect("encode")).expect("json");
+        assert!(v["design"]["objects"][0]["text"].get("metrics").is_none());
+        assert_eq!(decode(&encode(&d).expect("encode")).expect("decode"), d);
+        v["version"] = serde_json::json!(2);
+        let old = decode(&serde_json::to_vec(&v).expect("bytes")).expect("decode");
+        let t = old.objects[0].text.as_ref().expect("text");
+        assert_eq!(t.metrics, text::TextMetrics::CapHeight);
+        // Saved again, the old basis is kept.
+        let again: serde_json::Value =
+            serde_json::from_slice(&encode(&old).expect("encode")).expect("json");
+        assert_eq!(
+            again["design"]["objects"][0]["text"]["metrics"],
+            "capHeight"
         );
     }
 

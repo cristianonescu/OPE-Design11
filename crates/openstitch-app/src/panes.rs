@@ -352,6 +352,31 @@ fn text_tab(app: &mut EditorApp, ui: &mut egui::Ui) {
                 ribbon::set_text(app, serde_json::json!({ "size": size }));
             }
             ui.end_row();
+            ui.label("Character Spacing");
+            let mut letter = spec.letter_spacing;
+            let r = ui.add(
+                egui::DragValue::new(&mut letter)
+                    .range(-100.0..=100.0)
+                    .speed(0.1)
+                    .suffix(" mm"),
+            );
+            if (r.drag_stopped() || r.lost_focus()) && (letter - spec.letter_spacing).abs() > 1e-9 {
+                ribbon::set_text(app, serde_json::json!({ "letterSpacing": letter }));
+            }
+            ui.end_row();
+            ui.label("Line Spacing");
+            let mut line = spec.line_spacing_percent;
+            let r = ui.add(
+                egui::DragValue::new(&mut line)
+                    .range(0.0..=500.0)
+                    .suffix(" %"),
+            );
+            if (r.drag_stopped() || r.lost_focus())
+                && (line - spec.line_spacing_percent).abs() > 1e-9
+            {
+                ribbon::set_text(app, serde_json::json!({ "lineSpacingPercent": line }));
+            }
+            ui.end_row();
         });
     ui.separator();
     ui.horizontal_wrapped(|ui| {

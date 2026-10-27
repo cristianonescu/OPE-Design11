@@ -63,10 +63,11 @@ fn text_is_added_sewn_and_undone() {
     let o = &s.design().objects[0];
     assert_eq!(o.kind, ObjectKind::Text);
     assert_eq!(o.glyph_groups().len(), 10);
-    // Centred on x = 50 mm, baseline at y = 50 mm, capitals 10 mm tall.
+    // Centred on x = 50 mm, baseline at y = 50 mm; size is 0.7 em, so the ascenders of
+    // "OpenStitch" (Lato Bold: 1446 units capitals, 2000 em) reach about 10.6 mm up.
     let b = bounds(&s, id);
     assert!((b.center().x - 500.0).abs() < 5.0, "{b:?}");
-    assert!(b.min_y > 395.0 && b.min_y < 405.0, "{b:?}");
+    assert!(b.min_y > 390.0 && b.min_y < 400.0, "{b:?}");
     let listed = run(&mut s, "object.list", json!({}));
     assert_eq!(listed[0]["kind"], "text");
     assert_eq!(listed[0]["text"], "OpenStitch");

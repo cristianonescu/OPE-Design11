@@ -629,6 +629,7 @@ fn set_name_drop(s: &mut EngineState, p: &Params, id: u64) -> Result<(), Command
             // fixes the box the text occupies before its placement transform.
             let plain = TextSpec {
                 letter_spacing: 0.0,
+                line_spacing_percent: 100.0,
                 line_spacing: 0.0,
                 characters: Vec::new(),
                 transform: openstitch_design::Transform::IDENTITY,
@@ -657,6 +658,7 @@ fn set_name_drop(s: &mut EngineState, p: &Params, id: u64) -> Result<(), Command
     let spec = s.design.objects[i].text.as_mut().expect("text");
     if spec.name_drop.is_none() {
         spec.letter_spacing = 0.0;
+        spec.line_spacing_percent = 100.0;
         spec.line_spacing = 0.0;
         spec.characters.clear();
     }

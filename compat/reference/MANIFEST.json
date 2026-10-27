@@ -228,6 +228,66 @@
       "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Option > Options > Optimize Entry/Exit Points unticked; every shape drawn with the Shapes gallery tools, line Not Sewn (Line), region Fill Stitch with Under sewing unticked and every other attribute at its default (density 4.5 line/mm, Manual straight line 45 degrees, step pitch 4.0 mm, frequency 30 %, pull compensation 0.0 mm); thread colour chosen in the Color tab with the tool active, before each drag: Rectangle (2,2)-(22,22) mm, 800 RED; Rectangle (26,2)-(46,12), 007 PRUSSIAN BLUE; Ellipse (50,2)-(70,12), 027 FRESH GREEN; Heart (74,2)-(94,22), 019 SKY BLUE; Diamond (2,26)-(22,46), 058 DARK BROWN; 4-point star (26,26)-(46,46), 030 VERMILION; Triangle (50,26)-(70,46), 070 CORNFLOWER BLUE; Drop (74,26)-(94,46), 005 SILVER; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "e9a142667d07a5b925a69de288fdaaec4e03dc3451bbc9d3183564fd5c36df87",
       "notes": "Eight colour blocks in drawing order. A survey file made just before it (16 shapes in one colour, same settings, not committed) showed every Shape-tool shape ending where it starts: rectangles (square, 20 x 10, 10 x 20), ellipses, Round Rectangle, heart, diamond, hexagon, 4- and 5-point stars (the 5-point star at the notch between its lower points), crescent and drop at the lowest outline point on the vertical centre line; triangle, pentagon and octagon at the left end of the bottom edge."
+    },
+    {
+      "file": "text/text-size-h.pes",
+      "spec": "text-size-h",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. This file: text \"H\", size 20.0. Status: 17,40 x 20,60 mm, Stitches = 483. Save As PES default type (#PES0110).",
+      "sha256": "65413aaa257610057db64a75e08254adea5c41f4e4331f5e7893e6230a8469d4",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-size-hg.pes",
+      "spec": "text-size-hg",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. This file: text \"Hxg\", size 20.0. Status: 49,20 x 25,80 mm, Stitches = 1448. (H alone is 20.6 mm high at size 20, so the size is close to the capital height.) Save As PES default type (#PES0110).",
+      "sha256": "8057b0364610c0aeb37451428bb6a1d84147cae580f62e4b127067ba2a38d222",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-line-spacing-100.pes",
+      "spec": "text-line-spacing-100",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"H\", Ctrl+Enter, \"H\" (plain Enter on the canvas does not break the line; in the Text Attributes text box Ctrl+Enter inserts the break and Enter applies), size 10.0, Alignment Left. Field \"Line Spacing\", unit \"% of char height\", default 100. Range as seen: typing 0 is shown as 0; typing is limited to three digits (9999 -> 999); the spin arrows step by 1 and go past 999 (999 -> 1000; down twice -> 998), so the maximum is at least 1000 (not found). This file: 8,70 x 26,20 mm, Stitches = 374. Save As PES default type (#PES0110).",
+      "sha256": "a2460c871f8880c4b666aa88fa78b33485e12a7beb0f781375473c6a386f3079",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-line-spacing-150.pes",
+      "spec": "text-line-spacing-150",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"H\", Ctrl+Enter, \"H\" (plain Enter on the canvas does not break the line; in the Text Attributes text box Ctrl+Enter inserts the break and Enter applies), size 10.0, Alignment Left. Field \"Line Spacing\", unit \"% of char height\", default 100. Range as seen: typing 0 is shown as 0; typing is limited to three digits (9999 -> 999); the spin arrows step by 1 and go past 999 (999 -> 1000; down twice -> 998), so the maximum is at least 1000 (not found). This file: 8,70 x 34,10 mm, Stitches = 374. Save As PES default type (#PES0110).",
+      "sha256": "c53c52cdf5b7faa7fc9bbc88a02f1f0a87f16db7a2c1df785618cb9b3146ab6f",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-line-spacing-50.pes",
+      "spec": "text-line-spacing-50",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"H\", Ctrl+Enter, \"H\" (plain Enter on the canvas does not break the line; in the Text Attributes text box Ctrl+Enter inserts the break and Enter applies), size 10.0, Alignment Left. Field \"Line Spacing\", unit \"% of char height\", default 100. Range as seen: typing 0 is shown as 0; typing is limited to three digits (9999 -> 999); the spin arrows step by 1 and go past 999 (999 -> 1000; down twice -> 998), so the maximum is at least 1000 (not found). This file: 8,70 x 18,20 mm, Stitches = 374. Save As PES default type (#PES0110).",
+      "sha256": "144071c67a5731b8b6d3e566ee296e54be19344ddea13b9a19b1654bcabc099d",
+      "notes": "Header #PES0110."
     }
   ]
 }

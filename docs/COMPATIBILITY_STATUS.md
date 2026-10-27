@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 25 · pass 25 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 30 · pass 30 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -17,6 +17,7 @@ Specs: 25 · pass 25 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Files | Design Property… | reference | `pes-design-properties` |
 | Files | PES v6 thread table… | oracle | `pes-thread-chart-roundtrip` |
 | Files | PES write v1 and v6… | oracle; reference pending | `pes-csewseg-trims`, `pes-default-v6`, `pes-library-convert-v6` |
+| Lettering | Text entry and attributes… | reference | `text-line-spacing-100`, `text-line-spacing-150`, `text-line-spacing-50`, `text-size-h`, `text-size-hg` |
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
 | Region sew types | Fill (tatami: angle or auto direction… | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions` |
 | Region sew types | Programmable fill… | reference | `programmable-fill-45` |
@@ -66,3 +67,8 @@ Specs: 25 · pass 25 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/satin-zigzag-rect` | pass | reference | pass | — | pass | pending |
 | `stitches/satin-zigzag-skeleton` | pass | internal-regression | pass | — | — | — |
 | `stitches/shape-start-points` | pass | reference | pass | — | pass | — |
+| `text/text-line-spacing-100` | pass | reference | — | — | pass | — |
+| `text/text-line-spacing-150` | pass | reference | — | — | pass | — |
+| `text/text-line-spacing-50` | pass | reference | — | — | pass | — |
+| `text/text-size-h` | pass | reference | pass | — | pass | — |
+| `text/text-size-hg` | pass | reference | — | — | pass | — |

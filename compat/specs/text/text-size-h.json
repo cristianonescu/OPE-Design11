@@ -1,0 +1,96 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "text-size-h",
+  "area": "text",
+  "title": "Text size is 0.7 em (H of Lato Bold at size 20 is 20.6 mm)",
+  "description": "H in Lato Bold at size 20 mm: the height of its stitches shows what the size measures. PE-DESIGN's size is 0.7 em, so Lato Bold's H is 1.033 x size.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Lettering",
+        "feature": "Text entry and attributes"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md, Next 11: line spacing / text-size basis"
+    },
+    {
+      "kind": "measured",
+      "note": "compat/reference/text/text-size-h.pes, PE-DESIGN 11.50"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "H",
+        "font": "lato-bold",
+        "size": 20,
+        "fill": "Red",
+        "x": 50,
+        "y": 50
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "text.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "text/text-size-h.pes",
+      "make": "On a 100 × 100 mm Design Page (File > New), with Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user and used as a TrueType font. Add the text H, size 20.0 mm, colour 800 RED, region Fill Stitch at its defaults, line Not Sewn, alignment default. Save As PES (default type) as compat/reference/text/text-size-h.pes and record in compat/reference/MANIFEST.json the PE-DESIGN version, date, OS, the font as PE lists it, every Text Attributes value and every setting you changed (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/text/text-size-h.pes: H at size 20 is 20.6 mm tall (size = 0.7 em; Lato Bold's capitals are 1446/2000 em, 1.033 x size). Replaces the cap-height hypothesis (20.0).",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      },
+      "expected": 20.6,
+      "tolerance": {
+        "mm": 0.3
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    }
+  ]
+}

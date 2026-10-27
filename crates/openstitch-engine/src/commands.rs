@@ -1849,7 +1849,16 @@ fn text_docs(text_required: bool) -> Vec<ParamDoc> {
             "mm",
             "Extra space between letters, -100...100",
         ),
-        opt("lineSpacing", "mm", "Extra space between lines, -100...100"),
+        opt(
+            "lineSpacingPercent",
+            "%",
+            "Line spacing, % of the font's line height, 0...500 (default 100)",
+        ),
+        opt(
+            "lineSpacing",
+            "mm",
+            "Extra space between lines on top of the %, -100...100 (default 0)",
+        ),
         opt(
             "align",
             "left|center|right",
@@ -1891,6 +1900,8 @@ fn text_params(
     }
     spec.size = p.opt("size", spec.size, 1.0, 300.0)?;
     spec.letter_spacing = p.opt("letterSpacing", spec.letter_spacing, -100.0, 100.0)?;
+    spec.line_spacing_percent =
+        p.opt("lineSpacingPercent", spec.line_spacing_percent, 0.0, 500.0)?;
     spec.line_spacing = p.opt("lineSpacing", spec.line_spacing, -100.0, 100.0)?;
     if p.has("align") {
         spec.align = match p.string("align", None)?.as_str() {

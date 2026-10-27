@@ -137,6 +137,8 @@ pub fn letters(spec: &MonogramSpec, fonts: &[DesignFont]) -> Result<Vec<Letter>,
         let mut boxes = Vec::new();
         for (i, &c) in chars.iter().enumerate() {
             let mut t = TextSpec::new(c.to_string(), &spec.font, sizes[i] / 10.0);
+            // Monogram letter heights are capital heights.
+            t.metrics = text::TextMetrics::CapHeight;
             t.align = TextAlign::Center;
             let l = text::layout_in(&t, None, fonts)?;
             let b = Rect::enclosing(l.contours().iter().flat_map(Contour::outline_points))

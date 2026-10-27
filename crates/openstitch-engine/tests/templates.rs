@@ -50,6 +50,15 @@ fn builtin_templates_open_fill_and_sew() {
     for t in templates {
         let id = t["id"].as_str().expect("id");
         let opened = run(&mut s, "template.open", json!({ "template": id }));
+        // Version-1 templates keep the capital-height text metrics they were made with.
+        assert!(
+            s.design()
+                .objects
+                .iter()
+                .filter_map(|o| o.text.as_ref())
+                .all(|t| t.metrics == openstitch_design::TextMetrics::CapHeight),
+            "{id}"
+        );
         let slots = opened["slots"].as_array().expect("slots");
         assert!(!slots.is_empty(), "{id}");
         let values: Vec<String> = (0..slots.len()).map(|k| format!("Row {k}")).collect();

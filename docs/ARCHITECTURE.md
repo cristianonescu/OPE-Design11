@@ -85,8 +85,8 @@ No image codec is added: `--screenshot` writes PNG with a 100-line stored-deflat
 
 ## Lettering
 
-- A text object (`kind: "text"`) keeps a `text` spec — string, font id, size (capital height,
-  mm), letter and line spacing (mm), alignment, optional `path` object id, a placement
+- A text object (`kind: "text"`) keeps a `text` spec — string, font id, size (mm), letter
+  spacing (mm), line spacing (% of the character height, plus an older mm offset), alignment, optional `path` object id, a placement
   `transform` and per-glyph contour counts — plus the laid-out glyph `contours`, so drawing,
   hit-testing, bounds, transforms and hole sewing treat it like a shape. Every field added for
   text is omitted from JSON when unused, so shape-only `.osd` files are byte-identical and old
@@ -185,8 +185,13 @@ No image codec is added: `--screenshot` writes PNG with a 100-line stored-deflat
   (`Glyph::index`). Shaper panics on damaged fonts are contained: that run falls back to one
   glyph per character. Embroidery fonts are not shaped: their characters are set one after
   another in bidi order with their own advances, and scripts that need shaping are named in
-  the `shaping` result. Size is the capital height; fonts without Latin capitals use 70 % of
-  the em, so ideographs come out somewhat taller than the size.
+  the `shaping` result. Size follows PE-DESIGN 11 (measured with Lato Bold in
+  `compat/reference/text`): for TrueType/OpenType fonts it is 0.7 of the em, so Latin capitals
+  come out about the size (Lato Bold's H is 1.033 × size), and 100 % line spacing sets lines
+  the font's Windows ascent (`OS/2 usWinAscent`) apart. Embroidery fonts keep their standard
+  character height as the size. Texts from `.osd` files before version 3 (and templates
+  before version 2) carry `metrics: "capHeight"`: size is then the capital height (fonts
+  without Latin capitals use 70 % of the em) and 100 % the font's line height, as before.
 - Vertical text (`TextSpec::direction`): characters run top to bottom in logical order (no bidi
   reordering), shaped top-to-bottom so `vert` forms and `vmtx`/`VORG` metrics apply (without
   `vmtx`, a cell is ascender − descender with the glyph centred); lines become columns from
