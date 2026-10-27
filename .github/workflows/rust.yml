@@ -57,6 +57,26 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  secrets:
+    # Secret scan of the whole history with the gitleaks binary (MIT), pinned by version and
+    # SHA-256; no gitleaks-action licence is needed. Findings are redacted in the log.
+    name: secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=8.24.3
+          sha=9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c
+          curl -sSfL -o gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v$version/gitleaks_${version}_linux_x64.tar.gz"
+          echo "$sha  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks git --log-opts="--all" --redact --no-banner --exit-code 1 .
+
   version-label:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build-test

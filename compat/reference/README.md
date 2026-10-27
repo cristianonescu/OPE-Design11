@@ -55,6 +55,10 @@ not match its entry, is an error. It never counts as a pass.
 }
 ```
 
+`settings` and `notes` are public. Write what was done in PE-DESIGN, not where it was done:
+no local paths (`C:\Users\...`, `D:\...`), user names, machine names or licence details. Name an
+input file by its repository path or its SHA-256.
+
 `reference` is the `references[].id` in the spec. On Windows, get the SHA-256 with
 `certutil -hashfile <file> SHA256`, and write it in lower case.
 

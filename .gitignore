@@ -1,6 +1,26 @@
 .DS_Store
+Thumbs.db
 /reference/
 target/
 # Local Flatpak builds (packaging/flatpak)
 /.flatpak-builder/
 /build-flatpak/
+
+# Never commit credentials or keys. API keys for the image tools that made the icons and
+# illustrations live outside the repository.
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.asc
+
+# Editors and local agent state
+.vscode/
+.idea/
+*.swp
+.claude/worktrees/
+.claude/settings.local.json
