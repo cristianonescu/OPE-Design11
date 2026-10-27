@@ -341,14 +341,21 @@ fn fill_underlay(
 }
 
 /// Joins a region's layers (under sewing, then the top stitching) with running stitches
-/// inside the region, as PE-DESIGN sews them: no jump or trim between the layers.
+/// inside the region, as PE-DESIGN sews them: no jump or trim from one layer to the next. Runs
+/// inside a layer stay as they are.
 pub fn join_layers(layers: Vec<Vec<Run>>, closed: &[Contour], holes: &[Contour]) -> Vec<Run> {
-    let pieces: Vec<Run> = layers
-        .into_iter()
-        .flatten()
-        .filter(|r| !r.is_empty())
-        .collect();
-    join(pieces, Some(&mut TravelGraph::new(closed, holes)), 25.0)
+    let mut graph = TravelGraph::new(closed, holes);
+    let mut out: Vec<Run> = Vec::new();
+    for layer in layers {
+        for (i, run) in layer.into_iter().filter(|r| !r.is_empty()).enumerate() {
+            match out.pop() {
+                Some(last) if i == 0 => out.extend(join(vec![last, run], Some(&mut graph), 25.0)),
+                Some(last) => out.extend([last, run]),
+                None => out.push(run),
+            }
+        }
+    }
+    out
 }
 
 /// Row connections that cut across a gap (a hole, a notch) are split off, then every gap is

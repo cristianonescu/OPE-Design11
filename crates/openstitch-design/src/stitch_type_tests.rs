@@ -807,6 +807,8 @@ fn programmable_fill_puts_needle_points_on_the_pattern() {
     r.pattern = Some("diamonds".into());
     r.angle = 0.0;
     r.running_stitch_path = None;
+    // The pattern and base sewing layers only, without under sewing.
+    r.underlay = false;
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     // Diamond lines in an 8 mm tile: |x mod 80 - 40| + |y mod 80 - 40|·… = 40, i.e. points
     // where x' + y' = 40 within the tile. Count needle points within 0.3 mm of a line.
