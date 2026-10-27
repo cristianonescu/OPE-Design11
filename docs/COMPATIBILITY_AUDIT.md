@@ -57,9 +57,10 @@ dearest:
      points, trims and envelope shapes.
    - It needs a PE-DESIGN installation activated with the owner's licence, in the VM from
      [VM_PLAN.md](VM_PLAN.md).
-2. **PES files the owner saves from their own PE-DESIGN** (allowed for documented fields).
-   Studying fields that no public source describes needs the legal review that is already on
-   the owner's list.
+2. **PES files the owner saves from their own PE-DESIGN** (allowed). Studying fields that no
+   public source describes, from those files alone, is allowed as project policy (owner's
+   decision, 2026-10-27; see [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md)). The law is
+   unsettled there, and a lawyer's review stays on the owner's list.
 3. **Sew-outs on the owner's Brother machine** (allowed). This is the only route to
    Machine Verified status.
 4. **Art. 6 decompilation of file-format code, limited to interoperability.** This could
@@ -839,7 +840,9 @@ Line references are relative to `crates/`.
 2. **Black-box checks of OpenStitch output in the owner's PE-DESIGN:** items 2 and 5 (short
    term), 4 and 9. These are the first Reference Verified rows.
 3. **Reference capture (method 1):** calibrate the defaults and settle 6, 8, 11, 13 and 20.
-4. **Legal review:** editable shapes and text (5), PES v7–v10 and undocumented fields (method 4).
+4. **Output-file study (method 2):** editable shapes and text (5), PES v7–v11 and undocumented
+   fields, from the owner's PE-DESIGN files only (track `pes-objects`). Decompiling (method 4)
+   stays prohibited pending legal review.
 
 The harness for steps 2 and 3 is built (2026-10-19). It is `stitchtool compat`, in the
 crate `crates/openstitch-compat`, and is described in
