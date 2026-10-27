@@ -18,7 +18,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Files | PES v6 thread table… | oracle | `pes-thread-chart-roundtrip` |
 | Files | PES write v1 and v6… | oracle; reference pending | `pes-default-v6`, `pes-library-convert-v6` |
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
-| Region sew types | Fill (tatami: angle or auto direction… | internal-regression; reference pending | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions` |
+| Region sew types | Fill (tatami: angle or auto direction… | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions` |
 | Region sew types | Programmable fill… | reference | `programmable-fill-45` |
 | Region sew types | Satin: a zigzag across the column… | internal-regression; reference pending | `auto-satin-bent-band`, `region-travel-u-satin`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
 
@@ -28,7 +28,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 |---|---|---|
 | 1 | internal-regression; reference pending | `satin-zigzag-column`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
 | 2 | oracle; reference pending | `pes-default-v6`, `pes-library-convert-v6` |
-| 3 | internal-regression; reference pending | `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `region-travel-u-satin`, `running-stitch-path-exclusions` |
+| 3 | internal-regression | `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `region-travel-u-satin`, `running-stitch-path-exclusions` |
 | 7 | reference | `auto-satin-bent-band` |
 | 14 | reference | `programmable-fill-45` |
 | 15 | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default` |
@@ -57,7 +57,7 @@ Specs: 23 · pass 23 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/programmable-fill-45` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-along-outline` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-fill` | pass | reference | pass | — | pass | — |
-| `stitches/region-travel-u-gradation` | pass | internal-regression | pass | — | pending | — |
+| `stitches/region-travel-u-gradation` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-on-outline` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-satin` | pass | reference | pass | — | pass | — |
 | `stitches/running-stitch-path-exclusions` | pass | internal-regression | pass | — | — | — |

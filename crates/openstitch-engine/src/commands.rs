@@ -11,8 +11,8 @@ use openstitch_design::shapes::{self, ArcMode};
 use openstitch_design::text::{self, TextAlign, TextDirection, TextSpec};
 use openstitch_design::{
     Arrange, Bezier, ChainShape, Compiler, Contour, Design, DesignObject, DesignPage, Feather,
-    FeatherSide, Layout, LineSewing, LineType, ObjectKind, Rect, RegionSewing, RegionType,
-    RunningStitchPath, Transform, UnderlayStyle, v2,
+    FeatherSide, Gradation, Layout, LineSewing, LineType, ObjectKind, Rect, RegionSewing,
+    RegionType, RunningStitchPath, Transform, UnderlayStyle, v2,
 };
 use serde_json::{Value, json};
 
@@ -1057,7 +1057,27 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 opt(
                     "gradation",
                     "percent",
-                    "Density at the far side, % of density (5-100; 100 turns gradation off)",
+                    "Continuous gradation from 100 % to this % of density at the far side (5-100; 100 turns gradation off)",
+                ),
+                opt(
+                    "gradationPattern",
+                    "bool",
+                    "Gradation as PE-DESIGN's pattern (default Max 53 %, Min 5 %, 9 steps); false turns gradation off",
+                ),
+                opt(
+                    "gradationMax",
+                    "percent",
+                    "Gradation pattern: density at the start side, % of density (5-100)",
+                ),
+                opt(
+                    "gradationMin",
+                    "percent",
+                    "Gradation pattern: density at the far side, % of density (5-100)",
+                ),
+                opt(
+                    "gradationSteps",
+                    "int",
+                    "Gradation pattern: number of equal bands (2-20)",
                 ),
                 opt(
                     "featherSide",
@@ -1217,7 +1237,28 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     r.auto_direction = p.bool("autoDirection", Some(r.auto_direction))?;
                     if p.has("gradation") {
                         let g = p.req("gradation", 5.0, 100.0)?;
-                        r.gradation = (g < 100.0).then_some(g);
+                        r.gradation = (g < 100.0).then(|| Gradation::continuous(g));
+                    }
+                    if p.has("gradationPattern") {
+                        r.gradation = p.bool("gradationPattern", None)?.then(|| {
+                            r.gradation
+                                .filter(|g| g.steps.is_some())
+                                .unwrap_or(Gradation::PE_DEFAULT)
+                        });
+                    }
+                    if ["gradationMax", "gradationMin", "gradationSteps"]
+                        .iter()
+                        .any(|k| p.has(k))
+                    {
+                        let mut g = r
+                            .gradation
+                            .filter(|g| g.steps.is_some())
+                            .unwrap_or(Gradation::PE_DEFAULT);
+                        g.max = p.opt("gradationMax", g.max, 5.0, 100.0)?;
+                        g.min = p.opt("gradationMin", g.min, 5.0, 100.0)?;
+                        let steps = g.steps.unwrap_or(9) as f64;
+                        g.steps = Some(p.opt("gradationSteps", steps, 2.0, 20.0)?.round() as u32);
+                        r.gradation = Some(g);
                     }
                     let side = choice(
                         p,

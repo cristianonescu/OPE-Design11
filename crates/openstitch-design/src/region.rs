@@ -6,7 +6,9 @@
 use crate::direction;
 use crate::generate::{self, RegionParams, RowSpan, Run, subdivide};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, subtract, v2};
-use crate::model::{FeatherSide, RegionSewing, RegionType, RunningStitchPath, UnderlayStyle};
+use crate::model::{
+    FeatherSide, Gradation, RegionSewing, RegionType, RunningStitchPath, UnderlayStyle,
+};
 use crate::paths::{OutlineTravel, Rng, TravelGraph, join};
 use crate::patterns::Pattern;
 use crate::regions;
@@ -803,7 +805,7 @@ fn shaped_rows(
     p: &RegionParams,
     holes: &[Contour],
 ) -> Vec<Run> {
-    let ys = row_positions(closed, p.angle, p.row_spacing, r.gradation);
+    let ys = row_positions(closed, p.angle, p.row_spacing, r.gradation.as_ref());
     let mut spans = Vec::new();
     for (row, &y) in ys.iter().enumerate() {
         for s in spans_at(closed, holes, p.angle, y) {
@@ -903,13 +905,18 @@ pub fn rotated_bounds(contours: &[Contour], angle: f64) -> Option<Rect> {
     )
 }
 
-/// Row positions (rotated space): `spacing` apart, or with gradation the spacing grows (or
-/// shrinks) so the density falls linearly to `gradation` % at the far side.
+/// Row positions (rotated space): `spacing` apart, or with gradation `spacing` divided by the
+/// gradation's density fraction where the row is (see [`Gradation::fraction`]).
+///
+/// A stepped (PE-DESIGN) gradation places its first row on the start edge and its last on the
+/// far edge, and splits what is left before the far edge evenly, as PE-DESIGN 11.50 does
+/// (region-travel-u-gradation reference). A continuous one keeps the placement designs saved
+/// before patterns had: rows from half a spacing in.
 pub fn row_positions(
     contours: &[Contour],
     angle: f64,
     spacing: f64,
-    gradation: Option<f64>,
+    gradation: Option<&Gradation>,
 ) -> Vec<f64> {
     let Some(b) = rotated_bounds(contours, angle) else {
         return Vec::new();
@@ -917,13 +924,36 @@ pub fn row_positions(
     if spacing.is_nan() || spacing <= 0.0 || b.height().is_nan() || b.height() <= 0.0 {
         return Vec::new();
     }
-    let end = gradation.map_or(1.0, |g| (g / 100.0).clamp(0.05, 1.0));
+    let h = b.height();
+    let gap = |y: f64| spacing / gradation.map_or(1.0, |g| g.fraction((y - b.min_y) / h));
     let mut ys = Vec::new();
+    if gradation.is_some_and(|g| g.steps.is_some()) {
+        // Rows on an edge are sampled just inside it.
+        let inside = 1e-3_f64.min(h / 4.0);
+        let mut y = b.min_y;
+        let mut last_gap = gap(y);
+        while ys.len() < 100_000 {
+            ys.push(y.clamp(b.min_y + inside, b.max_y - inside));
+            let g = gap(y);
+            if y + g >= b.max_y - 1e-9 {
+                // The rest up to the far edge, in equal steps no longer than the last gap.
+                let rest = b.max_y - y;
+                let n = (rest / last_gap.max(1e-9) - 1e-9).ceil().max(1.0) as usize;
+                for k in 1..=n {
+                    let yk = y + rest * k as f64 / n as f64;
+                    ys.push(yk.clamp(b.min_y + inside, b.max_y - inside));
+                }
+                break;
+            }
+            last_gap = g;
+            y += g;
+        }
+        return ys;
+    }
     let mut y = b.min_y + spacing / 2.0;
     while y < b.max_y && ys.len() < 100_000 {
         ys.push(y);
-        let f = (y - b.min_y) / b.height();
-        y += spacing / (1.0 + (end - 1.0) * f);
+        y += gap(y);
     }
     ys
 }

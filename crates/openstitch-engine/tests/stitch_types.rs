@@ -169,7 +169,11 @@ fn satin_and_fill_options_are_set_and_undone() {
     assert_eq!(r.underlay_style, UnderlayStyle::Double);
     assert_eq!(
         (r.underlay_spacing, r.gradation, r.split_length),
-        (Some(3.0), Some(40.0), Some(4.0))
+        (
+            Some(3.0),
+            Some(openstitch_design::Gradation::continuous(40.0)),
+            Some(4.0)
+        )
     );
     assert_eq!(
         r.feather.map(|f| (f.side, f.width)),
@@ -191,6 +195,78 @@ fn satin_and_fill_options_are_set_and_undone() {
     run(&mut s, "history.undo", json!({}));
     run(&mut s, "history.undo", json!({}));
     assert_eq!(Compiler::default().compile(s.design()), plain);
+}
+
+#[test]
+fn gradation_pattern_options() {
+    use openstitch_design::Gradation;
+    let mut s = Session::new(temp_dir());
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 0, "y": 0, "width": 30, "height": 30, "fill": "Red"}),
+    );
+    let gradation = |s: &Session| s.design().objects[0].region.as_ref().expect("r").gradation;
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": 1, "gradationPattern": true}),
+    );
+    assert_eq!(gradation(&s), Some(Gradation::PE_DEFAULT));
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": 1, "gradationMax": 80, "gradationSteps": 4}),
+    );
+    assert_eq!(
+        gradation(&s),
+        Some(Gradation {
+            max: 80.0,
+            min: 5.0,
+            steps: Some(4)
+        })
+    );
+    // Turning the pattern on again keeps it; off clears it.
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": 1, "gradationPattern": true}),
+    );
+    assert_eq!(gradation(&s).and_then(|g| g.steps), Some(4));
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": 1, "gradationPattern": false}),
+    );
+    assert_eq!(gradation(&s), None);
+    // A continuous (old) gradation becomes PE's default pattern when a pattern option is set.
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": 1, "gradation": 40}),
+    );
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": 1, "gradationMin": 10}),
+    );
+    assert_eq!(
+        gradation(&s),
+        Some(Gradation {
+            max: 53.0,
+            min: 10.0,
+            steps: Some(9)
+        })
+    );
+    for params in [
+        json!({"id": 1, "gradationMax": 4}),
+        json!({"id": 1, "gradationMin": 101}),
+        json!({"id": 1, "gradationSteps": 1}),
+        json!({"id": 1, "gradationSteps": 21}),
+    ] {
+        let reply = s.handle(&json!({"command": "object.setRegion", "params": params}));
+        assert_eq!(reply["ok"], json!(false), "{params}");
+    }
 }
 
 #[test]

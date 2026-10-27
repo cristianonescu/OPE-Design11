@@ -753,6 +753,80 @@ fn running_stitch_path<'de, D: serde::Deserializer<'de>>(
     })
 }
 
+/// Gradation pattern (PE-DESIGN's Gradation Pattern Setting): the region is split into
+/// `steps` equal bands across the rows, and band k of n sews at
+/// `max − (max − min)·k/(n − 1)` % of the region's density. Without `steps` the density changes
+/// continuously from `max` to `min`: how designs saved before the pattern (a single far-side
+/// percentage, stored as a number) sew, and still read.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Gradation {
+    /// Density at the start side, % of the region's density (5–100).
+    pub max: f64,
+    /// Density at the far side, % (5–100).
+    pub min: f64,
+    /// Number of bands (2–20); `None`: continuous.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub steps: Option<u32>,
+}
+
+impl Gradation {
+    /// PE-DESIGN 11's default pattern (the first one): Max 53 %, Min 5 %, nine steps
+    /// (53/47/41/35/29/23/17/11/5 %), as its reference file sews it (fill-analysis).
+    pub const PE_DEFAULT: Gradation = Gradation {
+        max: 53.0,
+        min: 5.0,
+        steps: Some(9),
+    };
+
+    /// The gradation of designs saved before patterns: 100 % falling continuously to `far` %.
+    pub fn continuous(far: f64) -> Self {
+        Gradation {
+            max: 100.0,
+            min: far,
+            steps: None,
+        }
+    }
+
+    /// Density at `f` (0 = start side, 1 = far side) as a fraction of the region's density.
+    pub fn fraction(&self, f: f64) -> f64 {
+        let f = f.clamp(0.0, 1.0);
+        let t = match self.steps {
+            Some(n) if n >= 2 => ((f * n as f64).floor().min(n as f64 - 1.0)) / (n as f64 - 1.0),
+            Some(_) => 0.0,
+            None => f,
+        };
+        ((self.max + (self.min - self.max) * t) / 100.0).clamp(0.05, 1.0)
+    }
+}
+
+impl<'de> Deserialize<'de> for Gradation {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Pattern {
+            max: f64,
+            min: f64,
+            #[serde(default)]
+            steps: Option<u32>,
+        }
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Stored {
+            Far(f64),
+            Pattern(Pattern),
+        }
+        Ok(match Stored::deserialize(d)? {
+            Stored::Far(g) => Gradation::continuous(g),
+            Stored::Pattern(p) => Gradation {
+                max: p.max,
+                min: p.min,
+                steps: p.steps,
+            },
+        })
+    }
+}
+
 /// Feathered edge: row ends shortened by a deterministic pseudo-random amount up to `width`.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -791,10 +865,10 @@ pub struct RegionSewing {
     /// narrow side) instead of `angle`.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub auto_direction: bool,
-    /// Gradation: density falls (or rises) linearly across the region to this percentage of
-    /// `density` at the far side.
+    /// Gradation: the density changes across the region, from `max` % of `density` at the
+    /// start side to `min` % at the far side (see [`Gradation`]).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub gradation: Option<f64>,
+    pub gradation: Option<Gradation>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub feather: Option<Feather>,
     /// Satin: rows longer than this (mm) are split into staggered stitches.

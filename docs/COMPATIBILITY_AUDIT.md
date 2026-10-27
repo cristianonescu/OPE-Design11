@@ -803,7 +803,11 @@ Line references are relative to `crates/`.
 - **PES writer:** only v1 and v6.
 - **Wide satin:** stitches over 12 mm are split along the same line.
 - **Feathered edge:** the options and exclusions differ from the guide.
-- **Gradation:** the options and exclusions differ from the guide.
+- **Gradation:** the pattern is PE-DESIGN's since 2026-10-27: Max/Min density over equal steps
+  (default Max 53 %, Min 5 %, 9 steps), rows from edge to edge; region-travel-u-gradation passes
+  at the reference tier. Designs saved with the old single far-side percentage still sew a
+  continuous fall from 100 %. Still missing: other preset patterns, per-step editing, Blend
+  (two-colour blending), and the guide's exclusions.
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 

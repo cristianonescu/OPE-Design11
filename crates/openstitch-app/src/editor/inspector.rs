@@ -325,15 +325,53 @@ pub fn region_controls_with(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> 
                 ));
             }
         }
-        v.push(num(
-            "Gradation (far side)",
-            "region.gradation",
-            "gradation",
-            r.gradation.unwrap_or(100.0),
-            (5.0, 100.0),
-            0.5,
-            " %",
+        v.push(toggle(
+            "Gradation",
+            "gradationPattern",
+            r.gradation.is_some(),
         ));
+        match r.gradation {
+            // Saved before gradation patterns: one far-side percentage.
+            Some(g) if g.steps.is_none() => v.push(num(
+                "Gradation (far side)",
+                "region.gradation",
+                "gradation",
+                g.min,
+                (5.0, 100.0),
+                0.5,
+                " %",
+            )),
+            Some(g) => {
+                v.push(num(
+                    "Gradation max",
+                    "region.gradationMax",
+                    "gradationMax",
+                    g.max,
+                    (5.0, 100.0),
+                    1.0,
+                    " %",
+                ));
+                v.push(num(
+                    "Gradation min",
+                    "region.gradationMin",
+                    "gradationMin",
+                    g.min,
+                    (5.0, 100.0),
+                    1.0,
+                    " %",
+                ));
+                v.push(num(
+                    "Gradation steps",
+                    "region.gradationSteps",
+                    "gradationSteps",
+                    g.steps.unwrap_or(9) as f64,
+                    (2.0, 20.0),
+                    1.0,
+                    "",
+                ));
+            }
+            None => {}
+        }
         let feather = r.feather.unwrap_or(Feather {
             side: FeatherSide::Start,
             width: 0.0,
