@@ -97,7 +97,9 @@ The fields:
   - Each export is read back with OpenStitch's reader before it is measured.
 - **`measurements`** each have:
   - a `measure` (below) and a `source`: an `export` or a labelled `step`, optionally one
-    `colorBlock` and an `align` anchor;
+    `colorBlock`, an `align` anchor and an `exclude` (`{"first": n, "last": m}`: the first
+    and last stitch segments are left out, e.g. a tie-in and an end lock; the measurement's
+    evidence says why);
   - an `expected` value with a `tolerance`, a `reference` check, or both;
   - an `evidence` string saying where the expected value comes from.
 - **Expected values** are compared structurally:

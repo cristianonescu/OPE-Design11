@@ -1180,9 +1180,10 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     if let Some(Some(k)) = kind
                         && r.kind != k
                     {
-                        let angle = r.angle;
+                        // The direction and the start and end points stay (as in PE-DESIGN).
+                        let (angle, entry, exit) = (r.angle, r.entry, r.exit);
                         r = RegionSewing::new(k, r.thread);
-                        r.angle = angle;
+                        (r.angle, r.entry, r.exit) = (angle, entry, exit);
                     }
                     if let Some(c) = &color {
                         r.thread = c.clone();

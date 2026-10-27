@@ -181,6 +181,25 @@ impl Trace {
         })
     }
 
+    /// The trace without its first `first` and last `last` segments (see [`Trace::segments`]):
+    /// it starts at the first kept segment's first entry and ends at the last kept segment's
+    /// last entry. Empty when nothing is kept.
+    pub fn excluding(&self, first: usize, last: usize) -> Self {
+        let ends: Vec<usize> = (1..self.entries.len())
+            .filter(|&i| {
+                self.entries[i].command == Command::Stitch
+                    && matches!(self.entries[i - 1].command, Command::Stitch | Command::Jump)
+            })
+            .collect();
+        if first + last >= ends.len() {
+            return Trace::default();
+        }
+        let (from, to) = (ends[first] - 1, ends[ends.len() - 1 - last]);
+        Trace {
+            entries: self.entries[from..=to].to_vec(),
+        }
+    }
+
     /// Consecutive stitch points (stitch entries only, other entries skipped) per block.
     pub fn stitch_pairs(&self) -> Vec<(Entry, Entry)> {
         let pts: Vec<Entry> = self.stitches().copied().collect();
@@ -237,6 +256,35 @@ pub fn inside(p: (f64, f64), poly: &[[f64; 2]]) -> bool {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn excluding_drops_whole_segments_at_both_ends() {
+        // A jump, a tie-in (out 0.3 mm and back), three crossings, a lock (out and back).
+        let mut p = StitchPattern::new();
+        p.jump_to(100.0, 100.0);
+        for (x, y) in [
+            (100.0, 103.0),
+            (100.0, 100.0),
+            (100.0, 120.0),
+            (107.0, 100.0),
+            (107.0, 120.0),
+            (107.0, 117.0),
+            (107.0, 120.0),
+        ] {
+            p.stitch_to(x, y);
+        }
+        let t = Trace::from_pattern(&p);
+        assert_eq!(t.segments().count(), 7);
+        let body = t.excluding(2, 2);
+        assert_eq!(body.segments().count(), 3);
+        let pts: Vec<(f64, f64)> = body.entries.iter().map(|e| (e.x, e.y)).collect();
+        assert_eq!(
+            pts,
+            [(10.0, 10.0), (10.0, 12.0), (10.7, 10.0), (10.7, 12.0)]
+        );
+        assert_eq!(t.excluding(0, 0), t);
+        assert_eq!(t.excluding(4, 3), Trace::default());
+    }
 
     #[test]
     fn traces_come_from_patterns_and_point_replies() {

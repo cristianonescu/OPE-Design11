@@ -139,7 +139,8 @@ fn stitch_patterns_trace_back_into_shapes() {
         .expect("bar");
     let region = s.design().objects[bar].region.as_ref().expect("region");
     assert_eq!(region.kind, RegionType::Satin);
-    assert_eq!(region.angle, 0.0);
+    // Satin is a sawtooth: half its crossings slant one row (0.44 mm) across the 4 mm bar.
+    assert!(region.angle.abs() <= 5.0, "{}", region.angle);
     // Sewing order is kept: red outline first, blue bar second.
     assert_eq!(s.design().objects.len(), 2);
     assert_eq!(bar, 1);

@@ -156,6 +156,30 @@
       "settings": "Design Page Custom Size 100 x 100 mm; Snap to Grid on (1 mm); same U as region-travel-u-fill; Satin Stitch, Direction 0 degrees, Density 4.5 (default), Running Stitch Path left at default (Inside); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "719fc7e141d58d37b359ed942fb824184ace3130b3908ed246208d5fcd68496d",
       "notes": "470 stitches shown."
+    },
+    {
+      "file": "stitches/satin-zigzag-rect.pes",
+      "spec": "satin-zigzag-rect",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Shapes > Rectangle: line Not Sewn (Line); region Satin Stitch; in Sewing Attributes > Region sew: Under sewing checkbox (first row, top of the Region sew group) unticked, Density 3.0 line/mm, Direction Manual straight line 90 degrees; other attributes default (Half Stitch greyed/checked, Running Stitch Path first button, Pull compensation 0.0 mm, Feathered edge off); colour BROTHER EMBROIDERY 800 RED (tool default); rectangle dragged from (10,10) to (15,12) mm = 5.00 x 2.00 mm; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "dcc0560480dc670c53062a1dd807f34f82947017f13d1954382c93a68cb6159e",
+      "notes": "Status bar: Width 5,00 mm, Height 2,00 mm, Stitches = 31. Round 1 (PR #34) made the same rectangle with under sewing on (44 stitches)."
+    },
+    {
+      "file": "stitches/satin-zigzag-column.pes",
+      "spec": "satin-zigzag-column",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Shapes > Manual Punch > Straight Block (Manual Punch tab, Input Straight), sew type Satin Stitch; in Sewing Attributes > Region sew: Under sewing checkbox unticked, Density 3.0 line/mm (both carried over from the Satin settings just made with the Rectangle tool), Direction greyed (90, set by the punched block), Half Stitch checked (default), Running Stitch Path first button, Pull compensation 0.0 mm, Run pitch 2.0 mm (default); colour BROTHER EMBROIDERY 800 RED; points clicked (10,10), (10,12), (15,10), (15,12) mm, the last with a double click; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "e47bb447071c0832a3de86c62ac8636c53b33c74667ff5d8bc5c14ea5d721f1f",
+      "notes": "Status bar after selecting the block: Width 5,00 mm, Height 2,00 mm, Stitches = 20. Round 1 (PR #34, under sewing on) showed 4.70 x 2.00 mm and 48 stitches."
     }
   ]
 }

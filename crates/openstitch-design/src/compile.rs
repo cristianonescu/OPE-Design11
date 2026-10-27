@@ -1,7 +1,9 @@
 use crate::generate::{self, Run};
 use crate::geometry::{Contour, Vec2, v2};
 use crate::lines;
-use crate::model::{Design, DesignObject, LineSewing, LineType, ObjectKind, StitchBlock};
+use crate::model::{
+    Design, DesignObject, LineSewing, LineType, ObjectKind, RegionType, StitchBlock,
+};
 use crate::patterns::{self, Pattern, PatternKind};
 use crate::region;
 use crate::route;
@@ -305,6 +307,9 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
                 && let Some(path) = region.travel_path()
             {
                 layers = vec![region::join_layers(layers, &closed, holes, path)];
+            }
+            if region.kind == RegionType::Satin {
+                region::tie_and_lock(&mut layers);
             }
             for runs in layers {
                 out.push(Element {

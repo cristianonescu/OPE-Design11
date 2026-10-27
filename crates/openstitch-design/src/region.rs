@@ -4,7 +4,7 @@
 //! unchanged. Lengths are 0.1 mm.
 
 use crate::direction;
-use crate::generate::{self, RegionParams, RowSpan, Run};
+use crate::generate::{self, RegionParams, RowSpan, Run, subdivide};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, subtract, v2};
 use crate::model::{FeatherSide, RegionSewing, RegionType, RunningStitchPath, UnderlayStyle};
 use crate::paths::{OutlineTravel, Rng, TravelGraph, join};
@@ -282,7 +282,7 @@ fn layers_inner(
         RegionType::Fill if !shaped => {
             generate::fill_edge_to_edge(closed, &params, holes, r.fill_shift(), r.entry)
         }
-        RegionType::Satin if !shaped => generate::satin(closed, &params, holes),
+        RegionType::Satin if !shaped => sawtooth_satin(closed, r, &params, holes),
         _ => shaped_rows(closed, r, &params, holes),
     };
     if let Some(path) = r.travel_path() {
@@ -505,6 +505,197 @@ fn satin_underlay_rows(closed: &[Contour], p: &RegionParams, holes: &[Contour]) 
         runs.push(run);
     }
     runs
+}
+
+/// Rows of a sawtooth satin lie this far (0.1 mm) inside the region's first and last edge, so
+/// a row is never cut along an edge.
+const EDGE_ROW_INSET: f64 = 0.01;
+
+/// Where satin splits at its start point, the last row of each half stops this far (0.1 mm)
+/// short of the start point (PE-DESIGN 11: 0.2 mm).
+const SPLIT_GAP: f64 = 2.0;
+
+/// Running stitch of the travel along the edge to each half of a split satin (0.1 mm).
+const SPLIT_TRAVEL_PITCH: f64 = 20.0;
+
+/// Fixed-direction satin as PE-DESIGN 11 sews it: rows two crossings apart from the region's
+/// first edge to its last, each row sewn whole in one direction and the stitch to the next row
+/// slanting back (a sawtooth: one crossing along the sewing direction, the next slanted). With
+/// a start point inside the column it is sewn in two halves ([`split_satin`]).
+fn sawtooth_satin(
+    closed: &[Contour],
+    r: &RegionSewing,
+    p: &RegionParams,
+    holes: &[Contour],
+) -> Vec<Run> {
+    let pitch = 2.0 * p.row_spacing;
+    if let Some(run) = r
+        .entry
+        .and_then(|e| split_satin(closed, holes, p, pitch, e))
+    {
+        return vec![run];
+    }
+    let spans: Vec<RowSpan> = edge_rows(closed, p.angle, pitch)
+        .into_iter()
+        .enumerate()
+        .flat_map(|(row, y)| {
+            pulled_spans(closed, holes, p, y)
+                .into_iter()
+                .map(move |range| RowSpan { row, y, range })
+        })
+        .collect();
+    let p = RegionParams {
+        row_spacing: pitch,
+        ..*p
+    };
+    generate::chain_sawtooth_spans(&spans, &p, |span, _, forward| {
+        if forward {
+            vec![*span.start(), *span.end()]
+        } else {
+            vec![*span.end(), *span.start()]
+        }
+    })
+}
+
+/// Row positions (rotated space) `pitch` apart from just inside the region's first edge, and
+/// one more just inside its last edge.
+fn edge_rows(contours: &[Contour], angle: f64, pitch: f64) -> Vec<f64> {
+    let Some(b) = rotated_bounds(contours, angle) else {
+        return Vec::new();
+    };
+    let (lo, hi) = (b.min_y + EDGE_ROW_INSET, b.max_y - EDGE_ROW_INSET);
+    if pitch.is_nan() || pitch <= 0.0 || hi.is_nan() || hi <= lo {
+        return Vec::new();
+    }
+    let mut ys = Vec::new();
+    let mut y = lo;
+    while y < hi - pitch * 0.25 && ys.len() < 100_000 {
+        ys.push(y);
+        y += pitch;
+    }
+    ys.push(hi);
+    ys
+}
+
+/// Inside intervals of the row at rotated `y`, lengthened by the pull compensation.
+fn pulled_spans(closed: &[Contour], holes: &[Contour], p: &RegionParams, y: f64) -> Vec<Span> {
+    spans_at(closed, holes, p.angle, y)
+        .into_iter()
+        .filter_map(|s| {
+            let (lo, hi) = (
+                s.start() - p.pull_compensation,
+                s.end() + p.pull_compensation,
+            );
+            (hi > lo).then_some(lo..=hi)
+        })
+        .collect()
+}
+
+/// Satin whose start point `entry` lies inside the column, as PE-DESIGN 11 sews a rectangle
+/// (its default start point is the middle of the bottom edge): from the start point along its
+/// edge to one end of the column, the sawtooth back towards the start point, the last row
+/// [`SPLIT_GAP`] short of it reached along the far edge, then the same for the other half,
+/// ending at the start point again. `None` (sewn whole) for several parts, holes, a row cut in
+/// two, or a start point within a row of either end.
+fn split_satin(
+    closed: &[Contour],
+    holes: &[Contour],
+    p: &RegionParams,
+    pitch: f64,
+    entry: Vec2,
+) -> Option<Run> {
+    if closed.len() != 1 || !holes.is_empty() {
+        return None;
+    }
+    let e = crate::route::snap(closed, entry);
+    let at = e.rotated(-p.angle.to_radians());
+    let b = rotated_bounds(closed, p.angle)?;
+    let (lo, hi) = (b.min_y + EDGE_ROW_INSET, b.max_y - EDGE_ROW_INSET);
+    if at.y < lo + pitch || at.y > hi - pitch {
+        return None;
+    }
+    let one = |y: f64| -> Option<Span> {
+        match pulled_spans(closed, holes, p, y).as_slice() {
+            [s] => Some(s.clone()),
+            _ => None,
+        }
+    };
+    let middle = one(at.y)?;
+    // The start point's edge: the start or the end of the rows.
+    let near_start = (at.x - middle.start()).abs() <= (at.x - middle.end()).abs();
+    let ends = |s: &Span| {
+        if near_start {
+            (*s.start(), *s.end())
+        } else {
+            (*s.end(), *s.start())
+        }
+    };
+    let half = |from: f64, step: f64| -> Option<Vec<(f64, Span)>> {
+        let stop = at.y - step.signum() * (SPLIT_GAP + pitch.abs() * 0.25);
+        let mut rows = Vec::new();
+        let mut y = from;
+        while (stop - y) * step.signum() > 0.0 && rows.len() < 100_000 {
+            rows.push((y, one(y)?));
+            y += step;
+        }
+        let last = at.y - step.signum() * SPLIT_GAP;
+        rows.push((last, one(last)?));
+        Some(rows)
+    };
+    let pt = |x: f64, y: f64| unrotate(x, y, p.angle);
+    let mut run = vec![e];
+    for rows in [half(lo, pitch)?, half(hi, -pitch)?] {
+        let (near, _) = ends(&rows[0].1);
+        let first = pt(near, rows[0].0);
+        let path = crate::paths::inside_path(e, first, closed, holes).unwrap_or(vec![e, first]);
+        run.extend(subdivide(&path, SPLIT_TRAVEL_PITCH).into_iter().skip(1));
+        let n = rows.len();
+        for (k, (y, s)) in rows.iter().enumerate() {
+            let (near, far) = ends(s);
+            if k > 0 && k + 1 < n {
+                run.push(pt(near, *y));
+            }
+            run.push(pt(far, *y));
+            if k + 1 == n {
+                // The last row: along the far edge to it, across, along the near edge home.
+                run.extend([pt(near, *y), e]);
+            }
+        }
+    }
+    run.dedup_by(|a, b| a.distance(*b) < 1e-9);
+    Some(run)
+}
+
+/// Tie-in and end lock of a satin object, as PE-DESIGN 11 sews them: from the start point the
+/// needle goes 0.3 mm along the first stitch (at most its length) and back, then sews on over
+/// that stitch; at the end it steps back along the last stitch, 0.3 mm at a time (at most the
+/// stitch's length), and returns: two steps after a long stitch, one after a short one (PE: one
+/// after 0.2 and 2.0 mm stitches, two after 5 and 30 mm ones; the cut is taken at 3 mm).
+pub fn tie_and_lock(layers: &mut [Vec<Run>]) {
+    const STEP: f64 = 3.0;
+    if let Some(run) = layers.iter_mut().flatten().find(|r| r.len() >= 2) {
+        let (a, b) = (run[0], run[1]);
+        let len = a.distance(b);
+        if len > 1e-9 {
+            run.splice(1..1, [a + (b - a) * (STEP.min(len) / len), a]);
+        }
+    }
+    if let Some(run) = layers
+        .iter_mut()
+        .rev()
+        .flatten()
+        .rev()
+        .find(|r| r.len() >= 2)
+    {
+        let (a, b) = (run[run.len() - 2], run[run.len() - 1]);
+        let len = a.distance(b);
+        if len > 1e-9 {
+            let back = (a - b) * (STEP.min(len) / len);
+            let steps = if len > 30.0 { 2 } else { 1 };
+            run.extend((1..=steps).map(|k| b + back * k as f64));
+            run.extend((0..steps).rev().map(|k| b + back * k as f64));
+        }
+    }
 }
 
 /// Least share of the region a derived skeleton's column must cover for Auto satin to follow
