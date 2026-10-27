@@ -771,7 +771,8 @@ pub struct RegionSewing {
     #[serde(rename = "type")]
     pub kind: RegionType,
     pub thread: Thread,
-    /// Sewing direction, degrees (0 = horizontal rows).
+    /// Sewing direction, degrees counter-clockwise on screen as in PE-DESIGN (0 = horizontal
+    /// rows, 45 = rows rising to the right). `.osd` version 1 stored it clockwise.
     pub angle: f64,
     /// Rows per mm.
     pub density: f64,
@@ -1117,7 +1118,8 @@ pub struct LineSewing {
     /// Gap between motifs, stem stitches, knots or E/V strokes, mm.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub spacing: Option<f64>,
-    /// Stem stitch angle to the line, degrees (45–135, default 45).
+    /// Stem stitch angle to the line, degrees counter-clockwise on screen (45–135, default
+    /// 45). `.osd` version 1 stored it clockwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub angle: Option<f64>,
     /// Stem stitch: single instead of triple.

@@ -212,7 +212,8 @@ fn crosshatch_and_stripes_follow_the_angle_and_line_spacing() {
         let mut offsets: Vec<f64> = Vec::new();
         for c in &o.contours {
             let (a, b) = (c.points[0], *c.points.last().expect("end"));
-            let ang = direction(a, b);
+            // The wizard's angle turns counter-clockwise on screen; the model's y points down.
+            let ang = (180.0 - direction(a, b)).rem_euclid(180.0);
             let fam = if (ang - 60.0).abs() < 0.5 {
                 60
             } else if (ang - 150.0).abs() < 0.5 {
@@ -222,8 +223,8 @@ fn crosshatch_and_stripes_follow_the_angle_and_line_spacing() {
             };
             angles.insert(fam);
             if fam == 60 {
-                // Distance along the normal, mm.
-                let n = v2(-(60f64.to_radians().sin()), 60f64.to_radians().cos());
+                // Distance along the normal (of the line at −60° with y down), mm.
+                let n = v2(60f64.to_radians().sin(), 60f64.to_radians().cos());
                 offsets.push((a.x * n.x + a.y * n.y) / 10.0);
             }
             for p in c.path() {
@@ -247,7 +248,7 @@ fn crosshatch_and_stripes_follow_the_angle_and_line_spacing() {
         );
         for c in &linked.contours {
             for w in c.points.windows(2) {
-                let ang = direction(w[0], w[1]);
+                let ang = (180.0 - direction(w[0], w[1])).rem_euclid(180.0);
                 let on_hatch = [60.0, 150.0].iter().any(|f| (ang - f).abs() < 0.5);
                 assert!(
                     on_hatch || w[0].distance(w[1]) <= 160.0,

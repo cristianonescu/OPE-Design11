@@ -185,7 +185,9 @@ pub fn convert(image: &Raster, frame: &Frame, p: &AutoPunch) -> Result<Converted
                 },
                 thread.clone(),
             );
-            region.angle = if satin { across } else { normalize(axis) };
+            // The axis is measured with the design's y pointing down; region angles are stored
+            // counter-clockwise on screen, as PE-DESIGN gives them.
+            region.angle = normalize(-if satin { across } else { axis }) + 0.0;
             let mut o = DesignObject::shape(contours, Some(region), None);
             o.name = Some(format!(
                 "Auto Punch {} {}",

@@ -552,10 +552,15 @@ Line references are relative to `crates/`.
   on an object without a region starts from the requested type's defaults. Not changed: a
   type change keeps the old angle (a default-filled rectangle switched to programmable fill
   stays at 0°); whether PE-DESIGN does the same needs a reference. Test:
-  `programmable_fill_defaults_to_45_degrees` (an outline-only 40×40 mm rectangle; dominant
-  stitch direction 45° ±1°).
+  `programmable_fill_defaults_to_45_degrees` (an outline-only 40×40 mm rectangle).
+  Reference verified (2026-10-27): PE-DESIGN 11.50's default programmable fill
+  (compat/reference/stitches/programmable-fill-45.pes) has its dominant direction at 135° in
+  the file (y down), because PE-DESIGN's angles turn counter-clockwise on screen. Since `.osd`
+  version 2 OpenStitch stores every direction angle that way too (version-1 files are
+  migrated on load), so the stored 45° sews at 135° in the file, as PE's does.
 - **Test:** `shape.rectangle 40×40` → `object.setRegion {type:"programmableFill"}`. Assert the
-  dominant row direction is 45° ±1°.
+  stored angle is 45 and the dominant row direction in the file is 135° ±1° (compat
+  programmable-fill-45, reference tier).
 - **Fix:**
   - Give each sew type its own default angle in `RegionSewing::new`.
   - Whether a type change keeps the angle needs a reference; leave it as is until then.

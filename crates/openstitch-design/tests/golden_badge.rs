@@ -1,16 +1,18 @@
 //! Golden regression: `badge-golden.osd` is `examples/badge.json` saved as a project on
-//! 2026-10-18; it must keep compiling to the statistics recorded then.
+//! 2026-10-18 (format version 1); it must keep compiling to the statistics recorded then.
+//! It is read with the project decoder, which migrates version-1 direction angles.
 
 use openstitch_core::Command;
-use openstitch_design::{Compiler, Design};
+use openstitch_design::Compiler;
 
 #[test]
 fn golden_project_compiles_to_recorded_statistics() {
     let text = include_str!("fixtures/badge-golden.osd");
     let envelope: serde_json::Value = serde_json::from_str(text).expect("json");
     assert_eq!(envelope["format"], "openstitch.design");
-    let design: Design =
-        serde_json::from_value(envelope["design"].clone()).expect("golden design decodes");
+    assert_eq!(envelope["version"], 1);
+    let design =
+        openstitch_design::project::decode(text.as_bytes()).expect("golden design decodes");
     let p = Compiler::default().compile(&design);
     // 3055 until 2026-10-27: one zero-length stitch less where each of the 4 jumps lands
     // (compat pes-default-v6), then the satin's under sewing travels inside the region to the
