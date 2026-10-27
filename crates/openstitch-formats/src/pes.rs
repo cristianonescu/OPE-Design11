@@ -758,7 +758,10 @@ mod tests {
         q.stitch_to(25.0, 0.0);
         let segs = segments(&q, Version::V6, 0.0, 0.0);
         assert_eq!(
-            segs.iter().find(|s| s.flag == 0).unwrap().points,
+            segs.iter()
+                .find(|s| s.flag == 0)
+                .expect("stitch run")
+                .points,
             [(0, 0), (25, 0)]
         );
     }
