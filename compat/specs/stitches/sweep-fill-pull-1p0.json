@@ -1,0 +1,139 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "sweep-fill-pull-1p0",
+  "area": "stitches",
+  "title": "Fill pull compensation 1.0 mm lengthens each row end by 1.0 mm",
+  "description": "A 40 × 40 mm fill at 0°, density 4.5, pull compensation 1.0 mm, under sewing off: every row end moves out by the pull compensation, as in PE-DESIGN's file.",
+  "covers": {
+    "audit": [
+      15
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Fill (tatami: angle or auto direction"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Fill Stitch: Density, Pull compensation, Under sewing"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference stitches/sweep-fill-pull-1p0.pes (stitch-sweeps track, S1/S2)"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 40
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "angle": 0,
+        "pullCompensation": 1.0,
+        "underlay": false
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "fill.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/sweep-fill-pull-1p0.pes",
+      "make": "On a 100 × 100 mm Design Page (grid 1 mm, Snap to Grid) draw a 40 × 40 mm square with the Rectangle tool from (10, 10) to (50, 50) mm. Line Not Sewn; colour 800 RED; region sew type Fill Stitch, Direction Manual 0°, Under sewing unticked, Pull compensation 1.0 mm, every other region attribute at PE-DESIGN's default (Density 4.5, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge and Gradation off). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "row-width",
+      "measure": {
+        "kind": "rowWidth"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "expected": 42.0,
+      "tolerance": {
+        "mm": 0.05
+      },
+      "evidence": "PE-DESIGN moves each row end out by the pull compensation: 40 + 2 × 1.0 mm",
+      "reference": {}
+    },
+    {
+      "id": "height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "expected": 40.0,
+      "tolerance": {
+        "mm": 0.05
+      },
+      "evidence": "pull compensation lengthens the rows only; the first and last rows stay on the edges",
+      "reference": {}
+    },
+    {
+      "id": "row-spacing",
+      "measure": {
+        "kind": "rowSpacing"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "expected": 0.2222,
+      "tolerance": {
+        "mm": 0.01
+      },
+      "evidence": "rows stay 1/4.5 mm apart",
+      "reference": {}
+    },
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN's count; OpenStitch differs in the row ends, entry travel and locks (stitch-rules F3)",
+      "reference": {
+        "tolerance": {
+          "percent": 8
+        }
+      }
+    }
+  ]
+}

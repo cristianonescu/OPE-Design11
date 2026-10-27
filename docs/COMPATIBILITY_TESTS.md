@@ -128,6 +128,8 @@ The fields:
 | `needleEnds` | First and last needle point `[x0, y0, x1, y1]`, mm from the top-left of the needle points (a jump landing right before the first stitch counts as the start) |
 | `stitchedArea` | Area covered by 0° fill rows, mm²: each row's needle extent (with the stitches into and out of it from ≤ 0.5 mm away) × the mean row gap. Single points (under sewing across the fill, travel) are not rows |
 | `rowShift {stitchLength, interior}` | Row-to-row needle shift of a 0° fill (Fill Frequency). Only fill rows count: runs with two consecutive interior needle points one stitch length (±0.15 mm) apart. Under sewing, edge runs and travel are skipped |
+| `rowSpacing` | Mean distance between the distinct lines of a 0° fill's rows (runs of two or more needle points on one horizontal line), mm: (last − first) / (lines − 1), so the file's 0.1 mm rounding cancels out. Under sewing edge runs would count as lines: use it with under sewing off |
+| `rowWidth` | Width of a 0° fill's row needle extent (runs of two or more needle points on one line), mm: the outline's width plus twice the pull compensation. Under sewing and travel lie inside it |
 | `pesVersion`, `pesClasses`, `pesSummary`, `metadata {key}`, `threads` | PES object section, header strings, thread table |
 | `replyValue {pointer, pluck}` | A JSON pointer into a labelled step's reply |
 | `refused {command, params, errorContains}` | Whether a command is refused after the script |

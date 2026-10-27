@@ -196,6 +196,15 @@ pub enum Measure {
         stitch_length: f64,
         interior: [f64; 2],
     },
+    /// Fill at 0° without under sewing: the mean distance between the distinct lines of the
+    /// fill rows (runs of two or more needle points on one horizontal line), mm: (last line −
+    /// first line) / (lines − 1), so the file's 0.1 mm rounding of each line cancels out.
+    /// Under sewing edge runs would count as lines, so the spec turns under sewing off.
+    RowSpacing,
+    /// Fill at 0°: the width of the fill rows' needle extent (runs of two or more needle
+    /// points on one horizontal line), mm: the outline's width plus twice the pull
+    /// compensation. Under sewing and travel lie inside the rows' extent.
+    RowWidth,
     /// PES: the four characters after `#PES`.
     PesVersion,
     /// PES: object section summary (version, classes, objects, segments, threads, metadata).
@@ -268,6 +277,8 @@ impl Measure {
             Self::NeedleEnds => "needleEnds",
             Self::StitchedArea => "stitchedArea",
             Self::RowShift { .. } => "rowShift",
+            Self::RowSpacing => "rowSpacing",
+            Self::RowWidth => "rowWidth",
             Self::PesVersion => "pesVersion",
             Self::PesSummary => "pesSummary",
             Self::PesClasses => "pesClasses",
@@ -550,6 +561,8 @@ impl Measure {
                 json!(total)
             }
             Self::StitchedArea => json!(stitched_area(t).ok_or("no fill rows")?),
+            Self::RowSpacing => json!(row_spacing(t).ok_or("fewer than two fill rows")?),
+            Self::RowWidth => json!(row_width(t).ok_or("no fill rows")?),
             Self::RowShift {
                 stitch_length,
                 interior,
@@ -729,14 +742,36 @@ fn stitched_area(t: &Trace) -> Option<f64> {
         })
         .filter(|&(w, _)| w > 0.0)
         .collect();
-    let mut ys: Vec<f64> = rows.iter().map(|r| r.1).collect();
+    let spacing = mean_line_gap(rows.iter().map(|r| r.1).collect())?;
+    Some(rows.iter().map(|r| r.0).sum::<f64>() * spacing)
+}
+
+/// Mean distance between the distinct values of `ys` (closer than 0.05 mm = one line).
+fn mean_line_gap(mut ys: Vec<f64>) -> Option<f64> {
     ys.sort_by(f64::total_cmp);
     ys.dedup_by(|a, b| (*a - *b).abs() < 0.05);
-    if ys.len() < 2 {
-        return None;
-    }
-    let spacing = (ys[ys.len() - 1] - ys[0]) / (ys.len() - 1) as f64;
-    Some(rows.iter().map(|r| r.0).sum::<f64>() * spacing)
+    (ys.len() >= 2).then(|| (ys[ys.len() - 1] - ys[0]) / (ys.len() - 1) as f64)
+}
+
+/// Fill rows: horizontal runs of two or more needle points (y, xs).
+fn fill_rows(t: &Trace) -> impl Iterator<Item = (f64, Vec<f64>)> {
+    horizontal_runs(t)
+        .into_iter()
+        .filter(|(_, xs, _)| xs.len() >= 2)
+        .map(|(y, xs, _)| (y, xs))
+}
+
+/// See [`Measure::RowSpacing`].
+fn row_spacing(t: &Trace) -> Option<f64> {
+    mean_line_gap(fill_rows(t).map(|(y, _)| y).collect())
+}
+
+/// See [`Measure::RowWidth`].
+fn row_width(t: &Trace) -> Option<f64> {
+    let xs: Vec<f64> = fill_rows(t).flat_map(|(_, xs)| xs).collect();
+    let lo = xs.iter().copied().fold(f64::INFINITY, f64::min);
+    let hi = xs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    (hi > lo).then_some(hi - lo)
 }
 
 /// Shift of the needle grid from each fill row to the next, modulo `l`. A fill row is a
@@ -920,6 +955,45 @@ mod tests {
                 assert!(d.min(4.0 - d) < 0.08, "{shift}: {shifts:?}");
             }
         }
+    }
+
+    /// [`square_with`]'s top fill alone (no under sewing or travel), rows `gap` apart with each
+    /// row end moved out by `pull`, odd rows without their edge points.
+    fn top_fill(gap: f64, pull: f64) -> Vec<(f64, f64)> {
+        let rows = (40.0 / gap).round() as usize;
+        let mut p = Vec::new();
+        for r in 0..=rows {
+            let y = ((10.0 + r as f64 * gap) * 10.0).round() / 10.0;
+            let mut xs: Vec<f64> = (0..=10).map(|k| 10.0 + 4.0 * k as f64).collect();
+            xs[0] -= pull;
+            xs[10] += pull;
+            if r % 2 == 1 {
+                xs = xs[1..10].to_vec();
+                xs.reverse();
+            }
+            p.extend(xs.into_iter().map(|x| (x, y)));
+        }
+        p
+    }
+
+    #[test]
+    fn row_spacing_is_the_mean_gap_despite_rounding() {
+        for d in [0.1, 2.5, 4.5, 6.0] {
+            let s = row_spacing(&trace(&top_fill(1.0 / d, 0.0))).expect("rows");
+            assert!((s - 1.0 / d).abs() < 0.002, "{d}: {s}");
+        }
+        assert_eq!(row_spacing(&trace(&[(10.0, 10.0), (14.0, 10.0)])), None);
+    }
+
+    #[test]
+    fn row_width_adds_the_pull_compensation_twice() {
+        for pull in [0.0, 0.5, 2.0] {
+            let w = row_width(&trace(&top_fill(1.0 / 4.5, pull))).expect("rows");
+            assert!((w - (40.0 + 2.0 * pull)).abs() < 1e-9, "{pull}: {w}");
+        }
+        // Under sewing and travel lie inside the rows.
+        let w = row_width(&trace(&square_with(1.0 / 4.5, 1.0, true))).expect("rows");
+        assert!((w - 40.0).abs() < 1e-9, "{w}");
     }
 
     #[test]

@@ -598,6 +598,11 @@ Line references are relative to `crates/`.
     in plain and shaped fill; unset keeps the ⅓ stagger, so existing designs sew as before.
   - `object.setRegion` refuses Frequency outside 0–50 (all types that use it);
     `object.setLine` limits run times to 1–5 for E/V and every other type, 1–6 for chain.
+  - Fill and satin Density take PE-DESIGN 11.50's 0.1–14.0 lines/mm (was 0.5–10), and Pull
+    compensation stays 0–2.0 mm, as PE's fields clamp (sweep references, 2026-10-27). The
+    `sweep-fill-density-*` and `sweep-fill-pull-*` specs check rows 1/density apart from edge to
+    edge and each row end moved out by the pull compensation (the under sewing is not), against
+    PE-DESIGN's files.
   - Tests: `frequency_and_run_times_follow_the_guide_ranges`,
     `fill_frequency_sets_the_row_to_row_needle_shift` (0, 25 and 50 %, ±2 % of the stitch).
   - Not implemented, needs reference geometry (method 1): Stitch Type (turning ends), Half

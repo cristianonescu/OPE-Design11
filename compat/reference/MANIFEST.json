@@ -504,6 +504,114 @@
       "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Shapes > Closed Straight Line, points (0,0) (10,0) (10,12) (20,12) (20,0) (30,0) (30,30) (20,30) (20,18) (10,18) (10,30) (0,30) mm, the last with a double click; line Not Sewn (Line); region Satin Stitch; Sewing Attributes > Region sew: Under sewing checkbox (top of the group) unticked, Density 3.0 line/mm; colour BROTHER EMBROIDERY 800 RED; Direction Manual straight line 0 degrees; Half Stitch greyed (left at its default, ticked); Running Stitch Path first button (default); Pull compensation 0.0 mm; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "f06de4b1dbc3c13563b4dcc81d4e6bcc44d08ddaf85ff893f40ff620b851f679",
       "notes": "Status bar: Width 30,00 mm, Height 30,00 mm, Stitches = 236."
+    },
+    {
+      "file": "stitches/sweep-fill-density-4p5.pes",
+      "spec": "sweep-fill-density-4p5",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). Density field (line/mm): spin step 0.1; typing 0 shows 0,1 (min 0.1); typing 99 shows 14,0 (max 14.0). This file: base (Density 4.5). Status: 40,00 x 40,00 mm, Stitches = 2024.",
+      "sha256": "3aa3331699908ab92a166f6d5056979a789b60bfd755bbf20ca5bbf928be9406",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/sweep-fill-density-2p5.pes",
+      "spec": "sweep-fill-density-2p5",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). Density field (line/mm): spin step 0.1; typing 0 shows 0,1 (min 0.1); typing 99 shows 14,0 (max 14.0). This file: Density 2.5. Status: 40,00 x 40,00 mm, Stitches = 1152.",
+      "sha256": "1d99bbb04e639490b07f86fca4b4e2e14e794e42510abfed9b98bddc6fd34e80",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/sweep-fill-density-6p0.pes",
+      "spec": "sweep-fill-density-6p0",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). Density field (line/mm): spin step 0.1; typing 0 shows 0,1 (min 0.1); typing 99 shows 14,0 (max 14.0). This file: Density 6.0. Status: 40,00 x 40,00 mm, Stitches = 2678.",
+      "sha256": "996ad53f70ce418459e39bf13dfbf434e566c6a51d78038988e421c49f6063b1",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/sweep-fill-density-max.pes",
+      "spec": "sweep-fill-density-max",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). Density field (line/mm): spin step 0.1; typing 0 shows 0,1 (min 0.1); typing 99 shows 14,0 (max 14.0). This file: Density 14.0. Status: 40,00 x 40,00 mm, Stitches = 6166.",
+      "sha256": "12e28ee5c0798876383d5020e4fb13358677d94cf797943cfcbf131fca1442bd",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/sweep-fill-pull-0p2.pes",
+      "spec": "sweep-fill-pull-0p2",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). Pull compensation field (mm): default 0.0; typing 99 shows 2,0 (max 2.0); min not tested below 0 (default 0.0). Density back to 4.5 (2024 st) first. Note: while scrolling the panel the mouse wheel once moved Frequency to 40 after pull-max was saved; it was set back to 30 (status back to the pull-0.5 count) before the -us file. This file: Pull 0.2. Status: 40,40 x 40,00 mm, Stitches = 2043 (width grows by 2 x pull: across the rows only).",
+      "sha256": "f423896b0ddf5f9900b6b90e99cc071a854d7f1086058f65d79a7bc474d2a0ca",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/sweep-fill-pull-0p5.pes",
+      "spec": "sweep-fill-pull-0p5",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). Pull compensation field (mm): default 0.0; typing 99 shows 2,0 (max 2.0); min not tested below 0 (default 0.0). Density back to 4.5 (2024 st) first. Note: while scrolling the panel the mouse wheel once moved Frequency to 40 after pull-max was saved; it was set back to 30 (status back to the pull-0.5 count) before the -us file. This file: Pull 0.5. Status: 41,00 x 40,00 mm, Stitches = 2064.",
+      "sha256": "e2105f626ab4f9431be9ef46403682ef862bfa4d25f36c31860f4b7b47c41b51",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/sweep-fill-pull-1p0.pes",
+      "spec": "sweep-fill-pull-1p0",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). Pull compensation field (mm): default 0.0; typing 99 shows 2,0 (max 2.0); min not tested below 0 (default 0.0). Density back to 4.5 (2024 st) first. Note: while scrolling the panel the mouse wheel once moved Frequency to 40 after pull-max was saved; it was set back to 30 (status back to the pull-0.5 count) before the -us file. This file: Pull 1.0. Status: 42,00 x 40,00 mm, Stitches = 2098.",
+      "sha256": "2d3727b1fcc20921b743db3a16fdc91d76e0a1c984f7b0154c1f8654e6165698",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/sweep-fill-pull-max.pes",
+      "spec": "sweep-fill-pull-max",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). Pull compensation field (mm): default 0.0; typing 99 shows 2,0 (max 2.0); min not tested below 0 (default 0.0). Density back to 4.5 (2024 st) first. Note: while scrolling the panel the mouse wheel once moved Frequency to 40 after pull-max was saved; it was set back to 30 (status back to the pull-0.5 count) before the -us file. This file: Pull 2.0 (max). Status: 44,00 x 40,00 mm, Stitches = 2208.",
+      "sha256": "2883d253534c235f3120cb5627dd208f93a348668f5188ad9fdadee41bb811a2",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/sweep-fill-pull-0p5-us.pes",
+      "spec": "sweep-fill-pull-0p5-us",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). Pull compensation field (mm): default 0.0; typing 99 shows 2,0 (max 2.0); min not tested below 0 (default 0.0). Density back to 4.5 (2024 st) first. Note: while scrolling the panel the mouse wheel once moved Frequency to 40 after pull-max was saved; it was set back to 30 (status back to the pull-0.5 count) before the -us file. This file: Pull 0.5, Under sewing ticked (its defaults: first type, Density Medium). Status: 41,00 x 40,00 mm, Stitches = 2372. (A first save under this name had under sewing still unticked; it was replaced.)",
+      "sha256": "144b24767922c13df9a54df8c911e23cf6244de65769114ef61ef315dd09186a",
+      "notes": "Header #PES0110."
     }
   ]
 }
