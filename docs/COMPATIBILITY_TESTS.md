@@ -263,9 +263,31 @@ Fuzz locally (nightly + `cargo install cargo-fuzz`):
 
 ## Reference tier (PE-DESIGN 11)
 
-None yet. It needs a licensed PE-DESIGN installation (ROADMAP.md, "Blocked").
+Reference files are added one spec at a time, each landing together with the OpenStitch change
+that makes its reference checks pass, so `main` stays green. 16 specs are ready for files (each
+has a `references[].make` instruction, and `target/compat/summary.md` lists the ones still
+waiting); 2 of them also for a sew-out. Add them as
+[compat/reference/README.md](../compat/reference/README.md) describes. Observations that are not
+files (for example, a PES that PE-DESIGN opens blank) go here.
 
-16 specs are ready for reference files, and 2 of them also for a sew-out. Each has a
-`references[].make` instruction, and `target/compat/summary.md` lists the files they wait for.
-Add them as [compat/reference/README.md](../compat/reference/README.md) describes. Observations
-that are not files go here. Example: a PES that PE-DESIGN opens blank.
+### `pes-design-properties` — reference, 2026-10-27
+
+Made in PE-DESIGN 11 Layout & Editing **11.50** on Windows 11 Pro 10.0.26200 by the owner,
+black-box: `target/compat/work/pes-design-properties/rose.pes` (an OpenStitch export) was opened
+in PE-DESIGN, its Design Property was viewed, and it was re-saved unchanged with Save As. The
+default Save As type is "Layout & Editing Ver.11.0 File", so the file carries the header
+`#PES0110`. Provenance and SHA-256 are in
+[MANIFEST.json](../compat/reference/MANIFEST.json).
+
+Finding this file surfaced: OpenStitch's PES reader had no case for the PE-DESIGN 11 header
+version `#PES0110`, so it left the object-section metadata unparsed and reported the PEC label
+(`pes-desi`) as the design name. The reader now parses the `0110` metadata (same documented layout
+as `0040`+: pec offset, `01 00`, a two-char code, then the five length-prefixed strings), so the
+five Design Property fields read back from a PE-DESIGN 11 file. The thread-table and object
+offsets after the metadata are not publicly described for this version; they are left unparsed,
+and stitches and chart colours still come from the PEC section.
+
+Also observed, not yet fixed (needs a clean PE-DESIGN-authored sample to settle the target
+encoding, so left as a follow-up): PE-DESIGN preserves the string bytes on save but *displays*
+them through a legacy code page, so OpenStitch's UTF-8 `é` shows as `Ã©` in the Design Property
+dialog, and a `\n` in the comment is shown as no line break.

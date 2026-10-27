@@ -1,4 +1,17 @@
 {
   "schema": "openstitch-compat-reference/1",
-  "files": []
+  "files": [
+    {
+      "file": "pes/pes-design-properties.pes",
+      "spec": "pes-design-properties",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Opened target/compat/work/pes-design-properties/rose.pes (OpenStitch export, header #PES0060) with Open; Design Property viewed and closed with Cancel; no change; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "e1eb912b3ae81f7e6aaa3755db9de40256031d3ee900447a6d3e8d717e72ccd3",
+      "notes": "Design Property showed Design Name 'Rose', Category 'Flowers', Keywords 'rose, red, spring' as expected, but Author 'Ana PÃ©rez' (the UTF-8 bytes of 'é' read as two characters) and Comment 'Line oneline two' (the two comment lines run together on one line). File Version 6.0, 40.00 x 29.60 mm, 874 stitches, one colour 5 Brother Red."
+    }
+  ]
 }
