@@ -20,7 +20,12 @@ fn order(s: &Session) -> Vec<u64> {
 /// Needle travel between objects: from the last stitch before each run of jumps / trims to
 /// the first stitch after it, mm.
 fn jumps(s: &Session) -> Vec<f64> {
-    let stitches = Compiler::default().compile(s.design()).stitches;
+    design_jumps(s.design())
+}
+
+/// [`jumps`] of a design.
+fn design_jumps(d: &openstitch_design::Design) -> Vec<f64> {
+    let stitches = Compiler::default().compile(d).stitches;
     let mut out = Vec::new();
     let (mut last, mut jumped): (Option<&Stitch>, bool) = (None, false);
     for st in &stitches {
@@ -38,7 +43,9 @@ fn jumps(s: &Session) -> Vec<f64> {
     out
 }
 
-/// Three same-colour 10 mm squares drawn at x = 0, 50 and 25 mm (ids 1, 2, 3).
+/// Three same-colour 10 mm squares drawn at x = 0, 50 and 25 mm (ids 1, 2, 3), without under
+/// sewing, so each fill's first needle point is its entry point (as in compat
+/// optimize-entry-exit).
 fn three_squares(s: &mut Session) {
     for x in [0, 50, 25] {
         run(
@@ -47,6 +54,11 @@ fn three_squares(s: &mut Session) {
             json!({"x": x, "y": 0, "width": 10, "height": 10, "fill": "Red"}),
         );
     }
+    run(
+        s,
+        "object.setRegion",
+        json!({"ids": [1, 2, 3], "underlay": false}),
+    );
 }
 
 #[test]
@@ -180,7 +192,15 @@ fn optimize_entry_exit_option_persists_and_applies_to_new_shapes() {
             .map(|p| p.x),
         Some(250.0)
     );
-    let j = jumps(&t);
+    // Measured without under sewing, so the fills start on their entry points (a copy, so the
+    // undo history below is unchanged).
+    let mut plain = t.design().clone();
+    for o in &mut plain.objects {
+        if let Some(r) = &mut o.region {
+            r.underlay = false;
+        }
+    }
+    let j = design_jumps(&plain);
     assert!(j.len() == 1 && (j[0] - 15.0).abs() <= 0.5, "{j:?}");
     // One undo step removes the shape and the moved exit point together.
     run(&mut t, "history.undo", json!({}));

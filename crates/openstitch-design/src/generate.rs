@@ -216,7 +216,9 @@ fn edge_row_spans(contours: &[Contour], p: &RegionParams, holes: &[Contour]) -> 
     let inside = 1e-3_f64.min(h / 4.0);
     (0..=n)
         .flat_map(|row| {
-            let y = (b.min_y + row as f64 * s).clamp(b.min_y + inside, b.max_y - inside);
+            // Sampled just past the row's line, so a row on a horizontal edge inside the region
+            // (a notch's end) does not run along that edge across the gap.
+            let y = (b.min_y + row as f64 * s + inside).clamp(b.min_y + inside, b.max_y - inside);
             crate::region::spans_at(contours, holes, p.angle, y)
                 .into_iter()
                 .filter_map(move |sp| {

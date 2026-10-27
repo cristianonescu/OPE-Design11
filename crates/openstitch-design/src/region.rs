@@ -313,7 +313,7 @@ fn fill_underlay(
     shape.extend(holes.iter().cloned());
     let inset =
         crate::boolean::contours(&crate::boolean::offset(&shape, -FILL_UNDERLAY_INSET, false));
-    let edge: Vec<Run> = inset
+    let mut edge: Vec<Run> = inset
         .iter()
         .filter(|c| c.closed && c.points.len() >= 3)
         .map(|c| match r.entry {
@@ -321,6 +321,17 @@ fn fill_underlay(
             None => generate::running(c, FILL_UNDERLAY_PITCH, 1),
         })
         .collect();
+    // With an entry point the region starts there: the edge run nearest to it goes first and
+    // is entered from the entry on the outline.
+    if let Some(p) = r.entry {
+        let at = crate::route::snap(closed, p);
+        let d = |run: &Run| run.first().map_or(f64::INFINITY, |q| q.distance(at));
+        if let Some(i) = (0..edge.len()).min_by(|&a, &b| d(&edge[a]).total_cmp(&d(&edge[b]))) {
+            let mut first = edge.remove(i);
+            first.insert(0, at);
+            edge.insert(0, first);
+        }
+    }
     let p = RegionParams {
         angle: angle + 90.0,
         row_spacing: r.underlay_spacing_mm() * 10.0,
@@ -340,11 +351,17 @@ fn fill_underlay(
     )]
 }
 
-/// Joins a region's layers (under sewing, then the top stitching) with running stitches
-/// inside the region, as PE-DESIGN sews them: no jump or trim from one layer to the next. Runs
-/// inside a layer stay as they are.
-pub fn join_layers(layers: Vec<Vec<Run>>, closed: &[Contour], holes: &[Contour]) -> Vec<Run> {
-    let mut graph = TravelGraph::new(closed, holes);
+/// Joins a region's layers (under sewing, then the top stitching) with running stitches, as
+/// PE-DESIGN sews them: no jump or trim from one layer to the next. The move follows `path`
+/// (Running Stitch Path), as the travel between parts does: PE's Inside goes straight across,
+/// Along / On outline follow the outline. Runs inside a layer stay as they are.
+pub fn join_layers(
+    layers: Vec<Vec<Run>>,
+    closed: &[Contour],
+    holes: &[Contour],
+    path: RunningStitchPath,
+) -> Vec<Run> {
+    let mut graph = travel_graph(closed, holes, path, 0.0);
     let mut out: Vec<Run> = Vec::new();
     for layer in layers {
         for (i, run) in layer.into_iter().filter(|r| !r.is_empty()).enumerate() {
@@ -380,6 +397,17 @@ pub fn reroute_with(
         .into_iter()
         .flat_map(|run| split_outside(run, closed, holes))
         .collect();
+    let mut graph = travel_graph(closed, holes, path, pull);
+    join(pieces, Some(&mut graph), 25.0)
+}
+
+/// The travel graph of `path`; row ends `pull` (0.1 mm) beyond the outline count as on it.
+fn travel_graph(
+    closed: &[Contour],
+    holes: &[Contour],
+    path: RunningStitchPath,
+    pull: f64,
+) -> TravelGraph {
     let mut graph = TravelGraph::new(closed, holes);
     graph.outline = match path {
         RunningStitchPath::Inside => None,
@@ -387,7 +415,7 @@ pub fn reroute_with(
         RunningStitchPath::OnOutline => Some(OutlineTravel::On),
     };
     graph.outline_tolerance = pull.max(0.0) + 1.0;
-    join(pieces, Some(&mut graph), 25.0)
+    graph
 }
 
 /// Splits `run` wherever a stitch leaves the region (its midpoint is outside and more than
