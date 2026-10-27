@@ -4,8 +4,10 @@
 mode on each OS and uploads one **workflow artifact** per OS (private to the repository, kept 30
 days). It runs after the tests on every push to `main` (called from `rust.yml`), and on pull
 requests that change `packaging/`, `assets/icons/` or the workflow. Releases are separate:
-`release.yml` runs only for a `vX.Y.Z` tag the owner pushes for a stable version and creates a
-draft GitHub release with the same packages.
+`release.yml` runs only for a tag the owner pushes (`vX.Y.Z` for a stable version, or
+`vX.Y.Z-alpha.N`, `-beta.N`, `-rc.N` for a pre-release, marked as such) and creates a draft
+GitHub release with the same packages; `release-smoke.yml` then installs the published Windows
+and Linux packages and runs them once. The notes for each release are in `docs/releases/`.
 
 | OS | Artifact | Built by | File associations |
 |---|---|---|---|
@@ -144,9 +146,6 @@ under Known limits.
   the owner allowing `unsafe` in one small, separately audited crate (a ~40-line objc2
   delegate that forwards the paths to the editor through a channel; the same exception as the
   Quick Look and Explorer thumbnailers below).
-- **Windows executable icon.** The MSI shows the icon on the Start-menu shortcut, in Add/Remove
-  Programs and on `.osd`/`.pes` files; `openstitch.exe` itself has no embedded icon resource yet
-  (needs a resource compiler step in the build).
 - **Flatpak is not on Flathub.** The bundle comes from the `Flatpak` workflow; publishing on
   Flathub needs offline cargo sources (see [Flatpak](#flatpak)) and the owner's submission.
 - File-manager thumbnails exist on Linux only; see below.

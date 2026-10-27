@@ -14,6 +14,12 @@ PE-DESIGN 11.
 Not affiliated with Brother Industries. No Brother code or assets are included; see
 [docs/LEGAL_AND_LICENSING.md](docs/LEGAL_AND_LICENSING.md).
 
+OpenStitch's stitching and files are checked against PE-DESIGN 11.50 itself: simple test designs
+made in a licensed copy through its normal interface are committed under `compat/reference/`,
+and the compatibility harness (`stitchtool compat`) compares OpenStitch's output with them spec
+by spec. [docs/COMPATIBILITY_STATUS.md](docs/COMPATIBILITY_STATUS.md) shows how far each
+feature has been verified.
+
 ![The OpenStitch editor: Application menu, Quick Access Toolbar and ribbon at the top, sewing order on the left, the design page in the middle, sewing attributes on the right and the stitch simulator below](docs/images/readme/editor.png)
 
 ## Screenshots
@@ -39,28 +45,39 @@ Not affiliated with Brother Industries. No Brother code or assets are included; 
   - sewing attributes and sewing order
   - rulers, grid and measure tool
   - undo, stitch simulator and realistic preview
-- **Stitches:**
-  - fill, satin and running/triple
+- **Stitches**, with PE-DESIGN 11.50's defaults, tie-in and lock, measured from its files:
+  - fill (under sewing, density, Frequency, gradation, feathered edge), satin (PE-DESIGN's
+    sawtooth, Auto direction) and running/triple
   - zigzag, motif, stem, candlewicking, E/V, chain and cutting lines
   - hole sewing and shape operations (merge, boolean, split, offset)
-- **Lettering** with bundled open-licence fonts, including text on a path.
+- **Lettering** with bundled open-licence fonts or your own: PE-DESIGN's text size and line
+  spacing, Fit Text to Outline, Text Transform presets, monograms and Name Drop.
 - **Image to embroidery:** Auto Punch-, Cross Stitch- and Photo Stitch-like conversion. These
   are independent approximations of PE-DESIGN's wizards.
 - **Files:**
   - read/write: PES, PEC, DST, EXP, JEF, PCS, SEW, XXX, HUS, VIP
-  - read only: SHV
+  - read only: SHV, PHC, CSD
+  - PES files from PE-DESIGN 11 (`#PES0110`): metadata, thread table and shapes read; OpenStitch's
+    own PES files open in PE-DESIGN 11 as stitch patterns, with their colours and Design
+    Property ([docs/FILE_FORMATS.md](docs/FILE_FORMATS.md))
   - editable `.osd` projects
 - **Automation:** a scripting CLI (`stitchtool`) and an MCP server (`openstitch-mcp`). Both run
   the same commands as the editor.
 
 See [docs/FEATURE_MATRIX.md](docs/FEATURE_MATRIX.md) for the full status of every feature and
-how far it has been verified.
+[docs/COMPATIBILITY_AUDIT.md](docs/COMPATIBILITY_AUDIT.md) for the known differences from
+PE-DESIGN 11 and which of them are fixed.
 
 ## Download a build
 
-Every merge to `main` builds the executables for all three operating systems. Open the repository
-on GitHub, go to **Actions → Rust workspace**, pick the latest run on `main` and download the
-artifact for your system:
+The latest pre-release is on the
+[Releases](https://github.com/cristianonescu/OpenStitch/releases) page, with notes in
+[docs/releases](docs/releases/). It is an alpha for testing, not for production work: do a test
+sew-out on scrap fabric first.
+
+Every merge to `main` also builds the executables for all three operating systems. Open the
+repository on GitHub, go to **Actions → Rust workspace**, pick the latest run on `main` and
+download the artifact for your system:
 
 | Artifact | Contents |
 |---|---|
@@ -86,9 +103,12 @@ Stable releases and pre-releases (alpha, beta, rc) are published from tags; see
 
 ### Prerequisites
 
-- **Rust** 1.95 or newer via [rustup](https://rustup.rs):
+- **Rust** stable via [rustup](https://rustup.rs) (CI builds with the current stable; the
+  workspace uses the 2024 edition):
   - macOS: `brew install rustup && rustup default stable`
-  - Windows: install rustup-init and the "Desktop development with C++" build tools
+  - Windows: install rustup-init and the "Desktop development with C++" build tools; the
+    toolchain is the MSVC one (`x86_64-pc-windows-msvc`, rustup's default on Windows), which
+    is also what embeds the icon in `openstitch.exe`
   - Linux: the rustup installer from rustup.rs
 - **Linux only, at run time:** the desktop libraries every X11/Wayland desktop already has
   (`libxkbcommon`, `libwayland-client` or `libX11`, and Vulkan or OpenGL drivers). Building needs
@@ -144,9 +164,12 @@ version 2 stored them clockwise and are converted when opened.
 cargo fmt --all -- --check
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
+cargo run -p stitchtool -- compat
 ```
 
-CI runs the same checks on macOS, Windows and Linux for every pull request.
+CI runs the same checks on macOS, Windows and Linux for every pull request, checks that
+`docs/COMPATIBILITY_STATUS.md` matches the harness's result, and scans the history for secrets
+with gitleaks.
 
 ## MCP server (Claude Code and other MCP clients)
 
@@ -234,14 +257,16 @@ To release:
 - [Editor window layout](docs/UI_LAYOUT.md)
 - [Feature matrix](docs/FEATURE_MATRIX.md)
 - [File formats](docs/FILE_FORMATS.md)
-- [Compatibility tests](docs/COMPATIBILITY_TESTS.md)
-- [Compatibility audit 2026-10-19: top 20 differences](docs/COMPATIBILITY_AUDIT.md)
+- [Compatibility tests](docs/COMPATIBILITY_TESTS.md) and the generated
+  [compatibility status](docs/COMPATIBILITY_STATUS.md)
+- [Compatibility audit: top 20 differences and the next 11](docs/COMPATIBILITY_AUDIT.md)
+- [Adding a PE-DESIGN reference file](compat/reference/README.md)
 - [Legal and licensing](docs/LEGAL_AND_LICENSING.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Distribution and packaging](docs/DISTRIBUTION.md)
-- [Reference VM plan](docs/VM_PLAN.md)
-- [Handoff 2026-10-19: state and next steps](docs/HANDOFF-2026-10-19.md)
-- [Handoff 2026-10-18](docs/HANDOFF-2026-10-18.md)
+- [Release notes](docs/releases/)
+- [Handoff 2026-10-19](docs/HANDOFF-2026-10-19.md) and [2026-10-18](docs/HANDOFF-2026-10-18.md)
+  (history)
 
 `tools/` holds the Python scripts that generate fixtures and data tables
 (`pip install pyembroidery`, run with `python -I`).

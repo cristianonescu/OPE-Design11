@@ -59,7 +59,7 @@ the project keeps:
 | Technique | Status | Reason |
 |---|---|---|
 | Reading Brother's public manuals, help pages and spec sheets | Allowed | Public documentation. |
-| Running a licensed PE-DESIGN in an isolated VM and recording inputs and outputs | Allowed | Black-box observation (Art. 5(3)). |
+| Running a licensed PE-DESIGN through its normal interface and recording inputs and outputs (the reference files in `compat/reference/`) | Allowed | Black-box observation (Art. 5(3)). |
 | Parsing files the contributors created or are authorised to use | Allowed | Interoperability. |
 | Using open-source format implementations as references or test oracles | Allowed | Within their licences; see Dependencies. |
 | Decompiling stitch-generation, Photo Stitch, Auto Punch or font code | **Prohibited** | Goes beyond interoperability; would produce a substantially similar program. Use black-box experiments instead. |
