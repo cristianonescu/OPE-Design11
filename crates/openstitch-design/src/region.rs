@@ -1033,9 +1033,184 @@ fn auto_satin(closed: &[Contour], r: &RegionSewing, holes: &[Contour]) -> Option
     if area(&column) < AUTO_COVERAGE * area(&closed[0].outline_points()) {
         return None;
     }
+    let mut rungs = fan_corners(reach_ends(rungs, closed, spacing), &closed[0]);
+    // PE-DESIGN starts Auto satin at the start point (by default the outline's first point),
+    // travels along the outline to the far end and sews the satin back to it.
+    let start = r
+        .entry
+        .or_else(|| closed[0].points.first().copied())
+        .map(|s| crate::route::snap(closed, s));
+    let centre = |g: &[Vec2; 2]| g[0].lerp(g[1], 0.5);
+    if let Some(s) = start
+        && centre(&rungs[0]).distance(s) < centre(&rungs[rungs.len() - 1]).distance(s)
+    {
+        rungs.reverse();
+        for g in &mut rungs {
+            g.swap(0, 1);
+        }
+    }
     let mut run = crate::column::zigzag(rungs);
     run.dedup_by(|a, b| a.distance(*b) < 1e-9);
+    if let (Some(s), Some(&first)) = (start, run.first()) {
+        let mut graph = TravelGraph::new(closed, holes);
+        graph.outline = Some(OutlineTravel::Inset(AUTO_TRAVEL_INSET));
+        graph.outline_tolerance = AUTO_TRAVEL_INSET + 1.0;
+        let path = graph.path(s, first).unwrap_or(vec![s, first]);
+        let mut lead = subdivide(&path, SATIN_TRAVEL_PITCH);
+        lead.pop();
+        lead.extend(run);
+        run = lead;
+    }
     Some(run)
+}
+
+/// Auto satin's travel to its far end runs this far inside the outline (0.1 mm; PE-DESIGN
+/// 11.50: 0.4-0.5 mm on the bent band).
+const AUTO_TRAVEL_INSET: f64 = 5.0;
+
+/// Distance from `p` along the unit `dir` to the nearest edge more than 0.1 mm away.
+fn ray_to(p: Vec2, dir: Vec2, edges: &[(Vec2, Vec2)]) -> Option<f64> {
+    edges
+        .iter()
+        .filter_map(|&(a, b)| {
+            let e = b - a;
+            let den = dir.x * e.y - dir.y * e.x;
+            if den.abs() < 1e-12 {
+                return None;
+            }
+            let w = a - p;
+            let t = (w.x * e.y - w.y * e.x) / den;
+            let u = (w.x * dir.y - w.y * dir.x) / den;
+            (t > 1.0 && (-1e-9..=1.0 + 1e-9).contains(&u)).then_some(t)
+        })
+        .min_by(f64::total_cmp)
+}
+
+/// A derived column carried on to the outline at both ends, rows `spacing` apart and one on the
+/// edge: the skeleton stops short of a band's square end, PE-DESIGN's satin reaches it.
+fn reach_ends(rungs: Vec<[Vec2; 2]>, closed: &[Contour], spacing: f64) -> Vec<[Vec2; 2]> {
+    if rungs.len() < 2 {
+        return rungs;
+    }
+    let edges: Vec<(Vec2, Vec2)> = closed.iter().flat_map(Contour::edges).collect();
+    let centre = |g: &[Vec2; 2]| g[0].lerp(g[1], 0.5);
+    let beyond = |end: [Vec2; 2], next: [Vec2; 2]| -> Vec<[Vec2; 2]> {
+        let out = centre(&end) - centre(&next);
+        if out.length() < 1e-9 {
+            return vec![end];
+        }
+        let dir = out * (1.0 / out.length());
+        let Some(gap) = ray_to(centre(&end), dir, &edges) else {
+            return vec![end];
+        };
+        // Rows a spacing apart, and one more on the edge.
+        let mut steps: Vec<f64> = vec![0.0];
+        let mut d = spacing;
+        while d < gap - spacing * 0.5 {
+            steps.push(d);
+            d += spacing;
+        }
+        if gap > spacing * 0.25 {
+            steps.push(gap - 0.1);
+        }
+        steps
+            .into_iter()
+            .map(|d| [end[0] + dir * d, end[1] + dir * d])
+            .collect()
+    };
+    let n = rungs.len();
+    let head = beyond(rungs[0], rungs[1]);
+    let tail = beyond(rungs[n - 1], rungs[n - 2]);
+    let mut out: Vec<[Vec2; 2]> = head.into_iter().rev().collect();
+    out.extend(rungs[1..n - 1].iter().copied());
+    out.extend(tail);
+    out
+}
+
+/// PE-DESIGN 11.50's corner fan on Auto satin (satin-auto-bend-90-nohalf, satin-auto-bend-60):
+/// near each outer corner of the outline the rungs keep their outer ends, and their direction
+/// turns evenly with the distance along the outer edge, from square to one leg to square to the
+/// other, over three band widths for a 90° turn (in proportion for other turns), centred on the
+/// corner; each rung then reaches across to the outline. The inner ends crowd towards the inner
+/// corner, as PE's do.
+fn fan_corners(mut rungs: Vec<[Vec2; 2]>, outline: &Contour) -> Vec<[Vec2; 2]> {
+    let pts = outline.outline_points();
+    let n = pts.len();
+    if n < 3 || rungs.is_empty() {
+        return rungs;
+    }
+    let edges: Vec<(Vec2, Vec2)> = outline.edges();
+    let ccw = (0..n)
+        .map(|i| crate::paths::cross(pts[i], pts[(i + 1) % n]))
+        .sum::<f64>()
+        > 0.0;
+    let inward = |d: Vec2| if ccw { v2(-d.y, d.x) } else { v2(d.y, -d.x) };
+    let mut widths: Vec<f64> = rungs.iter().map(|g| g[0].distance(g[1])).collect();
+    widths.sort_by(f64::total_cmp);
+    let width = widths[widths.len() / 2];
+    let corner = |k: usize| {
+        let (a, v, b) = (pts[(k + n - 1) % n], pts[k], pts[(k + 1) % n]);
+        let (din, dout) = (crate::paths::unit(v - a), crate::paths::unit(b - v));
+        let turn = crate::paths::dot(din, dout).clamp(-1.0, 1.0).acos();
+        let convex = (crate::paths::cross(din, dout) > 0.0) == ccw;
+        (a, v, b, din, dout, turn, convex)
+    };
+    // Inner corners of bends; a band's square end has outer corners but no inner one near.
+    let inner: Vec<Vec2> = (0..n)
+        .filter(|&k| {
+            let (_, _, _, _, _, turn, convex) = corner(k);
+            !convex && turn >= 15f64.to_radians()
+        })
+        .map(|k| pts[k])
+        .collect();
+    let mut done = vec![false; rungs.len()];
+    for k in 0..n {
+        let (a, v, b, din, dout, turn, convex) = corner(k);
+        if !convex
+            || turn < 15f64.to_radians()
+            || !inner.iter().any(|&q| q.distance(v) <= 2.0 * width)
+        {
+            continue;
+        }
+        let zone = 3.0 * width * turn / std::f64::consts::FRAC_PI_2;
+        let (nin, nout) = (inward(din), inward(dout));
+        let (ain, aout) = (nin.y.atan2(nin.x), nout.y.atan2(nout.x));
+        let mut sweep = aout - ain;
+        while sweep > std::f64::consts::PI {
+            sweep -= std::f64::consts::TAU;
+        }
+        while sweep < -std::f64::consts::PI {
+            sweep += std::f64::consts::TAU;
+        }
+        let on = |p: Vec2, s: Vec2, e: Vec2| crate::skeleton::segment_distance(p, s, e) <= 1.0;
+        for (i, g) in rungs.iter_mut().enumerate() {
+            if done[i] {
+                continue;
+            }
+            let Some((side, u)) = (0..2).find_map(|s| {
+                let e = g[s];
+                if on(e, a, v) {
+                    Some((s, -e.distance(v)))
+                } else if on(e, v, b) {
+                    Some((s, e.distance(v)))
+                } else {
+                    None
+                }
+            }) else {
+                continue;
+            };
+            if u.abs() > zone / 2.0 {
+                continue;
+            }
+            let angle = ain + sweep * (u + zone / 2.0) / zone;
+            let dir = v2(angle.cos(), angle.sin());
+            if let Some(d) = ray_to(g[side], dir, &edges) {
+                g[1 - side] = g[side] + dir * d;
+                done[i] = true;
+            }
+        }
+    }
+    rungs
 }
 
 /// Area enclosed by the polygon `pts` (shoelace, unsigned).

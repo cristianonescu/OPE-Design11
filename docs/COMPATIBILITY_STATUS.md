@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 81 · pass 81 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 83 · pass 83 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -26,7 +26,7 @@ Specs: 81 · pass 81 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Line sew types | Zigzag: width, density… | reference | `line-zigzag-default`, `line-zigzag-density-max` |
 | Region sew types | Fill (tatami: angle or auto direction… | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max` |
 | Region sew types | Programmable fill… | reference | `programmable-fill-45` |
-| Region sew types | Satin: a zigzag across the column… | internal-regression; reference pending | `auto-satin-bent-band`, `region-travel-u-satin`, `satin-feather`, `satin-sections-h`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
+| Region sew types | Satin: a zigzag across the column… | internal-regression; reference pending | `auto-satin-bent-band`, `region-travel-u-satin`, `satin-auto-bend-60`, `satin-auto-bend-90-nohalf`, `satin-feather`, `satin-sections-h`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
 
 ## By audit item
 
@@ -35,7 +35,7 @@ Specs: 81 · pass 81 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | 1 | internal-regression; reference pending | `satin-feather`, `satin-lock-column-3p5`, `satin-zigzag-column`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
 | 2 | oracle; reference pending | `pes-default-v6`, `pes-library-convert-v6` |
 | 3 | internal-regression | `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `region-travel-u-satin`, `running-stitch-path-exclusions`, `satin-sections-h` |
-| 7 | reference | `auto-satin-bent-band` |
+| 7 | reference | `auto-satin-bent-band`, `satin-auto-bend-60`, `satin-auto-bend-90-nohalf` |
 | 14 | reference | `programmable-fill-45` |
 | 15 | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max` |
 | 16 | reference | `optimize-entry-exit` |
@@ -74,6 +74,8 @@ Specs: 81 · pass 81 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/region-travel-u-on-outline` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-satin` | pass | reference | pass | — | pass | — |
 | `stitches/running-stitch-path-exclusions` | pass | internal-regression | pass | — | — | — |
+| `stitches/satin-auto-bend-60` | pass | reference | — | — | pass | — |
+| `stitches/satin-auto-bend-90-nohalf` | pass | reference | — | — | pass | — |
 | `stitches/satin-feather` | pass | reference | pass | — | pass | — |
 | `stitches/satin-lock-column-3p5` | pass | reference | pass | — | pass | — |
 | `stitches/satin-sections-h` | pass | reference | pass | — | pass | — |

@@ -900,6 +900,30 @@
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 26: top straight, baseline sags in the middle (mirror of 18). 74,60 x 10,30 mm, 1131 st, box (12.7, 40.0)-(87.3, 50.3) mm. Save As PES default type (#PES0110).",
       "sha256": "6ff7638dd4b3277a886f47496632d6d614ba7f4098bfb475fdcca754fecaa274",
       "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/satin-auto-bend-60.pes",
+      "spec": "satin-auto-bend-60",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New, Design Page Custom Size 100 x 100 mm; Import Patterns > from Vector Image... of D:\\_sandboxes\\PE-reference-notes\\shapes\\bend-60.svg (one polygon (0,0) (30,0) (38.66,15) (34.33,17.5) (27.11,5) (0,5) mm, viewBox 0 0 100 100 = 100 x 100 mm); the shape was imported centred on the page with Fill Stitch attributes and changed while selected: line Not Sewn (Line), region Satin Stitch, Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch ticked (the imported shape showed it unticked; the drawing tools default to ticked), Pull compensation 0.0 mm; colour 800 RED; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "51a065f7553dcbbbd53fcdfec7469bfed87a5195d49f4a44379cb8e00d85643b",
+      "notes": "The imported shape measures 38,60 x 17,40 mm (PE appears to keep vertices at 0.1 mm; the polygon is 38.66 x 17.5 mm). Status bar with satin: Width 38,60 mm, Height 17,10 mm, Stitches = 177, the same with Half Stitch on or off. Position: centred on the page, not at the origin."
+    },
+    {
+      "file": "stitches/satin-auto-bend-90-nohalf.pes",
+      "spec": "satin-auto-bend-90-nohalf",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Shapes > Closed Straight Line, points (0,0) (30,0) (30,30) (25,30) (25,5) (0,5) mm, the last with a double click; line Not Sewn (Line); region Satin Stitch; Sewing Attributes > Region sew: Under sewing checkbox (top of the group) unticked, Density 3.0 line/mm; colour BROTHER EMBROIDERY 800 RED; Gradation off, Direction Auto, Half Stitch unticked, Pull compensation 0.0 mm; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
+      "sha256": "00d83c61e520bfde783c97a6827962b50087963e63de24f5e634ef87e7a52a1a",
+      "notes": "Status bar: Width 30,00 mm, Height 30,00 mm, Stitches = 219. Round 1's auto-satin-bent-band (Half Stitch on, density 4.5, under sewing on) showed 433."
     }
   ]
 }
