@@ -24,6 +24,10 @@
       "kind": "guide",
       "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
       "note": "Region sewing attributes: satin is shown only in pictures"
+    },
+    {
+      "kind": "measured",
+      "note": "Density 3.0 and under sewing off are set explicitly so the spec tests the top satin's shape only, not OpenStitch's satin defaults (now PE-DESIGN 11.50's 4.5 lines/mm with under sewing on); same decision as satin-zigzag-rect and satin-zigzag-column (coordinator, 2026-10-27)."
     }
   ],
   "script": [
@@ -48,6 +52,14 @@
           ]
         ],
         "width": 2
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "density": 3,
+        "underlay": false
       }
     }
   ],

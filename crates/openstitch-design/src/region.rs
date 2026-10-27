@@ -14,6 +14,13 @@ use crate::regions;
 /// Inset of underlay rows from the outline (0.1 mm).
 const UNDERLAY_INSET: f64 = 5.0;
 
+/// Inset of satin under sewing (outline and rows) from the outline (0.1 mm), as PE-DESIGN 11
+/// sews it; on a column too narrow for it, the outline is sewn 0.9 mm in.
+const SATIN_UNDERLAY_INSETS: [f64; 2] = [10.0, 9.0];
+
+/// Running stitch of the travel from satin under sewing to the top stitching (0.1 mm).
+const SATIN_TRAVEL_PITCH: f64 = 20.0;
+
 /// The layers of a region in sewing order (underlay first, then the top stitching); each layer
 /// is a list of runs.
 pub fn layers(closed: &[Contour], r: &RegionSewing, holes: &[Contour]) -> Vec<Vec<Run>> {
@@ -27,13 +34,77 @@ pub fn layers_with(
     holes: &[Contour],
     user: &[Pattern],
 ) -> Vec<Vec<Run>> {
+    let mut out = layers_inner(closed, r, holes, user);
+    if r.kind == RegionType::Satin && r.underlay {
+        link_underlay(&mut out, closed, holes);
+    }
+    out
+}
+
+/// Satin: the under sewing layers become one run that travels inside the region from layer
+/// to layer and on to the first needle point of the top stitching, so the object is sewn
+/// without a jump (PE-DESIGN 11 sews satin this way).
+fn link_underlay(out: &mut Vec<Vec<Run>>, closed: &[Contour], holes: &[Contour]) {
+    if out.len() < 2 {
+        return;
+    }
+    let top = out.pop().expect("two layers");
+    let mut pieces: Vec<Run> = out.drain(..).flatten().filter(|r| !r.is_empty()).collect();
+    // Between under sewing runs the travel follows the inset outline, where PE-DESIGN sews
+    // it too; the rest (and the way to the top stitching) is the shortest path inside.
+    if let Some(inner) = satin_inset(closed, holes) {
+        let mut graph = TravelGraph::new(&inner, &[]);
+        graph.outline = Some(OutlineTravel::On);
+        graph.outline_tolerance = 5.0;
+        pieces = join(pieces, Some(&mut graph), SATIN_TRAVEL_PITCH);
+    }
+    if let (false, Some(start)) = (
+        pieces.is_empty(),
+        top.iter().find_map(|r| r.first().copied()),
+    ) {
+        pieces.push(vec![start]);
+    }
+    let mut graph = TravelGraph::new(closed, holes);
+    let mut linked: Vec<Run> = join(pieces, Some(&mut graph), SATIN_TRAVEL_PITCH)
+        .into_iter()
+        .filter(|r| r.len() > 1)
+        .collect();
+    // Subdividing the travel can miss its end by a rounding error; the top stitching must
+    // begin exactly where the under sewing stops, or the writer moves there with a jump.
+    if let (Some(end), Some(start)) = (
+        linked.last_mut().and_then(|r| r.last_mut()),
+        top.iter().find_map(|r| r.first().copied()),
+    ) && end.distance(start) < 1e-6
+    {
+        *end = start;
+    }
+    out.push(linked);
+    out.push(top);
+}
+
+/// The outline of satin under sewing: the region (minus its holes) moved 1 mm inwards, or
+/// 0.9 mm where 1 mm leaves nothing; `None` for a region narrower than that.
+fn satin_inset(closed: &[Contour], holes: &[Contour]) -> Option<Vec<Contour>> {
+    let all: Vec<Contour> = closed.iter().chain(holes).cloned().collect();
+    SATIN_UNDERLAY_INSETS
+        .iter()
+        .map(|&d| crate::boolean::contours(&crate::boolean::offset(&all, -d, false)))
+        .find(|c| !c.is_empty())
+}
+
+fn layers_inner(
+    closed: &[Contour],
+    r: &RegionSewing,
+    holes: &[Contour],
+    user: &[Pattern],
+) -> Vec<Vec<Run>> {
     // Skeleton: the top stitching is a satin column along the centre line.
     if let Some(skeleton) = &r.skeleton
         && r.kind == RegionType::Satin
     {
         let mut plain = r.clone();
         plain.skeleton = None;
-        let mut out = layers_with(closed, &plain, holes, user);
+        let mut out = layers_inner(closed, &plain, holes, user);
         out.pop();
         let spacing = 10.0 / r.density.max(0.1);
         out.push(vec![crate::skeleton::satin(
@@ -86,7 +157,7 @@ pub fn layers_with(
     if r.direction_lines.len() >= 2 && matches!(r.kind, RegionType::Satin | RegionType::Fill) {
         let mut plain = r.clone();
         plain.direction_lines.clear();
-        let mut out = layers(closed, &plain, holes);
+        let mut out = layers_inner(closed, &plain, holes, &[]);
         out.pop();
         let spacing = 10.0 / r.density.max(0.1);
         let pull = r.pull_compensation * 10.0;
@@ -110,10 +181,12 @@ pub fn layers_with(
         && r.kind == RegionType::Satin
         && let Some(top) = auto_satin(closed, r, holes)
     {
+        // PE-DESIGN 11 sews the under sewing rows of Auto satin at 90° (across a bent band's
+        // horizontal leg, along its vertical one): the rows of a 0° satin.
         let mut plain = r.clone();
         plain.auto_direction = false;
-        plain.angle = auto_angle(closed);
-        let mut out = layers_with(closed, &plain, holes, user);
+        plain.angle = 0.0;
+        let mut out = layers_inner(closed, &plain, holes, user);
         out.pop();
         out.push(vec![top]);
         return out;
@@ -156,7 +229,37 @@ pub fn layers_with(
         } else {
             angle + 90.0
         };
+        // Satin as PE-DESIGN 11 sews it: the outline 1 mm in, then rows across the satin
+        // (perpendicular to its stitches) 2 mm apart with stitches of the fill length.
+        let satin_rows = || -> Vec<Run> {
+            let p = RegionParams {
+                angle: angle + 90.0,
+                row_spacing: r.underlay_spacing_mm() * 10.0,
+                stitch_length: params.stitch_length,
+                pull_compensation: -SATIN_UNDERLAY_INSETS[0],
+            };
+            satin_underlay_rows(closed, &p, holes)
+        };
+        // The outline starts at the entry point, or else where the rows begin.
+        let satin_edge = |start: Option<Vec2>| -> Vec<Run> {
+            let Some(inner) = satin_inset(closed, holes) else {
+                return edge();
+            };
+            inner
+                .iter()
+                .map(|c| match r.entry.or(start) {
+                    Some(p) => generate::running(&c.starting_at(p), 25.0, 1),
+                    None => generate::running(c, 25.0, 1),
+                })
+                .collect()
+        };
         match r.underlay_style {
+            UnderlayStyle::Zigzag if r.kind == RegionType::Satin => out.push(satin_rows()),
+            UnderlayStyle::EdgeZigzag if r.kind == RegionType::Satin => {
+                let rows = satin_rows();
+                out.push(satin_edge(rows.first().and_then(|r| r.first().copied())));
+                out.push(rows);
+            }
             UnderlayStyle::Edge => out.push(edge()),
             UnderlayStyle::Zigzag => out.push(rows(across)),
             UnderlayStyle::EdgeZigzag => {
@@ -255,6 +358,58 @@ fn split_outside(run: Run, closed: &[Contour], holes: &[Contour]) -> Vec<Run> {
     out.push(current);
     out.retain(|r| !r.is_empty());
     out
+}
+
+/// Rows of satin under sewing (`p` gives their direction, spacing, stitch and inset as a
+/// negative pull compensation). The rows lie on the region's grid but are cut from its
+/// under sewing outline ([`satin_inset`]), so none runs along the region's own edge. Where no
+/// row is cut in two, they are sewn one after the other across the region, each from its end
+/// nearer the last needle point, as PE-DESIGN 11 does; otherwise as fill rows (nearest row
+/// next).
+fn satin_underlay_rows(closed: &[Contour], p: &RegionParams, holes: &[Contour]) -> Vec<Run> {
+    let Some(inner) = satin_inset(closed, holes) else {
+        return generate::fill(closed, p, holes);
+    };
+    let rows: Vec<(usize, f64, Vec<Span>)> = row_positions(closed, p.angle, p.row_spacing, None)
+        .into_iter()
+        .enumerate()
+        .map(|(i, y)| {
+            // Spans that touch (a row along an edge between two parts) are one span.
+            let mut merged: Vec<Span> = Vec::new();
+            for s in spans_at(&inner, &[], p.angle, y) {
+                match merged.last_mut() {
+                    Some(m) if s.start() - m.end() < 1e-6 => *m = *m.start()..=*s.end(),
+                    _ => merged.push(s),
+                }
+            }
+            let spans = merged.into_iter().filter(|s| s.end() > s.start()).collect();
+            (i, y, spans)
+        })
+        .collect();
+    if rows.iter().any(|(_, _, s)| s.len() > 1) {
+        let p = RegionParams {
+            pull_compensation: 0.0,
+            ..*p
+        };
+        return generate::fill(&inner, &p, &[]);
+    }
+    let mut at: Option<Vec2> = None;
+    let mut runs = Vec::new();
+    for (i, y, spans) in rows {
+        let Some(span) = spans.first() else {
+            continue;
+        };
+        let mut xs = tatami_points(span, i, p.stitch_length, None);
+        let run: Run = xs.iter().map(|&x| unrotate(x, y, p.angle)).collect();
+        let reverse = at.is_some_and(|a| a.distance(run[run.len() - 1]) < a.distance(run[0]));
+        if reverse {
+            xs.reverse();
+        }
+        let run: Run = xs.iter().map(|&x| unrotate(x, y, p.angle)).collect();
+        at = run.last().copied();
+        runs.push(run);
+    }
+    runs
 }
 
 /// Least share of the region a derived skeleton's column must cover for Auto satin to follow

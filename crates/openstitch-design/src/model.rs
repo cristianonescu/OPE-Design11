@@ -888,16 +888,20 @@ impl RegionSewing {
                 RegionType::ProgrammableFill => 45.0,
                 _ => 0.0,
             },
+            // PE-DESIGN 11.50 Sewing Attributes: satin 4.5 lines/mm with under sewing on.
             density: match kind {
                 RegionType::Fill | RegionType::ProgrammableFill => 2.5,
-                RegionType::Satin => 3.0,
+                RegionType::Satin => 4.5,
                 RegionType::Piping => 1.0,
                 _ => 1.5,
             },
             stitch_length: 4.0,
             pull_compensation: 0.0,
-            underlay: false,
-            underlay_style: UnderlayStyle::Edge,
+            underlay: kind == RegionType::Satin,
+            underlay_style: match kind {
+                RegionType::Satin => UnderlayStyle::EdgeZigzag,
+                _ => UnderlayStyle::Edge,
+            },
             underlay_spacing: None,
             auto_direction: false,
             gradation: None,
