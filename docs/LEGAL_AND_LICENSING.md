@@ -35,6 +35,14 @@ the project keeps:
   used. The vector shapes in `crates/openstitch-app/src/icons.rs` are the fallback when an SVG
   cannot be rendered. The application icon (`assets/icons/openstitch*`) is drawn by
   `tools/gen_icons.py` and the Application button mark in code.
+- **Illustrations and textures:** the spot illustrations in `assets/illustrations` (empty
+  states, thumbnail placeholders, wizard headers) and the Realistic view's cloth
+  (`assets/textures/fabric_cotton.png`) were generated for OpenStitch with Higgsfield (Recraft
+  V4.1, vector output for the illustrations, raster for the cloth) under the project owner's
+  account, in the command icons' style. Every prompt is in `assets/illustrations/prompts.tsv`
+  and `assets/illustrations/README.md`: each describes a generic object (a hoop, a folder, a
+  spool, a woven cotton surface) and none names or describes Brother, PE-DESIGN or their
+  artwork; no reference images were used. Without them the editor shows the text alone.
 - **Never in the repository:** Brother artwork, icons, logos, fonts or screenshots of
   PE-DESIGN. Documentation screenshots show OpenStitch only.
 - **Naming:** "PE-DESIGN" is not used as product branding in the user interface. Compatibility

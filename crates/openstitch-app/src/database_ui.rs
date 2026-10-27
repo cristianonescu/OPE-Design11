@@ -6,6 +6,7 @@
 //! [`openstitch_app::editor::database`]; this module only draws them.
 
 use crate::app::EditorApp;
+use crate::art::Art;
 use crate::suite_chrome::{self, Host};
 use eframe::egui::{self, Color32, RichText, Sense};
 use openstitch_app::editor::database::{
@@ -439,13 +440,15 @@ fn contents(app: &mut EditorApp, ui: &mut egui::Ui) {
         ui.separator();
     }
     let Some(_) = &app.database.folder else {
-        ui.centered_and_justified(|ui| ui.label("Choose a folder on the left."));
+        crate::art::empty_state(ui, Art::DbChoose, 96.0, "Choose a folder on the left.");
         return;
     };
     if app.database.items().is_empty() && app.database.listing.folders.is_empty() {
-        ui.centered_and_justified(|ui| {
-            ui.label(RichText::new("No embroidery designs here.").weak())
-        });
+        if app.database.results.is_some() {
+            crate::art::empty_state(ui, Art::DbNoResults, 96.0, "No designs match.");
+        } else {
+            crate::art::empty_state(ui, Art::DbEmpty, 96.0, "No embroidery designs here.");
+        }
         return;
     }
     egui::ScrollArea::vertical()
@@ -567,14 +570,8 @@ fn tiles(app: &mut EditorApp, ui: &mut egui::Ui, side: f32) {
                     egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
                     Color32::WHITE,
                 );
-            } else if app.database.loaded(p).is_some() {
-                painter.text(
-                    img_rect.center(),
-                    egui::Align2::CENTER_CENTER,
-                    "⚠",
-                    egui::FontId::proportional(side * 0.3),
-                    Color32::from_rgb(200, 120, 0),
-                );
+            } else {
+                placeholder(app, &painter, img_rect, p);
             }
             label_under(ui, &painter, rect, side, &file_name(p));
             let hover = app.database.loaded(p).map(|l| match &l.info.summary {
@@ -594,6 +591,17 @@ fn tiles(app: &mut EditorApp, ui: &mut egui::Ui, side: f32) {
             item_interaction(app, ui, &r, p);
         }
     });
+}
+
+/// In place of a thumbnail: a torn page when the file can't be read, a faded spool while it
+/// loads. Thumbnails sit on white in both themes, so the outline stays charcoal.
+fn placeholder(app: &EditorApp, painter: &egui::Painter, rect: egui::Rect, p: &Path) {
+    let (art, opacity) = match app.database.loaded(p) {
+        Some(_) => (Art::ThumbBroken, 0.9),
+        None => (Art::ThumbLoading, 0.35),
+    };
+    let r = egui::Rect::from_center_size(rect.center(), rect.size() * 0.55);
+    crate::art::paint(painter, r, art, crate::art::OUTLINE, opacity);
 }
 
 fn label_under(ui: &egui::Ui, painter: &egui::Painter, rect: egui::Rect, side: f32, text: &str) {
@@ -640,6 +648,8 @@ fn details(app: &mut EditorApp, ui: &mut egui::Ui) {
                         egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
                         Color32::WHITE,
                     );
+                } else {
+                    placeholder(app, ui.painter(), rect, p);
                 }
                 let selected = app.database.selection.contains(p);
                 let r = ui.add(

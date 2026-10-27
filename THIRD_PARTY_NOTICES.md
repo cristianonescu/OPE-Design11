@@ -47,6 +47,16 @@ for it, then cleaned by `tools/clean_icons.py` (generator metadata and backgroun
 fills snapped to the palette). They contain no third-party artwork and are distributed under
 the repository's licence. See docs/LEGAL_AND_LICENSING.md.
 
+## Illustrations and fabric texture — generated with Higgsfield
+
+The SVGs in `assets/illustrations` and the texture `assets/textures/fabric_cotton.png` were
+generated for OpenStitch with Higgsfield (https://higgsfield.ai, Recraft V4.1) from the prompts
+in `assets/illustrations/prompts.tsv` and `assets/illustrations/README.md`, under the project
+owner's account and Higgsfield's terms for it. The SVGs were cleaned by `tools/clean_icons.py`
+(and five fills set to the palette by hand); the texture was cropped, made to tile and scaled
+down. They contain no third-party artwork and are distributed under the repository's licence.
+See docs/LEGAL_AND_LICENSING.md.
+
 ## arboard — https://github.com/1Password/arboard
 
 Linked into the editor for clipboard images (already a dependency of eframe). MIT OR
