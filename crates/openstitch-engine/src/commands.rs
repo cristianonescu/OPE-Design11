@@ -1064,7 +1064,11 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     "degrees",
                     "Sewing direction, counter-clockwise on screen as in PE-DESIGN (0 = horizontal)",
                 ),
-                opt("density", "rows/mm", "Row density"),
+                opt(
+                    "density",
+                    "rows/mm",
+                    "Row density (fill and satin 0.1-14, others 0.5-10)",
+                ),
                 opt("stitchLength", "mm", "Fill stitch length"),
                 opt("pullCompensation", "mm", "Row end extension"),
                 opt("underlay", "bool", "Underlay (style in underlayStyle)"),
@@ -1242,7 +1246,8 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         r.thread = c.clone();
                     }
                     r.angle = p.opt("angle", r.angle, -360.0, 360.0)?;
-                    r.density = p.opt("density", r.density, 0.5, 10.0)?;
+                    let (lo, hi) = r.kind.density_range();
+                    r.density = p.opt("density", r.density, lo, hi)?;
                     r.stitch_length = p.opt("stitchLength", r.stitch_length, 1.0, 10.0)?;
                     r.pull_compensation =
                         p.opt("pullCompensation", r.pull_compensation, 0.0, 2.0)?;

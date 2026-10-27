@@ -266,7 +266,7 @@ pub fn region_controls_with(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> 
             "region.density",
             "density",
             r.density,
-            (0.5, 10.0),
+            r.kind.density_range(),
             0.05,
             unit,
         ));

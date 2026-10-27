@@ -623,6 +623,15 @@ pub enum RegionType {
 }
 
 impl RegionType {
+    /// Accepted density, rows (lines) per mm. Fill and satin take PE-DESIGN 11's range,
+    /// 0.1–14.0 (its Density field clamps there); the other types keep 0.5–10.
+    pub fn density_range(self) -> (f64, f64) {
+        match self {
+            RegionType::Fill | RegionType::Satin => (0.1, 14.0),
+            _ => (0.5, 10.0),
+        }
+    }
+
     pub const ALL: [RegionType; 14] = [
         RegionType::Fill,
         RegionType::Satin,

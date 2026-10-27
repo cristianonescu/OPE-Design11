@@ -290,7 +290,8 @@ pub fn commands() -> Vec<CommandSpec> {
                     RegionType::Satin,
                     thread(p, "fill")?.unwrap_or_else(default_fill),
                 );
-                region.density = p.opt("density", region.density, 0.5, 10.0)?;
+                let (lo, hi) = region.kind.density_range();
+                region.density = p.opt("density", region.density, lo, hi)?;
                 region.skeleton = Some(sk);
                 let line = thread(p, "outline")?.map(|t| LineSewing::new(LineType::Running, t));
                 let mut o = DesignObject::shape(vec![outline], Some(region), line);
