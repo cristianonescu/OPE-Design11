@@ -15,6 +15,11 @@ semver = "1"
 ureq = { version = "3", default-features = false, features = ["rustls", "gzip"] }
 # SHA-256 of a download, checked against the release's SHA256SUMS.
 sha2 = "0.11"
+# The Windows portable zip and the macOS bundle zip (reading; deflate only).
+zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+# The Linux tarball.
+tar = "0.4"
+flate2 = "1"
 
 [lints]
 workspace = true
