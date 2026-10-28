@@ -70,6 +70,12 @@ jobs:
           set -euo pipefail
           # WiX debug symbols are a build by-product, not something users download.
           rm -f assets/*.wixpdb
+          # SHA-256 of every asset (sha256sum format). The editor's updater downloads this file
+          # first and refuses an asset whose digest is missing or different
+          # (docs/research/updater.md).
+          (cd assets && sha256sum -- * > ../SHA256SUMS)
+          mv SHA256SUMS assets/
+          cat assets/SHA256SUMS
           args=(--repo "$GITHUB_REPOSITORY" --draft --verify-tag
                 --title "OpenStitch $GITHUB_REF_NAME" --generate-notes)
           case "$GITHUB_REF_NAME" in *-*) args+=(--prerelease) ;; esac

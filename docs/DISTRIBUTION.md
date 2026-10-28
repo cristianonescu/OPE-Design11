@@ -6,8 +6,11 @@ days). It runs after the tests on every push to `main` (called from `rust.yml`),
 requests that change `packaging/`, `assets/icons/` or the workflow. Releases are separate:
 `release.yml` runs only for a tag the owner pushes (`vX.Y.Z` for a stable version, or
 `vX.Y.Z-alpha.N`, `-beta.N`, `-rc.N` for a pre-release, marked as such) and creates a draft
-GitHub release with the same packages; `release-smoke.yml` then installs the published Windows
-and Linux packages and runs them once. The notes for each release are in `docs/releases/`.
+GitHub release with the same packages and a `SHA256SUMS` file (sha256sum format, one line per
+asset) that the editor's self-updater checks downloads against; `release-smoke.yml` then installs
+the published Windows and Linux packages and runs them once. The build receives the label as
+`OPENSTITCH_RELEASE_TAG`, which the editor embeds so a release build knows its tag (see
+[research/updater.md](research/updater.md)). The notes for each release are in `docs/releases/`.
 
 | OS | Artifact | Built by | File associations |
 |---|---|---|---|

@@ -55,6 +55,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       LABEL: ${{ inputs.version || format('pr{0}-{1}', github.event.pull_request.number, github.run_number) }}
+      # The editor embeds the label it was built from (option_env! in the updater) so a release
+      # build knows its tag (v0.1.0-alpha.3) and can compare it with the newest GitHub release;
+      # a main-<sha> or pr<N> label, or no label at all (a local cargo build), turns the update
+      # check off (docs/research/updater.md).
+      OPENSTITCH_RELEASE_TAG: ${{ inputs.version || format('pr{0}-{1}', github.event.pull_request.number, github.run_number) }}
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
