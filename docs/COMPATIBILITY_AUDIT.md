@@ -99,6 +99,12 @@ Line references are relative to `crates/`.
 
 ## 1. Satin is sewn as a square wave, not a zigzag
 
+- **Wide columns (2026-10-28, `machine-satin-width-30.pes`, reference tier; `-20.pes` parked):**
+  PE-DESIGN sends a 30 mm satin crossing to the machine whole (every stitch 30 mm, 209 stitches on
+  a 40 × 30 mm column at density 4.5) and OpenStitch matches it; on the 40 × 20 mm column PE-DESIGN
+  keeps the 20 mm crossings whole too but adds a run of 4 mm stitches along the column (417
+  stitches, OpenStitch 208): the rule for that extra run is unknown.
+
 - **Impact:** severity 5.
   - Every satin row goes straight across, then takes a short stitch along the edge to the next
     row.
@@ -259,9 +265,14 @@ Line references are relative to `crates/`.
 - **Raised 2026-10-28** (reference `machine-jumps.pes`, parked with the parked-references session):
   six same-colour fill squares with 1, 2, 3, 4 and 6 mm gaps: PE-DESIGN trims the 2, 3, 4 and 6 mm
   moves and leaves the 1 mm move a plain jump, so "every interior move is trimmed" (#69) has a
-  lower bound between 1 and 2 mm; OpenStitch trims all five. Settled (`machine-rbr.pes`, reference
-  tier): objects drawn red, blue, red sew as both reds (one block, a trim between them) then blue,
-  one colour change, as `order.optimize` does.
+  lower bound between 1 and 2 mm; OpenStitch trims all five. Narrowed the same day
+  (`machine-trim-bound.pes`, parked too): gaps of 0.5, 0.8 and 1.0 mm between fills are sewn as a
+  plain stitch with no jump record at all, and the moves from the 1.2 mm gap up (needle to needle
+  2.4 mm and more) are trimmed, so the bound lies between 2.2 and 2.4 mm of frame move. Settled
+  (`machine-rbr.pes`, `machine-rbr-far.pes`, `machine-rbgb.pes`, reference tier): objects drawn red,
+  blue, red sew as both reds (one block, a trim between them, even 70 mm apart) then blue, and
+  red, blue, green, blue sews red, both blues, green: same colours merge in first-occurrence order
+  across other colours, as `order.optimize` does.
 
 - **Impact:** severity 4. One same-coloured rectangle with underlay and an outline sews with
   3 trims and 3 jumps. That means more cuts, more tie-offs and longer sew time.

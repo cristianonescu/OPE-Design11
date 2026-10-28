@@ -1,0 +1,153 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "machine-rbgb",
+  "area": "machine",
+  "title": "Same colours merge in first-occurrence order across another colour",
+  "description": "Four 10 x 10 mm fill squares drawn red, blue, green, blue: PE-DESIGN sews red, then both blues as one block (a trim between them), then green: two colour changes.",
+  "covers": {
+    "audit": [
+      16
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES write v1 and v6"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference machine/machine-rbgb.pes (pe-refs-3, 2026-10-28): Sewing Order 1 red, 2 blue+blue, 3 green; 2 colour changes"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "machine-rbgb",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 10,
+        "height": 10,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 25,
+        "y": 10,
+        "width": 10,
+        "height": 10,
+        "fill": "Blue"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 40,
+        "y": 10,
+        "width": 10,
+        "height": 10,
+        "fill": "#00ff00"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 55,
+        "y": 10,
+        "width": 10,
+        "height": 10,
+        "fill": "Blue"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          1
+        ],
+        "type": "fill",
+        "color": "Red",
+        "angle": 45,
+        "underlay": true
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          2,
+          4
+        ],
+        "type": "fill",
+        "color": "Blue",
+        "angle": 45,
+        "underlay": true
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          3
+        ],
+        "type": "fill",
+        "color": "#00ff00",
+        "angle": 45,
+        "underlay": true
+      }
+    },
+    {
+      "command": "order.optimize",
+      "params": {}
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "machine/machine-rbgb.pes",
+      "make": "Import an SVG (100 x 100 mm) with four 10 x 10 mm squares at x = 10 (red), 25 (blue), 40 (green), 55 (blue) mm, y = 10 mm, as Fill Stitch at PE-DESIGN's import defaults; change nothing. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "colour-changes",
+      "measure": {
+        "kind": "commandCount",
+        "command": "colorChange"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "red, blue+blue, green",
+      "reference": {}
+    },
+    {
+      "id": "trims",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "trim"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "one trim between the two blues",
+      "reference": {}
+    }
+  ]
+}

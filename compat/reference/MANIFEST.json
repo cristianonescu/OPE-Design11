@@ -2,6 +2,30 @@
   "schema": "openstitch-compat-reference/1",
   "files": [
     {
+      "file": "machine/machine-rbgb.pes",
+      "spec": "machine-rbgb",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of an SVG (viewBox 0 0 100 100 = 100 x 100 mm) with four 10 x 10 mm squares at x = 10 (#ff0000 -> 800 RED), 25 (#0000ff), 40 (#00ff00), 55 (#0000ff) mm, y = 10 mm; the rectangles import centred on the page as Fill Stitch (PE's import attributes: line Not Sewn, under sewing on, density 4.5), colours mapped from the SVG fills. Nothing changed. Save As PES (#PES0110). Status bar 55,00 x 10,00 mm, Stitches = 932.",
+      "sha256": "f1a48bc8abca87c204efa885382961cbaff3c631ebfc63e98054e8ad1895b6e7",
+      "notes": "Sewing Order after the import: 1 red, 2 both blues (one block), 3 green."
+    },
+    {
+      "file": "machine/machine-rbr-far.pes",
+      "spec": "machine-rbr-far",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of an SVG (viewBox 0 0 100 100 = 100 x 100 mm) with three 10 x 10 mm squares at x = 10 (#ff0000), 45 (#0000ff), 80 (#ff0000) mm, y = 10 mm; the rectangles import centred on the page as Fill Stitch (PE's import attributes: line Not Sewn, under sewing on, density 4.5), colours mapped from the SVG fills. Nothing changed. Save As PES (#PES0110). Status bar 80,00 x 10,00 mm, Stitches = 698.",
+      "sha256": "e42d2c602582bc98c72ba98aa3dd352f4bfaa5b04eb64b5cbf9c9560292206e6",
+      "notes": "Sewing Order after the import: 1 both reds, 2 blue."
+    },
+    {
       "file": "machine/machine-rbr.pes",
       "spec": "machine-rbr",
       "reference": "pe-design",
@@ -12,6 +36,18 @@
       "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of an SVG (viewBox 0 0 100 100 = 100 x 100 mm) with three 10 x 10 mm squares at x = 10 (#ff0000 -> 800 RED), 30 (#0000ff -> the chart's blue), 50 (#ff0000) mm, y = 10 mm; the rectangles import centred on the page as Fill Stitch (PE's import attributes: line Not Sewn, under sewing on, density 4.5), colours mapped from the SVG fills; nothing changed. Save As PES (#PES0110). Status bar 50,00 x 10,00 mm, Stitches = 697.",
       "sha256": "d3048e699da60d87e12c67d4c843a0716ef10c437d955048280bf799d0b200f7",
       "notes": "Sewing Order after the import: 1 = both red squares, 2 = blue."
+    },
+    {
+      "file": "machine/machine-satin-width-30.pes",
+      "spec": "machine-satin-width-30",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of an SVG (viewBox 0 0 100 100 = 100 x 100 mm) with one 40 x 30 mm rectangle (#ff0000); the rectangles import centred on the page as Fill Stitch (PE's import attributes: line Not Sewn, under sewing on, density 4.5), colours mapped from the SVG fills. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Direction Manual straight line 90 degrees, Pull compensation 0.0 mm. Save As PES (#PES0110). Status bar 40,00 x 30,00 mm, Stitches = 211.",
+      "sha256": "1df86ae0b307505a30c2520b0667d4b998e0f6c6e3e63b5742f0b55d7dc35e07",
+      "notes": "PEC: every crossing is one stitch across the column."
     },
     {
       "file": "pes/design-property-native.pes",
