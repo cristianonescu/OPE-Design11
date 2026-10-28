@@ -147,7 +147,11 @@ jobs:
           plutil -extract UTExportedTypeDeclarations xml1 -o - "$plist" | grep -q '<string>osd</string>'
           plutil -extract CFBundleDocumentTypes xml1 -o - "$plist" | grep -q 'io.github.cristianonescu.openstitch.design'
           lipo -info app-out/OpenStitch.app/Contents/MacOS/openstitch | grep -q arm64
+          # The app icon: CFBundleIconFile names a real .icns in Resources, and the zip keeps it.
+          test "$(plutil -extract CFBundleIconFile raw -o - "$plist")" = openstitch
+          file app-out/OpenStitch.app/Contents/Resources/openstitch.icns | grep -q 'Mac OS X icon'
           mv app-out/OpenStitch-*.zip "dist/OpenStitch-$LABEL-macos-universal.zip"
+          unzip -l "dist/OpenStitch-$LABEL-macos-universal.zip" | grep -q 'Contents/Resources/openstitch.icns'
 
       - name: Linux tarball
         if: runner.os == 'Linux'
@@ -161,6 +165,9 @@ jobs:
           dir=$(ls -d app-out/openstitch-*-linux-*/)
           PREFIX="$RUNNER_TEMP/prefix" sh "$dir/install.sh"
           test -x "$RUNNER_TEMP/prefix/bin/openstitch"
+          test -f "$RUNNER_TEMP/prefix/share/applications/openstitch.desktop"
+          for s in 16 32 48 64 128 256 512; do test -f "$RUNNER_TEMP/prefix/share/icons/hicolor/${s}x$s/apps/openstitch.png"; done
+          test -f "$RUNNER_TEMP/prefix/share/icons/hicolor/scalable/apps/openstitch.svg"
           grep -q 'application/x-openstitch-design:\*.osd' "$RUNNER_TEMP/prefix/share/mime/globs2"
           grep -q 'application/x-pes-embroidery:\*.pes' "$RUNNER_TEMP/prefix/share/mime/globs2"
           # The thumbnailer is installed with its entry and renders the smoke-test file.
@@ -178,6 +185,14 @@ jobs:
           ldd bin/openstitch
           image=$(packaging/linux/appimage.sh bin/openstitch "$CARGO_VERSION" appimage-out | tail -1)
           export APPIMAGE_EXTRACT_AND_RUN=1
+          # AppImage layout: desktop entry, icon and .DirIcon at the root, hicolor icons inside.
+          (cd "$RUNNER_TEMP" && "$image" --appimage-extract > /dev/null)
+          root="$RUNNER_TEMP/squashfs-root"
+          test -f "$root/openstitch.desktop" && test -s "$root/openstitch.png" && test -L "$root/.DirIcon"
+          grep -q '^Icon=openstitch$' "$root/openstitch.desktop"
+          test -f "$root/usr/share/icons/hicolor/256x256/apps/openstitch.png"
+          test -f "$root/usr/share/icons/hicolor/scalable/apps/openstitch.svg"
+          rm -rf "$root"
           # The bundled thumbnailer runs through AppRun.
           "$image" --thumbnailer -s 128 "$RUNNER_TEMP/smoke/examples/badge.pes" "$RUNNER_TEMP/thumb-appimage.png"
           test -s "$RUNNER_TEMP/thumb-appimage.png"
@@ -221,14 +236,40 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         # PowerShell splits an unquoted argument starting with '-' at its first '.', so every
-        # -d define is quoted. ICE50 (shortcut icon extension must match the .exe) is suppressed
-        # because openstitch.exe has no embedded icon resource yet, so the advertised shortcut
-        # uses openstitch.ico; drop -sice:ICE50 once the exe embeds its icon.
+        # -d define is quoted. ICE50 (an advertised shortcut's icon should have the target's
+        # extension, .exe) is suppressed: the shortcut's icon is openstitch.ico from the Icon
+        # table, since an Icon entry made from the exe would store the whole 30 MB binary in it.
         run: |
           candle.exe -nologo -arch x64 "-dVersion=$env:CARGO_VERSION" "-dBinary=bin\openstitch.exe" "-dIcon=assets\icons\openstitch.ico" "-dNotices=THIRD_PARTY_NOTICES.md" -out openstitch.wixobj packaging\windows\openstitch.wxs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           light.exe -nologo -sice:ICE50 -out "dist\OpenStitch-$env:LABEL-windows-x86_64.msi" openstitch.wixobj
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Windows icons
+        if: runner.os == 'Windows'
+        shell: pwsh
+        # The exe embeds its icon (build.rs), and the MSI names its icon openstitch.ico: a name
+        # without .ico/.exe makes the Start-menu shortcut and Programs and Features show the
+        # generic icon (v0.1.0-alpha.4).
+        run: |
+          $n = python -c "import ctypes; print(ctypes.windll.shell32.ExtractIconExW(r'bin\openstitch.exe', -1, None, None, 0))"
+          if ($n -lt 1) { throw "openstitch.exe has no icon resource" }
+          $inst = New-Object -ComObject WindowsInstaller.Installer
+          $db = $inst.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $inst, @((Resolve-Path "dist\OpenStitch-$env:LABEL-windows-x86_64.msi").Path, 0))
+          function Rows($q) {
+            $v = $db.GetType().InvokeMember("OpenView", "InvokeMethod", $null, $db, @($q))
+            $v.GetType().InvokeMember("Execute", "InvokeMethod", $null, $v, $null)
+            while ($r = $v.GetType().InvokeMember("Fetch", "InvokeMethod", $null, $v, $null)) {
+              $r.GetType().InvokeMember("StringData", "GetProperty", $null, $r, @(1))
+            }
+          }
+          $icons = @(Rows "SELECT Name FROM Icon")
+          $arp = @(Rows "SELECT Value FROM Property WHERE Property = 'ARPPRODUCTICON'")
+          $shortcut = @(Rows "SELECT Icon_ FROM Shortcut")
+          "Icon table: $icons; ARPPRODUCTICON: $arp; shortcut icons: $shortcut"
+          foreach ($name in $icons + $arp + $shortcut) {
+            if ($name -notmatch '\.(ico|exe)$') { throw "MSI icon name '$name' has no .ico/.exe extension" }
+          }
 
       - name: List
         shell: bash
