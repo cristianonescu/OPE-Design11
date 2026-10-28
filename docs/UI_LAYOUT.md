@@ -368,6 +368,15 @@ and [Adjusting the split positions](https://support.brother.com/g/s/hf/htmldoc/p
 | Select Color Palette |  | `Action::SelectColorPalette` | `threads.charts` | yes |
 | Wizard |  | `Action::Wizard` | view/UI only | yes |
 | Export |  | `Action::Export` | `design.export` | yes |
+| Exit |  | `Action::Exit` | view/UI only | yes |
+
+**Unsaved changes.** The title bar shows a `•` after the design's name while it has changes
+that are not saved. Closing the window (the X button, Alt+F4, File ▸ Exit), File ▸ New and
+File ▸ Open (also a recent file, or Open in Layout & Editing from the Design Database) then
+ask "Save changes to NAME?" ([screenshot](images/rust-editor-close-prompt.png)): **Save**
+(Enter) saves (Save As when the design has no file yet) and goes on, **Don't Save** goes on
+and discards the changes, **Cancel** (Esc) returns to the editor. A cancelled Save As returns
+to the editor too. As PE-DESIGN 11 does.
 
 ### Option button
 

@@ -640,14 +640,18 @@ fn shape_commands() -> Vec<CommandSpec> {
             ]),
             |s, p| {
                 let rx = p.req("rx", 0.1, 1000.0)?;
-                let e = Contour::ellipse(
+                // Four Bézier quarter arcs from the bottom centre, as PE-DESIGN's Ellipse
+                // tool draws (its running stitch samples each quarter's parameter).
+                let e = shapes::arc(
                     v2(
                         p.req("cx", -5000.0, 5000.0)? * MM,
                         p.req("cy", -5000.0, 5000.0)? * MM,
                     ),
                     rx * MM,
                     p.opt("ry", rx, 0.1, 1000.0)? * MM,
-                    72,
+                    90.0,
+                    360.0,
+                    shapes::ArcMode::Chord,
                 );
                 add_shape_ending(s, p, e, Some(shapes::bottom_centre))
             },
@@ -1281,6 +1285,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                             ("edgeZigzag", UnderlayStyle::EdgeZigzag),
                             ("double", UnderlayStyle::Double),
                             ("edgeFill", UnderlayStyle::EdgeFill),
+                            ("cross", UnderlayStyle::Cross),
                         ],
                     )? {
                         r.underlay_style = u;
@@ -1923,7 +1928,7 @@ fn text_docs(text_required: bool) -> Vec<ParamDoc> {
         opt(
             "envelope",
             "int | null",
-            "Text Transform preset, 1-26 in the palette's reading order (13 and 14 not yet available); null turns it off. Not for text fitted to an outline",
+            "Text Transform preset, 1-26 in the palette's reading order; null turns it off. Not for text fitted to an outline",
         ),
         opt(
             "lineSpacing",

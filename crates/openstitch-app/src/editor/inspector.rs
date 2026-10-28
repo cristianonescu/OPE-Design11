@@ -300,6 +300,7 @@ pub fn region_controls_with(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> 
                 UnderlayStyle::EdgeZigzag => "edgeZigzag",
                 UnderlayStyle::Double => "double",
                 UnderlayStyle::EdgeFill => "edgeFill",
+                UnderlayStyle::Cross => "cross",
             };
             v.push(choice(
                 "Underlay style",
@@ -311,6 +312,7 @@ pub fn region_controls_with(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> 
                     ("edgeZigzag", "Edge and zigzag"),
                     ("double", "Double"),
                     ("edgeFill", "Edge and fill"),
+                    ("cross", "Edge and cross-hatch (PE-DESIGN type 2)"),
                 ],
             ));
             if r.underlay_style != UnderlayStyle::Edge {

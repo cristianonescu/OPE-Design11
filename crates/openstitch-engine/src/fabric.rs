@@ -139,6 +139,7 @@ fn describe(f: &Fabric) -> Value {
             UnderlayStyle::EdgeZigzag => "edgeZigzag",
             UnderlayStyle::Double => "double",
             UnderlayStyle::EdgeFill => "edgeFill",
+            UnderlayStyle::Cross => "cross",
         }),
     })
 }

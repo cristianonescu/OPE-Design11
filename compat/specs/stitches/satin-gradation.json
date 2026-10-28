@@ -1,0 +1,154 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "satin-gradation",
+  "area": "stitches",
+  "title": "Satin with the gradation pattern places its crossings on the cumulative line count",
+  "description": "A 20 x 5 mm rectangle in satin at 90 degrees, density 3, without under sewing, with PE-DESIGN's default gradation pattern (Max 53 %, Min 5 %, nine steps) and its start point at the middle of the bottom edge, must be sewn as PE-DESIGN 11.50 sews it: the split sawtooth of satin-zigzag-rect with its crossings on the rows of the cumulative-line-count rule (region-travel-u-gradation), the vertical crossings on every other row, counted from the start edge in the half sewn from it and from the far edge in the other half.",
+  "covers": {
+    "audit": [
+      1
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Satin: a zigzag across the column"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-gradation.pes (under sewing off, 2026-10-27): 37 stitches (status bar 40); 18 crossings between the edges; the vertical crossings at x = 0, 1.3, 2.7, 4.3, 5.9, 7.8 (then 8.8 and 10.0 to close the half) in the left half and at 20.0, 14.3, 11.2 (then 10.0) in the right half, from the left edge, which are rows 0, 2, 4, 6, 8, 10, 11, 12 and 17, 15, 13, 12 of the 17-gap cumulative-line-count placement of 3 lines/mm falling from 53 % to 5 % over 20 mm; longest stitch 7.58 mm (the diagonal crossing from 20.0 to 14.3)."
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 20,
+        "height": 5
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "satin",
+        "angle": 90,
+        "density": 3,
+        "underlay": false,
+        "gradationPattern": true
+      }
+    },
+    {
+      "command": "object.setEntryExit",
+      "params": {
+        "id": 1,
+        "regionEntry": [
+          20,
+          15
+        ],
+        "regionExit": [
+          20,
+          15
+        ]
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "satin.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/satin-gradation.pes",
+      "make": "On a 100 x 100 mm Design Page draw a rectangle 20 mm wide and 5 mm high at (10, 10) mm. Line Not Sewn; region Satin Stitch, Direction 90 degrees, Density 3.0, Under Sewing off, Gradation on with its default pattern (Max 53 %, Min 5 %, nine steps), other attributes default. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchSegments"
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-gradation.pes (under sewing off, 2026-10-27): 37 stitches.",
+      "reference": {
+        "tolerance": {
+          "percent": 5
+        }
+      }
+    },
+    {
+      "id": "longest-stitch",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "satin.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            10,
+            10
+          ]
+        }
+      },
+      "expected": {
+        "max": 7.9
+      },
+      "evidence": "PE-DESIGN 11.50 reference compat/reference/stitches/satin-gradation.pes: the longest stitch is the 7.58 mm diagonal crossing at the sparse end; nothing longer than a crossing of the widest gap."
+    },
+    {
+      "id": "versus-reference",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.25,
+          "boundsMm": 0.3,
+          "counts": {
+            "percent": 5
+          },
+          "sequence": true,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "satin.pes"
+      },
+      "evidence": "PE-DESIGN 11 output of the same rectangle, needle point by needle point",
+      "reference": {}
+    }
+  ]
+}

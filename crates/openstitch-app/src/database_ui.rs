@@ -9,6 +9,7 @@ use crate::app::EditorApp;
 use crate::art::Art;
 use crate::suite_chrome::{self, Host};
 use eframe::egui::{self, Color32, RichText, Sense};
+use openstitch_app::editor::close_prompt::Pending;
 use openstitch_app::editor::database::{
     CatalogFormat, Dialog, View, display_path, file_name, format_time, roots, size_text,
 };
@@ -174,7 +175,7 @@ fn start_rename(app: &mut EditorApp) {
 
 /// File ▸ Open in Layout & Editing: the design opens as the editor's design.
 fn open_in_editor(app: &mut EditorApp, p: &Path) {
-    app.open_path(p);
+    app.guarded(Pending::Open(Some(p.to_path_buf())));
     app.database.open = false;
 }
 

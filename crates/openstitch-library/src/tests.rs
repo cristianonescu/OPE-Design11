@@ -826,8 +826,10 @@ fn conversion_refuses_read_only_targets_and_missing_folders() {
 #[test]
 fn dst_trim_setting_is_applied() {
     let mut p = square(20.0, 4);
+    p.stitches.pop(); // the End record: the trim goes before it
     p.push(Command::Trim);
     p.stitch_to(0.0, 0.0);
+    p.push(Command::End);
     let sizes: Vec<usize> = [1usize, 5]
         .iter()
         .map(|&n| {
@@ -836,7 +838,13 @@ fn dst_trim_setting_is_applied() {
             convert::encode(&p, &o).unwrap().len()
         })
         .collect();
-    assert_eq!(sizes[1] - sizes[0], 4 * 3, "four more 3-byte jump records");
+    // PE-DESIGN's layout: the opening zero-length jumps, the trimmed move and the jump home
+    // are each padded to the setting's count, so four more 3-byte records in each of the three.
+    assert_eq!(
+        sizes[1] - sizes[0],
+        3 * 4 * 3,
+        "four more jump records in three runs"
+    );
 }
 
 #[test]

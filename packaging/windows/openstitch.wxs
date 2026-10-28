@@ -14,8 +14,12 @@
     <MajorUpgrade DowngradeErrorMessage="A newer version of OpenStitch is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
-    <Icon Id="OpenStitchIcon" SourceFile="$(var.Icon)" />
-    <Property Id="ARPPRODUCTICON" Value="OpenStitchIcon" />
+    <!-- The Icon table name must end in .ico (or .exe): Windows Installer copies the icon to
+         %WINDIR%\Installer\{ProductCode}\<name>, and the shell loads the shortcut's and the
+         Programs-and-Features icon by that name's extension. v0.1.0-alpha.4 named it
+         "OpenStitchIcon", and every installed shortcut showed the generic icon. -->
+    <Icon Id="openstitch.ico" SourceFile="$(var.Icon)" />
+    <Property Id="ARPPRODUCTICON" Value="openstitch.ico" />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFiles64Folder">
@@ -28,11 +32,11 @@
       <Component Id="MainExecutable" Guid="dc762be0-0c4f-46f5-9612-3c54e83dd4bd" Win64="yes">
         <File Id="OpenStitchExe" Source="$(var.Binary)" Name="openstitch.exe" KeyPath="yes">
           <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="OpenStitch"
-                    WorkingDirectory="INSTALLFOLDER" Icon="OpenStitchIcon" Advertise="yes" />
+                    WorkingDirectory="INSTALLFOLDER" Icon="openstitch.ico" Advertise="yes" />
         </File>
 
         <!-- .osd: OpenStitch's own project format, opened by default. -->
-        <ProgId Id="OpenStitch.Design" Description="OpenStitch Design" Icon="OpenStitchIcon" Advertise="yes">
+        <ProgId Id="OpenStitch.Design" Description="OpenStitch Design" Icon="openstitch.ico" Advertise="yes">
           <Extension Id="osd" ContentType="application/x-openstitch-design">
             <Verb Id="open" Command="Open" Argument="&quot;%1&quot;" />
           </Extension>

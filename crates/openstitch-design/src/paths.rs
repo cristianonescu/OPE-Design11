@@ -214,6 +214,9 @@ pub struct TravelGraph {
     pub outline: Option<OutlineTravel>,
     /// How far (0.1 mm) an end may be from the outline and still count as on it.
     pub outline_tolerance: f64,
+    /// Outline travel goes forward along the contour (in its vertex order) from the start,
+    /// whichever way round is shorter (PE-DESIGN's Auto satin start travel).
+    pub outline_forward: bool,
 }
 
 /// Travel that follows the outline (see [`TravelGraph::outline`]).
@@ -250,6 +253,7 @@ impl TravelGraph {
             along_edges: false,
             outline: None,
             outline_tolerance: 1.0,
+            outline_forward: false,
         }
     }
 
@@ -285,11 +289,37 @@ impl TravelGraph {
             };
             inset[i] = on[i] + offset;
         }
-        inset
-            .windows(2)
-            .all(|w| self.visible(w[0], w[1]))
-            .then_some(inset)
-            .or(Some(on))
+        // The walk steps from its start straight onto the inset line first (PE-DESIGN's Auto
+        // satin travel: (0, 0) → (0, 0.5) → along the edge 0.5 mm inside), then each inset
+        // point is kept only where the walk stays inside; elsewhere (a sharp far corner whose
+        // mitre lands past the end) the walk stays on the outline there.
+        let mut out = vec![on[0]];
+        if on.len() > 2
+            && let Some(nrm) = inward(on[0], on[1])
+            && self.visible(on[0], on[0] + nrm * d)
+            && self.visible(on[0] + nrm * d, inset[1])
+        {
+            out.push(on[0] + nrm * d);
+        }
+        for i in 1..on.len() {
+            let candidate = if i + 1 == on.len() { on[i] } else { inset[i] };
+            let from = out[out.len() - 1];
+            if self.visible(from, candidate) {
+                out.push(candidate);
+            } else if self.visible(from, on[i]) {
+                out.push(on[i]);
+            } else {
+                // Back off the previous point to the outline and try again.
+                let k = out.len() - 1;
+                out[k] = on[i - 1];
+                out.push(if self.visible(on[i - 1], candidate) {
+                    candidate
+                } else {
+                    on[i]
+                });
+            }
+        }
+        Some(out)
     }
 
     /// Walks along the closed contour that both `a` and `b` lie on (within 0.1 mm), the
@@ -310,7 +340,7 @@ impl TravelGraph {
             let w = Walker::new(&poly);
             let total = w.length();
             let forward = (sb - sa).rem_euclid(total);
-            let mut path = if forward <= total - forward {
+            let mut path = if forward <= total - forward || self.outline_forward {
                 if sa + forward <= total {
                     w.slice(sa, sa + forward)
                 } else {

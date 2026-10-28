@@ -1,0 +1,182 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "machine-jumps",
+  "area": "machine",
+  "title": "Frame moves between same-colour parts: trimmed from about 2.3 mm, sewn across below",
+  "description": "Six 5 x 5 mm red fill squares with gaps of 1, 2, 3, 4 and 6 mm (needle-to-needle moves of about 2.2, 3.2, 4.1, 5.1 and 7.1 mm): PE-DESIGN 11.50 trims the four longer moves and sews the 1 mm gap across as a plain stitch, so there is no untrimmed jump in the file. The squares' y position is OpenStitch's choice (PE imported them centred); only the moves matter. OpenStitch's optimized exit and entry points lie on the squares' edges where PE-DESIGN's lie 0.5 mm inside them and 1 mm apart in y (its moves are sqrt((gap + 1)^2 + 1) mm), so the squares are drawn at PE-DESIGN's needle-to-needle moves and the trimming rule is compared at equal moves; where PE puts its exit and entry inside the edge is the fill track's open item.",
+  "covers": {
+    "audit": [
+      4
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES write v1 and v6"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference machine/machine-jumps.pes (pe-refs-3, 2026-10-28): 525 stitches, 4 trims on moves of 3.16, 4.12, 5.10 and 7.07 mm, the 1 mm gap a plain stitch, 0 colour changes."
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "machine-jumps",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10.0,
+        "y": 47.5,
+        "width": 5,
+        "height": 5,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 17.24,
+        "y": 47.5,
+        "width": 5,
+        "height": 5,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 25.4,
+        "y": 47.5,
+        "width": 5,
+        "height": 5,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 34.52,
+        "y": 47.5,
+        "width": 5,
+        "height": 5,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 44.62,
+        "y": 47.5,
+        "width": 5,
+        "height": 5,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 56.69,
+        "y": 47.5,
+        "width": 5,
+        "height": 5,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "type": "fill",
+        "color": "Red",
+        "angle": 45,
+        "underlay": true
+      }
+    },
+    {
+      "command": "order.optimize",
+      "params": {}
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "machine/machine-jumps.pes",
+      "make": "Import an SVG (100 x 100 mm) with six 5 x 5 mm red squares at x = 10, 16, 23, 31, 40, 51 mm (gaps 1, 2, 3, 4, 6 mm), as Fill Stitch at PE-DESIGN's import defaults (multi-needle machine type, Jump Stitch Trimming on); change nothing. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "trims",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "trim"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 4,
+      "evidence": "the gaps PE-DESIGN trims",
+      "reference": {}
+    },
+    {
+      "id": "interior-moves",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "jump"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "every interior move is a trimmed jump (as many moves as trims); a gap PE-DESIGN does not trim is sewn across as a stitch, never left as a plain jump",
+      "reference": {}
+    },
+    {
+      "id": "colour-changes",
+      "measure": {
+        "kind": "commandCount",
+        "command": "colorChange"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 0,
+      "evidence": "one colour",
+      "reference": {}
+    },
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN's count (its fill rows join differently from OpenStitch's, the text-fill item of the audit)",
+      "reference": {
+        "tolerance": {
+          "percent": 10
+        }
+      }
+    }
+  ]
+}

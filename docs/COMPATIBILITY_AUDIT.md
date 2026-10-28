@@ -265,17 +265,22 @@ Line references are relative to `crates/`.
 
 ## 4. Trims between underlay, top stitching and outline of one object
 
-- **Raised 2026-10-28** (reference `machine-jumps.pes`, parked with the parked-references session):
-  six same-colour fill squares with 1, 2, 3, 4 and 6 mm gaps: PE-DESIGN trims the 2, 3, 4 and 6 mm
-  moves and leaves the 1 mm move a plain jump, so "every interior move is trimmed" (#69) has a
-  lower bound between 1 and 2 mm; OpenStitch trims all five. Narrowed the same day
-  (`machine-trim-bound.pes`, parked too): gaps of 0.5, 0.8 and 1.0 mm between fills are sewn as a
-  plain stitch with no jump record at all, and the moves from the 1.2 mm gap up (needle to needle
-  2.4 mm and more) are trimmed, so the bound lies between 2.2 and 2.4 mm of frame move. Settled
-  (`machine-rbr.pes`, `machine-rbr-far.pes`, `machine-rbgb.pes`, reference tier): objects drawn red,
-  blue, red sew as both reds (one block, a trim between them, even 70 mm apart) then blue, and
-  red, blue, green, blue sews red, both blues, green: same colours merge in first-occurrence order
-  across other colours, as `order.optimize` does.
+- **Settled 2026-10-28** (references `machine-jumps.pes`, `machine-trim-bound.pes`,
+  `machine-trim-fine.pes`, specs of the same names at the reference tier): between same-colour
+  parts PE-DESIGN 11.50 sews a needle-to-needle move of up to 2.24 mm across as a plain stitch
+  (no jump at all) and trims a move of 2.33 mm and more (gaps of 0.5, 0.8 and 1.0 mm sewn, 1.1 mm
+  and up trimmed, with its exit 0.5 mm inside the right edge and 1 mm up and its entry 0.5 mm
+  inside the next left edge: moves of sqrt((gap + 1)^2 + 1)). OpenStitch's compiler now sews a
+  move of up to 2.3 mm between objects across (`Compiler::sew_across_distance`) and trims every
+  longer one, so no plain interior jump is written. Open: where PE-DESIGN puts the optimized
+  exit and entry (0.5 mm inside the edges; OpenStitch's lie on the edges, so the specs draw the
+  squares at PE's needle-to-needle moves), and the value PE's multi-needle "minimum jump stitch
+  length for trimming" field shows (read the Design Settings dialog; the recordings were made
+  with the multi-needle machine type at its default). Also settled (`machine-rbr.pes`, reference
+  tier): objects drawn red, blue, red sew as both reds (one block, a trim between them) then blue,
+  one colour change, as `order.optimize` does. Also (`machine-rbr-far.pes`, `machine-rbgb.pes`, reference tier): the reds merge even
+  70 mm apart, and red, blue, green, blue sews red, both blues, green: same colours merge in
+  first-occurrence order across other colours.
 
 - **Impact:** severity 4. One same-coloured rectangle with underlay and an outline sews with
   3 trims and 3 jumps. That means more cuts, more tie-offs and longer sew time.
@@ -398,7 +403,11 @@ Line references are relative to `crates/`.
 - **Grade:** Documented difference.
 - **PE-DESIGN 11.50 behaviour** (black-box, 2026-10-27; references `satin-auto-bend-90-nohalf.pes`,
   `satin-auto-bend-60.pes`, `auto-satin-bent-band.pes`): Auto satin starts at the start point, runs
-  0.5 mm inside the outline to the far end and sews back. On straight legs the rungs are square to
+  0.5 mm inside the outline *forward along it* (over a bent band's outer edge, not the shorter way
+  round) to the far end, sews back from there with one needle point per rung on alternate edges and
+  ends on the start point itself. The rungs lie at whole spacings from the far edge (the 90° band's
+  outer edge: 30.0, 29.3, 28.7 … mm), the remainder landing at the start (the 60° band's start leg
+  sits 0.05 mm off the lattice). On straight legs the rungs are square to
   the leg; at a bend the outer ends keep an even spacing along the outer edge and the rung
   direction turns linearly with the distance along it, over three band widths for a 90° turn (two
   for 60°), centred on the outer corner; each rung reaches across to the inner edge, so the inner
@@ -409,9 +418,14 @@ Line references are relative to `crates/`.
   at all three (reference tier). At 120° PE-DESIGN sews 161 stitches with a 10 mm longest crossing
   where OpenStitch sews 267 with a 13 mm one: the fan rule breaks down on a sharp turn (file
   parked with the parked-references session; its spec is not in the repository).
-- **Status:** fixed; the corner fan, end reach and start travel follow PE-DESIGN (reference tier:
-  satin-auto-bend-90-nohalf, satin-auto-bend-60, satin-auto-bend-30/45/75 (±nohalf), auto-satin-bent-band; `region::fan_corners`,
-  `region::reach_ends`). Earlier: Auto satin
+- **Status:** fixed; the corner fan, end reach, forward start travel, the far-end needle lattice
+  and the end on the start point follow PE-DESIGN (reference tier: satin-auto-bend-90-nohalf,
+  satin-auto-bend-60, satin-auto-bend-30/45/75 (±nohalf), auto-satin-bent-band;
+  `region::fan_corners`, `region::reach_ends`, `region::auto_satin`; 2026-10-28: mean needle
+  distance 0.20 → 0.08 mm on the 60° band and 0.16 → 0.07 mm on the 90° band, overlap 0.71 → 0.77
+  and 0.70 → 0.87; on the 30°/45°/75° bands PE's start-leg lattice sits 0.07-0.27 mm off ours,
+  a phase the far end's fan sets that two bends per angle cannot pin down; a density-3 satin's
+  overlap turns on such 0.1 mm phases). Earlier: Auto satin
   derives a skeleton and sews along it, each row reaching the outline
   (`skeleton::rungs_within`). Running Stitch Path is hidden with Auto satin, which travels
   inside (item 3); OpenStitch has no Half Stitch or Stitch Type for regions. Fill, regions with holes or
@@ -431,6 +445,20 @@ Line references are relative to `crates/`.
   Medium / Light) cannot be reproduced:
   - OpenStitch's Double is two crossing ±45° layers.
   - Zigzag outlines have no underlay at all.
+- **Settled 2026-10-27/28 from the under sewing sweep (`sweep-satin-us-*`, `sweep-fill-us-*`):**
+  PE-DESIGN 11.50's Region sew pane offers two type buttons (the second's icon a double layer
+  of crossing rows) and a Density of Dense / Medium / Light; no spacing or inset fields. The
+  first type is modelled (`EdgeFill` for fill, `EdgeZigzag` for satin: the edge run 1 mm
+  inside, rows 2 mm apart). The second type is modelled since 2026-10-28 as `Cross`
+  (`underlayStyle: cross`): the same edge run, then two layers of lines 1 mm inside the
+  outline at the sewing direction minus and plus 45°, 2 mm apart (2.83 mm along the edges),
+  in 4 mm stitches (a line of exactly 4 mm in two), each layer sewn in two halves from the
+  region's far corners towards the start point (the half whose corner comes first along the
+  outline from the start point first), straight travel to the corner at 2.5 mm, walks along
+  the inset outline at 2 mm, back to the start point at the end; specs sweep-satin-us-type-2
+  (395 stitches to PE's 404) and sweep-fill-us-type-2 (2650 to 2651) at the reference tier.
+  Still open: Density Dense / Light (PE: row spacing 1.41 / 3.45 mm against Medium's 2.0,
+  `sweep-fill-us-density-*`), and which of the two types PE applies to the other region kinds.
 - **Module:**
   - `openstitch-design/src/model.rs:613-625,822`: the styles and a 2 mm spacing.
   - `openstitch-design/src/region.rs:15,120-156`: satin underlay runs parallel to the top
@@ -915,17 +943,63 @@ Line references are relative to `crates/`.
   reference tier; stretched is implemented but has no comparable reference (PE's file is far
   off the page). Fitted texts take no Text Transform, as in PE.
   ([guide](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/05_1810870.html))
+  Read stitch by stitch on 2026-10-28 (text-fit-* and the round-3 size/spacing/AHHHH sweeps):
+  the circle's running stitch is PE's Bézier sampling (each quarter arc halved until the chord
+  fits the 2 mm pitch: 4 × 32 chords; OpenStitch now matches it point for point, 0.04 mm mean,
+  text-fit-default's mean needle distance 0.27 → 0.20 mm); the letters sit where the font's
+  advance box (no kerning) centred on the path's middle puts them (the A's ink starts at 75.04 mm
+  from the circle's start in both), character spacing spreading symmetrically. Still different:
+  PE sews every letter stroke by stroke with the rows across each stroke (see Text below), the
+  letters after the first drift 0.05–0.07 mm/letter earlier in PE, and PE's round strokes end
+  0.2–0.5 mm short of the outline's extreme points (B/C/D 5.91/6.42/6.90 mm wide against the
+  font's 6.13/6.98/7.34; A and E match).
 - **Text Transform (calibrated 2026-10-27):** PE-DESIGN 11.50 has 26 presets (two arches,
   then a 4 × 6 grid; ticking Transform applies preset 3; fitted text cannot be transformed,
   and fitting cancels it). OpenStitch lays out 24 of them, from envelopes fitted to PE's
   output by `tools/fit_envelopes.py` (specs text-transform-N, reference tier: bounds within
-  0.5 mm, every H stem's top and bottom within 0.5 mm). Still open: 13 and 14 (fan out / in),
-  which skew each letter differently.
+  0.5 mm, every H stem's top and bottom within 0.5 mm). 13 and 14 (fan out / in) since
+  2026-10-28: each letter keeps its height and is sheared linearly between one edge of the
+  straight box and the other edge scaled by 0.70 about the text's centre (13 shrinks the
+  bottom, 14 the top; fitted from the letters' corners); specs text-transform-13/-14 at the
+  reference tier by their box. Their stitch counts are 41-43 % above PE-DESIGN's (1653 vs
+  1171, 1659 vs 1159) against +14 % on the straight-edged presets: the fill rows across
+  sheared stems, for the text-fill item below.
 - **Sewing order inside a text (checked 2026-10-27):** not a gap. PE-DESIGN 11.50 also sews
   every letter's region first, then every letter's outline, one colour block each (spec
   text-sewing-order, reference tier). Still open: the guide disables "some editing of
   individual characters" on user-mapped text without naming them; checking which needs
   characters registered with Brother's tools, which the project does not use.
+- **Machine format exports (calibrated 2026-10-28):** PE-DESIGN 11.50's DST, EXP, JEF, SEW,
+  XXX, PCS, HUS and VIP exports of one OpenStitch design (`compat/reference/machine`, spec
+  `machine-formats`, reference tier) showed the writers differed in how they laid out a frame
+  move, a trim, a colour change, a stitch longer than a record and the origin. The writers now
+  follow PE-DESIGN record for record (EXP and PCS byte for byte; the rules are tabulated in
+  FILE_FORMATS.md "PE-DESIGN's record layout"): the design centred on the stream origin, a long
+  stitch as jumps plus one stitch (one needle penetration), a frame move as a jump run with no
+  trim record (DST padded to three records, XXX one `7E` record, VIP `88`, HUS a zero-length
+  jump), the move's remainder folded into the next stitch in JEF, SEW, XXX and VIP, PCS's fixed
+  16-colour table indexed by its colour records, HUS's `0x00C8FC5D` magic. The readers follow:
+  a single jump no longer than a record is read as the long part of a stitch, not a trim (JEF,
+  EXP), `80 02` is an EXP jump, PE-DESIGN's HUS trim marker and XXX `7E` moves read as trims,
+  PCS's index byte and fraction byte are read. SEW's start point (settled 2026-10-28,
+  `sew-a-moved10.*`, `sew-square-centre.*`): the stream is relative to the design (PE-DESIGN's
+  export of the same design moved 10 mm on the page is byte-identical) and starts 15.9 mm left
+  of and 9.7 mm above the design centre, the same for the 40 mm design and the 20 x 20 mm
+  square, the way to the first needle point sewn as a stitch and split like one; the writer
+  starts there and the reader keeps the move, so the SEW compare is record for record from the
+  first one. The spec exports OpenStitch's saved a.pes itself (`stitches.import`), the file
+  PE-DESIGN opened, so the writers are compared on exactly PE-DESIGN's input whatever the
+  stitch generator does later; an imported stitch block's needle points are exported as
+  recorded (a 15 mm stitch stays one penetration, as PE-DESIGN exports the opened file; the
+  compiler used to split it at the machine's longest stitch). The square's export also shows
+  PE-DESIGN exporting its own objects from their
+  first needle point, the end of the PEC's first jump (its tie-in: there, 0.3 mm back, there
+  again), where OpenStitch's PES reader starts at the first PEC stitch record: one record more
+  in PE-DESIGN's stream, the rest identical (`sew_stream_is_design_relative_and_starts_where_pe_design_does`).
+  Still open, each settled by one more export: how the folding formats write a frame move shorter
+  than one record; VIP's exact piece length (7.5–7.9 mm); JEF's `-1` hoop block; XXX's header
+  tables and palette filler; SEW's 340 header bytes; DST's `AX`/`AY`; PE-DESIGN's RGB for chart
+  colour 800 RED (`E3 31 1F`) against the PEC chart table's `ED 17 1F`.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.
@@ -938,11 +1012,35 @@ Line references are relative to `crates/`.
   fill (PE offers it; OpenStitch refuses it until it sews it).
 - **Gradation:** the pattern is PE-DESIGN's since 2026-10-27: Max/Min density with evenly
   spaced step values (default Max 53 %, Min 5 %, 9 steps), the density falling linearly across
-  the region, and rows at equal steps of the cumulative line count: the region holds the whole
-  number of gaps the profile integrates to, the first row on the start edge and the last on
-  the far edge. region-travel-u-gradation passes at the reference tier; all 40 of its rows lie
-  within 0.12 mm of PE-DESIGN's (0.04 mm on average; the earlier midpoint-density placement
-  drifted to 0.4 mm by the far edge). Designs saved with the old single far-side percentage
+  the region, and rows at equal steps of the cumulative line count: the region holds the
+  nearest whole number of gaps to the line count the profile integrates to (a flat pattern
+  rounds down like a plain fill), the first row on the start edge and the last on the far
+  edge. Satin takes the same rows as its lines (satin-gradation, 2026-10-28, needle for
+  needle: 37 stitches as PE-DESIGN's, mean needle distance 0.01 mm): a satin split at its start
+  point puts the crossings of each half on every other line counted from that half's own end, a
+  hop of one line and a crossing close the half, and the "7.6 mm travel" the parked file showed
+  is the diagonal crossing of the widest gap. The same lattice rule gives the uniform split
+  satin its 0.3 mm hop (satin-zigzag-rect, unchanged). At the minimum density (0.1 lines/mm,
+  sweep-satin-density-min, 2026-10-28, needle for needle) PE-DESIGN puts a crossing on every
+  line, 10 mm apart with 11.7 mm diagonals, where counting forward from the end by two lines
+  would space them 20 mm with 20.9 mm diagonals. The round-3 column at 0.2, 0.3 and 0.5
+  lines/mm (43, 47, 55 stitches, record for record) settled the rule: each half hops to the
+  last lattice line at or before the start point (on the start point's own line the crossing
+  lands on the start point) and puts its crossings on every other line counting back from the
+  hop, plus the far end's line (lines 0, 1, 3, 5, ...); at 3 lines/mm (satin-zigzag-rect) and
+  on the gradation rows the same rule gives the crossings OpenStitch already sewed. No period
+  limit exists. Two edges of the rule: a gradation row within 0.05 mm of the start point
+  (satin-gradation's row 12, 0.02 mm before it in OpenStitch's lattice, on it in PE-DESIGN's
+  0.1 mm file) is the second half's hop only, the first half hops to the row before it, as
+  PE-DESIGN's file shows; and a single-line gap next to the far end shorter than 1 mm is not
+  crossed, the crossings before the hop spread evenly instead (satin-feather at 3 lines/mm:
+  15 crossings 0.69 mm apart over 29 lines, then the 0.33 mm hop; the round-3 column at 0.5
+  lines/mm keeps its 2 mm single-line gap). Open: the merge bound lies between 0.33 and 2 mm
+  (the 40 x 6 mm column at 1, 1.5 and 2 lines/mm, start point at the middle, would pin it).
+  region-travel-u-gradation passes at the reference tier; all 40 of its rows lie within
+  0.12 mm of PE-DESIGN's (0.04 mm on average; the earlier midpoint-density placement drifted
+  to 0.4 mm by the far edge), and the round-3 Max/Min sweeps (80/20, 95/50, 50/50, pattern 2)
+  fit the same rule within 0.1 mm. Designs saved with the old single far-side percentage
   still sew a continuous fall from 100 %. The guide's exclusions apply: not with a feathered edge, Auto
   direction or text (refused when set, not sewn when a file holds them anyway). Settled by the
   2026-10-28 gradation sweep (references `u-gradation-*.pes`): Max/Min rescaling (80/20, 95/50, a

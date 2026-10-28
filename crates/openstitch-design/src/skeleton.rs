@@ -218,6 +218,21 @@ pub fn satin(s: &Skeleton, spacing: f64, pull: f64) -> Run {
 /// a bend the outer edge keeps the density and the rungs crowd on the inner edge. Empty for
 /// a degenerate skeleton.
 pub fn rungs_within(s: &Skeleton, contours: &[Contour], spacing: f64, pull: f64) -> Vec<[Vec2; 2]> {
+    rungs_within_from(s, contours, spacing, pull, None)
+}
+
+/// [`rungs_within`] with the spacing kept exact and the rungs on a lattice anchored `beyond`
+/// (0.1 mm) past the skeleton's end along the longer side: PE-DESIGN's Auto satin counts its
+/// rungs from the far end it sews first (satin-auto-bend-90-nohalf: the outer edge's needle
+/// points lie at whole spacings from the far edge), and the remainder is left at the start.
+/// `None`: rungs evenly stretched from end to end.
+pub fn rungs_within_from(
+    s: &Skeleton,
+    contours: &[Contour],
+    spacing: f64,
+    pull: f64,
+    beyond: Option<f64>,
+) -> Vec<[Vec2; 2]> {
     let Some(c) = Centre::new(s) else {
         return Vec::new();
     };
@@ -260,10 +275,25 @@ pub fn rungs_within(s: &Skeleton, contours: &[Contour], spacing: f64, pull: f64)
         side.push(side[side.len() - 1] + step);
     }
     let total = side[fine];
-    let n = ((total / spacing).ceil() as usize).clamp(1, MAX_RUNGS);
-    (0..=n)
-        .map(|i| {
-            let target = total * i as f64 / n as f64;
+    let targets: Vec<f64> = match beyond {
+        None => {
+            let n = ((total / spacing).ceil() as usize).clamp(1, MAX_RUNGS);
+            (0..=n).map(|i| total * i as f64 / n as f64).collect()
+        }
+        Some(beyond) => {
+            let anchor = total + beyond.max(0.0);
+            let first = ((anchor - total) / spacing).ceil().max(0.0);
+            let last = (anchor / spacing).floor().max(first);
+            let n = ((last - first) as usize).min(MAX_RUNGS);
+            (0..=n)
+                .rev()
+                .map(|i| (anchor - spacing * (first + i as f64)).max(0.0))
+                .collect()
+        }
+    };
+    targets
+        .into_iter()
+        .map(|target| {
             let j = side.partition_point(|&m| m < target).clamp(1, fine);
             let span = side[j] - side[j - 1];
             let f = if span > 1e-9 {

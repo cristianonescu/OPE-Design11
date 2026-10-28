@@ -20,14 +20,14 @@ Notes that do not change the fixture bytes:
 |---|---|---|---|---|
 | PES | ✅ all versions, via the PEC section; v4+ metadata, v5+ RGB thread table, `CEmbOne`/`CSewSeg` objects | ✅ v1 and v6, truncated or with one `CEmbOne`/`CSewSeg` pair | Oracle-verified (pyembroidery), byte-identical for 1t, 1, 6, 6t | Shape, text and other PE-DESIGN object classes: no public description (Blocked). |
 | PEC | ✅ | ✅ | Oracle-verified | Byte-identical round trip of the oracle file. |
-| DST | ✅ | ✅ | Oracle-verified | Byte-identical round trip of the oracle file. |
-| EXP | ✅ | ✅ | Oracle-verified | Byte-identical round trip. |
-| JEF | ✅ | ✅ | Oracle-verified | Byte-identical round trip (fixed header date). |
-| XXX | ✅ | ✅ | Oracle-verified | Byte-identical round trip of a pyembroidery-written file. |
-| PCS | ✅ | ✅ | Oracle-verified read; writer self-consistent | pyembroidery has no PCS writer: the fixture is assembled from its reader's layout. Trims dropped, 1/6 mm grid. |
-| SEW | ✅ | ✅ | Oracle-verified read; writer self-consistent | pyembroidery has no SEW writer: same approach as PCS. Janome chart colours, trims dropped. |
-| HUS | ✅ | ✅ | Oracle-verified read; writer output decoded identically by the oracle | Own LZ77 + Huffman compressor (`lzh`); 29-colour HUS chart. |
-| VIP | ✅ | ✅ | Spec-derived (libembroidery); self round trip; header and colour table confirmed by libembroidery's reader | No independent stitch decoder exists (pyembroidery has no VIP module; libembroidery's decompressor is a stub). |
+| DST | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (records and header identical) | See "PE-DESIGN's record layout" below. |
+| EXP | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (byte-identical) | |
+| JEF | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (records and header identical except the date and one hoop block) | |
+| XXX | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (records and counts identical) | Two header tables and the unused colour slots PE-DESIGN fills are left zero. |
+| PCS | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (byte-identical) | Fixed 16-colour table, 1/6 mm grid with a fraction byte. |
+| SEW | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (records identical, from PE-DESIGN's start point) | PE-DESIGN's 340 header bytes unknown. |
+| HUS | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (streams and header identical) | Own LZ77 + Huffman compressor (`lzh`); 29-colour HUS chart. |
+| VIP | ✅ | ✅ | PE-DESIGN 11.50 reference write (streams and header identical); colour table confirmed by libembroidery's reader | No independent stitch decoder exists (pyembroidery has no VIP module; libembroidery's decompressor is a stub). |
 | SHV | ✅ | ❌ (read only) | Oracle-verified read | No public writer or description of the unknown header bytes; `FileType::Shv.can_write()` is false. |
 | CSD | ✅ (spec-derived) | ❌ | Spec-derived (libembroidery); synthetic round-trip tests only | Fixed-key obfuscation; no public writer or reference files. See "CSD" below. |
 | PHC | ✅ | — (read only, as in PE-DESIGN) | Oracle-verified read (pyembroidery) | PEC stitch data in a Brother wrapper. |
@@ -202,97 +202,157 @@ Not mapped yet: the fields that differ between E and V, the line's run times, th
 (text, font name, scale), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the
 reader refuses), and the trailer.
 
+## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
+
+The writers reproduce PE-DESIGN 11.50's exports record for record. The evidence is one design
+exported by PE-DESIGN to every format it offers (`compat/reference/machine/machine-formats.*`,
+2026-10-27; spec `machine-formats`): two running lines with a trimmed frame move between them,
+a colour change and a 40 × 15 mm satin of 15 mm stitches, which every relative format has to
+split. `crates/openstitch-formats/src/layout.rs` turns a pattern into the events the writers
+share; the per-format rules are in each writer's doc comment and summarised here. Unit tests
+(`*_match_pe_design*` in `tests/formats.rs`) hold OpenStitch's export of the same PES
+(`tests/fixtures/machine-formats.pes`) against PE-DESIGN's files.
+
+Shared by every format:
+
+- The design is centred: the stream starts at the middle of the needle points' bounds, (0, 0)
+  in the relative formats (PE-DESIGN's DST header is `+X 200 -X 200` for a 40 mm design).
+- A stitch longer than a record holds is one needle penetration: the full-size pieces are
+  jumps and only the remainder is a stitch (HUS alone writes two stitches).
+- A frame move is a run of jumps with no trim record of its own; the formats that have a trim
+  record do not use it for it (XXX writes the move itself as a `7E` record, VIP an `88`, HUS a
+  zero-length jump after the run). The first move of the design counts as trimmed.
+- Several formats fold the move's remainder into the first stitch after it (the needle first
+  goes down at that stitch, as after a DST jump); others put a zero-length stitch at the
+  move's end.
+
+| | Jump pieces | Long stitch | Frame move | Colour change | End |
+|---|---|---|---|---|---|
+| DST | 12.1 mm, longer axis full, other proportional | jumps + stitch | run padded to ≥ 3 jump records (zero-length jumps before the last); 3 zero-length jumps open the file | `C3`, no move | padded jump run back to (0, 0), `F3` |
+| EXP | 12.7 mm, proportional | jumps + stitch | `80 02` run | `80 01 00 00` | `80 02` run back to (0, 0), no end record |
+| JEF | 12.7 mm, only the axes over the limit move | jumps + stitch | folded into the next stitch; `80 02 00 00` opens the file | `80 01 00 00` + `80 02 00 00` | `80 10 00 00` |
+| SEW | as JEF | as JEF | as JEF | zero-length stitch, then as JEF | `80 10` + 16 zero bytes |
+| XXX | 12 mm, each axis clamped | `7F 01` jumps + stitch | trimmed: one `7E` with 16-bit deltas; plain: `7F 01` jumps; folded, then a zero-length stitch | `7F 08 00 00` after the move to the next block, before its zero-length stitch | `7F 01` run back to (0, 0), `7F 7F 03 14` |
+| PCS | absolute, no split | one record | jump at the current position, jump to the move's end, stitch there (first move: the stitch alone) | colour record (palette index, `ctrl` 3) before every block, the first included | none |
+| HUS | jumps 8 mm, stitches 12 mm, proportional | two stitches | `81` run, `81 (0,0)` when trimmed, then `80 (0,0)` | `84` | `90` |
+| VIP | `ceil(longer axis / 7.5 mm)` equal pieces | jumps + stitch | `88 (0,0)` when trimmed, then the pieces folded into the next stitch | `84` | `90` |
+
+SEW's start point is not the centre: PE-DESIGN starts the stream 15.9 mm left of and 9.7 mm
+above the design centre (the same for a 40 mm design and a 20 x 20 mm square,
+`sew-square-centre.sew`) and sews the way to the first needle point as a stitch, split like a
+long one; the stream carries no page position (`sew-a-moved10.sew`, the same design moved
+10 mm, is byte-identical). OpenStitch starts there (`sew::START_POINT`).
+
+Open questions, each answered by one more PE-DESIGN export: how JEF, SEW, XXX and VIP write a frame move shorter than one record (folded into a
+stitch, as the rule above implies, or a jump plus a zero-length stitch; a design with a 3 mm
+move between two objects would show it); the exact VIP piece length (7.5–7.9 mm fit the
+file); JEF's `-1` in the 50 × 50 mm hoop block of a 40 mm design whose hoop code is 50 × 50;
+XXX's two header tables and the default palette PE-DESIGN fills the unused colour slots with;
+the 340 non-zero bytes PE-DESIGN writes in the SEW header; DST's `AX`/`AY` meaning (the file
+has `+200 +200`, the start point measured from the lower left corner of the extents, which is
+what OpenStitch writes). PE-DESIGN's RGB for its chart colour 800 RED is `E3 31 1F` in XXX
+and VIP where OpenStitch's PEC chart table (pyembroidery's) has `ED 17 1F`.
+
 ## DST
 
 512-byte header of `KEY:value` CR-terminated fields (`LA ST CO +X -X +Y -Y AX AY MX MY PD`),
 `0x1A`, space padding. Records are 3 bytes encoding dx, dy ∈ [−121, 121] in balanced ternary
 (powers 1, 3, 9, 27, 81); byte 2 bits: 7 = jump, 6+7 = colour change, `F3` = end. DST y points
-up. DST has no trim command: a trim is written as three jumps (+2,+2) (−4,−4) (+2,+2), and the
-reader treats ≥3 consecutive jumps as a trim followed by the net move.
+up. `LA` is the file name with its extension, cut to 16 characters (`a.DST`), `ST` counts every
+record including the end record, and `AX`/`AY` repeat `-X`/`-Y` as PE-DESIGN fills them.
 
 ## DST trims
 
-PE-DESIGN exposes "Number of jumps for trim" for DST import and export. OpenStitch takes
-`trimJumps` on read and write (default 3). The reader marks a trim once a jump run reaches
-that count, and clips zero-displacement runs.
+DST has no trim command: the machine trims on a run of jump records ("jumps for trim", three
+by default). PE-DESIGN writes every frame move as such a run, padded with zero-length jumps
+before its last record, and opens the file with three zero-length jumps; OpenStitch does the
+same with `trimJumps` (default 3), which the reader also uses: a trim is marked once a jump
+run reaches that count, zero-length records included, and zero-displacement runs are clipped.
+A single jump shorter than a record is the long part of a split stitch, not a trim.
 
 ## EXP
 
-No header. 2-byte signed (dx, dy) records with y up; `80 04 dx dy` jump, `80 80 07 00` trim,
-`80 01 00 00` colour change. No colour data. Max delta ±127.
+No header. 2-byte signed (dx, dy) records with y up; `80 02 dx dy` jump (`80 04` is read as a
+jump too), `80 80 07 00` trim (read, never written: PE-DESIGN writes a trimmed move as its jump
+run alone), `80 01 00 00` colour change. No colour data. Max delta ±127. The reader infers a
+trim from a jump run that moves more than one record (12.7 mm) on an axis.
 
 ## JEF
 
 | Offset | Content |
 |---|---|
 | 0x00 | u32 offset of stitch data (`0x74 + 8 × colours`) |
-| 0x04 | u32 `0x14` |
+| 0x04 | u32 `0x0A` (pyembroidery writes `0x14`) |
 | 0x08 | 14-char date `yyyyMMddHHmmss`, 2 zero bytes |
 | 0x18 | u32 colour count (stops included) |
-| 0x1C | u32 point count |
+| 0x1C | u32 point count: 1 + stitches + 2 × (jumps + colour changes) |
 | 0x20 | u32 hoop code (0 = 110×110, 1 = 50×50, 2 = 140×200, 3 = 126×110, 4 = 200×200) |
 | 0x24 | 2 × (half width, half height) |
 | 0x34 | 4 × hoop-edge distances (left, top, right, bottom; −1 if it does not fit) |
 | 0x74 | u32 Janome chart index per colour (0 = stop), then u32 `0x0D` per colour |
 
-Records: 2-byte signed (dx, dy), y up; `80 01` colour change, `80 02` jump, `80 10` end.
-JEF has no trim command. The reader infers a trim when a jump run moves more than 3 mm.
+Records: 2-byte signed (dx, dy), y up; `80 01` colour change, `80 02` jump, `80 10` end (two
+zero bytes after it). The stream opens with `80 02 00 00`; a frame move is folded into the
+stitch after it (jumps that move only the axes over 12.7 mm, then the stitch); a colour change
+is `80 01 00 00` then `80 02 00 00`. JEF has no trim command. The reader infers a trim when a
+jump run moves more than one record (12.7 mm) on an axis; a single shorter jump is the long
+part of a split stitch.
 
 ## XXX (Singer)
 
 | Offset | Content |
 |---|---|
-| 0x17 | u32 record count (end marker excluded) |
+| 0x17 | u32 record count (colour change and end markers excluded) |
 | 0x27 | u32 colour count (readers use the low 16 bits), u16 0 |
-| 0x2D | i16 width, height, end x, −end y, −min x, max y (extents over every record) |
-| 0xF6 | u16 `0x20` |
+| 0x2D | i16 width, height, last stitch x, −last stitch y, then two zero words (pyembroidery writes −min x, max y) |
+| 0x39 | 61 bytes PE-DESIGN fills with `01 01 08 01 01 …` (meaning unknown; zero in OpenStitch's files) |
+| 0xF6 | u16 0 (pyembroidery writes `0x20`) |
 | 0xFC | u32 file offset of the end marker |
 | 0x100 | records |
 
-Records: 2-byte signed (dx, dy) with y up; `7D dx(i16) dy(i16)` long form (written for a stitch
-of ±124 or more; the reference reader turns it into a move, so a long stitch reads back as a
-jump); `7F 01 dx dy` jump; `7F 03 00 00` trim (a non-zero delta adds a move on read);
-`7F 08 dx dy` colour change (`0A`–`17` also read as colour change); `7F 7F 02 14` end. Then
-`00 00`, `00 R G B` per colour, zero entries up to 21 colours, `00 FF FF FF`, `00 01`.
-Moves are split at 124. Stops are written as colour changes.
+Records: 2-byte signed (dx, dy) with y up; `7E dx(i16) dy(i16)` trimmed frame move (read as a
+trim and a move); `7D dx(i16) dy(i16)` long stitch (read as a move, as the reference reader
+does; never written); `7F 01 dx dy` jump; `7F 03 00 00` trim (read; a non-zero delta adds a
+move); `7F 08 dx dy` colour change (`0A`–`17` also read as colour change); `7F 7F 03 14` end
+(`02 14` read too). Then `00 00`, `00 R G B` per colour, entries up to 21 colours (PE-DESIGN
+fills the unused ones with a default palette and appends a second table; OpenStitch writes
+zeros), `00 FF FF FF`, `00 01`. Jumps and split stitches are clamped to ±120 per axis. Stops are
+written as colour changes.
 
 ## PCS (Pfaff)
 
 | Offset | Content |
 |---|---|
-| 0x00 | version byte; OpenStitch writes `'2'` (`0x32`), as libembroidery does |
-| 0x01 | hoop: 2 = 80×80 mm, 3 = large (115×120 per libembroidery); written as 2 when the design fits 80×80 |
-| 0x02 | u16 colour count, then `R G B 00` per colour |
-| … | u16 record count, then 9-byte records |
+| 0x00 | version byte `'2'` (`0x32`), as PE-DESIGN and libembroidery write |
+| 0x01 | hoop: 2 = 80×80 mm, 3 = large (115×120 per libembroidery); PE-DESIGN writes 3 whatever the design's size, and so does OpenStitch |
+| 0x02 | u16 colour count, then `R G B 00` per colour: PE-DESIGN's fixed 16-colour VGA table (`pcs::PALETTE`) |
+| … | u16 record count (stitches and jumps), then 9-byte records |
 
-Record: `00 x(i24le) 00 y(i24le) ctrl`, absolute, y up, in 1/6 mm (pyembroidery's 5/3 ratio
-to 0.1 mm). `ctrl` 0x00 stitch, bit 0x01 colour change, bit 0x04 jump (libembroidery calls it a
-trim; pyembroidery a move). There is no trim or end record: the reference reader stops at end of
-file. On write, trims are dropped and a stop becomes a colour change to the same thread.
-Coordinates are rounded to the 1/6 mm grid, so a read gives fractional 0.1 mm values.
-
-pyembroidery 1.5.1 has no PCS writer. `oracle.pcs` is assembled in `tools/genfixtures.py` from
-the layout its reader expects, and its reader produces `oracle_pcs_read.json`. The byte-identity
-test therefore pins OpenStitch's writer to that layout; it is not an independent writer check.
-Open questions for the reference tier: the version byte PE-DESIGN writes, whether it pads the
-colour table to 16 entries, and its hoop choice.
+Record: `xf x(i24le) yf y(i24le) ctrl`, absolute, y up, in 1/6 mm (pyembroidery's 5/3 ratio
+to 0.1 mm) with `xf`/`yf` the fractional parts in 1/256 (truncated; pyembroidery skips them).
+`ctrl` 0x00 stitch, bit 0x01 colour change (the record's first byte is the palette index of
+the block's colour and its coordinates are zero), bit 0x04 jump (libembroidery calls it a
+trim; pyembroidery a move). The design's centre sits at (60, 57.5) mm, the middle of the large
+hoop. There is no trim or end record: the reference reader stops at end of file. On write,
+trims are dropped and a stop becomes a colour change to the same thread. The reader takes a
+colour record before any stitch as the first block's colour and, when any colour record
+carries an index, the threads from the table by index; otherwise the table itself (pyembroidery's
+files).
 
 ## SEW (Janome)
 
 | Offset | Content |
 |---|---|
 | 0x00 | u16 colour count, then u16 Janome SEW chart index per colour (`SewThreadChart`, 79 entries) |
-| … | zero padding |
+| … | zero padding (PE-DESIGN writes 340 non-zero bytes here, meaning unknown) |
 | 0x1D78 | records |
 
 Records as JEF: 2-byte signed (dx, dy) with y up; `80 01 dx dy` colour change, `80 02 dx dy`
-jump (`80 04` read as jump too), `80 10` end. The pyembroidery reader treats `80 10` as a
-stitch when 2 more bytes follow, so the writer ends the file right after `80 10`. Chart index 0
-("Unknown") is read but never written. No trim record: trims are dropped; stops become colour
-changes to the same thread. Max delta ±127.
-
-pyembroidery 1.5.1 has no SEW writer either: the fixture is built the same way as PCS. What
-PE-DESIGN puts in the 0x1D78-byte header besides the colour list is unknown.
+jump (`80 04` read as jump too), `80 10` end, then 16 zero bytes. PE-DESIGN writes a
+zero-length stitch before each colour change. Chart index 0 ("Unknown") is read but never
+written. No trim record: trims are the jump runs; stops become colour changes to the same
+thread. Max delta ±127. The stream starts 15.9 mm left of and 9.7 mm above the design centre, where
+PE-DESIGN starts it (see "PE-DESIGN's record layout").
 
 ## HUS and VIP stream compression (`lzh`)
 
@@ -328,7 +388,7 @@ streams.
 
 | Offset | Content |
 |---|---|
-| 0x00 | u32 magic `0x00C8AF5B` |
+| 0x00 | u32 magic `0x00C8FC5D` (PE-DESIGN 11.50); `0x00C8AF5B` (libembroidery, pyembroidery's fixtures) is read too |
 | 0x04 | u32 record count (END included) |
 | 0x08 | u32 colour count |
 | 0x0C | i16 +x, +y, −x, −y extents (y up): max x, −min y, min x, −max y in OpenStitch's y-down units |
@@ -337,15 +397,20 @@ streams.
 | 0x2A | u16 HUS chart index per colour (29 entries, `HUS_CHART`) |
 
 Records `(command, dx, dy)`, signed bytes, y up: `80` stitch, `81` jump, `84` colour change,
-`88` trim (a non-zero delta adds a move first), `90` end. Moves are split at 127; a colour
-change further away is reached by jumps. Stops are written as colour changes to the same
-thread. The meaning PE-DESIGN gives the string and the u16 is unknown, and the extents' sign
-convention is unverified (libembroidery and pyembroidery disagree on names, not values).
+`88` trim (read; a non-zero delta adds a move first), `90` end. PE-DESIGN's layout: a frame
+move is `81` jumps of at most 8 mm (longer axis full, the other proportional), a zero-length
+`81` after them when the move is trimmed (the reader turns that marker into a trim), then a
+zero-length `80` at the move's end; a stitch over 12 mm is `80` stitches of at most 12 mm (the
+one format that splits a stitch into stitches); no return to the origin. Stops are written as
+colour changes to the same thread. The meaning PE-DESIGN gives the string and the u16 is
+unknown (zero in its file too).
 
 Evidence: `oracle.hus` is assembled by `tools/genfixtures.py` from the layout pyembroidery's
 `HusReader` expects (literal-only streams); its read is the oracle. `openstitch.hus` is the
-same design written by OpenStitch with real compression; pyembroidery decodes it to exactly
-the same stitches and threads (`openstitch_hus_read.json`).
+same design written by OpenStitch with real compression; an earlier version of it, with the
+same compressor, was decoded by pyembroidery to exactly the oracle's stitches
+(`openstitch_hus_read.json`); the record layout has changed since, the compression has not.
+`hus_streams_and_header_match_pe_design` holds the decompressed streams against PE-DESIGN's.
 
 ## VIP (Pfaff)
 
@@ -353,16 +418,21 @@ The HUS header with magic `0x0190FC5D`, then:
 
 | Offset | Content |
 |---|---|
-| 0x2A | u32 colour-table length (4 × colours) |
+| 0x2A | u32 `0x2E + 8 × colours` (PE-DESIGN; libembroidery reads the field as the colour-table length, 4 × colours) |
 | 0x2E | colour table, 4 bytes per colour (R, G, B, `01`), obfuscated: `out[i] = in[i] ^ KEY[i] ^ out[i−1]` with libembroidery's 400-byte key (so ≤ 100 colours) |
-| … | `colours + 1` × u32 `1`, u32 `0`, u16 `0` (libembroidery's layout; meaning unknown) |
+| … | `colours + 1` × u32 `1`, u32 `0`, u16 `0` (as PE-DESIGN writes them; meaning unknown) |
 | 0x38 + 8 × colours | command, x and y streams as HUS |
 
-Records as HUS. libembroidery's reader maps `81` to a trim; OpenStitch keeps the HUS meaning
-(jump) and writes trims as `88`. Evidence: libembroidery's `sew` CLI (built locally from
-commit `1138e04`, not shipped) reads `openstitch.vip` with the right record count and the exact
-RGB colours; its decompressor is a stub (`character = 0 /* fix this */`), so it cannot check
-the stitches. Self round trip in `vip_round_trips_rgb_colours_and_stitches`.
+Records as HUS, laid out PE-DESIGN's way: `88 (0,0)` before a trimmed move (not the first);
+a frame move folded into the stitch after it and cut into `ceil(longer axis / 7.5 mm)` equal
+pieces (truncated, the last takes the remainder), jumps then one stitch; a stitch over 7.5 mm
+likewise. The piece length is between 7.5 and 7.9 mm in the one reference file. libembroidery's
+reader maps `81` to a trim; OpenStitch keeps the HUS meaning (jump). Evidence: libembroidery's
+`sew` CLI (built locally from commit `1138e04`, not shipped) reads `openstitch.vip` with the
+right record count and the exact RGB colours; its decompressor is a stub (`character = 0 /* fix
+this */`), so it cannot check the stitches. `vip_streams_and_header_match_pe_design` holds the
+decompressed streams against PE-DESIGN's; self round trip in
+`vip_round_trips_rgb_colours_and_stitches`.
 
 ## SHV (Husqvarna Viking, read only)
 

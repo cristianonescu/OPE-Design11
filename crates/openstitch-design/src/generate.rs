@@ -19,54 +19,48 @@ pub fn subdivide(path: &[Vec2], max_len: f64) -> Vec<Vec2> {
 }
 
 /// Needle points along a contour: every vertex kept, straight segments split into equal
-/// stitches no longer than `pitch`, curved segments split at equal arc length.
+/// stitches no longer than `pitch`, curved segments split by halving the curve's parameter
+/// until no chord is longer than `pitch` (see [`halve_curve`]).
 pub fn along(contour: &Contour, pitch: f64) -> Vec<Vec2> {
     if !contour.has_curves() {
         return subdivide(&contour.path(), pitch);
     }
     let mut out: Vec<Vec2> = contour.points.first().copied().into_iter().collect();
     for i in 0..contour.segment_count() {
+        let (a, b) = contour.segment_ends(i);
         match contour.curve(i) {
-            None => {
-                let (a, b) = contour.segment_ends(i);
-                out.extend(subdivide(&[a, b], pitch).into_iter().skip(1));
-            }
-            Some(_) => out.extend(
-                resample(&contour.segment_polyline(i), pitch)
-                    .into_iter()
-                    .skip(1),
-            ),
+            None => out.extend(subdivide(&[a, b], pitch).into_iter().skip(1)),
+            Some(c) => out.extend(halve_curve(a, c.c1, c.c2, b, pitch).into_iter().skip(1)),
         }
     }
     out
 }
 
-/// Points at equal arc-length steps no longer than `max_len` along `poly`, ends included.
-fn resample(poly: &[Vec2], max_len: f64) -> Vec<Vec2> {
-    let lengths: Vec<f64> = poly.windows(2).map(|w| w[0].distance(w[1])).collect();
-    let total: f64 = lengths.iter().sum();
-    let (Some(&first), Some(&last)) = (poly.first(), poly.last()) else {
-        return Vec::new();
+/// Most halvings of a curve's parameter when sampling it for stitches (2^8 chords).
+const MAX_CURVE_HALVINGS: u32 = 8;
+
+/// Needle points on the cubic Bézier `a`, `c1`, `c2`, `b` at equal parameter steps, the
+/// parameter halved until every chord is no longer than `pitch`: PE-DESIGN 11.50 sews a
+/// 60 mm circle's running stitch (pitch 2 mm) as 4 × 32 chords of 1.44-1.60 mm whose needle
+/// points lie at the quarter arcs' parameters k/32 (compat text-fit-default), not at equal
+/// arc length.
+pub fn halve_curve(a: Vec2, c1: Vec2, c2: Vec2, b: Vec2, pitch: f64) -> Vec<Vec2> {
+    let at = |t: f64| {
+        let u = 1.0 - t;
+        a * (u * u * u) + c1 * (3.0 * u * u * t) + c2 * (3.0 * u * t * t) + b * (t * t * t)
     };
-    let n = ((total / max_len.max(1e-6)).ceil() as usize).max(1);
-    let step = total / n as f64;
-    let mut out = vec![first];
-    let (mut seg, mut walked) = (0, 0.0);
-    for k in 1..n {
-        let target = step * k as f64;
-        while seg < lengths.len() - 1 && walked + lengths[seg] < target {
-            walked += lengths[seg];
-            seg += 1;
+    let pitch = pitch.max(1e-6);
+    let mut halvings = 0;
+    loop {
+        let n = 1usize << halvings;
+        let pts: Vec<Vec2> = (0..=n).map(|k| at(k as f64 / n as f64)).collect();
+        if halvings >= MAX_CURVE_HALVINGS
+            || pts.windows(2).all(|w| w[0].distance(w[1]) <= pitch + 1e-9)
+        {
+            return pts;
         }
-        let t = if lengths[seg] > 0.0 {
-            (target - walked) / lengths[seg]
-        } else {
-            0.0
-        };
-        out.push(poly[seg].lerp(poly[seg + 1], t.clamp(0.0, 1.0)));
+        halvings += 1;
     }
-    out.push(last);
-    out
 }
 
 /// Running stitch: vertices kept, segments split to `pitch`; `passes` > 1 sews back and forth.

@@ -23,7 +23,8 @@ the published Windows and Linux packages and runs them once. The build receives 
 The Linux job validates the desktop entry (`desktop-file-validate`) and MIME XML, installs into a
 temporary prefix and checks the MIME database picked up both globs; it then builds the AppImage
 and tests its thumbnailer and desktop integration (see [AppImage](#appimage)). The macOS job checks the
-signature and the document types in the bundle.
+signature, the document types and the icon in the bundle. Every job checks that its packages
+carry the app icon (see [Icons and shortcuts](#icons-and-shortcuts)).
 
 Every artifact also holds `openstitch-cli-<label>-<os>` (`.tar.gz`, or `.zip` on Windows)
 with `stitchtool`, `openstitch-mcp`, the README and `examples/`. `<label>` is `main-<sha>` for
@@ -96,16 +97,44 @@ Limits:
 - The sandbox has no network, so `openstitch --listen` cannot be reached from `stitchtool` on
   the host; allow it with `flatpak override --user --share=network io.github.cristianonescu.OpenStitch`.
 
-## Icons
+## Icons and shortcuts
 
 The OpenStitch logo (a needle and its thread on a navy tile), generated with Higgsfield; see
 `assets/brand/README.md`. `assets/icons/openstitch.svg` is the vector master and the Linux
 scalable icon. `tools/gen_icons.py` (Pillow, plus resvg or Inkscape to rasterise) writes from it
-the PNGs 16–1024, `openstitch.ico`, `openstitch.icns` and `openstitch-64.rgba`, which the app
-embeds as its window icon; at 32 px and below the needle and thread are drawn bolder so they
-stay visible. Re-run the script after changing the SVG. On Windows (MSVC) the build also embeds
-`openstitch.ico` in `openstitch.exe` (`crates/openstitch-app/build.rs`), which the taskbar,
-Alt+Tab and Explorer show.
+the PNGs 16–1024, `openstitch.ico` (16/24/32/48/64/128/256), `openstitch.icns` and
+`openstitch-64.rgba`, which the app embeds as its window icon; at 32 px and below the needle and
+thread are drawn bolder so they stay visible. Re-run the script after changing the SVG and
+commit every file it writes; the packages below take them from `assets/icons/`.
+
+What each package carries, and what the workflow checks before it uploads the package:
+
+- **Windows exe (zip and MSI).** `openstitch.exe` embeds `openstitch.ico` as its icon resource
+  (`crates/openstitch-app/build.rs` writes a `.res` and links it with the MSVC toolchain), so
+  Explorer, the taskbar and Alt+Tab show the logo for the exe itself, and the self-updater's
+  in-place swap of the exe keeps it. The zip also holds `openstitch.ico`.
+- **Windows MSI.** The Icon table holds `openstitch.ico`; the advertised Start-menu shortcut,
+  the `OpenStitch.Design` ProgId (`.osd` files) and `ARPPRODUCTICON` (Programs and Features)
+  refer to it, and `.pes` files get the installed `openstitch.ico` as their `DefaultIcon`.
+  Windows Installer copies the Icon-table entry to `%WINDIR%\Installer\{ProductCode}\` under
+  its table name and the shell loads it by that name's extension, so the name must end in
+  `.ico` or `.exe`: v0.1.0-alpha.4 named it `OpenStitchIcon` and the Start menu, the taskbar
+  (for a window started from the shortcut) and Programs and Features all showed the generic
+  icon. The workflow fails if any icon name in the MSI lacks the extension, or if the exe has
+  no icon resource.
+- **macOS.** `OpenStitch.app/Contents/Resources/openstitch.icns` (16–1024 px, `ic07`–`ic14`),
+  named by `CFBundleIconFile` in `Info.plist`; the `.osd` document type and its UTI use the same
+  file. `ditto` zips the bundle with its structure. The workflow checks the plist key, that the
+  file is an icon and that the zip lists it.
+- **Linux tarball.** `share/icons/hicolor/<size>x<size>/apps/openstitch.png` for 16–512 and
+  `scalable/apps/openstitch.svg`, with `share/applications/openstitch.desktop` (`Icon=openstitch`);
+  `install.sh` copies them under the prefix and refreshes the icon cache. The workflow installs
+  into a temporary prefix and checks that every size landed.
+- **AppImage.** `openstitch.desktop`, `openstitch.png` (256 px) and `.DirIcon` at the AppDir
+  root, which file managers and AppImage launchers read, plus the same hicolor set under `usr/
+  share`; `--install-integration` installs the hicolor icons for the user. The workflow extracts
+  the image (`--appimage-extract`) and checks the root files and the hicolor set.
+- **Flatpak.** The hicolor icons renamed to the app id (see [Flatpak](#flatpak)).
 
 The editor shows the logo as a splash for about a second on a plain start (no options, or only
 a file to open). Click or press a key to skip it. It never shows with `--screenshot`,
@@ -167,10 +196,10 @@ code: `crates/openstitch-update`, `crates/openstitch-app/src/update_ui.rs`).
 
 ## Known limits
 
-- **MSI validation.** `light` runs with `-sice:ICE50` because the Start-menu shortcut uses
-  `openstitch.ico` rather than the icon inside `openstitch.exe`. The exe now embeds the same
-  icon (`crates/openstitch-app/build.rs` links it as a resource with the MSVC toolchain), so the
-  shortcut can point at the exe and the suppression can go.
+- **MSI validation.** `light` runs with `-sice:ICE50`: the advertised Start-menu shortcut's
+  icon is `openstitch.ico` from the Icon table while its target is `openstitch.exe`, and ICE50
+  wants the two extensions to match. Making the Icon entry from the exe would store the whole
+  binary (about 30 MB) in the MSI's Icon table, so the `.ico` stays and ICE50 stays suppressed.
 - **Not signed for distribution.** macOS builds are ad-hoc signed (Gatekeeper asks on first
   launch); Windows builds carry no Authenticode signature. Signing needs certificates from the
   owner (Apple Developer ID + notarisation; a code-signing certificate for Windows).

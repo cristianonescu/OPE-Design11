@@ -1,14 +1,18 @@
 //! Tajima DST: 512-byte text header followed by 3-byte balanced-ternary move records.
 //! Units are 0.1 mm; the file's y axis points up, so y is negated on read and write.
+//! The writer lays the records out as PE-DESIGN 11.50's DST export does (see [`write_with`]).
 
 use crate::io::{ByteReader, ByteWriter, padded};
+use crate::layout::{self, Event};
 use crate::{FormatError, Result};
-use openstitch_core::{Command, Stitch, StitchPattern, Thread, round_coordinate};
+use openstitch_core::{Command, Stitch, StitchPattern, Thread};
 
 pub const HEADER_SIZE: usize = 512;
 pub const MAX_DELTA: f64 = 121.0;
-/// Default number of jump records that encode a trim. PE-DESIGN exposes this as the
-/// "Number of jumps for trim" DST setting; the default it ships with is not yet observed.
+/// Default number of jump records that encode a trim: PE-DESIGN 11.50's export opens with
+/// three zero-length jumps and pads every frame move to at least three jump records
+/// (`compat/reference/machine/machine-formats.dst`). Its "Number of jumps for trim" setting
+/// is read with the same count.
 pub const DEFAULT_TRIM_JUMPS: usize = 3;
 
 // MARK: Reading
@@ -62,21 +66,6 @@ pub fn decode(b0: u8, b1: u8, b2: u8) -> (i32, i32) {
     (x, -y)
 }
 
-/// `count` zero-sum diagonal jumps: (+2), (−4, +4, …), (±2). A single jump is zero-length.
-pub fn trim_jump_sequence(count: usize) -> Vec<(i64, i64)> {
-    if count < 2 {
-        return vec![(0, 0)];
-    }
-    let mut out = vec![(2, 2)];
-    let mut delta = -4_i64;
-    for _ in 1..count - 1 {
-        out.push((delta, delta));
-        delta = -delta;
-    }
-    out.push((delta / 2, delta / 2));
-    out
-}
-
 fn parse_header(header: &[u8], pattern: &mut StitchPattern) {
     let mut start = 0;
     for (i, &b) in header.iter().enumerate() {
@@ -127,7 +116,9 @@ fn parse_header(header: &[u8], pattern: &mut StitchPattern) {
 pub struct WriteOptions {
     /// Adds `AU`, `CP` and one `TC` line per thread to the header.
     pub extended_header: bool,
-    /// Number of jump records written per trim.
+    /// The fewest jump records a frame move is written with (the machine's "jumps for trim"
+    /// count): shorter moves are padded with zero-length jumps, and the file opens with this
+    /// many zero-length jumps.
     pub trim_jumps: usize,
 }
 
@@ -153,70 +144,125 @@ fn left_pad(s: String, width: usize) -> String {
     format!("{s:>width$}")
 }
 
+/// Writes the stream as PE-DESIGN 11.50 exports it (`compat/reference/machine/machine-formats.dst`):
+/// the design centred on (0, 0); `trim_jumps` zero-length jumps first; every frame move as
+/// jumps of at most 12.1 mm (the longer axis full, the other proportional), padded with
+/// zero-length jumps inserted before its last record so that a run of consecutive jump
+/// records is never shorter than `trim_jumps` (the machine trims on such a run, and PE-DESIGN
+/// trims every interior move); a stitch longer than 12.1 mm as jumps plus one stitch for the
+/// remainder (one needle penetration); a colour change as `C3` with no move; and, after the
+/// last stitch, a padded jump run back to (0, 0) before the end record. `ST` counts every
+/// record, the end record included.
 pub fn write_with(input: &StitchPattern, options: WriteOptions) -> Result<Vec<u8>> {
-    let pattern = input.interpolating_long_moves(MAX_DELTA, MAX_DELTA);
-    let bounds = pattern.bounds();
-    let mut w = ByteWriter::default();
-    w.ascii(&format!(
-        "LA:{}\r",
-        padded(pattern.name().unwrap_or("Untitled"), 16)
-    ));
-    // ST counts every move record written: stitches, jumps, and the jumps that encode a trim.
-    let records = pattern.count(Command::Stitch)
-        + pattern.count(Command::Jump)
-        + options.trim_jumps.max(1) * pattern.count(Command::Trim);
-    let changes = pattern.count(Command::ColorChange);
+    let events = layout::events(input);
+    let n = options.trim_jumps.max(1);
+    let (mut min_x, mut min_y, mut max_x, mut max_y) = (0_i64, 0_i64, 0_i64, 0_i64);
+    for e in &events {
+        if let Event::Move { x, y, .. } | Event::Stitch { x, y } = e {
+            min_x = min_x.min(*x);
+            max_x = max_x.max(*x);
+            min_y = min_y.min(*y);
+            max_y = max_y.max(*y);
+        }
+    }
+
+    let max = MAX_DELTA as i64;
+    let mut body = ByteWriter::default();
+    let mut at = (0_i64, 0_i64);
+    // Consecutive jump records written so far, zero-length ones included.
+    let mut run = n;
+    let mut changes = 0_usize;
+    for _ in 0..n {
+        body.append(&encode(0, 0, true)?);
+    }
+    // A frame move: jumps for the pieces, zero-length jumps before the last one so that the
+    // run of consecutive jump records reaches `n`.
+    fn frame_move(
+        body: &mut ByteWriter,
+        at: &mut (i64, i64),
+        run: &mut usize,
+        n: usize,
+        to: (i64, i64),
+    ) -> Result<()> {
+        let pieces = layout::split_proportional(to.0 - at.0, to.1 - at.1, MAX_DELTA as i64);
+        let pad = n.saturating_sub(*run + pieces.len());
+        let (last, head) = pieces.split_last().expect("at least one piece");
+        for &(dx, dy) in head {
+            body.append(&encode(dx, dy, true)?);
+        }
+        for _ in 0..pad {
+            body.append(&encode(0, 0, true)?);
+        }
+        body.append(&encode(last.0, last.1, true)?);
+        *run += pieces.len() + pad;
+        *at = to;
+        Ok(())
+    }
+    for e in &events {
+        match *e {
+            Event::Move { x: tx, y: ty, .. } => {
+                frame_move(&mut body, &mut at, &mut run, n, (tx, ty))?;
+            }
+            Event::Stitch { x: tx, y: ty } => {
+                let pieces = layout::split_proportional(tx - at.0, ty - at.1, max);
+                let (last, head) = pieces.split_last().expect("at least one piece");
+                for &(dx, dy) in head {
+                    body.append(&encode(dx, dy, true)?);
+                }
+                body.append(&encode(last.0, last.1, false)?);
+                run = 0;
+                at = (tx, ty);
+            }
+            Event::ColorChange | Event::Stop => {
+                body.append(&[0, 0, 0b1100_0011]);
+                changes += 1;
+                run = 0;
+            }
+            Event::End => {
+                frame_move(&mut body, &mut at, &mut run, n, (0, 0))?;
+                break;
+            }
+        }
+    }
+    body.append(&[0, 0, 0b1111_0011]);
+    let records = body.len() / 3;
     if records > MAX_RECORDS || changes > MAX_COLOR_CHANGES {
         return Err(FormatError::ValueOutOfRange(format!(
             "DST's header holds at most {MAX_RECORDS} records and {MAX_COLOR_CHANGES} colour changes, got {records} and {changes}"
         )));
     }
+
+    let mut w = ByteWriter::default();
+    // PE-DESIGN labels a DST with the file name it saves to, extension included, cut to 16
+    // characters; the exporter records the file stem as the PEC label.
+    let label = match input.metadata.get(crate::pec::LABEL_KEY) {
+        Some(stem) => format!("{stem}.DST"),
+        None => input.name().unwrap_or("Untitled").to_owned(),
+    };
+    w.ascii(&format!("LA:{}\r", padded(&label, 16)));
     w.ascii(&format!("ST:{}\r", left_pad(records.to_string(), 7)));
-    w.ascii(&format!(
-        "CO:{}\r",
-        left_pad(pattern.count(Command::ColorChange).to_string(), 3)
-    ));
-    w.ascii(&format!(
-        "+X:{}\r",
-        left_pad(round_coordinate(bounds.max_x).unsigned_abs().to_string(), 5)
-    ));
-    w.ascii(&format!(
-        "-X:{}\r",
-        left_pad(round_coordinate(bounds.min_x).unsigned_abs().to_string(), 5)
-    ));
-    w.ascii(&format!(
-        "+Y:{}\r",
-        left_pad(round_coordinate(bounds.max_y).unsigned_abs().to_string(), 5)
-    ));
-    w.ascii(&format!(
-        "-Y:{}\r",
-        left_pad(round_coordinate(bounds.min_y).unsigned_abs().to_string(), 5)
-    ));
-    let last = pattern.stitches.last();
-    let ax = last.map_or(0, |s| s.x as i64);
-    let ay = -last.map_or(0, |s| s.y as i64);
-    let sign = |v: i64| if v >= 0 { '+' } else { '-' };
-    w.ascii(&format!(
-        "AX:{}{}\r",
-        sign(ax),
-        left_pad(ax.unsigned_abs().to_string(), 5)
-    ));
-    w.ascii(&format!(
-        "AY:{}{}\r",
-        sign(ay),
-        left_pad(ay.unsigned_abs().to_string(), 5)
-    ));
+    w.ascii(&format!("CO:{}\r", left_pad(changes.to_string(), 3)));
+    // Extents with y up. AX/AY are filled as PE-DESIGN fills them: the start point measured
+    // from the lower left corner of the extents (one reference file; Tajima's meaning of the
+    // two fields is not documented).
+    let (plus_x, minus_x, plus_y, minus_y) = (max_x, -min_x, -min_y, max_y);
+    w.ascii(&format!("+X:{}\r", left_pad(plus_x.to_string(), 5)));
+    w.ascii(&format!("-X:{}\r", left_pad(minus_x.to_string(), 5)));
+    w.ascii(&format!("+Y:{}\r", left_pad(plus_y.to_string(), 5)));
+    w.ascii(&format!("-Y:{}\r", left_pad(minus_y.to_string(), 5)));
+    w.ascii(&format!("AX:+{}\r", left_pad(minus_x.to_string(), 5)));
+    w.ascii(&format!("AY:+{}\r", left_pad(minus_y.to_string(), 5)));
     w.ascii("MX:+    0\r");
     w.ascii("MY:+    0\r");
     w.ascii("PD:******\r");
     if options.extended_header {
-        if let Some(author) = pattern.metadata.get("author") {
+        if let Some(author) = input.metadata.get("author") {
             w.ascii(&format!("AU:{author}\r"));
         }
-        if let Some(copyright) = pattern.metadata.get("copyright") {
+        if let Some(copyright) = input.metadata.get("copyright") {
             w.ascii(&format!("CP:{copyright}\r"));
         }
-        for t in &pattern.threads {
+        for t in &input.threads {
             w.ascii(&format!(
                 "TC:{},{},{}\r",
                 t.hex(),
@@ -232,27 +278,7 @@ pub fn write_with(input: &StitchPattern, options: WriteOptions) -> Result<Vec<u8
         ));
     }
     w.fill(0x20, HEADER_SIZE - w.len());
-
-    let (mut xx, mut yy) = (0_i64, 0_i64);
-    for s in &pattern.stitches {
-        let dx = round_coordinate(s.x) - xx;
-        let dy = round_coordinate(s.y) - yy;
-        match s.command {
-            Command::Stitch | Command::Jump => {
-                xx += dx;
-                yy += dy;
-                w.append(&encode(dx, dy, s.command == Command::Jump)?);
-            }
-            Command::Trim => {
-                for (d, _) in trim_jump_sequence(options.trim_jumps) {
-                    w.append(&encode(d, d, true)?);
-                }
-            }
-            Command::ColorChange | Command::Stop => w.append(&[0, 0, 0b1100_0011]),
-            Command::End => {}
-        }
-    }
-    w.append(&[0, 0, 0b1111_0011]);
+    w.append(&body.bytes);
     Ok(w.bytes)
 }
 

@@ -278,6 +278,14 @@ fn layers_inner(
                 out.push(rows(angle - 45.0));
             }
             UnderlayStyle::EdgeFill => out.extend(fill_underlay(closed, r, angle, holes)),
+            UnderlayStyle::Cross => match cross_underlay(closed, r, angle, holes) {
+                Some(layers) => out.extend(layers),
+                None => {
+                    out.push(edge());
+                    out.push(rows(angle + 45.0));
+                    out.push(rows(angle - 45.0));
+                }
+            },
         }
     }
     let shaped =
@@ -290,11 +298,25 @@ fn layers_inner(
         RegionType::Fill if !shaped => {
             generate::fill_edge_to_edge(closed, &params, holes, r.fill_shift(), r.entry)
         }
-        // A feathered edge alone keeps the sawtooth (PE-DESIGN 11.50, satin-feather).
+        // A feathered edge alone keeps the sawtooth (PE-DESIGN 11.50, satin-feather); so does
+        // a pattern gradation on a satin split at its start point (satin-gradation).
         RegionType::Satin
             if !shaped || (r.sewn_gradation().is_none() && r.split_length.is_none()) =>
         {
             sawtooth_satin(closed, r, &params, holes)
+        }
+        RegionType::Satin if r.split_length.is_none() && r.sewn_feather().is_none() => {
+            let lattice = r
+                .sewn_gradation()
+                .filter(|g| g.steps.is_some())
+                .map(|g| row_positions(closed, params.angle, params.row_spacing, Some(g)));
+            match (lattice, r.entry) {
+                (Some(lattice), Some(e)) => {
+                    split_satin(closed, holes, &params, Some(&lattice), e, None)
+                        .map_or_else(|| shaped_rows(closed, r, &params, holes), |run| vec![run])
+                }
+                _ => shaped_rows(closed, r, &params, holes),
+            }
         }
         _ => shaped_rows(closed, r, &params, holes),
     };
@@ -373,6 +395,245 @@ fn fill_underlay(
         Some(&mut TravelGraph::new(closed, holes)),
         25.0,
     )]
+}
+
+/// Stitch pitch (0.1 mm) of the walks along the inset outline between the lines of
+/// PE-DESIGN's cross under sewing: the 2.83 mm gap between lines 2 mm apart is sewn in two,
+/// a 1.6 mm walk in one.
+const CROSS_JOIN_PITCH: f64 = 20.0;
+/// PE-DESIGN sews a cross under sewing line of exactly the stitch length in two stitches (a
+/// 4.0 mm line in two of 2.0), so the lines are cut at this much less (0.1 mm).
+const CROSS_LINE_SLACK: f64 = 0.2;
+/// Pitch of the travel to each half's corner (0.1 mm): equal stitches up to 2.5 mm.
+const CROSS_TRAVEL_PITCH: f64 = 25.0;
+
+/// PE-DESIGN 11.50's second under sewing type, measured on its output (sweep-satin-us-type-2,
+/// sweep-fill-us-type-2): the running stitch 1 mm inside the outline from the start point
+/// (as the first type), then two layers of parallel lines 1 mm inside the outline, the first
+/// at the sewing direction minus 45°, the second at plus 45°, `underlay_spacing` apart (2 mm
+/// by default), in stitches of the region's stitch length. Each layer is sewn in two halves.
+/// A half's lines lie one spacing apart from its far corner (the region's extreme point
+/// across the lines) up to the line through the start point; the half travels straight to
+/// that corner in 2.5 mm stitches, walks the inset outline to the line end nearer the start
+/// point, sews the lines as a serpentine with the walks between them along the outline
+/// (2 mm stitches), and walks back to the start point. The half whose corner comes first
+/// along the outline from the start point goes first. `None` (the plain crossing rows) for a region whose inset is not a
+/// single outline or that a line crosses more than once.
+fn cross_underlay(
+    closed: &[Contour],
+    r: &RegionSewing,
+    angle: f64,
+    holes: &[Contour],
+) -> Option<Vec<Vec<Run>>> {
+    let inset: Vec<Contour> = if r.kind == RegionType::Satin {
+        satin_inset(closed, holes)?
+    } else {
+        let mut shape: Vec<Contour> = closed.to_vec();
+        shape.extend(holes.iter().cloned());
+        crate::boolean::contours(&crate::boolean::offset(&shape, -FILL_UNDERLAY_INSET, false))
+    };
+    let outline: Vec<&Contour> = inset
+        .iter()
+        .filter(|c| c.closed && c.points.len() >= 3)
+        .collect();
+    let [outline] = outline[..] else {
+        return None;
+    };
+    let entry = r
+        .entry
+        .or_else(|| closed.first().and_then(|c| c.points.first().copied()))?;
+    let start = crate::route::snap(std::slice::from_ref(outline), entry);
+    let mut edge = generate::running(&outline.starting_at(start), FILL_UNDERLAY_PITCH, 1);
+    if r.kind != RegionType::Satin {
+        // The fill's edge run is entered from the start point on the outline.
+        edge.insert(0, crate::route::snap(closed, entry));
+    }
+    let mut pieces = vec![edge];
+    let spacing = r.underlay_spacing_mm() * 10.0;
+    let stitch = r.stitch_length * 10.0;
+    for a in [angle + 45.0, angle - 45.0] {
+        pieces.extend(cross_layer(outline, a, spacing, stitch, start)?);
+    }
+    Some(vec![join(
+        pieces,
+        Some(&mut TravelGraph::new(closed, holes)),
+        CROSS_TRAVEL_PITCH,
+    )])
+}
+
+/// One layer of [`cross_underlay`]: the lines along geometry angle `a`, in two halves.
+fn cross_layer(
+    outline: &Contour,
+    a: f64,
+    spacing: f64,
+    stitch: f64,
+    start: Vec2,
+) -> Option<Vec<Run>> {
+    let rad = a.to_radians();
+    let points = outline.outline_points();
+    let rotated: Vec<Vec2> = points.iter().map(|p| p.rotated(-rad)).collect();
+    let s = start.rotated(-rad);
+    let imin = (0..rotated.len()).min_by(|&i, &j| rotated[i].y.total_cmp(&rotated[j].y))?;
+    let imax = (0..rotated.len()).max_by(|&i, &j| rotated[i].y.total_cmp(&rotated[j].y))?;
+    let line = |y: f64| -> Option<Option<(Vec2, Vec2)>> {
+        match spans_at(std::slice::from_ref(outline), &[], a, y).as_slice() {
+            [] => Some(None),
+            [span] => Some(Some((
+                unrotate(*span.start(), y, a),
+                unrotate(*span.end(), y, a),
+            ))),
+            _ => None,
+        }
+    };
+    let mut halves: Vec<(Vec2, Vec<(Vec2, Vec2)>)> = Vec::new();
+    for (corner, from, step) in [
+        (points[imin], rotated[imin].y, spacing),
+        (points[imax], rotated[imax].y, -spacing),
+    ] {
+        let mut lines = Vec::new();
+        let mut y = from + step;
+        while (s.y - y) * step.signum() > 1e-6 && lines.len() < 100_000 {
+            if let Some(l) = line(y)? {
+                lines.push(l);
+            }
+            y += step;
+        }
+        halves.push((corner, lines));
+    }
+    // The half whose corner comes first along the outline from the start point goes first
+    // (PE-DESIGN: the left end of a rectangle started at the middle of its bottom edge, for
+    // both layers).
+    let total: f64 = outline
+        .path()
+        .windows(2)
+        .map(|w| w[0].distance(w[1]))
+        .sum::<f64>()
+        .max(1e-9);
+    let from_start = |p: Vec2| {
+        (outline_position(outline, p) - outline_position(outline, start)).rem_euclid(total)
+    };
+    halves.sort_by(|a, b| from_start(a.0).total_cmp(&from_start(b.0)));
+    let mut runs = Vec::new();
+    for (corner, lines) in halves {
+        if lines.is_empty() {
+            continue;
+        }
+        let mut run = vec![corner];
+        let mut at = corner;
+        for (e0, e1) in lines {
+            let (d0, d1) = (
+                outline_distance(outline, at, e0),
+                outline_distance(outline, at, e1),
+            );
+            let (near, far) = if (d0 - d1).abs() < 0.5 {
+                // The first line from a corner: the end nearer the start point along the outline.
+                if outline_distance(outline, e0, start) <= outline_distance(outline, e1, start) {
+                    (e0, e1)
+                } else {
+                    (e1, e0)
+                }
+            } else if d0 <= d1 {
+                (e0, e1)
+            } else {
+                (e1, e0)
+            };
+            run.extend(
+                subdivide(&outline_walk(outline, at, near), CROSS_JOIN_PITCH)
+                    .into_iter()
+                    .skip(1),
+            );
+            run.extend(
+                subdivide(&[near, far], (stitch - CROSS_LINE_SLACK).max(1.0))
+                    .into_iter()
+                    .skip(1),
+            );
+            at = far;
+        }
+        run.extend(
+            subdivide(&outline_walk(outline, at, start), CROSS_JOIN_PITCH)
+                .into_iter()
+                .skip(1),
+        );
+        runs.push(run);
+    }
+    Some(runs)
+}
+
+/// Where `p` lies along `c`'s outline (flattened, closed): the distance along it from the
+/// first point to the nearest point of the outline to `p`.
+fn outline_position(c: &Contour, p: Vec2) -> f64 {
+    let path = c.path();
+    let (mut best, mut at, mut along) = (f64::INFINITY, 0.0, 0.0);
+    for w in path.windows(2) {
+        let (a, b) = (w[0], w[1]);
+        let (ab, ap) = (b - a, p - a);
+        let len2 = ab.x * ab.x + ab.y * ab.y;
+        let t = if len2 < 1e-18 {
+            0.0
+        } else {
+            ((ap.x * ab.x + ap.y * ab.y) / len2).clamp(0.0, 1.0)
+        };
+        let d = p.distance(a.lerp(b, t));
+        if d < best {
+            (best, at) = (d, along + t * len2.sqrt());
+        }
+        along += len2.sqrt();
+    }
+    at
+}
+
+/// The shorter way along `c`'s outline from `a` to `b` (both on it), as a path through the
+/// vertices between them.
+fn outline_walk(c: &Contour, a: Vec2, b: Vec2) -> Vec<Vec2> {
+    let path = c.path();
+    let total: f64 = path.windows(2).map(|w| w[0].distance(w[1])).sum();
+    if total < 1e-9 {
+        return vec![a, b];
+    }
+    let (pa, pb) = (outline_position(c, a), outline_position(c, b));
+    // Vertex positions along the outline, with the vertex itself.
+    let mut vertices: Vec<(f64, Vec2)> = Vec::new();
+    let mut along = 0.0;
+    for w in path.windows(2) {
+        along += w[0].distance(w[1]);
+        vertices.push((along, w[1]));
+    }
+    // Forward: the vertices strictly between pa and pb going round in drawing order.
+    let between = |from: f64, to: f64, v: f64| {
+        if from <= to {
+            v > from && v < to
+        } else {
+            v > from || v < to
+        }
+    };
+    let forward: Vec<Vec2> = vertices
+        .iter()
+        .filter(|(v, _)| between(pa, pb, *v % total))
+        .map(|(_, p)| *p)
+        .collect();
+    let f = (pb - pa).rem_euclid(total);
+    let mut out = vec![a];
+    if f <= total - f {
+        out.extend(forward);
+    } else {
+        out.extend(
+            vertices
+                .iter()
+                .filter(|(v, _)| between(pb, pa, *v % total))
+                .map(|(_, p)| *p)
+                .rev(),
+        );
+    }
+    out.push(b);
+    out
+}
+
+/// The shorter distance along `c`'s outline between `a` and `b` (both on it).
+fn outline_distance(c: &Contour, a: Vec2, b: Vec2) -> f64 {
+    outline_walk(c, a, b)
+        .windows(2)
+        .map(|w| w[0].distance(w[1]))
+        .sum()
 }
 
 /// A stored direction angle (degrees counter-clockwise on screen, as PE-DESIGN's Sewing
@@ -579,12 +840,20 @@ fn satin_underlay_rows(
 /// a row is never cut along an edge.
 const EDGE_ROW_INSET: f64 = 0.01;
 
-/// Where satin splits at its start point, the last row of each half stops this far (0.1 mm)
-/// short of the start point (PE-DESIGN 11: 0.2 mm).
-const SPLIT_GAP: f64 = 2.0;
-
 /// Running stitch of the travel along the edge to each half of a split satin (0.1 mm).
 const SPLIT_TRAVEL_PITCH: f64 = 20.0;
+
+/// How close to a split satin's start point a lattice line is the start point's own line
+/// (0.1 mm): 0.05 mm, PE-DESIGN's file resolution. Such a line is the second half's hop; the
+/// first half hops to the line before it (see [`split_satin`]).
+const START_LINE_SLACK: f64 = 0.5;
+
+/// The shortest single-line gap a split satin crosses next to its far end (0.1 mm): 1 mm.
+/// PE-DESIGN 11.50 crosses a 2 mm one (the round-3 column at 0.5 lines/mm: lines 0 and 1,
+/// then every other line) and not a 0.33 mm one (satin-feather at 3 lines/mm: the crossings
+/// spread evenly instead); the bound lies between, pinned by nothing closer (the 40 x 6 mm
+/// column at 1, 1.5 and 2 lines/mm would).
+const CROSSING_MERGE_GAP: f64 = 10.0;
 
 /// Fixed-direction satin as PE-DESIGN 11 sews it: rows two crossings apart from the region's
 /// first edge to its last, each row sewn whole in one direction and the stitch to the next row
@@ -599,7 +868,7 @@ fn sawtooth_satin(
     let pitch = 2.0 * p.row_spacing;
     if let Some(run) = r
         .entry
-        .and_then(|e| split_satin(closed, holes, p, pitch, e, r.sewn_feather()))
+        .and_then(|e| split_satin(closed, holes, p, None, e, r.sewn_feather()))
     {
         return vec![run];
     }
@@ -894,17 +1163,27 @@ fn pulled_spans(closed: &[Contour], holes: &[Contour], p: &RegionParams, y: f64)
         .collect()
 }
 
-/// Satin whose start point `entry` lies inside the column, as PE-DESIGN 11 sews a rectangle
-/// (its default start point is the middle of the bottom edge): from the start point along its
-/// edge to one end of the column, the sawtooth back towards the start point, the last row
-/// [`SPLIT_GAP`] short of it reached along the far edge, then the same for the other half,
-/// ending at the start point again. `None` (sewn whole) for several parts, holes, a row cut in
-/// two, or a start point within a row of either end.
+/// Satin split at its start point, as PE-DESIGN 11.50 sews it (satin-zigzag-rect,
+/// satin-gradation, sweep-satin-density-min): from the start point along the edge to one end
+/// of the region, a sawtooth back towards the start point, a hop of one line along the far edge
+/// and a crossing, home along the near edge; then the same from the other end. The satin's
+/// lines lie on a lattice: `lattice` (rotated row positions from the region's first edge to its
+/// last; the cumulative-line-count rows of a pattern gradation) or, without one, a line every
+/// line spacing from each end. Each half hops to the last lattice line at or before the start
+/// point coming from its end and sets its crossings on every other line counting back from the
+/// hop, plus the far end's line. PE-DESIGN does that at every density: 0.3 mm hops at
+/// 3 lines/mm; at 0.1 to 0.5 lines/mm (the round-3 column) a crossing on the line next to the
+/// far end, then every other line up to the hop on the start point's own line; on the
+/// gradation rows likewise, where a row within [`START_LINE_SLACK`] of the start point is the
+/// second half's hop only. A single-line gap shorter than [`CROSSING_MERGE_GAP`] next to the
+/// far end is not crossed: those crossings spread evenly (satin-feather at 3 lines/mm). `None`
+/// where the split does not apply (holes, several contours, a start point within a line of
+/// either end).
 fn split_satin(
     closed: &[Contour],
     holes: &[Contour],
     p: &RegionParams,
-    pitch: f64,
+    lattice: Option<&[f64]>,
     entry: Vec2,
     feather: Option<Feather>,
 ) -> Option<Run> {
@@ -915,9 +1194,7 @@ fn split_satin(
     let at = e.rotated(-p.angle.to_radians());
     let b = rotated_bounds(closed, p.angle)?;
     let (lo, hi) = (b.min_y + EDGE_ROW_INSET, b.max_y - EDGE_ROW_INSET);
-    if at.y < lo + pitch || at.y > hi - pitch {
-        return None;
-    }
+    let line = p.row_spacing;
     let one = |y: f64| -> Option<Span> {
         match pulled_spans(closed, holes, p, y).as_slice() {
             [s] => Some(s.clone()),
@@ -934,21 +1211,82 @@ fn split_satin(
             (*s.end(), *s.start())
         }
     };
-    let half = |from: f64, step: f64| -> Option<Vec<(f64, Span)>> {
-        let stop = at.y - step.signum() * (SPLIT_GAP + pitch.abs() * 0.25);
-        let mut rows = Vec::new();
-        let mut y = from;
-        while (stop - y) * step.signum() > 0.0 && rows.len() < 100_000 {
-            rows.push((y, one(y)?));
-            y += step;
+    // The lines of each half, from its own end towards the start point.
+    let lines = |from_low: bool| -> Vec<f64> {
+        match lattice {
+            Some(l) if l.len() >= 2 => {
+                if from_low {
+                    l.to_vec()
+                } else {
+                    l.iter().rev().copied().collect()
+                }
+            }
+            _ => {
+                let (from, step) = if from_low { (lo, line) } else { (hi, -line) };
+                (0..100_000)
+                    .map(|k| from + step * k as f64)
+                    .take_while(|y| (y - from).abs() <= hi - lo + 1e-9)
+                    .collect()
+            }
         }
-        let last = at.y - step.signum() * SPLIT_GAP;
-        rows.push((last, one(last)?));
+    };
+    let half = |from_low: bool| -> Option<Vec<(f64, Span)>> {
+        let lines = lines(from_low);
+        let sign = if from_low { 1.0 } else { -1.0 };
+        // The hop line: the last lattice line at or before the start point coming from this
+        // half's end. A line on the start point (the uniform lattice with the start on a line:
+        // its edge rows sit [`EDGE_ROW_INSET`] inside the region, so the line lies that far
+        // past the point) is the hop of both halves. A line within [`START_LINE_SLACK`] of the
+        // start point without lying on it is the second half's hop only (satin-gradation:
+        // row 12 lies 0.02 mm from the start point; PE-DESIGN's left half hops to row 11, its
+        // right half crosses at the start point).
+        let h = lines.iter().rposition(|&y| {
+            let d = (at.y - y) * sign;
+            if d.abs() <= EDGE_ROW_INSET + 1e-6 {
+                true
+            } else if d.abs() <= START_LINE_SLACK {
+                !from_low
+            } else {
+                d > 0.0
+            }
+        })?;
+        if h == 0 {
+            return None;
+        }
+        // Crossings on every other line counting back from the hop, and on the far end's line.
+        let mut idx: Vec<usize> = (1..h).rev().step_by(2).collect();
+        if idx.last() != Some(&0) {
+            idx.push(0);
+        }
+        idx.reverse();
+        let mut ys: Vec<f64> = idx.iter().map(|&k| lines[k]).collect();
+        // A single line between the far end's crossing and the next one, shorter than
+        // [`CROSSING_MERGE_GAP`], is not crossed: the crossings before the hop spread evenly
+        // from the far end's line to the last one instead (satin-feather at 3 lines/mm: 15
+        // crossings 0.69 mm apart over 29 lines, then the 0.33 mm hop).
+        if idx.get(1) == Some(&1) && ys.len() >= 3 && (ys[1] - ys[0]).abs() < CROSSING_MERGE_GAP {
+            let (first, last, n) = (ys[0], ys[ys.len() - 1], ys.len() - 2);
+            ys = (0..=n)
+                .map(|k| first + (last - first) * k as f64 / n as f64)
+                .collect();
+        }
+        let mut rows = Vec::new();
+        for y in ys {
+            rows.push((y, one(y)?));
+        }
+        // The hop on the start point's own line crosses at the start point itself (PE-DESIGN's
+        // last crossing lands on it; the end lock steps back along that crossing).
+        let hop = if (at.y - lines[h]).abs() <= START_LINE_SLACK {
+            at.y
+        } else {
+            lines[h]
+        };
+        rows.push((hop, one(hop)?));
         Some(rows)
     };
     let pt = |x: f64, y: f64| unrotate(x, y, p.angle);
     let mut run = vec![e];
-    for rows in [half(lo, pitch)?, half(hi, -pitch)?] {
+    for rows in [half(true)?, half(false)?] {
         let (near, _) = ends(&rows[0].1);
         let first = pt(near, rows[0].0);
         let path = crate::paths::inside_path(e, first, closed, holes).unwrap_or(vec![e, first]);
@@ -1025,36 +1363,82 @@ fn auto_satin(closed: &[Contour], r: &RegionSewing, holes: &[Contour]) -> Option
     if closed.len() != 1 || !holes.is_empty() || shaped {
         return None;
     }
-    let s = crate::skeleton::derive(closed).filter(|s| s.validate().is_ok())?;
+    let mut s = crate::skeleton::derive(closed).filter(|s| s.validate().is_ok())?;
     let spacing = 10.0 / r.density.max(0.1);
-    let rungs = crate::skeleton::rungs_within(&s, closed, spacing, r.pull_compensation * 10.0);
-    let mut column: Vec<Vec2> = rungs.iter().map(|r| r[0]).collect();
-    column.extend(rungs.iter().rev().map(|r| r[1]));
-    if area(&column) < AUTO_COVERAGE * area(&closed[0].outline_points()) {
-        return None;
-    }
-    let mut rungs = fan_corners(reach_ends(rungs, closed, spacing), &closed[0]);
+    let pull = r.pull_compensation * 10.0;
     // PE-DESIGN starts Auto satin at the start point (by default the outline's first point),
     // travels along the outline to the far end and sews the satin back to it.
     let start = r
         .entry
         .or_else(|| closed[0].points.first().copied())
         .map(|s| crate::route::snap(closed, s));
-    let centre = |g: &[Vec2; 2]| g[0].lerp(g[1], 0.5);
-    if let Some(s) = start
-        && centre(&rungs[0]).distance(s) < centre(&rungs[rungs.len() - 1]).distance(s)
+    // The skeleton begins at the start point's end.
+    if let Some(st) = start
+        && let (Some(&a), Some(&b)) = (s.points.first(), s.points.last())
+        && b.distance(st) < a.distance(st)
     {
-        rungs.reverse();
-        for g in &mut rungs {
-            g.swap(0, 1);
+        s.points.reverse();
+        if s.widths.len() == s.points.len() {
+            s.widths.reverse();
         }
     }
-    let mut run = crate::column::zigzag(rungs);
+    let edges: Vec<(Vec2, Vec2)> = closed[0].edges();
+    // PE-DESIGN counts its rungs in whole spacings from the far end it sews first
+    // (satin-auto-bend-90-nohalf: the outer edge's needle points lie at 0.667k mm from the
+    // far edge), so the rungs take the lattice anchored on the far edge.
+    let n = s.points.len();
+    let beyond = match (s.points.get(n.wrapping_sub(2)), s.points.last()) {
+        (Some(&p0), Some(&p1)) if start.is_some() && n >= 2 => {
+            ray_to(p1, crate::paths::unit(p1 - p0), &edges)
+        }
+        _ => None,
+    };
+    let rungs = crate::skeleton::rungs_within_from(&s, closed, spacing, pull, beyond);
+    if rungs.len() < 2 {
+        return None;
+    }
+    let mut column: Vec<Vec2> = rungs.iter().map(|r| r[0]).collect();
+    column.extend(rungs.iter().rev().map(|r| r[1]));
+    if area(&column) < AUTO_COVERAGE * area(&closed[0].outline_points()) {
+        return None;
+    }
+    let rungs = square_rungs(rungs, &edges);
+    let mut rungs = fan_corners(reach_ends(rungs, closed, spacing), &closed[0]);
+    // Sewn from the far end back to the start point: one needle point per rung, on the start
+    // point's side for every other rung counted from the start, so the last needle point is
+    // the start point itself (PE-DESIGN, satin-auto-bend-60 and -90-nohalf).
+    rungs.reverse();
+    // PE-DESIGN sews an odd number of needle points (every reference bend: 139, 141, 177),
+    // so the first lies on the outer end of the far rung and the last on the start point;
+    // an even count loses the rung after the far edge's.
+    if rungs.len().is_multiple_of(2) && rungs.len() > 2 {
+        rungs.remove(1);
+    }
+    let n = rungs.len();
+    let last = rungs[n - 1];
+    let start_side = match start {
+        Some(st) if last[1].distance(st) < last[0].distance(st) => 1,
+        _ => 0,
+    };
+    let mut run: Run = rungs
+        .iter()
+        .enumerate()
+        .map(|(i, g)| {
+            g[if (n - 1 - i).is_multiple_of(2) {
+                start_side
+            } else {
+                1 - start_side
+            }]
+        })
+        .collect();
     run.dedup_by(|a, b| a.distance(*b) < 1e-9);
     if let (Some(s), Some(&first)) = (start, run.first()) {
         let mut graph = TravelGraph::new(closed, holes);
         graph.outline = Some(OutlineTravel::Inset(AUTO_TRAVEL_INSET));
         graph.outline_tolerance = AUTO_TRAVEL_INSET + 1.0;
+        // PE-DESIGN travels forward along the outline from the start point (over a bent
+        // band's outer edge), not the shorter way round.
+        graph.outline_forward = true;
         let path = graph.path(s, first).unwrap_or(vec![s, first]);
         let mut lead = subdivide(&path, SATIN_TRAVEL_PITCH);
         lead.pop();
@@ -1067,6 +1451,41 @@ fn auto_satin(closed: &[Contour], r: &RegionSewing, holes: &[Contour]) -> Option
 /// Auto satin's travel to its far end runs this far inside the outline (0.1 mm; PE-DESIGN
 /// 11.50: 0.4-0.5 mm on the bent band).
 const AUTO_TRAVEL_INSET: f64 = 5.0;
+
+/// Rungs whose two ends lie on parallel straight edges are set square to those edges, from
+/// the rung's middle: a derived skeleton wobbles by a grid cell, and PE-DESIGN's rungs on a
+/// straight leg are square to it (satin-auto-bend-60: the needle points on the two edges
+/// alternate at exactly half a spacing).
+fn square_rungs(mut rungs: Vec<[Vec2; 2]>, edges: &[(Vec2, Vec2)]) -> Vec<[Vec2; 2]> {
+    let edge_at = |p: Vec2| {
+        edges
+            .iter()
+            .find(|&&(a, b)| crate::skeleton::segment_distance(p, a, b) <= 1.0)
+            .map(|&(a, b)| crate::paths::unit(b - a))
+    };
+    for g in &mut rungs {
+        let (Some(ua), Some(ub)) = (edge_at(g[0]), edge_at(g[1])) else {
+            continue;
+        };
+        if crate::paths::cross(ua, ub).abs() > 0.035 {
+            continue;
+        }
+        let m = g[0].lerp(g[1], 0.5);
+        let n = v2(-ua.y, ua.x);
+        let towards = |end: Vec2| {
+            if crate::paths::dot(end - m, n) >= 0.0 {
+                n
+            } else {
+                n * -1.0
+            }
+        };
+        let (da, db) = (towards(g[0]), towards(g[1]));
+        if let (Some(ta), Some(tb)) = (ray_to(m, da, edges), ray_to(m, db, edges)) {
+            *g = [m + da * ta, m + db * tb];
+        }
+    }
+    rungs
+}
 
 /// Distance from `p` along the unit `dir` to the nearest edge more than 0.1 mm away.
 fn ray_to(p: Vec2, dir: Vec2, edges: &[(Vec2, Vec2)]) -> Option<f64> {

@@ -1,13 +1,16 @@
 //! Pfaff PCS: version byte, hoop byte (2 = 80×80 mm, 3 = large), little-endian colour count,
 //! one `R G B 00` entry per colour, a 16-bit record count, then 9-byte absolute records
-//! `00 x(24le) 00 y(24le) ctrl` with y up, in 1/6 mm (0.1 mm × 5/3). `ctrl` 0x00 is a stitch,
-//! bit 0x01 a colour change, bit 0x04 a jump; anything else ends the design. No trim or end
-//! record exists. pyembroidery 1.5.1 only reads PCS, so the writer is the exact inverse of
-//! that reader, with libembroidery's version byte (`'2'`) for the field the reader skips.
+//! `xf x(24le) yf y(24le) ctrl` with y up, in 1/6 mm (0.1 mm × 5/3): `xf` and `yf` are the
+//! fractional parts in 1/256 (PE-DESIGN writes them; pyembroidery skips them). `ctrl` 0x00 is
+//! a stitch, bit 0x01 a colour change (PE-DESIGN puts the colour's palette index in the
+//! record's first byte and zero coordinates), bit 0x04 a jump; anything else ends the design.
+//! No trim or end record exists.
+//! The writer lays the file out as PE-DESIGN 11.50's export does (see [`write`]).
 
 use crate::io::{ByteReader, ByteWriter};
+use crate::layout::{self, Event};
 use crate::{FormatError, Result, repeating_stops_palette};
-use openstitch_core::{Command, Stitch, StitchPattern, Thread, round_coordinate};
+use openstitch_core::{Command, Stitch, StitchPattern, Thread, nearest_index};
 
 /// 0.1 mm per file unit is 5/3; written as one constant so reads match the reference exactly.
 pub const UNIT_SCALE: f64 = 5.0 / 3.0;
@@ -31,6 +34,17 @@ impl Hoop {
     }
 }
 
+/// The 16-entry colour table PE-DESIGN writes in every PCS file (the VGA palette), which its
+/// colour-change records index.
+pub const PALETTE: [u32; 16] = [
+    0x000000, 0x000080, 0x0000FF, 0x008080, 0x00FFFF, 0x800080, 0xFF00FF, 0x800000, 0xFF0000,
+    0x008000, 0x00FF00, 0x808000, 0xFFFF00, 0x808080, 0xC0C0C0, 0xFFFFFF,
+];
+
+/// Where PE-DESIGN puts the centre of a design, in file units: the middle of the 120 × 115 mm
+/// large hoop.
+pub const CENTER: (i64, i64) = (360, 345);
+
 // MARK: Reading
 
 pub fn read(data: &[u8]) -> Result<StitchPattern> {
@@ -38,9 +52,10 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
     let mut pattern = StitchPattern::new();
     reader.skip(2)?; // version, hoop
     let color_count = reader.u16le()?;
+    let mut table = Vec::with_capacity(color_count as usize);
     for _ in 0..color_count {
         let c = reader.read(4)?;
-        pattern.threads.push(Thread::rgb(
+        table.push(Thread::rgb(
             u32::from(c[0]) << 16 | u32::from(c[1]) << 8 | u32::from(c[2]),
         ));
     }
@@ -54,20 +69,33 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
         }
     };
     let (mut x, mut y) = (0.0_f64, 0.0_f64);
+    // Palette index of each colour-change record (PE-DESIGN); all zero in other files.
+    let mut indexes = Vec::new();
     while reader.remaining() >= 9 {
-        reader.skip(1)?;
+        let index = reader.u8()?;
         let fx = signed24(reader.u24le()?);
-        reader.skip(1)?;
+        let yf = reader.u8()?;
         let fy = signed24(reader.u24le()?);
         let ctrl = reader.u8()?;
-        let (px, py) = (fx as f64 * UNIT_SCALE, (-fy) as f64 * UNIT_SCALE);
+        let (px, py) = (
+            (fx as f64 + f64::from(index) / 256.0) * UNIT_SCALE,
+            -(fy as f64 + f64::from(yf) / 256.0) * UNIT_SCALE,
+        );
         if ctrl == 0x00 {
             (x, y) = (px, py);
             pattern.stitches.push(Stitch::new(x, y, Command::Stitch));
         } else if ctrl & 0x01 != 0 {
-            pattern
+            indexes.push(usize::from(index));
+            // A colour record before any stitch selects the first colour.
+            if pattern
                 .stitches
-                .push(Stitch::new(x, y, Command::ColorChange));
+                .iter()
+                .any(|s| s.command == Command::Stitch)
+            {
+                pattern
+                    .stitches
+                    .push(Stitch::new(x, y, Command::ColorChange));
+            }
         } else if ctrl & 0x04 != 0 {
             (x, y) = (px, py);
             pattern.stitches.push(Stitch::new(x, y, Command::Jump));
@@ -76,59 +104,105 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
         }
     }
     pattern.stitches.push(Stitch::new(x, y, Command::End));
+    pattern.threads = if indexes.iter().any(|&i| i != 0) {
+        indexes
+            .iter()
+            .map(|&i| table.get(i).cloned().unwrap_or_else(|| Thread::rgb(0)))
+            .collect()
+    } else {
+        table
+    };
     Ok(pattern)
 }
 
 // MARK: Writing
 
-/// Trims are dropped (PCS has no trim record); a stop is written as a colour change to the
-/// same thread.
+/// Writes the file as PE-DESIGN 11.50 exports it (`compat/reference/machine/machine-formats.pcs`):
+/// version `'2'`, the large hoop whatever the design's size, the 16-colour [`PALETTE`], a
+/// record count of stitches and jumps, then a colour record (palette index of the nearest
+/// entry in its first byte, `ctrl` 3) before each block; every frame move as a jump record at
+/// the current position, a jump to the move's end and a stitch there (the first needle point;
+/// the first move of the design is the stitch alone); coordinates in 1/6 mm with a 1/256
+/// fraction byte (truncated) and the design's centre at [`CENTER`]. Trims are dropped (PCS has no trim record); a stop
+/// is written as a colour change to the same thread.
 pub fn write(input: &StitchPattern) -> Result<Vec<u8>> {
     let mut pattern = input.clone();
     pattern.fix_thread_count(None);
-    let palette = repeating_stops_palette(&pattern);
-    let bounds = pattern.bounds();
+    let palette: Vec<Option<Thread>> = PALETTE.iter().map(|&c| Some(Thread::rgb(c))).collect();
+    let indexes: Vec<usize> = repeating_stops_palette(&pattern)
+        .iter()
+        .map(|t| nearest_index(t, &palette).unwrap_or(0))
+        .collect();
+    let events = layout::events(&pattern);
 
     let mut w = ByteWriter::default();
     w.u8(i64::from(VERSION));
-    w.u8(Hoop::fitting(bounds.width(), bounds.height()) as i64);
-    w.u16le(palette.len() as i64);
-    for t in &palette {
-        w.append(&[t.red, t.green, t.blue, 0]);
+    w.u8(Hoop::Large as i64);
+    w.u16le(PALETTE.len() as i64);
+    for c in PALETTE {
+        w.append(&[(c >> 16) as u8, (c >> 8) as u8, c as u8, 0]);
     }
     let count_index = w.len();
     w.u16le(0);
 
+    // Fixed point: the integer part in 1/6 mm and a fraction byte in 1/256, truncated.
+    let fixed =
+        |v: i64, center: i64| ((v as f64 * 3.0 / 5.0 + center as f64) * 256.0).floor() as i64;
+    let record = |w: &mut ByteWriter, x: i64, y: i64, ctrl: u8| {
+        let (fx, fy) = (fixed(x, CENTER.0), fixed(-y, CENTER.1));
+        w.u8(fx & 0xFF);
+        w.u24le(fx >> 8);
+        w.u8(fy & 0xFF);
+        w.u24le(fy >> 8);
+        w.u8(i64::from(ctrl));
+    };
+    let color = |w: &mut ByteWriter, index: usize| {
+        w.u8(index as i64);
+        w.fill(0, 7);
+        w.u8(0x03);
+    };
     let mut records = 0_usize;
-    let (mut fx, mut fy) = (0_i64, 0_i64);
-    for s in &pattern.stitches {
-        let ctrl = match s.command {
-            Command::Stitch | Command::Jump => {
-                fx = round_coordinate(s.x * 3.0 / 5.0);
-                fy = round_coordinate(-s.y * 3.0 / 5.0);
-                if s.command == Command::Stitch {
-                    0x00
-                } else {
-                    0x04
+    let mut block = 0_usize;
+    let (mut x, mut y) = (0_i64, 0_i64);
+    let mut started = false;
+    color(&mut w, indexes.first().copied().unwrap_or(0));
+    let mut i = 0;
+    while i < events.len() {
+        match events[i] {
+            Event::Move { x: tx, y: ty, .. } => {
+                if started {
+                    record(&mut w, x, y, 0x04);
+                    record(&mut w, tx, ty, 0x04);
+                    records += 2;
                 }
+                // The stitch at the move's end is the first needle point; a stitch of the
+                // stream at that very point is the same penetration.
+                record(&mut w, tx, ty, 0x00);
+                records += 1;
+                if layout::next_stitch(&events, i) == Some((tx, ty)) {
+                    i += 1;
+                }
+                started = true;
+                (x, y) = (tx, ty);
             }
-            Command::ColorChange | Command::Stop => 0x01,
-            Command::Trim => continue,
-            Command::End => break,
-        };
-        w.u8(0);
-        w.u24le(fx);
-        w.u8(0);
-        w.u24le(fy);
-        w.u8(ctrl);
-        records += 1;
+            Event::Stitch { x: tx, y: ty } => {
+                record(&mut w, tx, ty, 0x00);
+                records += 1;
+                (x, y) = (tx, ty);
+            }
+            Event::ColorChange | Event::Stop => {
+                block += 1;
+                color(&mut w, indexes.get(block).copied().unwrap_or(0));
+            }
+            Event::End => break,
+        }
+        i += 1;
     }
     if records > 0xFFFF {
         return Err(FormatError::ValueOutOfRange(format!(
             "PCS holds at most 65535 records, got {records}"
         )));
     }
-    w.bytes[count_index] = (records & 0xFF) as u8;
-    w.bytes[count_index + 1] = (records >> 8) as u8;
+    w.patch16le(count_index, records as i64);
     Ok(w.bytes)
 }

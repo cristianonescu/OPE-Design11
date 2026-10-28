@@ -370,6 +370,63 @@ fn cutting_lines_go_to_the_needle_matching_their_direction() {
 }
 
 #[test]
+fn auto_satin_ends_on_its_start_point_and_travels_forward_along_the_outline() {
+    // The 5 mm band bent through 60° of compat satin-auto-bend-60 (0.1 mm): PE-DESIGN 11.50
+    // starts at the first vertex, runs 0.5 mm inside the outer (top) edge to the far end, sews
+    // the satin back with one needle point per rung and ends on the start point.
+    let band = Contour::new(
+        vec![
+            v2(0.0, 0.0),
+            v2(300.0, 0.0),
+            v2(386.6, 150.0),
+            v2(343.3, 175.0),
+            v2(271.1, 50.0),
+            v2(0.0, 50.0),
+        ],
+        true,
+    );
+    let mut r = region(RegionType::Satin);
+    r.auto_direction = true;
+    r.underlay = false;
+    r.density = 3.0;
+    let run = crate::region::layers(std::slice::from_ref(&band), &r, &[])
+        .pop()
+        .expect("top")
+        .pop()
+        .expect("run");
+    let last = run[run.len() - 1];
+    assert!(last.distance(v2(0.0, 0.0)) < 2.0, "ends at {last:?}");
+    // The lead travel (before the first rung, which is at the far end) stays by the top edge.
+    let first_rung = run
+        .iter()
+        .position(|p| p.x > 330.0 && p.y > 100.0)
+        .expect("far end reached");
+    let lead = &run[..first_rung];
+    assert!(lead.len() > 10, "{lead:?}");
+    for p in lead.iter().filter(|p| p.x > 50.0 && p.x < 250.0) {
+        assert!(
+            p.y > 0.0 && p.y < 10.0,
+            "lead by the top edge, not {p:?}: {lead:?}"
+        );
+    }
+    // Along the straight leg the needle points alternate between the edges at exactly a
+    // spacing (3.33 mm / 10 → 0.333 mm): the rungs are square to the leg and on one lattice.
+    let leg: Vec<Vec2> = run[first_rung..]
+        .iter()
+        .copied()
+        .filter(|p| p.x > 10.0 && p.x < 200.0 && (p.y.abs() < 0.5 || (p.y - 50.0).abs() < 0.5))
+        .collect();
+    assert!(leg.len() > 50, "{}", leg.len());
+    for w in leg.windows(2) {
+        assert!((w[0].y - w[1].y).abs() > 40.0, "alternate edges: {w:?}");
+        assert!(
+            ((w[0].x - w[1].x).abs() - 10.0 / 3.0).abs() < 0.05,
+            "a spacing apart: {w:?}"
+        );
+    }
+}
+
+#[test]
 fn half_stitch_thins_the_inner_side_of_bends() {
     let straight = Contour::new(hline(200.0), false);
     assert_eq!(
@@ -497,6 +554,81 @@ fn auto_direction_sews_across_the_narrow_side() {
 }
 
 #[test]
+fn cross_under_sewing_sews_two_layers_of_lines_in_halves_from_the_far_corners() {
+    // The satin of compat sweep-satin-us-type-2: 40 x 6 mm at 90 degrees, start point at the
+    // middle of the bottom edge, PE-DESIGN's second under sewing type.
+    let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 60.0)];
+    let mut r = region(RegionType::Satin);
+    r.angle = 90.0;
+    r.density = 4.5;
+    r.underlay = true;
+    r.underlay_style = UnderlayStyle::Cross;
+    r.entry = Some(v2(300.0, 160.0));
+    let layers = crate::region::layers(&c, &r, &[]);
+    assert_eq!(layers.len(), 2, "under sewing, then the satin");
+    let under: Vec<Vec2> = layers[0].iter().flatten().copied().collect();
+    assert_inside(&layers[0], &c, "cross under sewing");
+    let inset = |p: &Vec2| p.x >= 109.9 && p.x <= 490.1 && p.y >= 109.9 && p.y <= 150.1;
+    let outside: Vec<&Vec2> = under.iter().filter(|p| !inset(p)).collect();
+    assert!(
+        outside.len() <= 1 && outside.iter().all(|p| **p == v2(300.0, 160.0)),
+        "1 mm inside the outline but for the start point: {outside:?}"
+    );
+    // Stitches by direction: the edge run (along the edges), the lines (at 45 degrees, up-right
+    // first, then up-left), the travel to each half's corner.
+    let kind = |a: Vec2, b: Vec2| -> &'static str {
+        let (dx, dy) = (b.x - a.x, b.y - a.y);
+        if dx.abs() < 0.01 || dy.abs() < 0.01 {
+            "edge"
+        } else if (dx.abs() - dy.abs()).abs() < 0.01 {
+            if dx * dy < 0.0 { "up-right" } else { "up-left" }
+        } else {
+            "travel"
+        }
+    };
+    let kinds: Vec<&str> = under.windows(2).map(|w| kind(w[0], w[1])).collect();
+    let first_up_right = kinds.iter().position(|&k| k == "up-right").expect("lines");
+    let first_up_left = kinds.iter().position(|&k| k == "up-left").expect("lines");
+    assert!(
+        first_up_right < first_up_left,
+        "direction - 45 degrees first"
+    );
+    assert!(kinds[first_up_left..].iter().all(|&k| k != "up-right"));
+    // Each layer's lines are 2 mm apart (2.83 mm along the edges): 14 of them, as PE-DESIGN's.
+    let count = |k: &str| kinds.iter().filter(|&&x| x == k).count();
+    assert!(
+        (26..=30).contains(&count("up-right")),
+        "{}",
+        count("up-right")
+    );
+    assert!(
+        (26..=30).contains(&count("up-left")),
+        "{}",
+        count("up-left")
+    );
+    // The first half goes to the corner first along the outline from the start point (the
+    // bottom-left for the up-left lines; the top-left, reached by a straight travel, for
+    // the up-right lines) and every half ends at the start point.
+    let at = |i: usize| under[i];
+    assert!(
+        at(first_up_right).x < 140.0 && at(first_up_right).y > 130.0,
+        "{:?}",
+        at(first_up_right)
+    );
+    assert!(
+        at(first_up_left).x < 140.0 && at(first_up_left).y > 140.0,
+        "{:?}",
+        at(first_up_left)
+    );
+    // Every half ends at the start point on the inset; the layer then steps out to the
+    // region's start point, where the top satin begins.
+    assert_eq!(under[under.len() - 2], v2(300.0, 150.0));
+    assert_eq!(under.last().copied(), Some(v2(300.0, 160.0)));
+    assert!(count("travel") >= 8, "{}", count("travel"));
+    assert_eq!(layers[1][0][0], v2(300.0, 160.0));
+}
+
+#[test]
 fn underlay_styles_layer_inside_the_region() {
     let c = vec![circle()];
     let mut r = region(RegionType::Fill);
@@ -583,6 +715,100 @@ fn gradation_pattern_sews_rows_at_equal_steps_of_the_cumulative_line_count() {
     r.gradation = Some(crate::Gradation::PE_DEFAULT);
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     assert_inside(&runs, &c, "gradation pattern");
+}
+
+#[test]
+fn satin_at_the_minimum_density_crosses_on_every_line() {
+    // The 40 x 6 mm column of compat sweep-satin-density-min at 0.1 lines/mm, start point at
+    // the middle of the bottom edge: PE-DESIGN 11.50 sews crossings 10 mm apart (every line)
+    // with 11.7 mm diagonals, not 20 mm apart with 20.9 mm ones.
+    let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 60.0)];
+    let mut r = region(RegionType::Satin);
+    r.angle = 90.0;
+    r.density = 0.1;
+    r.underlay = false;
+    r.entry = Some(v2(300.0, 160.0));
+    let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
+    let run = &runs[0];
+    let mut crossings: Vec<f64> = run
+        .windows(2)
+        .filter(|w| (w[0].x - w[1].x).abs() < 0.01 && (w[0].y - w[1].y).abs() > 59.0)
+        .map(|w| w[0].x)
+        .collect();
+    crossings.sort_by(f64::total_cmp);
+    let rounded: Vec<f64> = crossings.iter().map(|x| x.round()).collect();
+    assert_eq!(
+        rounded,
+        [100.0, 200.0, 300.0, 300.0, 400.0, 500.0],
+        "{run:?}"
+    );
+    let longest = run
+        .windows(2)
+        .map(|w| w[0].distance(w[1]))
+        .fold(0.0_f64, f64::max);
+    assert!((longest - 116.6).abs() < 0.5, "{longest}");
+    // At 3 lines/mm the start point lies on line 60 and the single line next to the far end
+    // (0.33 mm) is not crossed: the 30 crossings of the left half spread evenly over the 59
+    // lines before the hop (0.678 mm apart, as satin-feather's 0.69 mm over 29 lines), then
+    // the hop of one line (0.33 mm) to the start point's line.
+    r.density = 3.0;
+    let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
+    let mut xs: Vec<f64> = runs[0]
+        .windows(2)
+        .filter(|w| (w[0].x - w[1].x).abs() < 0.01 && (w[0].y - w[1].y).abs() > 59.0)
+        .map(|w| w[0].x)
+        .filter(|&x| x < 300.5)
+        .collect();
+    xs.sort_by(f64::total_cmp);
+    xs.dedup_by(|a, b| (*a - *b).abs() < 0.01);
+    assert_eq!(xs.len(), 31, "{xs:?}");
+    for w in xs[..30].windows(2) {
+        assert!(
+            (w[1] - w[0] - 59.0 * (100.0 / 30.0) / 29.0).abs() < 0.01,
+            "{xs:?}"
+        );
+    }
+    assert!((xs[30] - xs[29] - 10.0 / 3.0).abs() < 0.05, "{xs:?}");
+    assert!((xs[30] - 300.0).abs() < 1e-6, "{xs:?}");
+}
+
+#[test]
+fn satin_gradation_splits_on_every_other_lattice_line() {
+    // The 20 x 5 mm rectangle of compat satin-gradation: satin at 3 lines/mm with PE-DESIGN's
+    // default pattern, under sewing off, start point at the middle of the bottom edge.
+    // PE-DESIGN 11.50 sews the left half from the left edge with vertical crossings on every
+    // other line of the cumulative-line-count lattice (lines 0, 2, ... 10), hops one line (11)
+    // and crosses, runs home; then the right half from the right edge (lines 17, 15, 13) and
+    // the hop to the start point's line (12).
+    let c = vec![Contour::rectangle(100.0, 100.0, 200.0, 50.0)];
+    let g = crate::Gradation::PE_DEFAULT;
+    assert_eq!(
+        crate::region::row_positions(&c, 90.0, 10.0 / 3.0, Some(&g)).len(),
+        18
+    );
+    let mut r = region(RegionType::Satin);
+    r.angle = 90.0;
+    r.density = 3.0;
+    r.underlay = false;
+    r.gradation = Some(g);
+    r.entry = Some(v2(200.0, 150.0));
+    let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
+    assert_eq!(runs.len(), 1, "one run, split at the start point");
+    let run = &runs[0];
+    let crossings: Vec<f64> = run
+        .windows(2)
+        .filter(|w| (w[0].x - w[1].x).abs() < 0.01 && (w[0].y - w[1].y).abs() > 49.0)
+        .map(|w| w[0].x / 10.0)
+        .collect();
+    let pe = [
+        10.0, 11.3, 12.7, 14.3, 15.9, 17.8, 18.8, 30.0, 24.3, 21.2, 20.0,
+    ];
+    assert_eq!(crossings.len(), pe.len(), "{crossings:?}");
+    for (x, p) in crossings.iter().zip(pe) {
+        assert!((x - p).abs() <= 0.15, "{x} vs {p}: {crossings:?}");
+    }
+    assert_eq!(run.len(), 32, "{run:?}"); // 37 stitches with the tie-in and lock
+    assert_inside(&runs, &c, "satin gradation");
 }
 
 #[test]
