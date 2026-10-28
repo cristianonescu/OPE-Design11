@@ -1025,36 +1025,82 @@ fn auto_satin(closed: &[Contour], r: &RegionSewing, holes: &[Contour]) -> Option
     if closed.len() != 1 || !holes.is_empty() || shaped {
         return None;
     }
-    let s = crate::skeleton::derive(closed).filter(|s| s.validate().is_ok())?;
+    let mut s = crate::skeleton::derive(closed).filter(|s| s.validate().is_ok())?;
     let spacing = 10.0 / r.density.max(0.1);
-    let rungs = crate::skeleton::rungs_within(&s, closed, spacing, r.pull_compensation * 10.0);
-    let mut column: Vec<Vec2> = rungs.iter().map(|r| r[0]).collect();
-    column.extend(rungs.iter().rev().map(|r| r[1]));
-    if area(&column) < AUTO_COVERAGE * area(&closed[0].outline_points()) {
-        return None;
-    }
-    let mut rungs = fan_corners(reach_ends(rungs, closed, spacing), &closed[0]);
+    let pull = r.pull_compensation * 10.0;
     // PE-DESIGN starts Auto satin at the start point (by default the outline's first point),
     // travels along the outline to the far end and sews the satin back to it.
     let start = r
         .entry
         .or_else(|| closed[0].points.first().copied())
         .map(|s| crate::route::snap(closed, s));
-    let centre = |g: &[Vec2; 2]| g[0].lerp(g[1], 0.5);
-    if let Some(s) = start
-        && centre(&rungs[0]).distance(s) < centre(&rungs[rungs.len() - 1]).distance(s)
+    // The skeleton begins at the start point's end.
+    if let Some(st) = start
+        && let (Some(&a), Some(&b)) = (s.points.first(), s.points.last())
+        && b.distance(st) < a.distance(st)
     {
-        rungs.reverse();
-        for g in &mut rungs {
-            g.swap(0, 1);
+        s.points.reverse();
+        if s.widths.len() == s.points.len() {
+            s.widths.reverse();
         }
     }
-    let mut run = crate::column::zigzag(rungs);
+    let edges: Vec<(Vec2, Vec2)> = closed[0].edges();
+    // PE-DESIGN counts its rungs in whole spacings from the far end it sews first
+    // (satin-auto-bend-90-nohalf: the outer edge's needle points lie at 0.667k mm from the
+    // far edge), so the rungs take the lattice anchored on the far edge.
+    let n = s.points.len();
+    let beyond = match (s.points.get(n.wrapping_sub(2)), s.points.last()) {
+        (Some(&p0), Some(&p1)) if start.is_some() && n >= 2 => {
+            ray_to(p1, crate::paths::unit(p1 - p0), &edges)
+        }
+        _ => None,
+    };
+    let rungs = crate::skeleton::rungs_within_from(&s, closed, spacing, pull, beyond);
+    if rungs.len() < 2 {
+        return None;
+    }
+    let mut column: Vec<Vec2> = rungs.iter().map(|r| r[0]).collect();
+    column.extend(rungs.iter().rev().map(|r| r[1]));
+    if area(&column) < AUTO_COVERAGE * area(&closed[0].outline_points()) {
+        return None;
+    }
+    let rungs = square_rungs(rungs, &edges);
+    let mut rungs = fan_corners(reach_ends(rungs, closed, spacing), &closed[0]);
+    // Sewn from the far end back to the start point: one needle point per rung, on the start
+    // point's side for every other rung counted from the start, so the last needle point is
+    // the start point itself (PE-DESIGN, satin-auto-bend-60 and -90-nohalf).
+    rungs.reverse();
+    // PE-DESIGN sews an odd number of needle points (every reference bend: 139, 141, 177),
+    // so the first lies on the outer end of the far rung and the last on the start point;
+    // an even count loses the rung after the far edge's.
+    if rungs.len().is_multiple_of(2) && rungs.len() > 2 {
+        rungs.remove(1);
+    }
+    let n = rungs.len();
+    let last = rungs[n - 1];
+    let start_side = match start {
+        Some(st) if last[1].distance(st) < last[0].distance(st) => 1,
+        _ => 0,
+    };
+    let mut run: Run = rungs
+        .iter()
+        .enumerate()
+        .map(|(i, g)| {
+            g[if (n - 1 - i).is_multiple_of(2) {
+                start_side
+            } else {
+                1 - start_side
+            }]
+        })
+        .collect();
     run.dedup_by(|a, b| a.distance(*b) < 1e-9);
     if let (Some(s), Some(&first)) = (start, run.first()) {
         let mut graph = TravelGraph::new(closed, holes);
         graph.outline = Some(OutlineTravel::Inset(AUTO_TRAVEL_INSET));
         graph.outline_tolerance = AUTO_TRAVEL_INSET + 1.0;
+        // PE-DESIGN travels forward along the outline from the start point (over a bent
+        // band's outer edge), not the shorter way round.
+        graph.outline_forward = true;
         let path = graph.path(s, first).unwrap_or(vec![s, first]);
         let mut lead = subdivide(&path, SATIN_TRAVEL_PITCH);
         lead.pop();
@@ -1067,6 +1113,41 @@ fn auto_satin(closed: &[Contour], r: &RegionSewing, holes: &[Contour]) -> Option
 /// Auto satin's travel to its far end runs this far inside the outline (0.1 mm; PE-DESIGN
 /// 11.50: 0.4-0.5 mm on the bent band).
 const AUTO_TRAVEL_INSET: f64 = 5.0;
+
+/// Rungs whose two ends lie on parallel straight edges are set square to those edges, from
+/// the rung's middle: a derived skeleton wobbles by a grid cell, and PE-DESIGN's rungs on a
+/// straight leg are square to it (satin-auto-bend-60: the needle points on the two edges
+/// alternate at exactly half a spacing).
+fn square_rungs(mut rungs: Vec<[Vec2; 2]>, edges: &[(Vec2, Vec2)]) -> Vec<[Vec2; 2]> {
+    let edge_at = |p: Vec2| {
+        edges
+            .iter()
+            .find(|&&(a, b)| crate::skeleton::segment_distance(p, a, b) <= 1.0)
+            .map(|&(a, b)| crate::paths::unit(b - a))
+    };
+    for g in &mut rungs {
+        let (Some(ua), Some(ub)) = (edge_at(g[0]), edge_at(g[1])) else {
+            continue;
+        };
+        if crate::paths::cross(ua, ub).abs() > 0.035 {
+            continue;
+        }
+        let m = g[0].lerp(g[1], 0.5);
+        let n = v2(-ua.y, ua.x);
+        let towards = |end: Vec2| {
+            if crate::paths::dot(end - m, n) >= 0.0 {
+                n
+            } else {
+                n * -1.0
+            }
+        };
+        let (da, db) = (towards(g[0]), towards(g[1]));
+        if let (Some(ta), Some(tb)) = (ray_to(m, da, edges), ray_to(m, db, edges)) {
+            *g = [m + da * ta, m + db * tb];
+        }
+    }
+    rungs
+}
 
 /// Distance from `p` along the unit `dir` to the nearest edge more than 0.1 mm away.
 fn ray_to(p: Vec2, dir: Vec2, edges: &[(Vec2, Vec2)]) -> Option<f64> {

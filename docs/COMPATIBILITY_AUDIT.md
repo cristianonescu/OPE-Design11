@@ -384,7 +384,11 @@ Line references are relative to `crates/`.
 - **Grade:** Documented difference.
 - **PE-DESIGN 11.50 behaviour** (black-box, 2026-10-27; references `satin-auto-bend-90-nohalf.pes`,
   `satin-auto-bend-60.pes`, `auto-satin-bent-band.pes`): Auto satin starts at the start point, runs
-  0.5 mm inside the outline to the far end and sews back. On straight legs the rungs are square to
+  0.5 mm inside the outline *forward along it* (over a bent band's outer edge, not the shorter way
+  round) to the far end, sews back from there with one needle point per rung on alternate edges and
+  ends on the start point itself. The rungs lie at whole spacings from the far edge (the 90° band's
+  outer edge: 30.0, 29.3, 28.7 … mm), the remainder landing at the start (the 60° band's start leg
+  sits 0.05 mm off the lattice). On straight legs the rungs are square to
   the leg; at a bend the outer ends keep an even spacing along the outer edge and the rung
   direction turns linearly with the distance along it, over three band widths for a 90° turn (two
   for 60°), centred on the outer corner; each rung reaches across to the inner edge, so the inner
@@ -395,9 +399,14 @@ Line references are relative to `crates/`.
   at all three (reference tier). At 120° PE-DESIGN sews 161 stitches with a 10 mm longest crossing
   where OpenStitch sews 267 with a 13 mm one: the fan rule breaks down on a sharp turn (file
   parked with the parked-references session; its spec is not in the repository).
-- **Status:** fixed; the corner fan, end reach and start travel follow PE-DESIGN (reference tier:
-  satin-auto-bend-90-nohalf, satin-auto-bend-60, satin-auto-bend-30/45/75 (±nohalf), auto-satin-bent-band; `region::fan_corners`,
-  `region::reach_ends`). Earlier: Auto satin
+- **Status:** fixed; the corner fan, end reach, forward start travel, the far-end needle lattice
+  and the end on the start point follow PE-DESIGN (reference tier: satin-auto-bend-90-nohalf,
+  satin-auto-bend-60, satin-auto-bend-30/45/75 (±nohalf), auto-satin-bent-band;
+  `region::fan_corners`, `region::reach_ends`, `region::auto_satin`; 2026-10-28: mean needle
+  distance 0.20 → 0.08 mm on the 60° band and 0.16 → 0.07 mm on the 90° band, overlap 0.71 → 0.77
+  and 0.70 → 0.87; on the 30°/45°/75° bands PE's start-leg lattice sits 0.07-0.27 mm off ours,
+  a phase the far end's fan sets that two bends per angle cannot pin down; a density-3 satin's
+  overlap turns on such 0.1 mm phases). Earlier: Auto satin
   derives a skeleton and sews along it, each row reaching the outline
   (`skeleton::rungs_within`). Running Stitch Path is hidden with Auto satin, which travels
   inside (item 3); OpenStitch has no Half Stitch or Stitch Type for regions. Fill, regions with holes or
@@ -924,11 +933,13 @@ Line references are relative to `crates/`.
   fill (PE offers it; OpenStitch refuses it until it sews it).
 - **Gradation:** the pattern is PE-DESIGN's since 2026-10-27: Max/Min density with evenly
   spaced step values (default Max 53 %, Min 5 %, 9 steps), the density falling linearly across
-  the region, and rows at equal steps of the cumulative line count: the region holds the whole
-  number of gaps the profile integrates to, the first row on the start edge and the last on
-  the far edge. region-travel-u-gradation passes at the reference tier; all 40 of its rows lie
-  within 0.12 mm of PE-DESIGN's (0.04 mm on average; the earlier midpoint-density placement
-  drifted to 0.4 mm by the far edge). Designs saved with the old single far-side percentage
+  the region, and rows at equal steps of the cumulative line count: the region holds the
+  nearest whole number of gaps to the line count the profile integrates to (a flat pattern
+  rounds down like a plain fill), the first row on the start edge and the last on the far
+  edge. region-travel-u-gradation passes at the reference tier; all 40 of its rows lie within
+  0.12 mm of PE-DESIGN's (0.04 mm on average; the earlier midpoint-density placement drifted
+  to 0.4 mm by the far edge), and the round-3 Max/Min sweeps (80/20, 95/50, 50/50, pattern 2)
+  fit the same rule within 0.1 mm. Designs saved with the old single far-side percentage
   still sew a continuous fall from 100 %. The guide's exclusions apply: not with a feathered edge, Auto
   direction or text (refused when set, not sewn when a file holds them anyway). Settled by the
   2026-10-28 gradation sweep (references `u-gradation-*.pes`): Max/Min rescaling (80/20, 95/50, a
