@@ -258,7 +258,7 @@ jobs:
           $db = $inst.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $inst, @((Resolve-Path "dist\OpenStitch-$env:LABEL-windows-x86_64.msi").Path, 0))
           function Rows($q) {
             $v = $db.GetType().InvokeMember("OpenView", "InvokeMethod", $null, $db, @($q))
-            $v.GetType().InvokeMember("Execute", "InvokeMethod", $null, $v, $null)
+            $null = $v.GetType().InvokeMember("Execute", "InvokeMethod", $null, $v, $null)
             while ($r = $v.GetType().InvokeMember("Fetch", "InvokeMethod", $null, $v, $null)) {
               $r.GetType().InvokeMember("StringData", "GetProperty", $null, $r, @(1))
             }
@@ -267,7 +267,7 @@ jobs:
           $arp = @(Rows "SELECT Value FROM Property WHERE Property = 'ARPPRODUCTICON'")
           $shortcut = @(Rows "SELECT Icon_ FROM Shortcut")
           "Icon table: $icons; ARPPRODUCTICON: $arp; shortcut icons: $shortcut"
-          foreach ($name in $icons + $arp + $shortcut) {
+          foreach ($name in ($icons + $arp + $shortcut | Where-Object { $_ })) {
             if ($name -notmatch '\.(ico|exe)$') { throw "MSI icon name '$name' has no .ico/.exe extension" }
           }
 
