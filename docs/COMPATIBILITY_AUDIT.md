@@ -951,7 +951,24 @@ Line references are relative to `crates/`.
   point puts the crossings of each half on every other line counted from that half's own end, a
   hop of one line and a crossing close the half, and the "7.6 mm travel" the parked file showed
   is the diagonal crossing of the widest gap. The same lattice rule gives the uniform split
-  satin its 0.3 mm hop (satin-zigzag-rect, unchanged). region-travel-u-gradation passes at the reference tier; all 40 of its rows lie within
+  satin its 0.3 mm hop (satin-zigzag-rect, unchanged). At the minimum density (0.1 lines/mm,
+  sweep-satin-density-min, 2026-10-28, needle for needle) PE-DESIGN puts a crossing on every
+  line, 10 mm apart with 11.7 mm diagonals, where counting forward from the end by two lines
+  would space them 20 mm with 20.9 mm diagonals. The round-3 column at 0.2, 0.3 and 0.5
+  lines/mm (43, 47, 55 stitches, record for record) settled the rule: each half hops to the
+  last lattice line at or before the start point (on the start point's own line the crossing
+  lands on the start point) and puts its crossings on every other line counting back from the
+  hop, plus the far end's line (lines 0, 1, 3, 5, ...); at 3 lines/mm (satin-zigzag-rect) and
+  on the gradation rows the same rule gives the crossings OpenStitch already sewed. No period
+  limit exists. Two edges of the rule: a gradation row within 0.05 mm of the start point
+  (satin-gradation's row 12, 0.02 mm before it in OpenStitch's lattice, on it in PE-DESIGN's
+  0.1 mm file) is the second half's hop only, the first half hops to the row before it, as
+  PE-DESIGN's file shows; and a single-line gap next to the far end shorter than 1 mm is not
+  crossed, the crossings before the hop spread evenly instead (satin-feather at 3 lines/mm:
+  15 crossings 0.69 mm apart over 29 lines, then the 0.33 mm hop; the round-3 column at 0.5
+  lines/mm keeps its 2 mm single-line gap). Open: the merge bound lies between 0.33 and 2 mm
+  (the 40 x 6 mm column at 1, 1.5 and 2 lines/mm, start point at the middle, would pin it).
+  region-travel-u-gradation passes at the reference tier; all 40 of its rows lie within
   0.12 mm of PE-DESIGN's (0.04 mm on average; the earlier midpoint-density placement drifted
   to 0.4 mm by the far edge), and the round-3 Max/Min sweeps (80/20, 95/50, 50/50, pattern 2)
   fit the same rule within 0.1 mm. Designs saved with the old single far-side percentage

@@ -1,0 +1,174 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "sweep-satin-density-min",
+  "area": "stitches",
+  "title": "Satin density 0.1 lines/mm on a 40 x 6 mm column: the sawtooth counts its crossings back from the start point",
+  "description": "A 40 x 6 mm rectangle sewn as satin across the 6 mm (Direction 90 degrees), under sewing off, density 0.1 (PE-DESIGN's minimum): the lines lie 10 mm apart. Each half of the split sawtooth hops to the last line at or before the start point (here the start point's own line) and puts its crossings on every other line counting back from there and on the far end's line: a vertical crossing at the end, an 11.7 mm diagonal to the next line, a vertical crossing, the walk along the far edge to the start point's line and the crossing down to the start point (36 stitches, the longest 11.66 mm; counting forward from the end by two lines would give 20.9 mm diagonals).",
+  "covers": {
+    "audit": [
+      1
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Satin: a zigzag across the column"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference compat/reference/stitches/sweep-satin-density-min.pes (2026-10-27): status bar 39 stitches, 36 as the harness counts them; crossings at 10, 20, 30, 40, 50 mm from the page's left edge, every diagonal 11.66 mm. The same rule reproduces PE-DESIGN's round-3 column at 0.2, 0.3 and 0.5 lines/mm (crossings at lines 0, 1, 3, 5, ... and the hop on the start point's line: 43, 47 and 55 stitches, record for record; files in the owner's round-3 satin-density folder, landing with pe-refs-3's batch), satin-zigzag-rect at 3 lines/mm and satin-gradation's cumulative rows."
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 6
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "satin",
+        "angle": 90,
+        "density": 0.1,
+        "underlay": false
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/sweep-satin-density-min.pes",
+      "make": "On a 100 × 100 mm Design Page (grid 1 mm, Snap to Grid) draw a 40 × 6 mm rectangle with the Rectangle tool from (10, 10) to (50, 16) mm. Line Not Sewn; colour 800 RED; region sew type Satin Stitch, Direction Manual straight line 90°, Under sewing unticked, Density 0.1, Pull compensation 0.0 mm, Half Stitch at its default, every other attribute at PE-DESIGN's default. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN's count (status bar); the reference file",
+      "reference": {
+        "tolerance": {
+          "percent": 5
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN's file: the needle points' extent",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      },
+      "expected": 40.0,
+      "tolerance": {
+        "mm": 0.1
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN's file: the needle points' extent",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      },
+      "expected": 6.0,
+      "tolerance": {
+        "mm": 0.1
+      }
+    },
+    {
+      "id": "stitch-length-max",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN's file: the longest stitch (the crossings, or the travel)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    },
+    {
+      "id": "versus-reference",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.3,
+          "boundsMm": 0.3,
+          "counts": {
+            "percent": 5
+          },
+          "sequence": true,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN 11 output of the same column, needle point by needle point",
+      "reference": {}
+    }
+  ]
+}

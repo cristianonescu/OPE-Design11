@@ -643,6 +643,61 @@ fn gradation_pattern_sews_rows_at_equal_steps_of_the_cumulative_line_count() {
 }
 
 #[test]
+fn satin_at_the_minimum_density_crosses_on_every_line() {
+    // The 40 x 6 mm column of compat sweep-satin-density-min at 0.1 lines/mm, start point at
+    // the middle of the bottom edge: PE-DESIGN 11.50 sews crossings 10 mm apart (every line)
+    // with 11.7 mm diagonals, not 20 mm apart with 20.9 mm ones.
+    let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 60.0)];
+    let mut r = region(RegionType::Satin);
+    r.angle = 90.0;
+    r.density = 0.1;
+    r.underlay = false;
+    r.entry = Some(v2(300.0, 160.0));
+    let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
+    let run = &runs[0];
+    let mut crossings: Vec<f64> = run
+        .windows(2)
+        .filter(|w| (w[0].x - w[1].x).abs() < 0.01 && (w[0].y - w[1].y).abs() > 59.0)
+        .map(|w| w[0].x)
+        .collect();
+    crossings.sort_by(f64::total_cmp);
+    let rounded: Vec<f64> = crossings.iter().map(|x| x.round()).collect();
+    assert_eq!(
+        rounded,
+        [100.0, 200.0, 300.0, 300.0, 400.0, 500.0],
+        "{run:?}"
+    );
+    let longest = run
+        .windows(2)
+        .map(|w| w[0].distance(w[1]))
+        .fold(0.0_f64, f64::max);
+    assert!((longest - 116.6).abs() < 0.5, "{longest}");
+    // At 3 lines/mm the start point lies on line 60 and the single line next to the far end
+    // (0.33 mm) is not crossed: the 30 crossings of the left half spread evenly over the 59
+    // lines before the hop (0.678 mm apart, as satin-feather's 0.69 mm over 29 lines), then
+    // the hop of one line (0.33 mm) to the start point's line.
+    r.density = 3.0;
+    let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
+    let mut xs: Vec<f64> = runs[0]
+        .windows(2)
+        .filter(|w| (w[0].x - w[1].x).abs() < 0.01 && (w[0].y - w[1].y).abs() > 59.0)
+        .map(|w| w[0].x)
+        .filter(|&x| x < 300.5)
+        .collect();
+    xs.sort_by(f64::total_cmp);
+    xs.dedup_by(|a, b| (*a - *b).abs() < 0.01);
+    assert_eq!(xs.len(), 31, "{xs:?}");
+    for w in xs[..30].windows(2) {
+        assert!(
+            (w[1] - w[0] - 59.0 * (100.0 / 30.0) / 29.0).abs() < 0.01,
+            "{xs:?}"
+        );
+    }
+    assert!((xs[30] - xs[29] - 10.0 / 3.0).abs() < 0.05, "{xs:?}");
+    assert!((xs[30] - 300.0).abs() < 1e-6, "{xs:?}");
+}
+
+#[test]
 fn satin_gradation_splits_on_every_other_lattice_line() {
     // The 20 x 5 mm rectangle of compat satin-gradation: satin at 3 lines/mm with PE-DESIGN's
     // default pattern, under sewing off, start point at the middle of the bottom edge.

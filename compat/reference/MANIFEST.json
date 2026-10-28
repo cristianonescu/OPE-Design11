@@ -1716,6 +1716,18 @@
       "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 0.5 mm, Snap to Grid on; Shapes > Rectangle; line Not Sewn (Line); region Satin Stitch; Sewing Attributes > Region sew: Under sewing checkbox (top of the group) unticked, Density 3.0 line/mm; colour BROTHER EMBROIDERY 800 RED; Direction Manual straight line 90 degrees; Feathered edge off; Gradation ticked with its default pattern (Pattern... dialog viewed and closed with Cancel: first pattern, Max 53 %, Min 5 %, nine steps 53/47/41/35/29/23/17/11/5 %, Blend off, density 3.0, direction 90); Running Stitch Path at its default; rectangle dragged from (10,10) to (30,15) mm; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "814a242c6f8527074322898f1d5a96b612539e10028a45ff6a8146cc283de81e",
       "notes": "Status bar: Width 20,00 mm, Height 5,00 mm, Stitches = 40. Gradation is available for Satin Stitch with Manual straight line; it is greyed while Feathered edge is on. On File > New PE asked to save changes to satin-gradation.pes after the grid interval was changed; answered No (the saved file is as made)."
+    },
+    {
+      "file": "stitches/sweep-satin-density-min.pes",
+      "spec": "sweep-satin-density-min",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). SATIN BASE: as the common base but rectangle (10,10)-(50,16) mm = 40,00 x 6,00 mm, region Satin Stitch, Direction Manual straight line 90 degrees, Under sewing unticked, Half Stitch greyed (ticked), Running Stitch Path first button, Pull compensation 0.0; satin's own defaults confirmed with the house buttons: Density 4.5 line/mm, Pull compensation 0.0 mm. Satin density field: min 0.1 (typing 0), max 14.0 (typing 99); satin pull max 2.0 mm (typing 99). This file: Density 0.1. Status: 40,00 x 6,00 mm, Stitches = 39.",
+      "sha256": "9775b0b7b7f4a9707c6234d8a32c3bc2d6b246e4c51b75f77831b969c1df7104",
+      "notes": "Header #PES0110."
     }
   ]
 }
