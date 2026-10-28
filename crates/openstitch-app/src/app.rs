@@ -3,6 +3,7 @@
 //! viewport, simulator position) and the compiled pattern the canvas draws.
 
 use eframe::egui::{self, Key, KeyboardShortcut, Modifiers};
+use openstitch_app::editor::close_prompt::{Choice, ClosePrompt, Outcome, Pending};
 use openstitch_app::editor::render::{PatternStats, RenderModel};
 use openstitch_app::editor::{
     CommandRequest, Tool, ToolContext, ToolController, ToolEffect, Viewport,
@@ -96,8 +97,9 @@ impl Launch {
 }
 
 /// Values `--show` accepts.
-pub const SHOW: [&str; 24] = [
+pub const SHOW: [&str; 25] = [
     "update",
+    "close-prompt",
     "realistic",
     "solid",
     "fabric",
@@ -203,6 +205,12 @@ pub struct EditorApp {
     pub ui: crate::ribbon::RibbonState,
     /// Self-update: startup check, dialog, download and restart.
     pub update: crate::update_ui::UpdateState,
+    /// "Save changes to NAME?" when closing, File ▸ New or Open would lose unsaved changes.
+    pub close_prompt: ClosePrompt,
+    /// The next window close goes through: Don't Save, a Save that succeeded, a finished
+    /// screenshot run or the updater's restart. Without it a close while the design has
+    /// unsaved changes is cancelled and the prompt opens.
+    exit_approved: bool,
 }
 
 struct Screenshot {
@@ -275,6 +283,8 @@ impl EditorApp {
             splash: None,
             ui: Default::default(),
             update: Default::default(),
+            close_prompt: ClosePrompt::default(),
+            exit_approved: false,
         };
         app.refresh();
         app.saved_revision = app.revision;
@@ -369,6 +379,9 @@ impl EditorApp {
                 "print" => self.ui.open_print = true,
                 "shortcuts" => self.ui.shortcuts_open = true,
                 "update" => self.update.show_sample(),
+                "close-prompt" => {
+                    self.close_prompt.request(Pending::Exit, true);
+                }
                 "floating" => {
                     let p = &mut self.ui.prefs.panes;
                     p.sewing_order.floating = true;
@@ -630,6 +643,70 @@ impl EditorApp {
     }
 
     // MARK: files
+
+    /// The design as the title bar and the unsaved-changes prompt name it: its file name,
+    /// or the design name while it has no file.
+    pub fn document_name(&self) -> String {
+        self.path.as_ref().and_then(|p| p.file_name()).map_or_else(
+            || self.session.design().name.clone(),
+            |n| n.to_string_lossy().into_owned(),
+        )
+    }
+
+    /// Runs `what` now, or opens the unsaved-changes prompt for it when the design has
+    /// unsaved changes (File ▸ New, Open, Exit and the Recent Files go through here).
+    pub fn guarded(&mut self, what: Pending) {
+        if self.close_prompt.request(what.clone(), self.is_dirty()) {
+            self.perform(what);
+        }
+    }
+
+    fn perform(&mut self, what: Pending) {
+        match what {
+            // The frame loop sends the close.
+            Pending::Exit => self.approve_exit(),
+            Pending::New => self.new_design(),
+            Pending::Open(None) => self.open_dialog(),
+            Pending::Open(Some(p)) => self.open_path(&p),
+        }
+    }
+
+    /// The prompt's answer: Save goes on only when the save left the design clean (a
+    /// cancelled Save As stays), Don't Save goes on, Cancel stays.
+    pub fn answer_close_prompt(&mut self, choice: Choice) {
+        match self.close_prompt.answer(choice) {
+            Outcome::SaveThen(what) => {
+                self.save(false);
+                if !self.is_dirty() {
+                    self.perform(what);
+                }
+            }
+            Outcome::Proceed(what) => self.perform(what),
+            Outcome::Stay => {}
+        }
+    }
+
+    /// Lets the window close without the prompt: the frame loop closes it (File ▸ Exit, the
+    /// prompt's Save and Don't Save, the updater's restart, a finished screenshot run).
+    pub fn approve_exit(&mut self) {
+        self.exit_approved = true;
+    }
+
+    /// Whether the window is about to close (see [`Self::approve_exit`]).
+    pub fn exit_approved(&self) -> bool {
+        self.exit_approved
+    }
+
+    /// The window was asked to close (X button, Alt+F4, the OS): with unsaved changes and no
+    /// approval the close is cancelled and the prompt opens.
+    fn close_request(&mut self, ctx: &egui::Context) {
+        if !ctx.input(|i| i.viewport().close_requested()) || self.exit_approved || !self.is_dirty()
+        {
+            return;
+        }
+        ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+        self.close_prompt.request(Pending::Exit, true);
+    }
 
     pub fn new_design(&mut self) {
         if self
@@ -905,10 +982,7 @@ impl EditorApp {
     }
 
     fn update_title(&mut self, ctx: &egui::Context) {
-        let name = self.path.as_ref().and_then(|p| p.file_name()).map_or_else(
-            || self.session.design().name.clone(),
-            |n| n.to_string_lossy().into_owned(),
-        );
+        let name = self.document_name();
         let program = if self.database.open {
             Some(openstitch_app::editor::suite::DATABASE.title)
         } else if self.creator.open {
@@ -1077,6 +1151,9 @@ impl EditorApp {
             return;
         };
         if shot.done.load(Ordering::SeqCst) {
+            // A scripted run may have edited the design: the screenshot is the run's output,
+            // so the window closes without asking.
+            self.exit_approved = true;
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             return;
         }
@@ -1158,6 +1235,13 @@ impl eframe::App for EditorApp {
         if let Some((events, modifiers)) = player.next_frame(&vp) {
             raw.events.push(egui::Event::ModifiersChanged(modifiers));
             raw.events.extend(events);
+            if player.take_close_request() {
+                raw.viewports
+                    .entry(raw.viewport_id)
+                    .or_default()
+                    .events
+                    .push(egui::ViewportEvent::Close);
+            }
             ctx.request_repaint();
         }
     }
@@ -1174,6 +1258,12 @@ impl eframe::App for EditorApp {
         self.poll_print(&ctx);
         crate::update_ui::poll(self, &ctx);
         crate::update_ui::window(self, &ctx);
+        self.close_request(&ctx);
+        if self.exit_approved() {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+        // Before the shortcuts, so the prompt takes Enter and Escape.
+        crate::close_ui::window(self, &ctx);
         if self.database.open || self.creator.open || self.sewing.open {
             // The other suite windows take the whole window, as separate programs do.
             self.update_title(&ctx);
@@ -1497,5 +1587,99 @@ mod tests {
         assert_eq!(app.workspace.estimate, Some(before));
         app.toggle_measure();
         assert!(!app.workspace.measure.active);
+    }
+
+    fn ellipse() -> CommandRequest {
+        CommandRequest::new("shape.ellipse", json!({ "cx": 20, "cy": 15, "rx": 3 }))
+    }
+
+    #[test]
+    fn dirty_flag_follows_edits_new_open_and_save() {
+        let mut app = EditorApp::new(Launch::default());
+        assert!(!app.is_dirty(), "a new empty design is clean");
+        app.execute(&ellipse()).expect("edit");
+        assert!(app.is_dirty(), "an edit makes it dirty");
+        app.new_design();
+        assert!(!app.is_dirty(), "File ▸ New starts clean");
+        app.execute(&ellipse()).expect("edit");
+        app.undo();
+        // Undo back to the saved state may stay dirty; it never makes a changed design clean.
+        app.execute(&ellipse()).expect("edit");
+        assert!(app.is_dirty());
+
+        let dir = std::env::temp_dir().join(format!("openstitch-dirty-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let file = dir.join("design.osd");
+        app.path = Some(file.clone());
+        app.save(false);
+        assert!(!app.is_dirty(), "Save makes it clean: {}", app.status);
+        assert!(file.exists());
+        assert_eq!(app.document_name(), "design.osd");
+        app.execute(&ellipse()).expect("edit");
+        assert!(app.is_dirty());
+        app.open_path(&file);
+        assert!(!app.is_dirty(), "a freshly opened design is clean");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn exit_new_and_open_ask_only_with_unsaved_changes() {
+        use openstitch_app::editor::close_prompt::{Choice, Pending};
+        let mut app = EditorApp::new(Launch::default());
+        app.guarded(Pending::New);
+        assert!(!app.close_prompt.is_open(), "clean: no prompt");
+        app.guarded(Pending::Exit);
+        assert!(app.exit_approved(), "clean: the window closes at once");
+
+        let mut app = EditorApp::new(Launch::default());
+        app.execute(&ellipse()).expect("edit");
+        app.guarded(Pending::Exit);
+        assert!(app.close_prompt.is_open());
+        assert!(
+            !app.exit_approved(),
+            "dirty: the close waits for the answer"
+        );
+        app.answer_close_prompt(Choice::Cancel);
+        assert!(!app.close_prompt.is_open());
+        assert!(
+            !app.exit_approved() && app.is_dirty(),
+            "Cancel keeps everything"
+        );
+
+        app.guarded(Pending::New);
+        assert!(app.close_prompt.is_open());
+        assert_eq!(
+            app.session.design().objects.len(),
+            1,
+            "nothing happened yet"
+        );
+        app.answer_close_prompt(Choice::DontSave);
+        assert_eq!(
+            app.session.design().objects.len(),
+            0,
+            "Don't Save: the new design"
+        );
+        assert!(!app.is_dirty() && !app.exit_approved());
+
+        // Save with a file: saves, then goes on.
+        let dir = std::env::temp_dir().join(format!("openstitch-prompt-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        let file = dir.join("design.osd");
+        app.execute(&ellipse()).expect("edit");
+        app.path = Some(file.clone());
+        app.guarded(Pending::Exit);
+        app.answer_close_prompt(Choice::Save);
+        assert!(file.exists() && !app.is_dirty());
+        assert!(app.exit_approved(), "Save then close");
+
+        // Open a given file (Recent Files, Design Database) after Don't Save.
+        let mut app = EditorApp::new(Launch::default());
+        app.execute(&ellipse()).expect("edit");
+        app.guarded(Pending::Open(Some(file.clone())));
+        assert!(app.close_prompt.is_open());
+        app.answer_close_prompt(Choice::DontSave);
+        assert_eq!(app.path.as_deref(), Some(file.as_path()));
+        assert!(!app.is_dirty());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

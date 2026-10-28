@@ -4,8 +4,9 @@
 //!
 //! Steps are separated by `;`, coordinates are model millimetres on the Design Page:
 //! `drag:x1,y1,x2,y2` · `click:x,y` · `sclick:x,y` (window points, for panels and menus) · `dclick:x,y` · `move:x,y` · `type:r` (text, e.g. tool
-//! shortcuts) · `key:Enter` · `wait:N` (frames). Prefix `shift+` / `cmd+` to hold modifiers,
-//! e.g. `shift+drag:…`, `cmd+key:Z`.
+//! shortcuts) · `key:Enter` · `wait:N` (frames) · `close:0` (the window's close request, as the
+//! X button sends it). Prefix `shift+` / `cmd+` to hold modifiers, e.g. `shift+drag:…`,
+//! `cmd+key:Z`.
 
 use eframe::egui::{Event, Key, Modifiers, PointerButton, Pos2};
 use openstitch_app::editor::Viewport;
@@ -23,6 +24,8 @@ pub enum Action {
     Type(String),
     Key(Key),
     Wait(usize),
+    /// The window's close request (X button, Alt+F4); the argument is ignored.
+    Close,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -87,6 +90,7 @@ pub fn parse(script: &str) -> Result<Vec<Step>, String> {
                     arg.parse()
                         .map_err(|_| format!("bad frame count '{arg}'"))?,
                 ),
+                "close" => Action::Close,
                 _ => return Err(format!("unknown step '{verb}'")),
             };
             Ok(Step { action, modifiers })
@@ -156,6 +160,7 @@ pub fn frames(step: &Step, vp: &Viewport) -> Vec<Vec<Event>> {
         Action::Type(t) => vec![vec![Event::Text(t.clone())]],
         Action::Key(k) => vec![vec![key(*k, true)], vec![key(*k, false)]],
         Action::Wait(n) => vec![Vec::new(); *n],
+        Action::Close => vec![Vec::new()],
     }
 }
 
@@ -164,6 +169,8 @@ pub fn frames(step: &Step, vp: &Viewport) -> Vec<Vec<Event>> {
 pub struct Player {
     steps: VecDeque<Step>,
     current: VecDeque<(Vec<Event>, Modifiers)>,
+    /// A `close` step started: the next frame carries the viewport's close request.
+    close: bool,
 }
 
 impl Player {
@@ -171,6 +178,7 @@ impl Player {
         Player {
             steps: steps.into(),
             current: VecDeque::new(),
+            close: false,
         }
     }
 
@@ -182,12 +190,18 @@ impl Player {
     pub fn next_frame(&mut self, vp: &Viewport) -> Option<(Vec<Event>, Modifiers)> {
         if self.current.is_empty() {
             let step = self.steps.pop_front()?;
+            self.close = step.action == Action::Close;
             self.current = frames(&step, vp)
                 .into_iter()
                 .map(|f| (f, step.modifiers))
                 .collect();
         }
         self.current.pop_front()
+    }
+
+    /// Whether the frame just returned by [`Self::next_frame`] is a `close` step.
+    pub fn take_close_request(&mut self) -> bool {
+        std::mem::take(&mut self.close)
     }
 }
 
@@ -220,6 +234,7 @@ mod tests {
         assert!(parse("hover:1,2").is_err());
         assert!(parse("ctrl+click:1,2").is_err());
         assert!(parse("key:NoSuchKey").is_err());
+        assert_eq!(parse("close:0").expect("ok")[0].action, Action::Close);
     }
 
     #[test]

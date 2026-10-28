@@ -6,6 +6,7 @@
 use crate::app::EditorApp;
 use crate::{convert_ui, edit_ui, icons, panels};
 use eframe::egui::{self, Color32, CornerRadius, RichText, Sense, Stroke, StrokeKind, vec2};
+use openstitch_app::editor::close_prompt::Pending;
 use openstitch_app::editor::prefs::{Theme, UiPrefs};
 use openstitch_app::editor::ribbon::{
     self, APPLICATION_MENU, Action, Facts, Info, Item, OPTION_MENU, TabId,
@@ -416,7 +417,7 @@ fn image_wizard(app: &mut EditorApp, m: openstitch_app::editor::wizard::Method) 
 }
 
 /// Runs a command button (menu commands open their list instead; see [`menu`]).
-pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
+pub fn run(app: &mut EditorApp, a: Action, _ctx: &egui::Context) {
     use Action::*;
     use openstitch_app::editor::pattern_wizards::WizardKind;
     use openstitch_app::editor::wizard::Method;
@@ -428,14 +429,14 @@ pub fn run(app: &mut EditorApp, a: Action, ctx: &egui::Context) {
         return;
     }
     match a {
-        New => app.new_design(),
-        Open => app.open_dialog(),
+        New => app.guarded(Pending::New),
+        Open => app.guarded(Pending::Open(None)),
         Save => app.save(false),
         SaveAs => app.save(true),
         DesignProperty => app.ui.property_open = true,
         DesignSettings => app.workspace.settings_open = true,
         SelectColorPalette | UserThreadCharts => app.settings.charts_open = true,
-        Exit => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
+        Exit => app.guarded(Pending::Exit),
         Undo => app.undo(),
         Redo => app.redo(),
         DesignDatabase => open_database(app),
@@ -1365,7 +1366,7 @@ fn application_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
                     .clicked()
                 {
                     if p.exists() {
-                        app.open_path(p);
+                        app.guarded(Pending::Open(Some(p.clone())));
                     } else {
                         app.status = format!("{} no longer exists", p.display());
                     }
@@ -1381,7 +1382,7 @@ fn application_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
         ui.add_space(250.0);
         ui.menu_button("Options", |ui| options_menu(app, ui));
         if ui.button("Exit").clicked() {
-            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+            app.guarded(Pending::Exit);
         }
     });
 }
