@@ -230,8 +230,10 @@ pub(crate) fn read_string8(r: &mut ByteReader) -> Result<Option<String>> {
     let s = if unicode {
         let units: Vec<u16> = r
             .read(len.saturating_mul(2))?
-            .chunks_exact(2)
-            .map(|c| u16::from_le_bytes([c[0], c[1]]))
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|c| u16::from_le_bytes(*c))
             .collect();
         String::from_utf16_lossy(&units).replace("\r\n", "\n")
     } else {
@@ -400,7 +402,9 @@ fn read_blocks(r: &mut ByteReader, end: usize, section: &mut ObjectSection) -> R
             let n = r.u16le()? as usize;
             let raw = r.read(n * 4)?;
             let points = raw
-                .chunks_exact(4)
+                .as_chunks::<4>()
+                .0
+                .iter()
                 .map(|c| {
                     (
                         i16::from_le_bytes([c[0], c[1]]),

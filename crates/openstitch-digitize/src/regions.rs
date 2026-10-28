@@ -92,10 +92,10 @@ pub fn majority(labels: &mut [u16], w: usize, h: usize, passes: u32) {
                         }
                     }
                 }
-                if let Some(&(l, n)) = counts.iter().max_by_key(|c| c.1) {
-                    if n * 2 > total {
-                        labels[y * w + x] = l;
-                    }
+                if let Some(&(l, n)) = counts.iter().max_by_key(|c| c.1)
+                    && n * 2 > total
+                {
+                    labels[y * w + x] = l;
                 }
             }
         }

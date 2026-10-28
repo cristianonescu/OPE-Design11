@@ -252,7 +252,7 @@ impl Raster {
             return self.clone();
         }
         let mut rgba = self.rgba.clone();
-        for px in rgba.chunks_exact_mut(4) {
+        for px in rgba.as_chunks_mut::<4>().0 {
             let [r, g, bl] = [px[0], px[1], px[2]].map(f64::from);
             let grey = 0.299 * r + 0.587 * g + 0.114 * bl;
             for c in &mut px[..3] {
@@ -301,7 +301,7 @@ impl Raster {
             }
         };
         let mut rgb = Vec::with_capacity(self.width as usize * self.height as usize * 3);
-        for px in self.rgba.chunks_exact(4) {
+        for px in self.rgba.as_chunks::<4>().0 {
             let a = u32::from(px[3]);
             for &c in &px[..3] {
                 rgb.push(((u32::from(c) * a + 255 * (255 - a)) / 255) as u8);
