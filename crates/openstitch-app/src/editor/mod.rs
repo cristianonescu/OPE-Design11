@@ -21,6 +21,7 @@ pub mod sections;
 pub mod sewing;
 pub mod suite;
 pub mod tools;
+pub mod updates;
 pub mod viewport;
 pub mod wizard;
 pub mod workspace;

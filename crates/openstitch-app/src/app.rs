@@ -71,8 +71,13 @@ impl Launch {
     /// open. Screenshots, scripts, the automation socket and every option that sets up a
     /// particular view start straight away.
     pub fn splash_allowed(&self) -> bool {
-        !self.no_splash
-            && self.screenshot.is_none()
+        !self.no_splash && self.interactive()
+    }
+
+    /// A plain interactive start (at most a file to open), where the update check runs
+    /// (`--no-splash` only hides the splash).
+    pub fn interactive(&self) -> bool {
+        self.screenshot.is_none()
             && self.script.is_empty()
             && self.listen.is_none()
             && !self.demo
@@ -91,7 +96,8 @@ impl Launch {
 }
 
 /// Values `--show` accepts.
-pub const SHOW: [&str; 23] = [
+pub const SHOW: [&str; 24] = [
+    "update",
     "realistic",
     "solid",
     "fabric",
@@ -195,6 +201,8 @@ pub struct EditorApp {
     pub splash: Option<crate::splash::Splash>,
     /// Ribbon, Quick Access Toolbar, panes and window preferences.
     pub ui: crate::ribbon::RibbonState,
+    /// Self-update: startup check, dialog, download and restart.
+    pub update: crate::update_ui::UpdateState,
 }
 
 struct Screenshot {
@@ -266,6 +274,7 @@ impl EditorApp {
             remote: None,
             splash: None,
             ui: Default::default(),
+            update: Default::default(),
         };
         app.refresh();
         app.saved_revision = app.revision;
@@ -293,6 +302,13 @@ impl EditorApp {
         }
         if splash && self.ui.prefs.splash {
             self.splash = Some(crate::splash::Splash::default());
+        }
+        if l.interactive()
+            && self.ui.prefs.updates.check
+            && self.update.current.is_some()
+            && self.update.install.checks()
+        {
+            self.update.check_at_start = true;
         }
         if l.demo {
             for r in demo_design() {
@@ -352,6 +368,7 @@ impl EditorApp {
                 "property" => self.ui.property_open = true,
                 "print" => self.ui.open_print = true,
                 "shortcuts" => self.ui.shortcuts_open = true,
+                "update" => self.update.show_sample(),
                 "floating" => {
                     let p = &mut self.ui.prefs.panes;
                     p.sewing_order.floating = true;
@@ -1155,6 +1172,8 @@ impl eframe::App for EditorApp {
         }
         self.serve_remote();
         self.poll_print(&ctx);
+        crate::update_ui::poll(self, &ctx);
+        crate::update_ui::window(self, &ctx);
         if self.database.open || self.creator.open || self.sewing.open {
             // The other suite windows take the whole window, as separate programs do.
             self.update_title(&ctx);

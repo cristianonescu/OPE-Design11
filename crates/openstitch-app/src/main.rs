@@ -28,6 +28,9 @@
 //! `--image` opens the Image to Embroidery dialog with that image chosen; `--convert` also runs
 //! the conversion with that method. `--wizard` opens a pattern wizard dialog for the selection;
 //! `--apply` also applies it once (the dialog stays open for screenshots).
+//! A plain start also checks GitHub for a newer release and offers it (Options ▸ "Check for
+//! updates at startup"; `OPENSTITCH_NO_UPDATE_CHECK` turns it off); `--show update` opens the
+//! dialog with sample notes for screenshots.
 //! `--screenshot` renders a few frames, writes the window contents as PNG and exits (used for
 //! the documentation images and for checking the build on a platform).
 
@@ -57,6 +60,7 @@ mod splash;
 mod suite_chrome;
 mod theme;
 mod transfer_ui;
+mod update_ui;
 mod view_ui;
 mod wizard_ui;
 mod workspace_ui;

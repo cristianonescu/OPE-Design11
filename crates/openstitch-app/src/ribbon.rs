@@ -1047,6 +1047,26 @@ pub fn options_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
     changed |= ui
         .checkbox(&mut app.ui.prefs.splash, "Show splash at startup")
         .changed();
+    ui.separator();
+    ui.label(RichText::new("Updates").weak());
+    changed |= ui
+        .checkbox(
+            &mut app.ui.prefs.updates.check,
+            "Check for updates at startup",
+        )
+        .on_hover_text("Asks GitHub for a newer OpenStitch release each time the editor starts")
+        .changed();
+    changed |= ui
+        .checkbox(
+            &mut app.ui.prefs.updates.include_prereleases,
+            "Include pre-releases",
+        )
+        .on_hover_text("Also offer alpha, beta and release-candidate versions")
+        .changed();
+    if ui.button("Check for Updates Now").clicked() {
+        app.update.check(true);
+        ui.close();
+    }
     if changed {
         app.ui.save_prefs();
     }
@@ -1060,6 +1080,10 @@ pub fn help_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
     }
     if ui.button("Keyboard Shortcuts").clicked() {
         app.ui.shortcuts_open = true;
+    }
+    if ui.button("Check for Updates").clicked() {
+        app.update.check(true);
+        ui.close();
     }
     if ui.button("About OpenStitch").clicked() {
         app.ui.about_open = true;
