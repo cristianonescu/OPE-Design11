@@ -1,0 +1,118 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "sweep-fill-dir-90",
+  "area": "stitches",
+  "title": "Fill at 90° sews two halves inward to the start point",
+  "description": "A 40 × 40 mm fill at 90° (vertical rows), under sewing off: the start point (middle of the bottom edge) splits the rows; PE-DESIGN sews the left half from the left edge in, then the right half from the right edge in, ending at the start point.",
+  "covers": {
+    "audit": [
+      15
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Fill (tatami: angle or auto direction"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Fill Stitch: Direction, Density, Step pitch, Frequency"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference stitches/sweep-fill-dir-90.pes (stitch-sweeps track)"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 40
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "underlay": false,
+        "angle": 90
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "fill.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/sweep-fill-dir-90.pes",
+      "make": "On a 100 × 100 mm Design Page (grid 1 mm, Snap to Grid) draw a 40 × 40 mm square from (10, 10) to (50, 50) mm with the Rectangle tool. Line Not Sewn; colour 800 RED; region sew type Fill Stitch, Direction Manual 90°, Under sewing unticked, every other region attribute at PE-DESIGN's default (Density 4.5, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge and Gradation off). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "direction",
+      "measure": {
+        "kind": "dominantAngle"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "expected": 90.0,
+      "tolerance": {
+        "deg": 1
+      },
+      "evidence": "rows run at 90°",
+      "reference": {}
+    },
+    {
+      "id": "same-stitches",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.15,
+          "boundsMm": 0.15,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file, needle point for needle point (±0.15 mm): the row order in halves from the start point, the out-and-back first row, brick row ends, straight ≤ 2 mm travel, Frequency grid from the bounding box and the 0.3 mm tie-in and lock (stitch-rules F3/F6)",
+      "reference": {}
+    }
+  ]
+}

@@ -916,8 +916,8 @@ pub struct RegionSewing {
     /// Running stitch length of line-based fills, mm (default 2).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub run_pitch: Option<f64>,
-    /// Fill, piping and programmable-fill base: needle shift per row, % of a stitch (0-50,
-    /// default 33).
+    /// Fill, piping and programmable-fill base: needle shift per row, % of a stitch (0-50).
+    /// New fills take PE-DESIGN 11's 30; unset (older files) keeps the ⅓ stagger.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub frequency: Option<f64>,
     /// Programmable / motif fill: shift of every other tile row (column), % of the tile.
@@ -1015,7 +1015,8 @@ impl RegionSewing {
             pattern_height: None,
             spacing: None,
             run_pitch: None,
-            frequency: None,
+            // PE-DESIGN 11's Frequency default (its field shows 30 %).
+            frequency: (kind == RegionType::Fill).then_some(30.0),
             row_offset: None,
             column_offset: None,
             start_inside: false,

@@ -148,6 +148,32 @@
           "percent": 8
         }
       }
+    },
+    {
+      "id": "same-stitches",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.15,
+          "boundsMm": 0.15,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file, needle point for needle point (±0.15 mm): the row order in halves from the start point, the out-and-back first row, brick row ends, straight ≤ 2 mm travel, Frequency grid from the bounding box and the 0.3 mm tie-in and lock (stitch-rules F3/F6)",
+      "reference": {}
     }
   ]
 }

@@ -244,19 +244,43 @@ fn shoelace(p: &[[f64; 2]]) -> f64 {
         / 2.0
 }
 
-/// Area sewn by the first colour block, mm²: the fill rows (horizontal stitches) times the row
-/// spacing.
+/// Area sewn by the first colour block, mm²: each fill row's needle extent (runs of two or more
+/// needle points on one line, with the stitches into and out of it from at most 0.5 mm away, as
+/// the compat `stitchedArea` counts them: rows that leave out their edge points, as PE-DESIGN
+/// sews them, still reach the outline) times the median distance between the rows' lines
+/// (design coordinates are not rounded, and the median ignores narrow rows left with one point).
 fn first_block_area(s: &Session) -> f64 {
     let pattern = Compiler::default().compile(s.design());
     let blocks = pattern.color_blocks();
-    let rows: Vec<(f64, f64)> = blocks[0]
+    let pts: Vec<(f64, f64)> = blocks[0]
         .1
-        .windows(2)
-        .filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch)
-        .map(|w| ((w[1].x - w[0].x).abs(), (w[1].y - w[0].y).abs(), w[0].y))
-        .filter(|&(dx, dy, _)| dx > 0.0 && dy < 0.05 * dx)
-        .map(|(dx, _, y)| (dx, y))
+        .iter()
+        .filter(|e| e.command == Command::Stitch)
+        .map(|e| (e.x, e.y))
         .collect();
+    let mut rows: Vec<(f64, f64)> = Vec::new();
+    let mut i = 0;
+    while i < pts.len() {
+        let mut j = i;
+        while j + 1 < pts.len() && (pts[j + 1].1 - pts[i].1).abs() < 1e-6 {
+            j += 1;
+        }
+        if j > i {
+            let y = pts[i].1;
+            let near = |k: usize| (pts[k].1 - y).abs() <= 5.0;
+            let mut xs: Vec<f64> = pts[i..=j].iter().map(|p| p.0).collect();
+            if i > 0 && near(i - 1) {
+                xs.push(pts[i - 1].0);
+            }
+            if j + 1 < pts.len() && near(j + 1) {
+                xs.push(pts[j + 1].0);
+            }
+            let lo = xs.iter().copied().fold(f64::INFINITY, f64::min);
+            let hi = xs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+            rows.push((hi - lo, y));
+        }
+        i = j + 1;
+    }
     let mut ys: Vec<f64> = rows.iter().map(|r| r.1).collect();
     ys.sort_by(f64::total_cmp);
     ys.dedup_by(|a, b| (*a - *b).abs() < 0.5);

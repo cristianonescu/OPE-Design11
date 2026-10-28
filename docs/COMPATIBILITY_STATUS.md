@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 99 · pass 99 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 110 · pass 110 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -32,7 +32,7 @@ Specs: 99 · pass 99 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
 | Line sew types | Running (pitch, run times 1… | reference | `line-running-default`, `line-triple-default` |
 | Line sew types | Zigzag: width, density… | reference | `line-zigzag-default`, `line-zigzag-density-max` |
-| Region sew types | Fill (tatami: angle or auto direction… | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max` |
+| Region sew types | Fill (tatami: angle or auto direction… | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5-h33`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-density-min`, `sweep-fill-dir-135`, `sweep-fill-dir-30`, `sweep-fill-dir-45`, `sweep-fill-dir-90`, `sweep-fill-freq-10`, `sweep-fill-freq-40`, `sweep-fill-pitch-2p0`, `sweep-fill-pitch-6p0`, `sweep-fill-pitch-max`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max` |
 | Region sew types | Programmable fill… | reference | `programmable-fill-45` |
 | Region sew types | Satin: a zigzag across the column… | internal-regression; reference pending | `auto-satin-bent-band`, `region-travel-u-satin`, `satin-auto-bend-60`, `satin-auto-bend-90-nohalf`, `satin-feather`, `satin-sections-h`, `satin-zigzag-rect`, `satin-zigzag-skeleton` |
 
@@ -45,7 +45,7 @@ Specs: 99 · pass 99 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | 3 | internal-regression | `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `region-travel-u-satin`, `running-stitch-path-exclusions`, `satin-sections-h` |
 | 7 | reference | `auto-satin-bent-band`, `satin-auto-bend-60`, `satin-auto-bend-90-nohalf` |
 | 14 | reference | `programmable-fill-45` |
-| 15 | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max` |
+| 15 | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5-h33`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-density-min`, `sweep-fill-dir-135`, `sweep-fill-dir-30`, `sweep-fill-dir-45`, `sweep-fill-dir-90`, `sweep-fill-freq-10`, `sweep-fill-freq-40`, `sweep-fill-pitch-2p0`, `sweep-fill-pitch-6p0`, `sweep-fill-pitch-max`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max` |
 | 16 | reference | `optimize-entry-exit` |
 | 17 | internal-regression | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
 | 18 | oracle | `pes-thread-chart-roundtrip` |
@@ -106,9 +106,20 @@ Specs: 99 · pass 99 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/satin-zigzag-skeleton` | pass | internal-regression | pass | — | — | — |
 | `stitches/shape-start-points` | pass | reference | pass | — | pass | pending |
 | `stitches/sweep-fill-density-2p5` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-density-4p5-h33` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-density-4p5` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-density-6p0` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-density-max` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-density-min` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-dir-135` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-dir-30` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-dir-45` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-dir-90` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-freq-10` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-freq-40` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-pitch-2p0` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-pitch-6p0` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-pitch-max` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-pull-0p2` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-pull-0p5-us` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-pull-0p5` | pass | reference | pass | — | pass | — |

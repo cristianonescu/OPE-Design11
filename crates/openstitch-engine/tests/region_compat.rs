@@ -217,6 +217,23 @@ fn running_stitch_path_defaults_and_old_files() {
     assert_eq!(load(&stored).running_stitch_path, None);
 }
 
+#[test]
+fn new_fills_take_pe_frequency_and_old_files_keep_the_third_stagger() {
+    let fill = RegionSewing::new(RegionType::Fill, Thread::rgb(0));
+    assert_eq!(fill.frequency, Some(30.0));
+    assert_eq!(
+        RegionSewing::new(RegionType::Satin, Thread::rgb(0)).frequency,
+        None
+    );
+    let mut stored = serde_json::to_value(&fill).expect("serialize");
+    assert_eq!(stored["frequency"], json!(30.0));
+    // A file saved before the default: no `frequency`, so the ⅓ stagger stays.
+    stored.as_object_mut().expect("object").remove("frequency");
+    let old: RegionSewing = serde_json::from_value(stored).expect("load");
+    assert_eq!(old.frequency, None);
+    assert_eq!(old.fill_shift(), None);
+}
+
 /// Direction (degrees, 0-180) that carries the most stitch length, in 1° bins.
 fn dominant_direction(entries: &[(f64, f64, String)]) -> f64 {
     let mut bins = [0.0; 180];
@@ -344,8 +361,8 @@ fn row_shifts(frequency: Option<f64>) -> Vec<f64> {
     let mut rows: Vec<(f64, Vec<f64>)> = Vec::new();
     for p in points["points"].as_array().expect("points") {
         let (x, y) = (p["x"].as_f64().expect("x"), p["y"].as_f64().expect("y"));
-        // Row ends (on the square's sides) are not on the needle grid.
-        let interior = x > 10.05 && x < 49.95;
+        // Row ends (on the square's sides) and the tie-in steps are not on the needle grid.
+        let interior = x > 11.0 && x < 49.0;
         match rows.last_mut() {
             Some((ry, xs)) if (*ry - y).abs() < 1e-6 => {
                 if interior {
@@ -357,6 +374,8 @@ fn row_shifts(frequency: Option<f64>) -> Vec<f64> {
     }
     let l = 4.0;
     let phase = |xs: &[f64]| xs.first().map(|x| x.rem_euclid(l));
+    // Fill rows only: the straight entry and exit runs give lines with one interior point.
+    rows.retain(|(_, xs)| xs.len() >= 2);
     rows.windows(2)
         .filter_map(|w| Some((phase(&w[1].1)? - phase(&w[0].1)?).rem_euclid(l)))
         .collect()
@@ -379,9 +398,10 @@ fn fill_frequency_sets_the_row_to_row_needle_shift() {
             );
         }
     }
-    // Unset keeps the ⅓ stagger.
+    // A new fill takes PE-DESIGN's default Frequency, 30 % (sweep-fill-density-4p5.pes);
+    // older files without a Frequency keep the ⅓ stagger (see the test below).
     for d in row_shifts(None) {
-        let e = (d - l / 3.0).rem_euclid(l);
+        let e = (d - 0.3 * l).rem_euclid(l);
         assert!(e.min(l - e) <= 0.02 * l, "default: shift {d}");
     }
 }

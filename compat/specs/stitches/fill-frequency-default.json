@@ -2,8 +2,8 @@
   "schema": "openstitch-compat/1",
   "id": "fill-frequency-default",
   "area": "stitches",
-  "title": "Fill without Frequency keeps the ⅓ stagger",
-  "description": "A 40 × 40 mm fill at 0° with 4 mm stitches: each row's needle points are shifted from the previous row's by the Frequency (as a share of the stitch length), ±2 % of the stitch length. Without a Frequency the old ⅓ stagger stays, so existing designs sew as before.",
+  "title": "Fill Frequency defaults to PE-DESIGN's 30 %: 1.2 mm per row",
+  "description": "A 40 × 40 mm fill at 0° with 4 mm stitches and no Frequency set: the needle grid moves 30 % of a stitch (1.2 mm) from row to row, PE-DESIGN 11's default, ±2 % of the stitch length. Designs saved before the default (no Frequency stored) keep the old ⅓ stagger (engine test new_fills_take_pe_frequency_and_old_files_keep_the_third_stagger).",
   "covers": {
     "audit": [
       15
@@ -24,6 +24,10 @@
       "kind": "guide",
       "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
       "note": "Frequency 0–50 %"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference stitches/sweep-fill-density-4p5.pes (spec sweep-fill-density-4p5): made at every default, Frequency field 30 %, rows shift 1.2 mm with 4.0 mm stitches. Coordinator decision 2026-10-27 (TRACKS.md Spec questions): the observation replaces the earlier ⅓ hypothesis."
     }
   ],
   "script": [
@@ -79,12 +83,12 @@
       "source": {
         "export": "fill.pes"
       },
-      "expected": 1.3333,
+      "expected": 1.2,
       "tolerance": {
         "mm": 0.08,
         "modulo": 4
       },
-      "evidence": "audit item 15: shift = frequency ±2 % of the stitch length"
+      "evidence": "PE-DESIGN's default Frequency 30 % = 1.2 mm per row (sweep-fill-density-4p5.pes); ±2 % of the stitch length"
     },
     {
       "id": "rows",

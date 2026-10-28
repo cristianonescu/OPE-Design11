@@ -117,14 +117,34 @@ fn hole_sewing_reduces_stitches_and_persists() {
         "shape.rectangle",
         json!({"x": 5, "y": 5, "width": 10, "height": 10, "fill": "Red"}),
     );
-    let before = run(&mut s, "design.generate", json!({}))["stitches"].as_u64();
+    // Needle points of the outer shape inside the inner square (its stitches converted in a
+    // copy of the design, saved and reopened).
+    let inside_hole = |s: &mut Session| {
+        run(s, "project.save", json!({"path": "probe.osd"}));
+        let mut c = Session::new(&dir);
+        run(&mut c, "project.open", json!({"path": "probe.osd"}));
+        run(&mut c, "object.toStitches", json!({"ids": [1]}));
+        let points = run(&mut c, "stitches.points", json!({"id": 1}));
+        points["points"]
+            .as_array()
+            .expect("points")
+            .iter()
+            .filter(|p| {
+                let (x, y) = (
+                    p["x"].as_f64().unwrap_or(0.0),
+                    p["y"].as_f64().unwrap_or(0.0),
+                );
+                x > 5.5 && x < 14.5 && y > 5.5 && y < 14.5
+            })
+            .count()
+    };
+    assert!(inside_hole(&mut s) > 0);
     run(
         &mut s,
         "object.setHoleSewing",
         json!({"id": 1, "enabled": true}),
     );
-    let after = run(&mut s, "design.generate", json!({}))["stitches"].as_u64();
-    assert!(after < before);
+    assert_eq!(inside_hole(&mut s), 0);
     run(&mut s, "project.save", json!({"path": "h.osd"}));
     let mut t = Session::new(&dir);
     run(&mut t, "project.open", json!({"path": "h.osd"}));
@@ -439,8 +459,10 @@ fn commands_documented_and_unique() {
 /// split at 12 mm, when the ellipse and rectangle took PE-DESIGN's start and end point in the
 /// middle of the bottom edge, when their outlines started sewing there too, when lines took
 /// PE-DESIGN's tie-in and lock (4 stitches on the ellipse's outline), when satin took PE's
-/// section order and lock rule, and when the PEC label became the export file's name
-/// (`badge-1t`, as PE-DESIGN labels; stitches unchanged). The same design
+/// section order and lock rule, when the PEC label became the export file's name
+/// (`badge-1t`, as PE-DESIGN labels; stitches unchanged), and when fill took PE-DESIGN's row
+/// order (halves from the start point, brick row ends, straight 2 mm travel, Frequency 30 %,
+/// tie-in and lock). The same design
 /// exported as `1t`
 /// must keep writing the identical bytes; the
 /// script's default export is now version 6 with objects and sews the same stitches.

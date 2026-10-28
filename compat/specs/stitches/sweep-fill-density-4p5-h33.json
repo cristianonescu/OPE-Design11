@@ -1,0 +1,118 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "sweep-fill-density-4p5-h33",
+  "area": "stitches",
+  "title": "Fill rows stretch so the last row lies on the far edge (40 × 33 mm)",
+  "description": "A 40 × 33 mm fill at 0°, density 4.5 (148.5 rows): PE-DESIGN sews 149 rows 33/148 mm apart, the first and the last on the outline.",
+  "covers": {
+    "audit": [
+      15
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Fill (tatami: angle or auto direction"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Fill Stitch: Direction, Density, Step pitch, Frequency"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference stitches/sweep-fill-density-4p5-h33.pes (stitch-sweeps track)"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 33
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "underlay": false,
+        "angle": 0
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "fill.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/sweep-fill-density-4p5-h33.pes",
+      "make": "On a 100 × 100 mm Design Page (grid 1 mm, Snap to Grid) draw a 40 × 33 mm rectangle from (10, 10) to (50, 43) mm with the Rectangle tool. Line Not Sewn; colour 800 RED; region sew type Fill Stitch, Direction Manual 0°, Under sewing unticked, every other region attribute at PE-DESIGN's default (Density 4.5, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge and Gradation off). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "row-spacing",
+      "measure": {
+        "kind": "rowSpacing"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "expected": 0.223,
+      "tolerance": {
+        "mm": 0.002
+      },
+      "evidence": "PE-DESIGN: whole number of gaps (148), spacing stretched from 1/4.5 so both edges get a row",
+      "reference": {}
+    },
+    {
+      "id": "same-stitches",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.15,
+          "boundsMm": 0.15,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file, needle point for needle point (±0.15 mm): the row order in halves from the start point, the out-and-back first row, brick row ends, straight ≤ 2 mm travel, Frequency grid from the bounding box and the 0.3 mm tie-in and lock (stitch-rules F3/F6)",
+      "reference": {}
+    }
+  ]
+}

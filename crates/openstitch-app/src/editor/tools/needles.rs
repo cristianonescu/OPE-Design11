@@ -323,9 +323,16 @@ mod tests {
         assert_eq!(r[0].command, "stitches.deletePoints");
         assert!(t.selected_needles(&ctx).is_empty());
 
-        // Double-click on a stitch line inserts a point there.
-        let (_, a, _) = pts[1];
-        let (j, b, _) = pts[2];
+        // Double-click on a stitch line inserts a point there: the longest stitch before the
+        // deleted point (the fill starts with short tie-in steps).
+        let k = (0..i.saturating_sub(1))
+            .max_by(|&x, &y| {
+                let len = |k: usize| pts[k].1.distance(pts[k + 1].1);
+                len(x).total_cmp(&len(y))
+            })
+            .expect("stitches before the deleted point");
+        let (_, a, _) = pts[k];
+        let (j, b, _) = pts[k + 1];
         let mid = a.lerp(b, 0.5);
         assert!(a.distance(b) > 4.0, "a line long enough to click");
         let mut e = ev(Phase::Down, mid);

@@ -610,7 +610,9 @@ Line references are relative to `crates/`.
   - Turning-end and half-stitch geometry: needs reference.
 - **Status:** partly fixed, internal regression tier only (not reference verified).
   - Fill `frequency` (0–50 %, the needle shift from row to row) feeds `generate::row_phase`
-    in plain and shaped fill; unset keeps the ⅓ stagger, so existing designs sew as before.
+    in plain and shaped fill. New fills take PE-DESIGN's default, 30 % (sweep references: the
+    Frequency field shows 30 and rows shift 1.2 mm per 4 mm stitch); a file without a Frequency
+    (saved before) keeps the ⅓ stagger, so existing designs sew as before.
   - `object.setRegion` refuses Frequency outside 0–50 (all types that use it);
     `object.setLine` limits run times to 1–5 for E/V and every other type, 1–6 for chain.
   - Fill and satin Density take PE-DESIGN 11.50's 0.1–14.0 lines/mm (was 0.5–10), and Pull
@@ -618,6 +620,14 @@ Line references are relative to `crates/`.
     `sweep-fill-density-*` and `sweep-fill-pull-*` specs check rows 1/density apart from edge to
     edge and each row end moved out by the pull compensation (the under sewing is not), against
     PE-DESIGN's files.
+  - Fill row structure as PE-DESIGN sews it (sweep references, stitch-sweeps track): the rows
+    on each side of the start point are sewn as two halves from the far edge inward, the first
+    row out and back when a half has an odd number of rows, rows sewn backwards without edge
+    points (diagonal joins), straight travel in stitches up to 2 mm, a 0.3 mm tie-in and lock,
+    the spacing stretched so the last row lies on the far edge, and the needle grid counted from
+    the first row's start. Convex fills match PE-DESIGN's files needle point for needle point
+    (`sweep-fill-*` specs, `same-stitches`); regions with several spans per row (U, holes) keep
+    the older nearest-row order with PE's row ends and grid.
   - Tests: `frequency_and_run_times_follow_the_guide_ranges`,
     `fill_frequency_sets_the_row_to_row_needle_shift` (0, 25 and 50 %, ±2 % of the stitch).
   - Not implemented, needs reference geometry (method 1): Stitch Type (turning ends), Half
@@ -827,8 +837,8 @@ Line references are relative to `crates/`.
   - Calibrated from the PE-DESIGN 11.50 reference files (2026-10-27): fill 4.5 rows/mm with
     under sewing on (`EdgeFill`: edge run 1 mm inside the outline at <= 2.5 mm, then tatami
     rows across the fill, 2 mm apart, 4 mm stitches, 30 % shift, 1 mm inset), also on for
-    programmable fill. Still open: fill Frequency default (PE 30 %, OpenStitch 1/3) and the
-    programmable fill density.
+    programmable fill. Fill Frequency default 30 % as PE (2026-10-27, sweep references). Still
+    open: the programmable fill density.
   - The guide gives word scales only. Fit the mapping from reference files at slider minimum,
     middle and maximum.
 - **Line Start/End type (Feed/Run) (calibrated 2026-10-27 for stem, candlewick and chain):**
@@ -901,6 +911,16 @@ Line references are relative to `crates/`.
   arrow, and programmable fill (PE offers it; OpenStitch refuses it until it sews it).
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
+- **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,
+  letters (rows with several spans, sewn in the older nearest-row order) have more stitches than
+  PE-DESIGN's: text-size-h 639 against PE 483 (main before: 622), the Text Transform specs about
+  +14 % (e.g. text-transform-1 1489 → 1701, PE 1300). For text-size-h the cause is that rows
+  shorter than one stitch keep their edge points (`generate::chain`, `Chain::Brick`): PE-DESIGN
+  drops them on a 20 mm letter's 3.5 mm strokes but keeps the narrow rows at
+  hole-sewing-pentagon-star's vertices (with the cut at half a stitch or at 3 mm text-size-h is
+  511, but the pentagon's stitchedArea leaves its tolerance). The Text Transform excess does not
+  depend on that cut (1685 at 3 mm); likely PE's grid keeping points down to 0.3 mm from a row end
+  in narrow strokes, or letters at 45° (the grid anchor of angled fills, sweep-fill-dir-30/45/135).
 
 ## Order of work
 
