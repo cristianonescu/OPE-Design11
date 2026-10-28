@@ -126,12 +126,13 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
 5. **Machine stream:** the per-format compares of DST, EXP, JEF, PCS, SEW, XXX, HUS and VIP
    against PE-DESIGN's exports pass since 2026-10-28 (the writers follow PE-DESIGN's record
    layout; FILE_FORMATS.md "PE-DESIGN's record layout"; the SEW stream from PE-DESIGN's own
-   start point since the round-3 SEW exports). Left:
-   how the folding formats write a move shorter than one record (one export each, listed in the
-   audit); the lower bound under which PE-DESIGN leaves a frame move untrimmed (between 1 and
-   2 mm, round-3 recording `machine-jumps`); the same compares on a design with short moves.
-   Next on this track (parked references landing one PR each): satin gradation, Text Transform
-   presets 13 and 14, under sewing type 2, satin density minimum.
+   start point since the round-3 SEW exports). Since 2026-10-28 a move of up to 2.3 mm between
+   same-colour objects is sewn across as PE-DESIGN does (machine-jumps, machine-trim-bound,
+   machine-trim-fine). Left: how the folding formats write a move shorter than one record (one
+   export each, listed in the audit); PE's optimized exit and entry 0.5 mm inside the edges
+   (fill track) and the multi-needle minimum-length field's value; the same compares on a
+   design with short moves. The parked references (satin gradation, Text Transform presets 13
+   and 14, under sewing type 2, satin density minimum, the trim bound) have all landed.
 6. **PES:** turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
    write editable shapes and text; PES v7–v11 and the hoop and Design Page fields (from the
    owner's own files only, as [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).

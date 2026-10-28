@@ -256,10 +256,18 @@ Line references are relative to `crates/`.
 
 ## 4. Trims between underlay, top stitching and outline of one object
 
-- **Raised 2026-10-28** (reference `machine-jumps.pes`, parked with the parked-references session):
-  six same-colour fill squares with 1, 2, 3, 4 and 6 mm gaps: PE-DESIGN trims the 2, 3, 4 and 6 mm
-  moves and leaves the 1 mm move a plain jump, so "every interior move is trimmed" (#69) has a
-  lower bound between 1 and 2 mm; OpenStitch trims all five. Settled (`machine-rbr.pes`, reference
+- **Settled 2026-10-28** (references `machine-jumps.pes`, `machine-trim-bound.pes`,
+  `machine-trim-fine.pes`, specs of the same names at the reference tier): between same-colour
+  parts PE-DESIGN 11.50 sews a needle-to-needle move of up to 2.24 mm across as a plain stitch
+  (no jump at all) and trims a move of 2.33 mm and more (gaps of 0.5, 0.8 and 1.0 mm sewn, 1.1 mm
+  and up trimmed, with its exit 0.5 mm inside the right edge and 1 mm up and its entry 0.5 mm
+  inside the next left edge: moves of sqrt((gap + 1)^2 + 1)). OpenStitch's compiler now sews a
+  move of up to 2.3 mm between objects across (`Compiler::sew_across_distance`) and trims every
+  longer one, so no plain interior jump is written. Open: where PE-DESIGN puts the optimized
+  exit and entry (0.5 mm inside the edges; OpenStitch's lie on the edges, so the specs draw the
+  squares at PE's needle-to-needle moves), and the value PE's multi-needle "minimum jump stitch
+  length for trimming" field shows (read the Design Settings dialog; the recordings were made
+  with the multi-needle machine type at its default). Also settled (`machine-rbr.pes`, reference
   tier): objects drawn red, blue, red sew as both reds (one block, a trim between them) then blue,
   one colour change, as `order.optimize` does.
 

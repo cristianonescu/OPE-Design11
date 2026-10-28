@@ -236,6 +236,44 @@ fn compiler_colour_changes_trims_end_and_max_stitch() {
 }
 
 #[test]
+fn short_moves_between_objects_are_sewn_across_and_longer_ones_trimmed() {
+    // PE-DESIGN 11.50 sews a 2.24 mm needle-to-needle move between same-colour parts as a
+    // plain stitch and trims a 2.33 mm one (compat machine-trim-fine, machine-trim-bound).
+    let squares = |gap: f64| {
+        let mut d = Design::new("gap", DesignPage::default());
+        for x in [0.0, 100.0 + gap] {
+            let mut fill = RegionSewing::new(RegionType::Fill, RED);
+            fill.underlay = false;
+            // Entry on the left edge, exit on the right: the move between the squares is the gap.
+            fill.entry = Some(v2(x, 50.0));
+            fill.exit = Some(v2(x + 100.0, 50.0));
+            d.add(DesignObject::shape(
+                vec![Contour::rectangle(x, 0.0, 100.0, 100.0)],
+                Some(fill),
+                None,
+            ));
+        }
+        d
+    };
+    for (gap, trims) in [(10.0, 0), (22.0, 0), (24.0, 1), (60.0, 1)] {
+        let p = Compiler::default().compile(&squares(gap));
+        assert_eq!(p.count(Command::ColorChange), 0);
+        // One trim at the end of the design, plus the one between the squares.
+        assert_eq!(p.count(Command::Trim), trims + 1, "gap {gap}");
+        let interior_jumps = p
+            .stitches
+            .iter()
+            .skip(1)
+            .filter(|s| s.command == Command::Jump)
+            .count();
+        assert_eq!(
+            interior_jumps, trims,
+            "gap {gap}: a short move is a stitch, not a jump"
+        );
+    }
+}
+
+#[test]
 fn no_zero_length_stitch_where_a_jump_lands() {
     // The jump's end is the first needle point. PE-DESIGN 11 never writes a zero-length stitch
     // there and drops one on open (compat pes-default-v6: 932 → 930 stitches).

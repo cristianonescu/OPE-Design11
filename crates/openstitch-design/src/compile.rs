@@ -21,14 +21,19 @@ use openstitch_core::{Command, Stitch, StitchPattern, Thread, round_coordinate};
 /// `trim_distance` is 0 by default: every frame move inside the design is trimmed, as in
 /// PE-DESIGN 11.50's files. In 177 of its PES files (compat/reference and the owner's round-2
 /// folders, 2026-10-27) every interior move carries the PEC trim flag and a plain jump appears only
-/// as the first record and right after a colour change; the shortest trimmed move is 3.0 mm, and
-/// travel shorter than that is sewn across. Multi-needle designs use PE-DESIGN's "minimum jump
-/// stitch length for trimming" setting instead ([`Compiler::for_design`]).
+/// as the first record and right after a colour change. A move between objects no longer than
+/// `sew_across_distance` is not a jump at all but a stitch across the gap: PE-DESIGN sews a
+/// 2.24 mm needle-to-needle move across and trims a 2.33 mm one (compat machine-trim-fine,
+/// machine-trim-bound, machine-jumps, 2026-10-28), so the bound is 2.3 mm. Multi-needle
+/// designs use PE-DESIGN's "minimum jump stitch length for trimming" setting for the trims
+/// instead ([`Compiler::for_design`]).
 #[derive(Clone, Copy, Debug)]
 pub struct Compiler {
     pub trim_distance: f64,
     pub connect_distance: f64,
     pub max_stitch: f64,
+    /// A move between objects up to this long (0.1 mm) is sewn as a stitch.
+    pub sew_across_distance: f64,
 }
 
 impl Default for Compiler {
@@ -37,6 +42,7 @@ impl Default for Compiler {
             trim_distance: 0.0,
             connect_distance: 40.0,
             max_stitch: 120.0,
+            sew_across_distance: 23.0,
         }
     }
 }
@@ -104,6 +110,11 @@ impl Writer {
             return;
         }
         if within_element && d <= self.cfg.connect_distance && !self.cut {
+            self.stitch_line(p);
+            return;
+        }
+        // PE-DESIGN sews a short move between objects across as a stitch rather than jumping.
+        if !within_element && d <= self.cfg.sew_across_distance && !self.cut {
             self.stitch_line(p);
             return;
         }
