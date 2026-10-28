@@ -643,6 +643,45 @@ fn gradation_pattern_sews_rows_at_equal_steps_of_the_cumulative_line_count() {
 }
 
 #[test]
+fn satin_gradation_splits_on_every_other_lattice_line() {
+    // The 20 x 5 mm rectangle of compat satin-gradation: satin at 3 lines/mm with PE-DESIGN's
+    // default pattern, under sewing off, start point at the middle of the bottom edge.
+    // PE-DESIGN 11.50 sews the left half from the left edge with vertical crossings on every
+    // other line of the cumulative-line-count lattice (lines 0, 2, ... 10), hops one line (11)
+    // and crosses, runs home; then the right half from the right edge (lines 17, 15, 13) and
+    // the hop to the start point's line (12).
+    let c = vec![Contour::rectangle(100.0, 100.0, 200.0, 50.0)];
+    let g = crate::Gradation::PE_DEFAULT;
+    assert_eq!(
+        crate::region::row_positions(&c, 90.0, 10.0 / 3.0, Some(&g)).len(),
+        18
+    );
+    let mut r = region(RegionType::Satin);
+    r.angle = 90.0;
+    r.density = 3.0;
+    r.underlay = false;
+    r.gradation = Some(g);
+    r.entry = Some(v2(200.0, 150.0));
+    let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
+    assert_eq!(runs.len(), 1, "one run, split at the start point");
+    let run = &runs[0];
+    let crossings: Vec<f64> = run
+        .windows(2)
+        .filter(|w| (w[0].x - w[1].x).abs() < 0.01 && (w[0].y - w[1].y).abs() > 49.0)
+        .map(|w| w[0].x / 10.0)
+        .collect();
+    let pe = [
+        10.0, 11.3, 12.7, 14.3, 15.9, 17.8, 18.8, 30.0, 24.3, 21.2, 20.0,
+    ];
+    assert_eq!(crossings.len(), pe.len(), "{crossings:?}");
+    for (x, p) in crossings.iter().zip(pe) {
+        assert!((x - p).abs() <= 0.15, "{x} vs {p}: {crossings:?}");
+    }
+    assert_eq!(run.len(), 32, "{run:?}"); // 37 stitches with the tie-in and lock
+    assert_inside(&runs, &c, "satin gradation");
+}
+
+#[test]
 fn fill_under_sewing_rows_stay_inside_narrow_points() {
     // The star of compat hole-sewing-pentagon-star: rows across its points are shorter than
     // the 1 mm inset at both ends; they must not collapse to a needle point outside the star.
