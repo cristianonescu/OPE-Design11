@@ -177,7 +177,15 @@ encrypted purchase format). See the Blocked rows in [FEATURE_MATRIX.md](FEATURE_
 ## Dependencies on the owner
 
 - New reference files, made in the owner's licensed PE-DESIGN 11.50 for the specs that ask for
-  one ([compat/reference/README.md](../compat/reference/README.md)).
+  one ([compat/reference/README.md](../compat/reference/README.md)). Recorded so far (2026-10-28):
+  fill and satin sweeps, the gradation sweep (Max/Min, the eight presets, Blend, Direction, no
+  under sewing), Auto satin bends 30–120°, the Fit-text sweep (spacing, size, AHHHH, satin), one
+  sample of every PES object kind, and two machine-stream designs (trim threshold, colour order).
+  Still to record: gradation on a plain square and at other Max/Min pairs; satin bends at 90° with
+  Half Stitch and on a curved band; Fit text on a line and a square, kerning on "AVA"; Stamp from an
+  owner-drawn pattern, a two-colour text, an editable hole-sewing pair, the Cutwork and Embroidered
+  Patch wizards, non-ASCII Design Property text; frame moves of 1.2–1.8 mm for the exact trim
+  bound, four-colour ordering, and the other-format exports once their writers match.
 - A test sew-out of an OpenStitch-written file on the owner's Brother machine (the machine
   tier).
 - A lawyer's review of the policy on studying PE-DESIGN output files (allowed as project policy

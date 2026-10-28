@@ -256,6 +256,13 @@ Line references are relative to `crates/`.
 
 ## 4. Trims between underlay, top stitching and outline of one object
 
+- **Raised 2026-10-28** (reference `machine-jumps.pes`, parked with the parked-references session):
+  six same-colour fill squares with 1, 2, 3, 4 and 6 mm gaps: PE-DESIGN trims the 2, 3, 4 and 6 mm
+  moves and leaves the 1 mm move a plain jump, so "every interior move is trimmed" (#69) has a
+  lower bound between 1 and 2 mm; OpenStitch trims all five. Settled (`machine-rbr.pes`, reference
+  tier): objects drawn red, blue, red sew as both reds (one block, a trim between them) then blue,
+  one colour change, as `order.optimize` does.
+
 - **Impact:** severity 4. One same-coloured rectangle with underlay and an outline sews with
   3 trims and 3 jumps. That means more cuts, more tie-offs and longer sew time.
 - **Module:**
@@ -292,6 +299,15 @@ Line references are relative to `crates/`.
   - Keep the forced cut before a colour change.
 
 ## 5. Every design is written as one stitch group; nothing stays editable in PE-DESIGN
+
+- **Object-class samples (2026-10-28):** `crates/openstitch-formats/tests/fixtures/pe11/o-*.pes`
+  (PROVENANCE.md "Round 3") hold one owner-drawn example of every object kind PE-DESIGN writes:
+  the Outline, Rectangle/Circle/Arc and Manual Punch tools and every region type are `CEmbLine`,
+  gallery shapes `CEmbSpecialShape`, plain and vertical text `CEmbNText`, Text Transform
+  `CEmbDText`, text fitted to an outline `CEmbAText` (the compat `text-fit-*` files), plus a group,
+  the Applique Wizard's output, page 200 × 200, Hoop-Size pages (7.7 KB files: a shorter header)
+  and the single-needle machine type. Small Text, Monogram, Motif and Decorative Fill use Brother
+  content and have no sample.
 
 - **Impact:** severity 5. In PE-DESIGN, a design saved by OpenStitch arrives as a single
   stitch pattern:
@@ -373,8 +389,14 @@ Line references are relative to `crates/`.
   direction turns linearly with the distance along it, over three band widths for a 90° turn (two
   for 60°), centred on the outer corner; each rung reaches across to the inner edge, so the inner
   ends crowd towards the inner corner. The satin reaches the band's square ends.
+- **Bend sweep (2026-10-28, references `satin-auto-bend-30/45/75.pes` and their `-nohalf` twins):**
+  PE-DESIGN's count is the same at 30°, 45°, 60° and 75° (171–177 stitches on the 5 mm band) and the
+  same with Half Stitch on or off; OpenStitch is within 10 % and the longest crossing within 0.5 mm
+  at all three (reference tier). At 120° PE-DESIGN sews 161 stitches with a 10 mm longest crossing
+  where OpenStitch sews 267 with a 13 mm one: the fan rule breaks down on a sharp turn (file
+  parked with the parked-references session; its spec is not in the repository).
 - **Status:** fixed; the corner fan, end reach and start travel follow PE-DESIGN (reference tier:
-  satin-auto-bend-90-nohalf, satin-auto-bend-60, auto-satin-bent-band; `region::fan_corners`,
+  satin-auto-bend-90-nohalf, satin-auto-bend-60, satin-auto-bend-30/45/75 (±nohalf), auto-satin-bent-band; `region::fan_corners`,
   `region::reach_ends`). Earlier: Auto satin
   derives a skeleton and sews along it, each row reaching the outline
   (`skeleton::rungs_within`). Running Stitch Path is hidden with Auto satin, which travels
@@ -908,9 +930,19 @@ Line references are relative to `crates/`.
   within 0.12 mm of PE-DESIGN's (0.04 mm on average; the earlier midpoint-density placement
   drifted to 0.4 mm by the far edge). Designs saved with the old single far-side percentage
   still sew a continuous fall from 100 %. The guide's exclusions apply: not with a feathered edge, Auto
-  direction or text (refused when set, not sewn when a file holds them anyway). Still missing:
-  other preset patterns, per-step editing, Blend (two-colour blending), the gradation direction
-  arrow, and programmable fill (PE offers it; OpenStitch refuses it until it sews it).
+  direction or text (refused when set, not sewn when a file holds them anyway). Settled by the
+  2026-10-28 gradation sweep (references `u-gradation-*.pes`): Max/Min rescaling (80/20, 95/50, a
+  flat 50/50) and the mirror pattern 2 (scripted as Max 5 / Min 53) and Direction 90 are at the
+  reference tier within the 15 % count tolerance; the dialog's Direction is the region's own
+  Direction field; the Max slider stops at 95 %, Min at 5 %; the eight presets are per-step shapes
+  (pattern 3: 53/42/32/24/17/12/8/6/5 %, 4: 5/6/8/12/17/24/32/42/53, 5: 53/52/50/46/41/34/26/16/5,
+  6: 5/16/26/34/41/46/50/52/53, 7: 5/26/41/50/53/50/41/26/5, 8: 53/32/17/8/5/8/17/32/53) and Blend
+  sews two colour blocks (second colour first); their specs check only the routing until the model
+  has per-step values and Blend. Raised: without under sewing PE-DESIGN sews 434 stitches on the U
+  where OpenStitch sews 366 (`u-gradation-nous.pes`, parked): the under-sewing layer hides a
+  difference in the gradation rows themselves. Still missing: per-step editing, Blend, the
+  gradation direction arrow, and programmable fill (PE offers it; OpenStitch refuses it until it
+  sews it).
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 - **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,

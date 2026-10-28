@@ -1,0 +1,133 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "satin-auto-bend-75-nohalf",
+  "area": "stitches",
+  "title": "Auto satin turns a 75° bend as PE-DESIGN does (Half Stitch off)",
+  "description": "A 5 mm band bent through 75° in satin with Auto direction, density 3, without under sewing, Half Stitch off: the rung direction turns with the distance along the outer edge, as in PE-DESIGN's file (count within 10 %, longest crossing within 0.5 mm). OpenStitch does not model Half Stitch; PE-DESIGN's count is the same with it on or off.",
+  "covers": {
+    "audit": [
+      7
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Satin: a zigzag across the column"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference stitches/satin-auto-bend-75-nohalf.pes (pe-refs-3 bend sweep, 2026-10-28): 175 stitches; the same count with Half Stitch on and off."
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.polygon",
+      "params": {
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            30,
+            0
+          ],
+          [
+            34.48,
+            16.73
+          ],
+          [
+            29.65,
+            18.02
+          ],
+          [
+            26.16,
+            5
+          ],
+          [
+            0,
+            5
+          ]
+        ]
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "satin",
+        "autoDirection": true,
+        "density": 3,
+        "underlay": false
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "band.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/satin-auto-bend-75-nohalf.pes",
+      "make": "On a 100 × 100 mm Design Page draw (or import from SVG) the closed polygon (0,0) (30,0) (34.48,16.73) (29.65,18.02) (26.16,5) (0,5) mm (a 5 mm band bent through 75°). Line Not Sewn; region Satin Stitch, Direction Auto, Half Stitch unticked, Density 3.0, Under Sewing off, other attributes default. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "band.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            0,
+            0
+          ]
+        }
+      },
+      "evidence": "PE-DESIGN 11.50 reference stitches/satin-auto-bend-75-nohalf.pes",
+      "reference": {
+        "tolerance": {
+          "percent": 10
+        }
+      }
+    },
+    {
+      "id": "longest-stitch",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "band.pes",
+        "align": {
+          "anchor": "boundsMin",
+          "to": [
+            0,
+            0
+          ]
+        }
+      },
+      "evidence": "the longest crossings are in the corner fan",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    }
+  ]
+}

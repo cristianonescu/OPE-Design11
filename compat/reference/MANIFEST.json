@@ -2,6 +2,18 @@
   "schema": "openstitch-compat-reference/1",
   "files": [
     {
+      "file": "machine/machine-rbr.pes",
+      "spec": "machine-rbr",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of an SVG (viewBox 0 0 100 100 = 100 x 100 mm) with three 10 x 10 mm squares at x = 10 (#ff0000 -> 800 RED), 30 (#0000ff -> the chart's blue), 50 (#ff0000) mm, y = 10 mm; the rectangles import centred on the page as Fill Stitch (PE's import attributes: line Not Sewn, under sewing on, density 4.5), colours mapped from the SVG fills; nothing changed. Save As PES (#PES0110). Status bar 50,00 x 10,00 mm, Stitches = 697.",
+      "sha256": "d3048e699da60d87e12c67d4c843a0716ef10c437d955048280bf799d0b200f7",
+      "notes": "Sewing Order after the import: 1 = both red squares, 2 = blue."
+    },
+    {
       "file": "pes/design-property-native.pes",
       "spec": "pes-design-properties",
       "reference": "pe-design",
@@ -422,6 +434,54 @@
       "notes": "470 stitches shown."
     },
     {
+      "file": "stitches/satin-auto-bend-30-nohalf.pes",
+      "spec": "satin-auto-bend-30-nohalf",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm; Home > Import Patterns > from Vector Image... of an SVG with viewBox 0 0 100 100 (100 x 100 mm) holding one polygon (0,0) (30,0) (45,8.66) (42.5,12.99) (28.66,5) (0,5) mm (a 5 mm band bent through 30 degrees, second leg 17.32 mm, square end); the shape imports centred on the page as Fill Stitch, line Not Sewn, colour 800 RED. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch unticked, Pull compensation 0.0 mm, Feathered edge off. Save As PES (#PES0110). Status bar 44,60 x 12,70 mm, Stitches = 175.",
+      "sha256": "93dbe17ef9e1948781c341bd9340ee6f80a83530315bf1aef09770ef80bff685",
+      "notes": "The imported shape shows Half Stitch unticked; the plain file has it ticked, the -nohalf file unticked."
+    },
+    {
+      "file": "stitches/satin-auto-bend-30.pes",
+      "spec": "satin-auto-bend-30",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm; Home > Import Patterns > from Vector Image... of an SVG with viewBox 0 0 100 100 (100 x 100 mm) holding one polygon (0,0) (30,0) (45,8.66) (42.5,12.99) (28.66,5) (0,5) mm (a 5 mm band bent through 30 degrees, second leg 17.32 mm, square end); the shape imports centred on the page as Fill Stitch, line Not Sewn, colour 800 RED. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch ticked, Pull compensation 0.0 mm, Feathered edge off. Save As PES (#PES0110). Status bar 44,60 x 12,70 mm, Stitches = 175.",
+      "sha256": "50e8c315ac4aaa08c5e45cc2154494f72a2fa641a0096c43830a1d751b6f96ac",
+      "notes": "The imported shape shows Half Stitch unticked; the plain file has it ticked, the -nohalf file unticked."
+    },
+    {
+      "file": "stitches/satin-auto-bend-45-nohalf.pes",
+      "spec": "satin-auto-bend-45-nohalf",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm; Home > Import Patterns > from Vector Image... of an SVG with viewBox 0 0 100 100 (100 x 100 mm) holding one polygon (0,0) (30,0) (42.25,12.25) (38.71,15.78) (27.93,5) (0,5) mm (a 5 mm band bent through 45 degrees, second leg 17.32 mm, square end); the shape imports centred on the page as Fill Stitch, line Not Sewn, colour 800 RED. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch unticked, Pull compensation 0.0 mm, Feathered edge off. Save As PES (#PES0110). Status bar 42,00 x 15,40 mm, Stitches = 175.",
+      "sha256": "13dd8a7f629b4272d788bb0689451765b81ea8ff4bc4f236b4932c22f37ef117",
+      "notes": "The imported shape shows Half Stitch unticked; the plain file has it ticked, the -nohalf file unticked."
+    },
+    {
+      "file": "stitches/satin-auto-bend-45.pes",
+      "spec": "satin-auto-bend-45",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm; Home > Import Patterns > from Vector Image... of an SVG with viewBox 0 0 100 100 (100 x 100 mm) holding one polygon (0,0) (30,0) (42.25,12.25) (38.71,15.78) (27.93,5) (0,5) mm (a 5 mm band bent through 45 degrees, second leg 17.32 mm, square end); the shape imports centred on the page as Fill Stitch, line Not Sewn, colour 800 RED. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch ticked, Pull compensation 0.0 mm, Feathered edge off. Save As PES (#PES0110). Status bar 42,00 x 15,40 mm, Stitches = 175.",
+      "sha256": "ef932df33d85165ffecd77947f5ca53d894db5f659088c234bc22c31358b2109",
+      "notes": "The imported shape shows Half Stitch unticked; the plain file has it ticked, the -nohalf file unticked."
+    },
+    {
       "file": "stitches/satin-auto-bend-60.pes",
       "spec": "satin-auto-bend-60",
       "reference": "pe-design",
@@ -432,6 +492,30 @@
       "settings": "File > New, Design Page Custom Size 100 x 100 mm; Import Patterns > from Vector Image... of the spec SVG bend-60.svg (owner's reference notes) (one polygon (0,0) (30,0) (38.66,15) (34.33,17.5) (27.11,5) (0,5) mm, viewBox 0 0 100 100 = 100 x 100 mm); the shape was imported centred on the page with Fill Stitch attributes and changed while selected: line Not Sewn (Line), region Satin Stitch, Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch ticked (the imported shape showed it unticked; the drawing tools default to ticked), Pull compensation 0.0 mm; colour 800 RED; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "51a065f7553dcbbbd53fcdfec7469bfed87a5195d49f4a44379cb8e00d85643b",
       "notes": "The imported shape measures 38,60 x 17,40 mm (PE appears to keep vertices at 0.1 mm; the polygon is 38.66 x 17.5 mm). Status bar with satin: Width 38,60 mm, Height 17,10 mm, Stitches = 177, the same with Half Stitch on or off. Position: centred on the page, not at the origin."
+    },
+    {
+      "file": "stitches/satin-auto-bend-75-nohalf.pes",
+      "spec": "satin-auto-bend-75-nohalf",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm; Home > Import Patterns > from Vector Image... of an SVG with viewBox 0 0 100 100 (100 x 100 mm) holding one polygon (0,0) (30,0) (34.48,16.73) (29.65,18.02) (26.16,5) (0,5) mm (a 5 mm band bent through 75 degrees, second leg 17.32 mm, square end); the shape imports centred on the page as Fill Stitch, line Not Sewn, colour 800 RED. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch unticked, Pull compensation 0.0 mm, Feathered edge off. Save As PES (#PES0110). Status bar 34,40 x 17,70 mm, Stitches = 175.",
+      "sha256": "51322664aef92d993d6be3a6de110cd0c5c415ec61a13719eedc36a304f7d1d0",
+      "notes": "The imported shape shows Half Stitch unticked; the plain file has it ticked, the -nohalf file unticked."
+    },
+    {
+      "file": "stitches/satin-auto-bend-75.pes",
+      "spec": "satin-auto-bend-75",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm; Home > Import Patterns > from Vector Image... of an SVG with viewBox 0 0 100 100 (100 x 100 mm) holding one polygon (0,0) (30,0) (34.48,16.73) (29.65,18.02) (26.16,5) (0,5) mm (a 5 mm band bent through 75 degrees, second leg 17.32 mm, square end); the shape imports centred on the page as Fill Stitch, line Not Sewn, colour 800 RED. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch ticked, Pull compensation 0.0 mm, Feathered edge off. Save As PES (#PES0110). Status bar 34,40 x 17,70 mm, Stitches = 175.",
+      "sha256": "7838154dfc95cab594cbc986eece79c60de0613576fb367bf8e0528dc900363a",
+      "notes": "The imported shape shows Half Stitch unticked; the plain file has it ticked, the -nohalf file unticked."
     },
     {
       "file": "stitches/satin-auto-bend-90-nohalf.pes",
@@ -926,6 +1010,150 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "stitches/u-gradation-50-50.pes",
+      "spec": "u-gradation-50-50",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 1, Max 50 %, Min 50 % (all nine steps 50 %). Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 815.",
+      "sha256": "9d053691a4d84e0aa2ae7380219cb90053145c076e5d8f20ad797460b72aa251",
+      "notes": ""
+    },
+    {
+      "file": "stitches/u-gradation-80-20.pes",
+      "spec": "u-gradation-80-20",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 1, Max 80 %, Min 20 % (steps 80/73/65/58/50/43/35/28/20 %). Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 823.",
+      "sha256": "7665e9a3fdd386982eae74666d7181f07a1225987755a7654e640353cd62d470",
+      "notes": ""
+    },
+    {
+      "file": "stitches/u-gradation-95-50.pes",
+      "spec": "u-gradation-95-50",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 1, Max 95 % (the slider stops at 95), Min 50 % (steps 95/90/84/79/73/67/61/56/50 %). Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 998.",
+      "sha256": "e70b84da32cbe0da4669a6035bd3ed991347163111df556f5e472d860c337dff",
+      "notes": ""
+    },
+    {
+      "file": "stitches/u-gradation-blend-blue.pes",
+      "spec": "u-gradation-blend-blue",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 1, Max 53 %, Min 5 %, Direction 0, Blend ticked, second colour button > Thread Color > 007 EMBROIDERY PRUSSIAN BLUE (first colour 800 RED); Sewing Order: 1 blue, 2 red. Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 1389.",
+      "sha256": "db4fe4350e05eead152d7dccd8d29d91a2d33a5bc75b847305084a42de947747",
+      "notes": "Unticking Blend afterwards left the region colour at the blend's second colour (007); set back to 800 RED for the next file."
+    },
+    {
+      "file": "stitches/u-gradation-dir-90.pes",
+      "spec": "u-gradation-dir-90",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 1, Max 53 %, Min 5 %, the dialog's Direction set to 90 degrees (which also sets the region's Direction to 90: rows vertical). Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 567.",
+      "sha256": "f3662d3bba52e6b70e7d5269ca14f637dc48690b60ad4290782466e97cc4fc7a",
+      "notes": ""
+    },
+    {
+      "file": "stitches/u-gradation-pattern-2.pes",
+      "spec": "u-gradation-pattern-2",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 2 (row 1 right), Max 53 %, Min 5 % (steps 5/11/17/23/29/35/41/47/53 %). Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 605.",
+      "sha256": "c0cc580e11fbb6cf09d4f487133dbef7fefbac3f555e4f4865e2e148a41b7257",
+      "notes": ""
+    },
+    {
+      "file": "stitches/u-gradation-pattern-3.pes",
+      "spec": "u-gradation-pattern-3",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 3 (row 2 left), Max 53 %, Min 5 % (steps 53/42/32/24/17/12/8/6/5 %). Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 536.",
+      "sha256": "79c047dc870fe9f957c7cb1979939a0db0650963dc411296de68f2877496c729",
+      "notes": ""
+    },
+    {
+      "file": "stitches/u-gradation-pattern-4.pes",
+      "spec": "u-gradation-pattern-4",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 4 (row 2 right), Max 53 %, Min 5 % (steps 5/6/8/12/17/24/32/42/53 %). Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 519.",
+      "sha256": "d590c531e585ae79a9ce68d4024f675a1237df2865c2bdb9e6825edd1d149722",
+      "notes": ""
+    },
+    {
+      "file": "stitches/u-gradation-pattern-5.pes",
+      "spec": "u-gradation-pattern-5",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 5 (row 3 left), Max 53 %, Min 5 % (steps 53/52/50/46/41/34/26/16/5 %). Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 701.",
+      "sha256": "510b842452b67861b05ea7debf35b4cbf7332c58dcab77dddd91effe41a89aae",
+      "notes": ""
+    },
+    {
+      "file": "stitches/u-gradation-pattern-6.pes",
+      "spec": "u-gradation-pattern-6",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 6 (row 3 right), Max 53 %, Min 5 % (steps 5/16/26/34/41/46/50/52/53 %). Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 690.",
+      "sha256": "78781bfa4b74334ef7e5d683b7a76c1e882dbaac25632a06468c2de000424b7a",
+      "notes": ""
+    },
+    {
+      "file": "stitches/u-gradation-pattern-7.pes",
+      "spec": "u-gradation-pattern-7",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 7 (row 4 left), Max 53 %, Min 5 % (steps 5/26/41/50/53/50/41/26/5 %). Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 680.",
+      "sha256": "f57e9a687a25f267e1db5b67f6a32c39a61a7b8fb5c58ad04958bb90af53d178",
+      "notes": ""
+    },
+    {
+      "file": "stitches/u-gradation-pattern-8.pes",
+      "spec": "u-gradation-pattern-8",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 8 (row 4 right), Max 53 %, Min 5 % (steps 53/32/17/8/5/8/17/32/53 %). Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 533.",
+      "sha256": "61d8b28a981277f71073edd4a194a0e6c62d4034b8a0765f5a92b3aacecbdf2d",
+      "notes": ""
+    },
+    {
       "file": "text/text-defaults-fill.pes",
       "spec": "text-defaults-fill",
       "reference": "pe-design",
@@ -948,6 +1176,18 @@
       "settings": "T6 TEXT SEWING DEFAULTS, 2026-10-27 21:12-21:14, PE-DESIGN 11.50 restarted at 20:41 (the Text tool had not been changed since except its size). Font: Lato-Bold.ttf from crates/openstitch-design/fonts installed for the current Windows user, PE lists 'Lato' (style Bold). App menu > New (100 x 100 mm page, grid 1 mm, Snap on). Home > Text > first tool 'A'; Text tab as PE shows it: font Lato, size set to 20.0 (the only change), line Not Sewn (Line), region Satin Stitch, region colour 800 EMBROIDERY RED; Text Attributes all default (Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, Alignment Left, horizontal, Transform off). Clicked the page at (50, 50) mm (the click sets the baseline-left), typed H, Select tool. Box about (50, 29.4)-(67.4, 50) mm. Save As 'Layout & Editing Ver.11.0 File (*.PES)'. This file: (a) as is. Sewing Attributes > Region sew for the SATIN text (PE text defaults): Under sewing UNTICKED (type buttons and Density 'Medium' greyed), Density 5.0 line/mm (house button), Half Stitch unticked, Pull compensation 0.0 mm (house button), Connection Points greyed (Default). No Direction, stitch length or Frequency field is shown for satin text; no Line sew section (line Not Sewn). Status: 17,40 x 20,60 mm, Stitches = 285.",
       "sha256": "4c5c5933f30c1548fff76ca6158d80a59737d8950199d23b89876ef6ee6e1a3d",
       "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-fit-ahhhh.pes",
+      "spec": "text-fit-ahhhh",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user (the registered font was not loaded in this logon session: re-installed through the Windows Fonts shell folder, PE-DESIGN restarted; PE lists it as 'Lato'). Design Page 100 x 100 mm (grid 1 mm, snap on). Shapes > Ellipse dragged (20,20)-(80,80) mm = 60,00 x 60,00 mm circle, line Running Stitch (Run pitch 2.0, Run time(s) 1), region Not Sewn (Region); 133 stitches. Home > Text > first tool 'A', click at (30,95) mm (baseline-left), ABCDE; Text tab: font Lato, size 8.0, line Not Sewn (Line), region Fill Stitch (text fill defaults), colour 800 EMBROIDERY RED; Text Attributes defaults (Kerning 0, Vertical Offset 0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, Alignment Left, horizontal, Transform off); unfitted text 37,90 x 8,40 mm, 733 stitches (= the text-fit-default base). This file: the text edited to AHHHH in the Text Attributes box (unfitted 42,30 x 8,30 mm). Then (unless stated) click the empty page, Ctrl+A, Home > Edit > Fit Text > Fit Text to Outline, dialog at its defaults (Horizontal Alignment centre, Vertical Alignment above, Text Orientation along, the other side off), OK. Save As PES (#PES0110). Status bar 60,00 x 68,30 mm, Stitches = 823.",
+      "sha256": "64fa6f046273d3d6013de3282f99e3723a4bd57c04db48df45a8b92af3cf4c8d",
+      "notes": ""
     },
     {
       "file": "text/text-fit-default.pes",
@@ -1020,6 +1260,66 @@
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. base design t3-circle-base.pes: Shapes > Ellipse dragged (20,20)-(80,80) mm = 60,00 x 60,00 mm circle, line Running Stitch (defaults, colour 800 RED), region Not Sewn (Region); 133 stitches. Then Text tool: \"ABCDE\", size 8.0, Lato, Fill Stitch 800 RED, line Not Sewn; 37,90 x 8,40 mm, 733 stitches, placed below the circle. Ctrl+A (both), Home > Edit > Fit Text > Fit Text to Outline opens \"Fit Text to Outline Attribute Setting\": Horizontal Alignment (drop-down of 5 icons, in order: left, centre [default], right, stretched to fill the outline \"<-ABC->\", spaced evenly \"A B C\"); Vertical Alignment (3 icons: text above the line [default], centred on the line, below the line); Text Orientation (2 icons: characters turned along the outline [default], characters kept upright); check box \"the other side\" (default off). OK applies. The dialog remembers the last choice. Each variant: Ctrl+Z to undo the previous fit, Ctrl+A, Fit Text to Outline, one option changed from the default (others reset), OK, Save As. The circle starts and ends at the bottom (6 o'clock, (50, 80) mm), as the files show; left alignment starts the text there. This file: 60,00 x 60,10 mm, 859 st. Text on the inside, mirrored order (reads the other way); the Sewing Order pane then lists the circle as 1-1 and each letter as its own item 1-2..1-6. Save As PES default type (#PES0110).",
       "sha256": "283a13f5002c7d692a245581a8c0a24ca46fdea90a05776ce85bb42c3c9c300a",
       "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-fit-satin-ahhhh.pes",
+      "spec": "text-fit-satin-ahhhh",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user (the registered font was not loaded in this logon session: re-installed through the Windows Fonts shell folder, PE-DESIGN restarted; PE lists it as 'Lato'). Design Page 100 x 100 mm (grid 1 mm, snap on). Shapes > Ellipse dragged (20,20)-(80,80) mm = 60,00 x 60,00 mm circle, line Running Stitch (Run pitch 2.0, Run time(s) 1), region Not Sewn (Region); 133 stitches. Home > Text > first tool 'A', click at (30,95) mm (baseline-left), ABCDE; Text tab: font Lato, size 8.0, line Not Sewn (Line), region Fill Stitch (text fill defaults), colour 800 EMBROIDERY RED; Text Attributes defaults (Kerning 0, Vertical Offset 0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, Alignment Left, horizontal, Transform off); unfitted text 37,90 x 8,40 mm, 733 stitches (= the text-fit-default base). This file: AHHHH, Text tab > Sew > region Satin Stitch (unfitted 42,30 x 8,30 mm, 613 st). Then (unless stated) click the empty page, Ctrl+A, Home > Edit > Fit Text > Fit Text to Outline, dialog at its defaults (Horizontal Alignment centre, Vertical Alignment above, Text Orientation along, the other side off), OK. Save As PES (#PES0110). Status bar 60,00 x 68,30 mm, Stitches = 743.",
+      "sha256": "c01b2905f863835dcee0f43bb005137941c3680d385bcdeec8aee1ef58dc9f97",
+      "notes": ""
+    },
+    {
+      "file": "text/text-fit-size-12.pes",
+      "spec": "text-fit-size-12",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user (the registered font was not loaded in this logon session: re-installed through the Windows Fonts shell folder, PE-DESIGN restarted; PE lists it as 'Lato'). Design Page 100 x 100 mm (grid 1 mm, snap on). Shapes > Ellipse dragged (20,20)-(80,80) mm = 60,00 x 60,00 mm circle, line Running Stitch (Run pitch 2.0, Run time(s) 1), region Not Sewn (Region); 133 stitches. Home > Text > first tool 'A', click at (30,95) mm (baseline-left), ABCDE; Text tab: font Lato, size 8.0, line Not Sewn (Line), region Fill Stitch (text fill defaults), colour 800 EMBROIDERY RED; Text Attributes defaults (Kerning 0, Vertical Offset 0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, Alignment Left, horizontal, Transform off); unfitted text 37,90 x 8,40 mm, 733 stitches (= the text-fit-default base). This file: text size 12.0 (unfitted 56,80 x 12,70 mm, 1312 st). Then (unless stated) click the empty page, Ctrl+A, Home > Edit > Fit Text > Fit Text to Outline, dialog at its defaults (Horizontal Alignment centre, Vertical Alignment above, Text Orientation along, the other side off), OK. Save As PES (#PES0110). Status bar 62,90 x 72,50 mm, Stitches = 1445.",
+      "sha256": "e213374fc3f5460d6f834638a933483168fb329484634179f0427f55cdb9f112",
+      "notes": ""
+    },
+    {
+      "file": "text/text-fit-size-6.pes",
+      "spec": "text-fit-size-6",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user (the registered font was not loaded in this logon session: re-installed through the Windows Fonts shell folder, PE-DESIGN restarted; PE lists it as 'Lato'). Design Page 100 x 100 mm (grid 1 mm, snap on). Shapes > Ellipse dragged (20,20)-(80,80) mm = 60,00 x 60,00 mm circle, line Running Stitch (Run pitch 2.0, Run time(s) 1), region Not Sewn (Region); 133 stitches. Home > Text > first tool 'A', click at (30,95) mm (baseline-left), ABCDE; Text tab: font Lato, size 8.0, line Not Sewn (Line), region Fill Stitch (text fill defaults), colour 800 EMBROIDERY RED; Text Attributes defaults (Kerning 0, Vertical Offset 0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, Alignment Left, horizontal, Transform off); unfitted text 37,90 x 8,40 mm, 733 stitches (= the text-fit-default base). This file: text size 6.0 (unfitted 28,30 x 6,30 mm, 521 st). Then (unless stated) click the empty page, Ctrl+A, Home > Edit > Fit Text > Fit Text to Outline, dialog at its defaults (Horizontal Alignment centre, Vertical Alignment above, Text Orientation along, the other side off), OK. Save As PES (#PES0110). Status bar 60,00 x 66,20 mm, Stitches = 656.",
+      "sha256": "cc5bf33d59a4c69c28a6154f07a81fbc0410606fe2869f5316f4c65a9b2e808b",
+      "notes": ""
+    },
+    {
+      "file": "text/text-fit-spacing-m1.pes",
+      "spec": "text-fit-spacing-m1",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user (the registered font was not loaded in this logon session: re-installed through the Windows Fonts shell folder, PE-DESIGN restarted; PE lists it as 'Lato'). Design Page 100 x 100 mm (grid 1 mm, snap on). Shapes > Ellipse dragged (20,20)-(80,80) mm = 60,00 x 60,00 mm circle, line Running Stitch (Run pitch 2.0, Run time(s) 1), region Not Sewn (Region); 133 stitches. Home > Text > first tool 'A', click at (30,95) mm (baseline-left), ABCDE; Text tab: font Lato, size 8.0, line Not Sewn (Line), region Fill Stitch (text fill defaults), colour 800 EMBROIDERY RED; Text Attributes defaults (Kerning 0, Vertical Offset 0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, Alignment Left, horizontal, Transform off); unfitted text 37,90 x 8,40 mm, 733 stitches (= the text-fit-default base). This file: Text Attributes > Character Spacing -1.0 mm (unfitted 33,90 x 8,40 mm, 733 st). Then (unless stated) click the empty page, Ctrl+A, Home > Edit > Fit Text > Fit Text to Outline, dialog at its defaults (Horizontal Alignment centre, Vertical Alignment above, Text Orientation along, the other side off), OK. Save As PES (#PES0110). Status bar 60,00 x 68,30 mm, Stitches = 859.",
+      "sha256": "ee8f446aee212af3a1b48773b48fea999528ec9e14d826a11443197360f551b9",
+      "notes": ""
+    },
+    {
+      "file": "text/text-fit-spacing-p2.pes",
+      "spec": "text-fit-spacing-p2",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Lato Bold (crates/openstitch-design/fonts/Lato-Bold.ttf, OFL) installed for the current Windows user (the registered font was not loaded in this logon session: re-installed through the Windows Fonts shell folder, PE-DESIGN restarted; PE lists it as 'Lato'). Design Page 100 x 100 mm (grid 1 mm, snap on). Shapes > Ellipse dragged (20,20)-(80,80) mm = 60,00 x 60,00 mm circle, line Running Stitch (Run pitch 2.0, Run time(s) 1), region Not Sewn (Region); 133 stitches. Home > Text > first tool 'A', click at (30,95) mm (baseline-left), ABCDE; Text tab: font Lato, size 8.0, line Not Sewn (Line), region Fill Stitch (text fill defaults), colour 800 EMBROIDERY RED; Text Attributes defaults (Kerning 0, Vertical Offset 0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, Alignment Left, horizontal, Transform off); unfitted text 37,90 x 8,40 mm, 733 stitches (= the text-fit-default base). This file: Character Spacing 2.0 mm (unfitted 45,90 x 8,40 mm, 733 st). Then (unless stated) click the empty page, Ctrl+A, Home > Edit > Fit Text > Fit Text to Outline, dialog at its defaults (Horizontal Alignment centre, Vertical Alignment above, Text Orientation along, the other side off), OK. Save As PES (#PES0110). Status bar 60,00 x 68,30 mm, Stitches = 866.",
+      "sha256": "b0f2d54419b3ced2da5910442360bbee1300b6efe6c6804fbe9771f83509fce4",
+      "notes": ""
     },
     {
       "file": "text/text-fit-valign-below.pes",
