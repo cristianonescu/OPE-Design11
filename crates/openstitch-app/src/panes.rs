@@ -670,7 +670,10 @@ pub fn windows(app: &mut EditorApp, ctx: &egui::Context) {
                 }
                 let quit: &[(&str, &str)] = if cfg!(target_os = "macos") {
                     &[
-                        ("Quit (asks to save changes)", "Cmd+Q"),
+                        (
+                            "Quit / close the window (asks to save changes)",
+                            "Cmd+Q, Cmd+W",
+                        ),
                         ("Minimise", "Cmd+M"),
                     ]
                 } else {

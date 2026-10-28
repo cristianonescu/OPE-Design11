@@ -1021,9 +1021,6 @@ impl EditorApp {
         } else if take(cmd(Key::S)) {
             self.save(false);
         }
-        if cfg!(target_os = "macos") {
-            self.macos_app_shortcuts(ctx);
-        }
         if take(cmd(Key::O)) {
             self.open_dialog();
         }
@@ -1149,14 +1146,17 @@ impl EditorApp {
         }
     }
 
-    /// macOS: with no default application menu (see `main.rs`), Cmd+Q quits through the
-    /// unsaved-changes prompt and Cmd+M minimises the window. Platform-independent so it is
-    /// tested everywhere; `shortcuts` calls it on macOS only.
+    /// macOS: with no default application menu (see `main.rs`), Cmd+Q and Cmd+W close the
+    /// window through the unsaved-changes prompt and Cmd+M minimises it. Taken before
+    /// everything else, whatever has the keyboard and whichever suite window fills the editor,
+    /// as the menu's key equivalents were. Platform-independent so it is tested everywhere;
+    /// `update` calls it on macOS only.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     fn macos_app_shortcuts(&mut self, ctx: &egui::Context) {
         let take = |k| {
             ctx.input_mut(|i| i.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, k)))
         };
-        if take(Key::Q) {
+        if take(Key::Q) || take(Key::W) {
             self.guarded(Pending::Exit);
         } else if take(Key::M) {
             ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(true));
@@ -1281,6 +1281,8 @@ impl eframe::App for EditorApp {
         }
         // Before the shortcuts, so the prompt takes Enter and Escape.
         crate::close_ui::window(self, &ctx);
+        #[cfg(target_os = "macos")]
+        self.macos_app_shortcuts(&ctx);
         if self.database.open || self.creator.open || self.sewing.open {
             // The other suite windows take the whole window, as separate programs do.
             self.update_title(&ctx);
@@ -1678,6 +1680,15 @@ mod tests {
 
         press(&mut app, Key::M);
         assert!(!app.exit_approved(), "Cmd+M only minimises");
+
+        // Cmd+W is the same request as Cmd+Q.
+        let mut app = EditorApp::new(Launch::default());
+        app.execute(&ellipse()).expect("edit");
+        press(&mut app, Key::W);
+        assert!(
+            app.close_prompt.is_open() && !app.exit_approved(),
+            "Cmd+W asks too"
+        );
     }
 
     #[test]
