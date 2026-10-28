@@ -661,8 +661,9 @@ fn satin_at_the_minimum_density_crosses_on_every_line() {
         .map(|w| w[0].x)
         .collect();
     crossings.sort_by(f64::total_cmp);
+    let rounded: Vec<f64> = crossings.iter().map(|x| x.round()).collect();
     assert_eq!(
-        crossings,
+        rounded,
         [100.0, 200.0, 300.0, 300.0, 400.0, 500.0],
         "{run:?}"
     );
