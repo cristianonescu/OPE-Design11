@@ -92,7 +92,9 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
 
 1. **Fill:** PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
    Frequency default); the programmable fill density; Stitch Type (turning ends) and Half
-   Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend.
+   Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend; under
+   sewing Density Dense / Light (the second under sewing type, `cross`, is done for fill and
+   satin since 2026-10-28, specs sweep-fill-us-type-2 and sweep-satin-us-type-2).
 2. **Satin:** Half Stitch for Auto satin (the corner fan now produces the crowding it acts
    on); the remaining density-3 differences on bends; Miter limit.
 3. **Lines:** Start/End Type Feed/Run for stem, candlewicking and chain, with the L2 marker and

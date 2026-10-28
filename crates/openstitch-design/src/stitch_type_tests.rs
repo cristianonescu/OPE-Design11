@@ -497,6 +497,81 @@ fn auto_direction_sews_across_the_narrow_side() {
 }
 
 #[test]
+fn cross_under_sewing_sews_two_layers_of_lines_in_halves_from_the_far_corners() {
+    // The satin of compat sweep-satin-us-type-2: 40 x 6 mm at 90 degrees, start point at the
+    // middle of the bottom edge, PE-DESIGN's second under sewing type.
+    let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 60.0)];
+    let mut r = region(RegionType::Satin);
+    r.angle = 90.0;
+    r.density = 4.5;
+    r.underlay = true;
+    r.underlay_style = UnderlayStyle::Cross;
+    r.entry = Some(v2(300.0, 160.0));
+    let layers = crate::region::layers(&c, &r, &[]);
+    assert_eq!(layers.len(), 2, "under sewing, then the satin");
+    let under: Vec<Vec2> = layers[0].iter().flatten().copied().collect();
+    assert_inside(&layers[0], &c, "cross under sewing");
+    let inset = |p: &Vec2| p.x >= 109.9 && p.x <= 490.1 && p.y >= 109.9 && p.y <= 150.1;
+    let outside: Vec<&Vec2> = under.iter().filter(|p| !inset(p)).collect();
+    assert!(
+        outside.len() <= 1 && outside.iter().all(|p| **p == v2(300.0, 160.0)),
+        "1 mm inside the outline but for the start point: {outside:?}"
+    );
+    // Stitches by direction: the edge run (along the edges), the lines (at 45 degrees, up-right
+    // first, then up-left), the travel to each half's corner.
+    let kind = |a: Vec2, b: Vec2| -> &'static str {
+        let (dx, dy) = (b.x - a.x, b.y - a.y);
+        if dx.abs() < 0.01 || dy.abs() < 0.01 {
+            "edge"
+        } else if (dx.abs() - dy.abs()).abs() < 0.01 {
+            if dx * dy < 0.0 { "up-right" } else { "up-left" }
+        } else {
+            "travel"
+        }
+    };
+    let kinds: Vec<&str> = under.windows(2).map(|w| kind(w[0], w[1])).collect();
+    let first_up_right = kinds.iter().position(|&k| k == "up-right").expect("lines");
+    let first_up_left = kinds.iter().position(|&k| k == "up-left").expect("lines");
+    assert!(
+        first_up_right < first_up_left,
+        "direction - 45 degrees first"
+    );
+    assert!(kinds[first_up_left..].iter().all(|&k| k != "up-right"));
+    // Each layer's lines are 2 mm apart (2.83 mm along the edges): 14 of them, as PE-DESIGN's.
+    let count = |k: &str| kinds.iter().filter(|&&x| x == k).count();
+    assert!(
+        (26..=30).contains(&count("up-right")),
+        "{}",
+        count("up-right")
+    );
+    assert!(
+        (26..=30).contains(&count("up-left")),
+        "{}",
+        count("up-left")
+    );
+    // The first half goes to the corner first along the outline from the start point (the
+    // bottom-left for the up-left lines; the top-left, reached by a straight travel, for
+    // the up-right lines) and every half ends at the start point.
+    let at = |i: usize| under[i];
+    assert!(
+        at(first_up_right).x < 140.0 && at(first_up_right).y > 130.0,
+        "{:?}",
+        at(first_up_right)
+    );
+    assert!(
+        at(first_up_left).x < 140.0 && at(first_up_left).y > 140.0,
+        "{:?}",
+        at(first_up_left)
+    );
+    // Every half ends at the start point on the inset; the layer then steps out to the
+    // region's start point, where the top satin begins.
+    assert_eq!(under[under.len() - 2], v2(300.0, 150.0));
+    assert_eq!(under.last().copied(), Some(v2(300.0, 160.0)));
+    assert!(count("travel") >= 8, "{}", count("travel"));
+    assert_eq!(layers[1][0][0], v2(300.0, 160.0));
+}
+
+#[test]
 fn underlay_styles_layer_inside_the_region() {
     let c = vec![circle()];
     let mut r = region(RegionType::Fill);

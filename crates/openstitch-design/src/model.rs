@@ -710,6 +710,11 @@ pub enum UnderlayStyle {
     /// PE-DESIGN's fill under sewing: a running stitch 1 mm inside the outline, then tatami
     /// rows across the sewing direction, 1 mm inside it (see [`crate::region`]).
     EdgeFill,
+    /// PE-DESIGN's second under sewing type (fill and satin): the running stitch 1 mm inside
+    /// the outline, then two layers of lines 1 mm inside it at the sewing direction minus and
+    /// plus 45°, each sewn in two halves from the region's far corners towards the start point
+    /// (see [`crate::region`]).
+    Cross,
 }
 
 /// Which row ends a feathered edge roughens.

@@ -417,6 +417,20 @@ Line references are relative to `crates/`.
   Medium / Light) cannot be reproduced:
   - OpenStitch's Double is two crossing ±45° layers.
   - Zigzag outlines have no underlay at all.
+- **Settled 2026-10-27/28 from the under sewing sweep (`sweep-satin-us-*`, `sweep-fill-us-*`):**
+  PE-DESIGN 11.50's Region sew pane offers two type buttons (the second's icon a double layer
+  of crossing rows) and a Density of Dense / Medium / Light; no spacing or inset fields. The
+  first type is modelled (`EdgeFill` for fill, `EdgeZigzag` for satin: the edge run 1 mm
+  inside, rows 2 mm apart). The second type is modelled since 2026-10-28 as `Cross`
+  (`underlayStyle: cross`): the same edge run, then two layers of lines 1 mm inside the
+  outline at the sewing direction minus and plus 45°, 2 mm apart (2.83 mm along the edges),
+  in 4 mm stitches (a line of exactly 4 mm in two), each layer sewn in two halves from the
+  region's far corners towards the start point (the half whose corner comes first along the
+  outline from the start point first), straight travel to the corner at 2.5 mm, walks along
+  the inset outline at 2 mm, back to the start point at the end; specs sweep-satin-us-type-2
+  (395 stitches to PE's 404) and sweep-fill-us-type-2 (2650 to 2651) at the reference tier.
+  Still open: Density Dense / Light (PE: row spacing 1.41 / 3.45 mm against Medium's 2.0,
+  `sweep-fill-us-density-*`), and which of the two types PE applies to the other region kinds.
 - **Module:**
   - `openstitch-design/src/model.rs:613-625,822`: the styles and a 2 mm spacing.
   - `openstitch-design/src/region.rs:15,120-156`: satin underlay runs parallel to the top
