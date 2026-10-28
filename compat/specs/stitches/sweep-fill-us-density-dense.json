@@ -1,0 +1,148 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "sweep-fill-us-density-dense",
+  "area": "stitches",
+  "title": "Fill under sewing Density Dense",
+  "description": "The 40 × 40 mm fill at 0°, density 4.5, Under sewing first type with Density Dense (PE-DESIGN's rows 1.4 mm apart, stitch-rules U1). OpenStitch has one under sewing density (Medium); the reference pins PE-DESIGN's count for when Dense/Light exist.",
+  "covers": {
+    "audit": [
+      15
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Fill (tatami: angle or auto direction"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Fill Stitch and Satin Stitch: Density, Pull compensation, Under sewing, Direction, Step pitch, Gradation"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference stitches/sweep-fill-us-density-dense.pes (pe-gui, 2026-10-27; stitch-sweeps track S3/S4/S6/S8)"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 40
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "angle": 0,
+        "density": 4.5,
+        "underlay": true
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/sweep-fill-us-density-dense.pes",
+      "make": "On a 100 × 100 mm Design Page (grid 1 mm, Snap to Grid) draw a 40 × 40 mm square with the Rectangle tool from (10, 10) to (50, 50) mm. Line Not Sewn; colour 800 RED; region sew type Fill Stitch, Direction Manual 0°, Density 4.5, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Under sewing ticked, first type, Density Dense, every other region attribute at PE-DESIGN's default. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "row-spacing",
+      "measure": {
+        "kind": "rowSpacing"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 0.2222,
+      "tolerance": {
+        "mm": 0.01
+      },
+      "evidence": "PE-DESIGN's rows are 1/density apart (density 4.5), unchanged by under sewing",
+      "reference": {}
+    },
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN's count (status bar); the reference file",
+      "reference": {
+        "tolerance": {
+          "percent": 8
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN's file: the needle points' extent",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      },
+      "expected": 40.0,
+      "tolerance": {
+        "mm": 0.1
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN's file: the needle points' extent",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      },
+      "expected": 40.0,
+      "tolerance": {
+        "mm": 0.1
+      }
+    }
+  ]
+}
