@@ -1,10 +1,11 @@
 //! Window preferences kept between runs in `ui.json` next to the user settings file: colour
 //! theme, Quick Access Toolbar, which panes show (docked or floating), the most recently used
-//! files, the realistic view settings and the font filter. Unknown or malformed entries fall
+//! files, the realistic view settings, the font filter and the update preferences. Unknown or malformed entries fall
 //! back to the defaults.
 
 use super::lettering::FontChoice;
 use super::ribbon::{Action, QAT_DEFAULT};
+use super::updates::UpdatePrefs;
 use super::workspace::RealisticSettings;
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
@@ -116,6 +117,7 @@ pub struct UiPrefs {
     pub font_filter: FontFilter,
     /// Startup splash on an interactive start.
     pub splash: bool,
+    pub updates: UpdatePrefs,
 }
 
 impl Default for UiPrefs {
@@ -129,6 +131,7 @@ impl Default for UiPrefs {
             realistic: RealisticSettings::default(),
             font_filter: FontFilter::default(),
             splash: true,
+            updates: UpdatePrefs::default(),
         }
     }
 }
@@ -164,6 +167,7 @@ impl UiPrefs {
             },
             "fontFilter": { "on": self.font_filter.on, "hidden": self.font_filter.hidden },
             "showSplash": self.splash,
+            "updates": self.updates.to_json(),
         })
     }
 
@@ -230,6 +234,7 @@ impl UiPrefs {
                     .unwrap_or_default(),
             },
             splash: v["showSplash"].as_bool().unwrap_or(d.splash),
+            updates: UpdatePrefs::from_json(&v["updates"]),
         }
     }
 
@@ -291,6 +296,8 @@ mod tests {
         p.font_filter.on = true;
         p.font_filter.set_shown("lato-bold", false);
         p.splash = false;
+        p.updates.check = false;
+        p.updates.skip_version = Some("v0.1.0-alpha.4".into());
         for i in 0..12 {
             p.add_recent(Path::new(&format!("/d/{i}.osd")));
         }

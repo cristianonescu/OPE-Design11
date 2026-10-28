@@ -29,6 +29,10 @@ eframe = "0.37"
 rfd = "0.17"
 # Renders the command icons (assets/icons/commands); same usvg as openstitch-engine.
 resvg = { version = "0.48.1", default-features = false }
+# Self-update: release check, verified download, swap and restart (docs/research/updater.md).
+openstitch-update = { path = "../openstitch-update" }
+# Release notes (markdown) in the update dialog; no image loading or fetching.
+egui_commonmark = { version = "0.26", default-features = false, features = ["pulldown_cmark"] }
 
 [lints]
 workspace = true

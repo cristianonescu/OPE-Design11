@@ -764,7 +764,7 @@ pub fn about_window(app: &mut EditorApp, ctx: &egui::Context) {
             if !crate::icons::paint_svg_logo(ui.painter(), r, name, src) {
                 ui.heading("OpenStitch");
             }
-            ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
+            ui.label(crate::update_ui::version_line());
             ui.label("An open-source embroidery design suite for macOS, Windows and Linux.");
             ui.label("Reads and writes PES, PEC, DST, EXP, JEF, VP3 and more.");
             ui.hyperlink("https://github.com/cristianonescu/OpenStitch");
