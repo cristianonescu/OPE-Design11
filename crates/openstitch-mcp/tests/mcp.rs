@@ -389,7 +389,9 @@ fn preview_returns_png() {
     let pixels = &buf[..info.buffer_size()];
     assert!(
         pixels
-            .chunks_exact(3)
+            .as_chunks::<3>()
+            .0
+            .iter()
             .any(|p| p[0] > 150 && p[1] < 80 && p[2] < 80),
         "no red pixels"
     );

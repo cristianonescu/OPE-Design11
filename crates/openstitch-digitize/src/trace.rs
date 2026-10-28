@@ -59,7 +59,7 @@ pub fn marching_squares(mask: &[bool], w: usize, h: usize) -> Vec<Loop> {
         let cell = id / 2;
         let (x, y) = ((cell % sw) as f64, (cell / sw) as f64);
         // Sample (sx, sy) sits at pixel centre (sx - 0.5, sy - 0.5).
-        if id % 2 == 0 {
+        if id.is_multiple_of(2) {
             v2(x, y - 0.5)
         } else {
             v2(x - 0.5, y)

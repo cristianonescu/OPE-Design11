@@ -194,7 +194,9 @@ pub fn png(
 fn encode(pixmap: &Pixmap) -> Result<Vec<u8>, String> {
     let rgb: Vec<u8> = pixmap
         .data()
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .flat_map(|p| [p[0], p[1], p[2]])
         .collect();
     let mut out = Vec::new();

@@ -134,13 +134,12 @@ fn main() -> ExitCode {
             Line::Text(text) => server.handle_line(&text),
             Line::Oversized => Some(server.oversized_request_reply()),
         };
-        if let Some(reply) = reply {
-            if writeln!(stdout, "{reply}")
+        if let Some(reply) = reply
+            && writeln!(stdout, "{reply}")
                 .and_then(|()| stdout.flush())
                 .is_err()
-            {
-                break; // client went away
-            }
+        {
+            break; // client went away
         }
     }
     ExitCode::SUCCESS
