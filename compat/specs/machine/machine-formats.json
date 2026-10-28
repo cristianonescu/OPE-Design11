@@ -3,7 +3,7 @@
   "id": "machine-formats",
   "area": "machine",
   "title": "Machine formats carry the same stitches, trims and colour stops as PE-DESIGN 11's exports",
-  "description": "One small design with every machine-level event: a trim inside a colour (two Red running lines 40 mm apart), a colour change (Black after Red), and 15 mm satin stitches that DST (12.1 mm), EXP and JEF (12.7 mm) must split. PE-DESIGN 11 opens OpenStitch's a.pes as stitches and exports it to each format; the exports are compared record by record with OpenStitch's own writers: jumps written for a trim, colour-stop records, the per-format stitch-length split and the header fields.",
+  "description": "One small design with every machine-level event: a trim inside a colour (two Red running lines 40 mm apart), a colour change (Black after Red), and 15 mm satin stitches that the relative formats have to split. PE-DESIGN 11 opens OpenStitch's a.pes as stitches and exports it to each format; the exports are compared record by record with OpenStitch's own writers: how a frame move, a trim, a colour change and a long stitch are written, the header fields and the origin. The writers follow PE-DESIGN's layout (crates/openstitch-formats/src/layout.rs; docs/FILE_FORMATS.md).",
   "covers": {
     "audit": [],
     "featureMatrix": [
@@ -50,6 +50,10 @@
       "kind": "spec",
       "url": "https://edutechwiki.unige.ch/en/Embroidery_format_DST",
       "note": "DST: 3-byte records, jump flag, colour change 0xC3; a trim is a run of jumps (count is a machine setting)"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50's exports of this design in DST, EXP, PCS, HUS, VIP, JEF, SEW and XXX (compat/reference/machine, 2026-10-27): a stitch longer than a record is a jump plus a stitch (HUS: two stitches); a frame move is a jump run with no trim record (DST pads it to three jump records with zero-length jumps; XXX writes a trimmed move as one 7E record; VIP writes 88; HUS a zero-length jump); JEF, SEW, XXX and VIP fold the move's remainder into the first stitch after it; DST, EXP and XXX jump back to the origin at the end; PCS writes a fixed 16-colour table and indexes it from the colour-change records"
     }
   ],
   "script": [
@@ -380,7 +384,7 @@
       "source": {
         "export": "a.sew"
       },
-      "evidence": "PE-DESIGN 11's SEW export of the same stitches",
+      "evidence": "PE-DESIGN 11's SEW export of the same stitches, compared from the first needle point on: the SEW reader drops the frame move before the first stitch, because PE-DESIGN starts the SEW stream at a point 15.9 mm left of and 9.7 mm below the design centre (one file; the rule is unknown) while OpenStitch starts at the centre as in JEF. To settle the origin rule: export the same a.pes to SEW after moving it 10 mm right and 10 mm down on the page, and export a 20 x 20 mm square drawn at the page centre to SEW; the first stitch record of each shows whether the origin follows the page position, the design size, or neither.",
       "reference": {
         "id": "pe-design-sew"
       }

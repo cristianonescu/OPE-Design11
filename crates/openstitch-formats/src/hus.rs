@@ -4,17 +4,19 @@
 //! `(command[i], x[i], y[i])`: a signed byte delta each, y up. Commands: `80` stitch, `81` jump,
 //! `84` colour change, `88` trim (after an optional move), `90` end.
 //!
-//! The reader follows pyembroidery 1.5.1's `HusReader` (MIT), the oracle; the writer is its
-//! inverse, with the header magic and offset layout libembroidery's `writeHus` (zlib) uses.
+//! The reader follows pyembroidery 1.5.1's `HusReader` (MIT), the oracle, and accepts both
+//! magics; the writer lays the records out as PE-DESIGN 11.50's export does (see [`encode`]).
 //! [`crate::vip`] shares the record streams.
 
 use crate::io::{ByteReader, ByteWriter, signed8};
+use crate::layout::{self, Event};
 use crate::{FormatError, Result, lzh, repeating_stops_palette};
-use openstitch_core::{
-    Command, HUS_CHART, Stitch, StitchPattern, Thread, nearest_index, round_coordinate,
-};
+use openstitch_core::{Command, HUS_CHART, Stitch, StitchPattern, Thread, nearest_index};
 
-pub const MAGIC: u32 = 0x00C8_AF5B;
+/// The magic PE-DESIGN 11.50 writes (`compat/reference/machine/machine-formats.hus`).
+pub const MAGIC: u32 = 0x00C8_FC5D;
+/// The magic libembroidery writes and pyembroidery's fixtures carry; read as well.
+pub const MAGIC_LIBEMBROIDERY: u32 = 0x00C8_AF5B;
 pub const MAX_DELTA: f64 = 127.0;
 /// Upper bound on the record count a reader accepts (and so on decompressed stream size).
 pub const MAX_RECORDS: usize = 4_000_000;
@@ -29,9 +31,9 @@ pub(crate) struct Header {
 }
 
 /// Reads the fields shared by HUS and VIP; the reader is left at offset 0x2A.
-pub(crate) fn read_header(reader: &mut ByteReader, magic: u32, name: &str) -> Result<Header> {
+pub(crate) fn read_header(reader: &mut ByteReader, magics: &[u32], name: &str) -> Result<Header> {
     let found = reader.u32le()?;
-    if found != magic {
+    if !magics.contains(&found) {
         return Err(FormatError::BadSignature(format!(
             "{name} magic {found:#010x}"
         )));
@@ -74,11 +76,42 @@ pub(crate) fn read_records(
     let xs = lzh::expand(&data[xo..yo], header.records)?;
     let ys = lzh::expand(&data[yo..], header.records)?;
     let (mut x, mut y) = (0.0_f64, 0.0_f64);
+    // Index of the first jump of the current jump run, for PE-DESIGN's trim marker.
+    let mut run_start: Option<usize> = None;
     for ((&cmd, &bx), &by) in commands.iter().zip(&xs).zip(&ys) {
         let (dx, dy) = (signed8(bx), -signed8(by));
+        if cmd != 0x81 {
+            run_start = None;
+        }
         let command = match cmd {
             0x80 => Command::Stitch,
-            0x81 => Command::Jump,
+            0x81 => {
+                // PE-DESIGN marks a trimmed frame move with a zero-length jump after it.
+                if dx == 0.0
+                    && dy == 0.0
+                    && let Some(start) = run_start
+                {
+                    let before = if start > 0 {
+                        pattern.stitches[start - 1]
+                    } else {
+                        Stitch::new(0.0, 0.0, Command::Stitch)
+                    };
+                    if pattern
+                        .stitches
+                        .get(start.wrapping_sub(1))
+                        .is_none_or(|s| s.command != Command::Trim)
+                    {
+                        pattern
+                            .stitches
+                            .insert(start, Stitch::new(before.x, before.y, Command::Trim));
+                    }
+                    continue;
+                }
+                if run_start.is_none() {
+                    run_start = Some(pattern.stitches.len());
+                }
+                Command::Jump
+            }
             0x84 => Command::ColorChange,
             0x88 => {
                 if dx != 0.0 || dy != 0.0 {
@@ -101,7 +134,7 @@ pub(crate) fn read_records(
 
 pub fn read(data: &[u8]) -> Result<StitchPattern> {
     let mut reader = ByteReader::new(data);
-    let header = read_header(&mut reader, MAGIC, "HUS")?;
+    let header = read_header(&mut reader, &[MAGIC, MAGIC_LIBEMBROIDERY], "HUS")?;
     let mut pattern = StitchPattern::new();
     for _ in 0..header.colors {
         let i = reader.u16le()? as usize % HUS_CHART.len();
@@ -122,51 +155,137 @@ pub(crate) struct Encoded {
     pub palette: Vec<Thread>,
 }
 
-pub(crate) fn encode(input: &StitchPattern) -> Encoded {
-    let mut pattern = input.interpolating_long_moves(MAX_DELTA, MAX_DELTA);
+/// Which of PE-DESIGN's two record layouts to write.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Dialect {
+    Hus,
+    Vip,
+}
+
+/// Longest HUS jump record PE-DESIGN writes (8 mm).
+pub const HUS_MAX_JUMP: i64 = 80;
+/// Longest HUS stitch record PE-DESIGN writes (12 mm).
+pub const HUS_MAX_STITCH: i64 = 120;
+/// VIP piece length: PE-DESIGN cuts a move into `ceil(longer axis / this)` equal pieces. One
+/// reference file bounds it to 7.5–7.9 mm; 7.5 mm reproduces it.
+pub const VIP_PIECE: i64 = 75;
+
+/// Encodes the stream as PE-DESIGN 11.50 exports it (`compat/reference/machine/machine-formats.hus`
+/// and `.vip`), the design centred on (0, 0).
+///
+/// HUS: every frame move as `81` jumps of at most 8 mm (the longer axis full, the other
+/// proportional) to the move's end, a zero-length `81` after it when the move is trimmed
+/// (the first move excepted), then a zero-length `80` stitch at the move's end (the first
+/// needle point); a stitch over 12 mm as `80` stitches of at most 12 mm, split the same way;
+/// `84` for a colour change; `90` at the end, with no return to the origin.
+///
+/// VIP: `88` (zero-length) before a trimmed move (the first move excepted); every frame move
+/// folded into the stitch after it and cut into `ceil(longer axis / 7.5 mm)` equal pieces, the
+/// last one an `80` stitch and the rest `81` jumps; a stitch over 7.5 mm likewise; `84` and
+/// `90` as HUS.
+pub(crate) fn encode(input: &StitchPattern, dialect: Dialect) -> Encoded {
+    let mut pattern = input.clone();
     pattern.fix_thread_count(None);
     let palette = repeating_stops_palette(&pattern);
+    let events = layout::events(&pattern);
     let (mut commands, mut xs, mut ys) = (Vec::new(), Vec::new(), Vec::new());
-    let (mut xx, mut yy) = (0_i64, 0_i64);
+    let (mut x, mut y) = (0_i64, 0_i64);
     let (mut min_x, mut min_y, mut max_x, mut max_y) = (0_i64, 0_i64, 0_i64, 0_i64);
-    let mut seen = false;
-    for s in &pattern.stitches {
-        let (dx, dy) = (round_coordinate(s.x) - xx, round_coordinate(s.y) - yy);
-        let (code, moves) = match s.command {
-            Command::Stitch => (0x80, true),
-            Command::Jump => (0x81, true),
-            Command::ColorChange | Command::Stop => (0x84, true),
-            Command::Trim => (0x88, false),
-            Command::End => break,
-        };
-        let (mut dx, mut dy) = if moves { (dx, dy) } else { (0, 0) };
-        // Only stitches and jumps were interpolated: reach a distant colour change by jumps.
-        while dx.abs() > 127 || dy.abs() > 127 {
-            let (sx, sy) = (dx.clamp(-127, 127), dy.clamp(-127, 127));
-            commands.push(0x81);
-            xs.push(sx as u8);
-            ys.push((-sy) as u8);
-            (xx, yy, dx, dy) = (xx + sx, yy + sy, dx - sx, dy - sy);
-        }
-        xx += dx;
-        yy += dy;
+    fn push(
+        commands: &mut Vec<u8>,
+        xs: &mut Vec<u8>,
+        ys: &mut Vec<u8>,
+        code: u8,
+        dx: i64,
+        dy: i64,
+    ) {
         commands.push(code);
         xs.push(dx as u8);
         ys.push((-dy) as u8);
-        if matches!(s.command, Command::Stitch | Command::Jump) {
-            if !seen {
-                (min_x, min_y, max_x, max_y) = (xx, yy, xx, yy);
-                seen = true;
-            }
-            min_x = min_x.min(xx);
-            max_x = max_x.max(xx);
-            min_y = min_y.min(yy);
-            max_y = max_y.max(yy);
-        }
     }
-    commands.push(0x90);
-    xs.push(0);
-    ys.push(0);
+    let mut visit = |x: i64, y: i64| {
+        min_x = min_x.min(x);
+        max_x = max_x.max(x);
+        min_y = min_y.min(y);
+        max_y = max_y.max(y);
+    };
+    let mut first_move = true;
+    let mut i = 0;
+    while i < events.len() {
+        match events[i] {
+            Event::Move {
+                x: tx,
+                y: ty,
+                trimmed,
+            } => {
+                let trim = trimmed && !first_move;
+                first_move = false;
+                match dialect {
+                    Dialect::Hus => {
+                        for (dx, dy) in layout::split_proportional(tx - x, ty - y, HUS_MAX_JUMP) {
+                            push(&mut commands, &mut xs, &mut ys, 0x81, dx, dy);
+                        }
+                        if trim {
+                            push(&mut commands, &mut xs, &mut ys, 0x81, 0, 0);
+                        }
+                        // The zero-length stitch at the move's end is the first needle point;
+                        // a stitch of the stream at that very point is the same penetration.
+                        push(&mut commands, &mut xs, &mut ys, 0x80, 0, 0);
+                        if layout::next_stitch(&events, i) == Some((tx, ty)) {
+                            i += 1;
+                        }
+                        (x, y) = (tx, ty);
+                    }
+                    Dialect::Vip => {
+                        if trim {
+                            push(&mut commands, &mut xs, &mut ys, 0x88, 0, 0);
+                        }
+                        let (target, folded) = match layout::next_stitch(&events, i) {
+                            Some(p) => (p, true),
+                            None => ((tx, ty), false),
+                        };
+                        let pieces = layout::split_even(target.0 - x, target.1 - y, VIP_PIECE);
+                        let (last, head) = pieces.split_last().expect("at least one piece");
+                        for &(dx, dy) in head {
+                            push(&mut commands, &mut xs, &mut ys, 0x81, dx, dy);
+                        }
+                        let code = if folded { 0x80 } else { 0x81 };
+                        push(&mut commands, &mut xs, &mut ys, code, last.0, last.1);
+                        if folded {
+                            i += 1;
+                        }
+                        (x, y) = target;
+                    }
+                }
+                visit(x, y);
+            }
+            Event::Stitch { x: tx, y: ty } => {
+                match dialect {
+                    Dialect::Hus => {
+                        for (dx, dy) in layout::split_proportional(tx - x, ty - y, HUS_MAX_STITCH) {
+                            push(&mut commands, &mut xs, &mut ys, 0x80, dx, dy);
+                        }
+                    }
+                    Dialect::Vip => {
+                        let pieces = layout::split_even(tx - x, ty - y, VIP_PIECE);
+                        let (last, head) = pieces.split_last().expect("at least one piece");
+                        for &(dx, dy) in head {
+                            push(&mut commands, &mut xs, &mut ys, 0x81, dx, dy);
+                        }
+                        push(&mut commands, &mut xs, &mut ys, 0x80, last.0, last.1);
+                    }
+                }
+                (x, y) = (tx, ty);
+                visit(x, y);
+            }
+            Event::ColorChange | Event::Stop => {
+                push(&mut commands, &mut xs, &mut ys, 0x84, 0, 0);
+            }
+            Event::End => break,
+        }
+        i += 1;
+    }
+    push(&mut commands, &mut xs, &mut ys, 0x90, 0, 0);
     Encoded {
         records: commands.len(),
         streams: [
@@ -194,7 +313,7 @@ pub(crate) fn write_header(w: &mut ByteWriter, e: &Encoded, colors: usize, first
 }
 
 pub fn write(pattern: &StitchPattern) -> Result<Vec<u8>> {
-    let e = encode(pattern);
+    let e = encode(pattern, Dialect::Hus);
     let mut w = ByteWriter::default();
     w.u32le(i64::from(MAGIC));
     write_header(&mut w, &e, e.palette.len(), HEADER + 2 * e.palette.len());

@@ -931,6 +931,25 @@ Line references are relative to `crates/`.
   text-sewing-order, reference tier). Still open: the guide disables "some editing of
   individual characters" on user-mapped text without naming them; checking which needs
   characters registered with Brother's tools, which the project does not use.
+- **Machine format exports (calibrated 2026-10-28):** PE-DESIGN 11.50's DST, EXP, JEF, SEW,
+  XXX, PCS, HUS and VIP exports of one OpenStitch design (`compat/reference/machine`, spec
+  `machine-formats`, reference tier) showed the writers differed in how they laid out a frame
+  move, a trim, a colour change, a stitch longer than a record and the origin. The writers now
+  follow PE-DESIGN record for record (EXP and PCS byte for byte; the rules are tabulated in
+  FILE_FORMATS.md "PE-DESIGN's record layout"): the design centred on the stream origin, a long
+  stitch as jumps plus one stitch (one needle penetration), a frame move as a jump run with no
+  trim record (DST padded to three records, XXX one `7E` record, VIP `88`, HUS a zero-length
+  jump), the move's remainder folded into the next stitch in JEF, SEW, XXX and VIP, PCS's fixed
+  16-colour table indexed by its colour records, HUS's `0x00C8FC5D` magic. The readers follow:
+  a single jump no longer than a record is read as the long part of a stitch, not a trim (JEF,
+  EXP), `80 02` is an EXP jump, PE-DESIGN's HUS trim marker and XXX `7E` moves read as trims,
+  PCS's index byte and fraction byte are read. Still open, each settled by one more export:
+  PE-DESIGN's SEW start point (15.9 mm left of and 9.7 mm below the design centre in the one
+  file; OpenStitch starts at the centre and its SEW reader keeps nothing before the first
+  stitch, so the spec compares from there); how the folding formats write a frame move shorter
+  than one record; VIP's exact piece length (7.5–7.9 mm); JEF's `-1` hoop block; XXX's header
+  tables and palette filler; SEW's 340 header bytes; DST's `AX`/`AY`; PE-DESIGN's RGB for chart
+  colour 800 RED (`E3 31 1F`) against the PEC chart table's `ED 17 1F`.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.

@@ -1,14 +1,14 @@
 //! Janome SEW: little-endian colour count and one Janome SEW chart index per colour, zero
 //! padding up to 0x1D78, then JEF-style 2-byte signed (dx, dy) records with y up. Controls:
-//! `80 01 dx dy` colour change, `80 02 dx dy` jump (`80 04` is read as a jump too), `80 10` end.
-//! pyembroidery 1.5.1 only reads SEW, so the writer is the exact inverse of that reader, with
-//! libembroidery's control codes for the parts the reader does not distinguish.
+//! `80 01 dx dy` colour change, `80 02 dx dy` jump (`80 04` is read as a jump too), `80 10` end
+//! (PE-DESIGN pads 16 zero bytes after it). pyembroidery 1.5.1 only reads SEW; the records
+//! are laid out as PE-DESIGN 11.50's export (see [`write`]).
 
 use crate::io::{ByteReader, ByteWriter, signed8};
+use crate::jef;
+use crate::layout;
 use crate::{FormatError, Result, repeating_stops_palette};
-use openstitch_core::{
-    Command, SEW_CHART, Stitch, StitchPattern, Thread, nearest_index, round_coordinate,
-};
+use openstitch_core::{Command, SEW_CHART, Stitch, StitchPattern, Thread, nearest_index};
 
 pub const MAX_DELTA: f64 = 127.0;
 const STITCH_OFFSET: usize = 0x1D78;
@@ -61,7 +61,7 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
                 continue;
             }
             0x02 | 0x04 => Command::Jump,
-            0x10 => Command::Stitch,
+            // `80 10` ends the design; PE-DESIGN pads 16 zero bytes after it.
             _ => break,
         };
         x += signed8(p0);
@@ -69,15 +69,30 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
         pattern.stitches.push(Stitch::new(x, y, command));
     }
     pattern.stitches.push(Stitch::new(x, y, Command::End));
+    // The frame move from the machine's start point to the first needle point is not kept:
+    // where PE-DESIGN starts the stream is not yet known (see `write`), and the design starts
+    // at its first needle point in every other respect.
+    if let Some(first) = pattern
+        .stitches
+        .iter()
+        .position(|s| s.command == Command::Stitch)
+    {
+        pattern.stitches.drain(..first);
+    }
     Ok(pattern)
 }
 
 // MARK: Writing
 
-/// Trims are dropped (SEW has no trim record); a stop is written as a colour change to the
-/// same thread. Colours are stored as the nearest SEW chart entry.
+/// Writes the records as PE-DESIGN 11.50's SEW export lays them out (the JEF stream of
+/// [`jef::janome_records`] with a zero-length stitch before each colour change), starting at
+/// the centre of the design. PE-DESIGN starts its SEW stream 15.9 mm left of and 9.7 mm below
+/// the centre in the one reference file, a rule not yet known, and fills 340 header bytes
+/// after the colour list whose meaning is unknown; OpenStitch leaves them zero. Trims are the
+/// jump runs (SEW has no trim record); a stop is written as a colour change to the same
+/// thread. Colours are stored as the nearest SEW chart entry.
 pub fn write(input: &StitchPattern) -> Result<Vec<u8>> {
-    let mut pattern = input.interpolating_long_moves(MAX_DELTA, MAX_DELTA);
+    let mut pattern = input.clone();
     pattern.fix_thread_count(None);
     let palette = sew_palette(&pattern);
     if 2 + palette.len() * 2 > STITCH_OFFSET {
@@ -93,25 +108,13 @@ pub fn write(input: &StitchPattern) -> Result<Vec<u8>> {
         w.u16le(i as i64);
     }
     w.fill(0, STITCH_OFFSET - w.len());
-
-    let (mut xx, mut yy) = (0_i64, 0_i64);
-    for s in &pattern.stitches {
-        let dx = round_coordinate(s.x) - xx;
-        let dy = round_coordinate(s.y) - yy;
-        let control: &[u8] = match s.command {
-            Command::Stitch => &[],
-            Command::ColorChange | Command::Stop => &[0x80, 0x01],
-            Command::Jump => &[0x80, 0x02],
-            Command::Trim => continue,
-            Command::End => break,
-        };
-        xx += dx;
-        yy += dy;
-        w.append(control);
-        w.u8(dx);
-        w.u8(-dy);
-    }
-    w.append(&[0x80, 0x10]);
+    let (records, _) = jef::janome_records(
+        &layout::events(&pattern),
+        &jef::WriteOptions::default(),
+        true,
+    );
+    w.append(&records);
+    w.fill(0, 16);
     Ok(w.bytes)
 }
 

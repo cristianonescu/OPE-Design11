@@ -1,17 +1,23 @@
-//! Janome JEF: little-endian header (stitch offset, date, colour count, point count, hoop code,
+//! Janome JEF: little-endian header (stitch offset, `0x0A`, date, colour count, point count, hoop code,
 //! extents, hoop-edge distances), one Janome chart index and one `0x0D` per colour, then
 //! 2-byte signed (dx, dy) records with y up. Controls: `80 01 dx dy` colour change,
-//! `80 02 dx dy` jump, `80 10` end. A colour index of 0 marks a stop.
+//! `80 02 dx dy` jump, `80 10` end (PE-DESIGN pads two zero bytes after it). A colour index
+//! of 0 marks a stop.
+//! The writer lays the records out as PE-DESIGN 11.50's export does (see [`write_with`]).
 
 use crate::io::{ByteReader, ByteWriter, signed8};
+use crate::layout::{self, Event};
 use crate::{FormatError, Result};
 use openstitch_core::{
     Command, JEF_CHART, Stitch, StitchPattern, Thread, nearest_index, round_coordinate,
 };
 
 pub const MAX_DELTA: f64 = 127.0;
-/// Reader heuristic: a jump run longer than this (0.1 mm) implies a trim (3 mm).
-pub const DEFAULT_TRIM_DISTANCE: f64 = 30.0;
+/// Reader heuristic: a jump run moving further than one record holds (12.7 mm) on an axis is
+/// a trimmed frame move. A single jump of up to a record is the long part of a split stitch:
+/// PE-DESIGN 11.50 writes a stitch over 12.7 mm as a jump and a stitch, and its trimmed moves
+/// as jump runs with no other marker.
+pub const DEFAULT_TRIM_DISTANCE: f64 = MAX_DELTA;
 
 /// Header hoop code.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -118,8 +124,8 @@ pub fn read_with(data: &[u8], trim_distance: Option<f64>) -> Result<StitchPatter
 pub struct WriteOptions {
     /// 14-digit `yyyyMMddHHmmss` stamp for the header; `None` stamps the current UTC time.
     pub date: Option<String>,
-    /// Write each trim as `trim_jumps` zero-length jumps (off: trims are dropped and readers
-    /// infer them from jump length).
+    /// Write `trim_jumps` zero-length jumps before every trimmed frame move (off, as
+    /// PE-DESIGN: a trimmed move is its jump run alone and readers infer the trim).
     pub command_trims: bool,
     pub trim_jumps: usize,
 }
@@ -162,8 +168,96 @@ fn utc_stamp() -> String {
     )
 }
 
+/// The record stream shared by JEF and SEW, as PE-DESIGN 11.50 writes it
+/// (`compat/reference/machine/machine-formats.jef` and `.sew`): a zero-length jump first;
+/// every frame move folded into the stitch that follows it and written as `80 02` jumps that
+/// move only the axes over 12.7 mm (by 12.7 mm each) plus one stitch record for the remainder (so the needle first goes
+/// down at that stitch, as it does after a DST jump); a stitch over 12.7 mm likewise as jumps
+/// plus one stitch; `80 01 00 00` then `80 02 00 00` for a colour change (SEW puts a
+/// zero-length stitch before the `80 01`); `80 10` at the end, with no return to the origin.
+/// Returns the bytes and the header's point count: 1 + stitches + 2 × (jumps + colour changes).
+pub(crate) fn janome_records(
+    events: &[Event],
+    options: &WriteOptions,
+    stitch_before_color_change: bool,
+) -> (Vec<u8>, i64) {
+    let max = MAX_DELTA as i64;
+    let mut w = ByteWriter::default();
+    let (mut x, mut y) = (0_i64, 0_i64);
+    let mut points = 1_i64;
+    fn jump(w: &mut ByteWriter, points: &mut i64, dx: i64, dy: i64) {
+        w.append(&[0x80, 0x02]);
+        w.u8(dx);
+        w.u8(-dy);
+        *points += 2;
+    }
+    jump(&mut w, &mut points, 0, 0);
+    let mut i = 0;
+    let mut first_move = true;
+    while i < events.len() {
+        match events[i] {
+            Event::Move {
+                x: tx,
+                y: ty,
+                trimmed,
+            } => {
+                if trimmed && !first_move && options.command_trims {
+                    for _ in 0..options.trim_jumps {
+                        jump(&mut w, &mut points, 0, 0);
+                    }
+                }
+                first_move = false;
+                // Fold the move into the stitch after it: that stitch is the first needle point.
+                let (target, folded) = match layout::next_stitch(events, i) {
+                    Some(p) => (p, true),
+                    None => ((tx, ty), false),
+                };
+                let pieces = layout::split_overflow(target.0 - x, target.1 - y, max);
+                let (last, head) = pieces.split_last().expect("at least one piece");
+                for &(dx, dy) in head {
+                    jump(&mut w, &mut points, dx, dy);
+                }
+                if folded {
+                    w.u8(last.0);
+                    w.u8(-last.1);
+                    points += 1;
+                    i += 1;
+                } else {
+                    jump(&mut w, &mut points, last.0, last.1);
+                }
+                (x, y) = target;
+            }
+            Event::Stitch { x: tx, y: ty } => {
+                let pieces = layout::split_overflow(tx - x, ty - y, max);
+                let (last, head) = pieces.split_last().expect("at least one piece");
+                for &(dx, dy) in head {
+                    jump(&mut w, &mut points, dx, dy);
+                }
+                w.u8(last.0);
+                w.u8(-last.1);
+                points += 1;
+                x = tx;
+                y = ty;
+            }
+            Event::ColorChange | Event::Stop => {
+                if stitch_before_color_change {
+                    w.append(&[0, 0]);
+                    points += 1;
+                }
+                w.append(&[0x80, 0x01, 0x00, 0x00]);
+                points += 2;
+                jump(&mut w, &mut points, 0, 0);
+            }
+            Event::End => break,
+        }
+        i += 1;
+    }
+    w.append(&[0x80, 0x10]);
+    (w.bytes, points)
+}
+
 pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u8>> {
-    let mut pattern = input.interpolating_long_moves(MAX_DELTA, MAX_DELTA);
+    let mut pattern = input.clone();
     pattern.fix_thread_count(None);
     let stamp = match &options.date {
         Some(d) if d.len() == 14 && d.bytes().all(|b| b.is_ascii_digit()) => d.clone(),
@@ -185,21 +279,12 @@ pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u
         round_coordinate(width as f64 / 2.0),
         round_coordinate(height as f64 / 2.0),
     );
-
-    let mut points = 1_i64;
-    for s in &pattern.stitches {
-        points += match s.command {
-            Command::Stitch => 1,
-            Command::Jump | Command::ColorChange | Command::Stop => 2,
-            Command::Trim if options.command_trims => 2 * options.trim_jumps as i64,
-            Command::Trim => 0,
-            Command::End => break,
-        };
-    }
+    let (records, points) = janome_records(&layout::events(&pattern), options, false);
 
     let mut w = ByteWriter::default();
     w.u32le(0x74 + palette.len() as i64 * 8);
-    w.u32le(0x14);
+    w.u32le(0x0A); // pyembroidery writes 0x14 here; PE-DESIGN 11.50 writes 0x0A
+
     w.ascii(&stamp);
     w.u8(0);
     w.u8(0);
@@ -228,43 +313,8 @@ pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u
     for _ in &palette {
         w.u32le(0x0D);
     }
-
-    let (mut xx, mut yy) = (0_i64, 0_i64);
-    for s in &pattern.stitches {
-        let dx = round_coordinate(s.x) - xx;
-        let dy = round_coordinate(s.y) - yy;
-        match s.command {
-            Command::Stitch => {
-                xx += dx;
-                yy += dy;
-                w.u8(dx);
-                w.u8(-dy);
-            }
-            Command::ColorChange | Command::Stop => {
-                xx += dx;
-                yy += dy;
-                w.append(&[0x80, 0x01]);
-                w.u8(dx);
-                w.u8(-dy);
-            }
-            Command::Jump => {
-                xx += dx;
-                yy += dy;
-                w.append(&[0x80, 0x02]);
-                w.u8(dx);
-                w.u8(-dy);
-            }
-            Command::Trim => {
-                if options.command_trims {
-                    for _ in 0..options.trim_jumps {
-                        w.append(&[0x80, 0x02, 0x00, 0x00]);
-                    }
-                }
-            }
-            Command::End => break,
-        }
-    }
-    w.append(&[0x80, 0x10]);
+    w.append(&records);
+    w.append(&[0, 0]); // PE-DESIGN pads the end record to four bytes
     Ok(w.bytes)
 }
 

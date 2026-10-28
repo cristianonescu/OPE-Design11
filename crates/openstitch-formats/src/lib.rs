@@ -1,5 +1,6 @@
-//! Embroidery machine file codecs, checked against pyembroidery 1.5.1 oracle fixtures
-//! (byte for byte where pyembroidery has a writer).
+//! Embroidery machine file codecs. The readers are checked against pyembroidery 1.5.1 oracle
+//! fixtures; the writers lay records out as PE-DESIGN 11.50's exports do
+//! (`compat/reference/machine`, see `layout`), and what they write is read back by the readers.
 //!
 //! Every reader takes untrusted bytes and returns a [`FormatError`] for truncated input, bad
 //! offsets or oversized counts; none of them panics. Coordinates follow
@@ -11,6 +12,7 @@ use openstitch_core::StitchPattern;
 use std::fmt;
 
 mod io;
+mod layout;
 pub mod lzh;
 
 pub mod csd;

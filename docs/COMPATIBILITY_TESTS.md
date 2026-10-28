@@ -204,39 +204,41 @@ blocks with a trim + jump and one stitch longer than 121 units.
 | Test | Expected | Actual | Result |
 |---|---|---|---|
 | DST read matches reference decoder | 44 entries identical | identical | pass |
-| DST write(read(f)) == f | byte-identical | byte-identical (after fixing `ST:` to count all move records) | pass |
+| DST write(read(f)) read back | same needle points and colour changes (the writer lays records out as PE-DESIGN, see the reference tier) | as expected | pass |
 | PES/PEC read matches reference decoder | identical stitches, threads `#ed171f`, `#0a55a3` | identical | pass |
 | PES/PEC write(read(f)) == f | byte-identical incl. icons | byte-identical | pass |
 | DST every delta −121…121 encodes/decodes | lossless | lossless | pass |
 | PEC long-form deltas and > 2047 interpolation | positions preserved, trim kept | preserved | pass |
-| EXP read / write(read(f)) == f | identical / byte-identical | identical | pass |
-| JEF read / write(read(f)) == f (date fixed) | identical, threads `#ff0000` `#0b2f84` / byte-identical | identical | pass |
+| EXP read / write(read(f)) read back | identical / same needle points | identical | pass |
+| JEF read (no trim inference) / write(read(f)) read back | identical records, threads `#ff0000` `#0b2f84` (pyembroidery's 3 mm trim rule is not PE-DESIGN's) / same needle points | identical | pass |
 | JEF stop encoded as colour 0 and read back | 1 stop, 0 colour changes | as expected | pass |
-| DST trim as 2, 3, 5 jumps; read with same count | 1 trim + 1 jump | as expected | pass |
-| XXX read / write(read(f)) == f | identical, threads `#e01010` `#1040c0` / byte-identical | identical | pass |
+| DST frame moves padded to 2, 3, 5 jump records; read with the same count | the move and the jump home read as trims | as expected | pass |
+| XXX read / write(read(f)) read back | identical, threads `#e01010` `#1040c0` / same needle points | identical | pass |
 | XXX end offset at 0xFC points at `7F 7F 02 14` | yes | yes | pass |
 | PCS read matches reference decoder (fixture assembled, see FILE_FORMATS.md) | identical, exact RGB threads | identical | pass |
-| PCS write(read(f)) == f; 1/6 mm grid survives a round trip | byte-identical | byte-identical | pass |
+| PCS write(read(f)) read back; 1/6 mm grid with a fraction byte survives a round trip | same needle points within 0.01 (threads from PE-DESIGN's fixed table) | as expected | pass |
 | SEW read matches reference decoder (fixture assembled) | identical, chart threads `#ff0000` `#386cae` | identical | pass |
-| SEW write(read(f)) == f | byte-identical | byte-identical | pass |
+| SEW write(read(f)) read back | same needle points (PE-DESIGN's zero-length stitch before a colour change aside) | as expected | pass |
 | PES v1, v6, v6 truncated (with `CEmbOne`/`CSewSeg`, thread table) read matches reference | identical; v6 threads `#e01010` `#1040c0` (exact RGB) | identical | pass |
 | PES v1, v6, v6t write(read(f)) == f | byte-identical | byte-identical | pass |
 | PES v6 with thread chart, brand, catalogue and description (`oracle_v6_chart.pes`): write(read(f)) == f | byte-identical (chart strings and colour type kept) | byte-identical | pass |
 | Default PES (`FileType::Pes.write`) == pyembroidery `6` | byte-identical to `oracle_v6.pes` | byte-identical | pass |
 | HUS read matches reference decoder (fixture assembled, literal-only streams) | identical, chart threads `#ff0000` `#0000e7` | identical | pass |
-| HUS written by OpenStitch (LZ77 + Huffman) read by the reference decoder | same stitches and threads as the original | identical (`openstitch_hus_read.json`) | pass |
+| HUS written by OpenStitch (LZ77 + Huffman) read back | same needle points, threads, trims and colour changes as the oracle design; an earlier layout of the same compressor's output was read by the reference decoder (`openstitch_hus_read.json`) | as expected | pass |
 | SHV read matches reference decoder (fixture assembled) | identical, chart threads `#ff0000` `#0000ff`, name `oracle` | identical | pass |
 | PHC read matches reference decoder (fixture assembled around `oracle.pec`) | identical, PEC chart threads | identical | pass |
 | CSD (spec-derived): synthetic type-0 and type-1 files | 303 stitches, 1 colour change, 1 trim, palette colours | as expected | pass (self-consistency only) |
 | VIP written by OpenStitch read by libembroidery `sew` (built locally, commit `1138e04`) | 44 records, colours `224,16,16` and `16,64,192` | as expected; stitch coordinates not checkable (stub decompressor) | partial |
 
-PCS, SEW and HUS have no reference writer in pyembroidery 1.5.1. For them the read is the oracle
-check; the byte-identity test only confirms the writer matches the layout the reader expects.
+PCS, SEW and HUS have no reference writer in pyembroidery 1.5.1. The reads are the oracle checks;
+the writers of every machine format follow PE-DESIGN 11.50's record layout instead of
+pyembroidery's since 2026-10-28 (reference tier, `machine-formats`), so write(read(f)) is checked
+by reading the result back, not byte for byte.
 
 Implementation under test: the crate `crates/openstitch-formats`.
 
-Run: `cargo test -p openstitch-formats` (39 format tests + 10 malformed-input tests, all
-passing on 2026-10-18; every fixture round-trips byte-identically). Golden engine regressions:
+Run: `cargo test -p openstitch-formats` (every fixture reads, writes in PE-DESIGN's layout and
+reads back to the same needle points). Golden engine regressions:
 `cargo test -p openstitch-engine` (`script_output_matches_golden_pes`) and
 `cargo test -p openstitch-design` (`golden_project_compiles_to_recorded_statistics`).
 
@@ -375,6 +377,21 @@ at its defaults, 800 RED, Save As default type.
   0.5 mm. The arches set the letters rigidly along an arc whose inner line keeps the text's
   width (1.879 rad), 0.55 % of the width left of centre, as PE does. 13 and 14 (fans) have no
   spec: they skew each letter differently and are not laid out yet.
+
+### `machine-formats`: reference, 2026-10-28
+
+Made by pe-gui in PE-DESIGN 11.50 on 2026-10-27: OpenStitch's `a.pes` (two Red running lines
+40 mm apart with a trim between them, then a Black satin of 15 mm stitches; 248 stitches) was
+opened as stitches, nothing changed, and exported through App menu > Export to every type the
+list offers (DST, EXP, PCS, HUS, VIP, SHV, JEF, SEW, CSD, XXX; no PEC or PHC; no options
+dialog and no warning for any of them; Save As offers only PES). The eight formats OpenStitch
+writes are compared record by record (`compare`, 0.1 mm, PCS 0.2 mm) with OpenStitch's export
+of the same stitches; SHV and CSD stay in the owner's notes (read-only formats, no writer to
+compare). Before the writers followed PE-DESIGN's layout the compare failed in every format
+(441–619 differing entries, the HUS magic rejected); the differences and the rules now written
+are in FILE_FORMATS.md "PE-DESIGN's record layout" and in the audit. The SEW compare runs
+from the first needle point: PE-DESIGN's SEW start point rule is unknown (the spec's evidence
+says which two exports would settle it).
 
 ### `pes-csewseg-trims`: reference, 2026-10-27
 
