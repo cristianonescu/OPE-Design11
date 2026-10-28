@@ -236,4 +236,26 @@ ready to merge.
 
 ## Verification record
 
-(filled in as the steps land)
+**2026-10-28, Windows 11, portable install, local stand-in for GitHub.** Two release builds of
+the same source were made with `OPENSTITCH_RELEASE_TAG=v0.1.0-alpha.3` and `v0.1.0-alpha.4`.
+The alpha.3 exe was placed in a folder as the portable install (with an old `README.md`); a
+Python `http.server` on `127.0.0.1:8765` served a release list naming alpha.4 (notes in
+markdown), the alpha.4 build zipped under the real asset name and layout, and `SHA256SUMS`.
+The editor was started with `OPENSTITCH_UPDATE_API` / `OPENSTITCH_UPDATE_DOWNLOADS` pointing
+at it and driven with `--script` (window-point clicks on Help ▸ Check for Updates and the
+dialog's buttons), because screen control was not available to the session.
+
+| Step | Result |
+|---|---|
+| Startup check | The server logged `GET /repos/cristianonescu/OpenStitch/releases?per_page=20` with `User-Agent: OpenStitch/v0.1.0-alpha.3 (+https://github.com/cristianonescu/OpenStitch)` within a second of the start; no UI stall. |
+| Dialog | "OpenStitch v0.1.0-alpha.4 is available", "You have v0.1.0-alpha.3", the notes rendered with heading, paragraph, bullets, bold, italic and code; checkbox, Update, Dismiss and Release page present. |
+| Update | `GET …/SHA256SUMS` then `GET …/OpenStitch-v0.1.0-alpha.4-windows-x86_64.zip`; the folder then held `openstitch.exe` (SHA-256 equal to the alpha.4 build), `openstitch.exe.old` (the alpha.3 build) and the new `README.md`; the old process exited with code 0. |
+| Restart | A new `openstitch.exe` process appeared and, re-running the same script, asked the server for the release list as `OpenStitch/v0.1.0-alpha.4`: the restarted editor is the new build with the original arguments. |
+| Cleanup | After the old process had ended, the next start removed `openstitch.exe.old`. |
+| Real GitHub, HTTPS | The alpha.4 build started without the test variables (`api.github.com` over rustls) and Help ▸ Check for Updates answered "You have the latest version (v0.1.0-alpha.4)" (the newest published release being alpha.3). |
+| Skip | With "Don't remind me about this version" ticked and Dismiss clicked, `ui.json` held `"updates": {"check": true, "includePrereleases": false, "skipVersion": "v0.1.0-alpha.4"}`; a plain interactive start of the alpha.3 build then performed the check (server log) and the preference stayed as written. That the dialog stays closed for a skipped version, and reopens for a newer one, is `skipped_version_stays_quiet_until_a_newer_one` (`editor/updates.rs`). |
+
+Not covered on a real machine: the MSI path (`msiexec /passive` with the UAC prompt; its
+command line is tested as a string), macOS and Linux (stage/swap/cleanup are tested on all three
+OSes in CI with fake programs and real zip/tar archives). First real-world run: the release
+after the one that ships the updater, when it offers itself to that version.
