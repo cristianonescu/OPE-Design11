@@ -910,6 +910,16 @@ Line references are relative to `crates/`.
   reference tier; stretched is implemented but has no comparable reference (PE's file is far
   off the page). Fitted texts take no Text Transform, as in PE.
   ([guide](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/05_1810870.html))
+  Read stitch by stitch on 2026-10-28 (text-fit-* and the round-3 size/spacing/AHHHH sweeps):
+  the circle's running stitch is PE's Bézier sampling (each quarter arc halved until the chord
+  fits the 2 mm pitch: 4 × 32 chords; OpenStitch now matches it point for point, 0.04 mm mean,
+  text-fit-default's mean needle distance 0.27 → 0.20 mm); the letters sit where the font's
+  advance box (no kerning) centred on the path's middle puts them (the A's ink starts at 75.04 mm
+  from the circle's start in both), character spacing spreading symmetrically. Still different:
+  PE sews every letter stroke by stroke with the rows across each stroke (see Text below), the
+  letters after the first drift 0.05–0.07 mm/letter earlier in PE, and PE's round strokes end
+  0.2–0.5 mm short of the outline's extreme points (B/C/D 5.91/6.42/6.90 mm wide against the
+  font's 6.13/6.98/7.34; A and E match).
 - **Text Transform (calibrated 2026-10-27):** PE-DESIGN 11.50 has 26 presets (two arches,
   then a 4 × 6 grid; ticking Transform applies preset 3; fitted text cannot be transformed,
   and fitting cancels it). OpenStitch lays out 24 of them, from envelopes fitted to PE's

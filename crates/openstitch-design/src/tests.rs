@@ -423,13 +423,9 @@ fn running_on_curves_keeps_vertices_and_pitch() {
         assert!(run.contains(v), "vertex {v:?} kept");
     }
     assert!(run.windows(2).all(|w| w[0].distance(w[1]) <= 25.0 + 0.5));
-    let circumference = std::f64::consts::TAU * 200.0;
-    let expected = (circumference / 25.0).ceil() as usize;
-    assert!(
-        (run.len() as isize - 1 - expected as isize).abs() <= 4,
-        "{} stitches",
-        run.len() - 1
-    );
+    // Each quarter arc (314 mm / 10) is halved until its chords fit the 2.5 mm pitch: 16
+    // chords, as PE-DESIGN samples a circle (4 × 32 on its 60 mm circle at 2.0 mm).
+    assert_eq!(run.len() - 1, 4 * 16, "{} stitches", run.len() - 1);
     let triple = generate::triple(&circle, 25.0);
     assert_eq!(triple.len(), 1 + 3 * (run.len() - 1));
 }
