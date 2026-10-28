@@ -30,7 +30,10 @@
 //! `--apply` also applies it once (the dialog stays open for screenshots).
 //! A plain start also checks GitHub for a newer release and offers it (Options ▸ "Check for
 //! updates at startup"; `OPENSTITCH_NO_UPDATE_CHECK` turns it off); `--show update` opens the
-//! dialog with sample notes for screenshots.
+//! dialog with sample notes for screenshots, `--show close-prompt` the unsaved-changes prompt.
+//! Closing the window, File ▸ New or Open with unsaved changes asks "Save changes to NAME?"
+//! (Save, Don't Save, Cancel); a `--screenshot` run closes without asking once its image is
+//! written, and a `--script` can answer the prompt (`sclick`, `key:Enter`, `key:Escape`).
 //! `--screenshot` renders a few frames, writes the window contents as PNG and exits (used for
 //! the documentation images and for checking the build on a platform).
 
@@ -39,6 +42,7 @@
 mod app;
 mod art;
 mod canvas;
+mod close_ui;
 mod convert_ui;
 mod creator_ui;
 mod database_ui;

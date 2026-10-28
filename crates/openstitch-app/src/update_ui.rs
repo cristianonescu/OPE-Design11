@@ -276,6 +276,7 @@ pub fn poll(app: &mut EditorApp, ctx: &egui::Context) {
     if let Some(manual) = st.wanted.take() {
         st.start_check(manual, app.ui.prefs.updates.include_prereleases, ctx);
     }
+    let mut restarting = false;
     match &st.phase {
         Phase::Checking(rx) => match rx.try_recv() {
             Ok(Ok(Some(update))) => {
@@ -326,6 +327,7 @@ pub fn poll(app: &mut EditorApp, ctx: &egui::Context) {
                     match result {
                         Ok(()) => {
                             st.phase = Phase::Restarting;
+                            restarting = true;
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         }
                         Err(e) => {
@@ -351,6 +353,11 @@ pub fn poll(app: &mut EditorApp, ctx: &egui::Context) {
             }
         }
         _ => {}
+    }
+    if restarting {
+        // The new version starts; Update is disabled while the design is dirty, so nothing
+        // is lost and the close goes through without the prompt.
+        app.approve_exit();
     }
 }
 
