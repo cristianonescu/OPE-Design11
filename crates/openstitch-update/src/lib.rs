@@ -36,3 +36,7 @@ pub const API_BASE: &str = "https://api.github.com";
 pub const DOWNLOAD_PREFIX: &str = "https://github.com/cristianonescu/OpenStitch/releases/download/";
 /// The checksum file `release.yml` publishes with every release.
 pub const CHECKSUMS_ASSET: &str = "SHA256SUMS";
+/// Environment variables that point the client at a local stand-in for GitHub (the API base
+/// and the download prefix), for end-to-end tests of a real build; both must be set.
+pub const API_ENV: &str = "OPENSTITCH_UPDATE_API";
+pub const DOWNLOADS_ENV: &str = "OPENSTITCH_UPDATE_DOWNLOADS";

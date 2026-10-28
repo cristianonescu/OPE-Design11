@@ -94,6 +94,12 @@ impl Client {
     /// The GitHub client: HTTPS only, 10 s per request phase, a `User-Agent` that names the
     /// running version as GitHub asks.
     pub fn github(version: &str) -> Client {
+        // Test hook (docs/research/updater.md, verification): a local server standing in for
+        // GitHub. Both variables must be set; plain http is then allowed.
+        let var = |k: &str| std::env::var(k).ok().filter(|v| !v.is_empty());
+        if let (Some(api), Some(downloads)) = (var(crate::API_ENV), var(crate::DOWNLOADS_ENV)) {
+            return Client::new(&api, &downloads, false, version);
+        }
         Client::new(crate::API_BASE, crate::DOWNLOAD_PREFIX, true, version)
     }
 
