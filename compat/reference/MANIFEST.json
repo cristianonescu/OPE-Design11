@@ -1728,6 +1728,102 @@
       "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). SATIN BASE: as the common base but rectangle (10,10)-(50,16) mm = 40,00 x 6,00 mm, region Satin Stitch, Direction Manual straight line 90 degrees, Under sewing unticked, Half Stitch greyed (ticked), Running Stitch Path first button, Pull compensation 0.0; satin's own defaults confirmed with the house buttons: Density 4.5 line/mm, Pull compensation 0.0 mm. Satin density field: min 0.1 (typing 0), max 14.0 (typing 99); satin pull max 2.0 mm (typing 99). This file: Density 0.1. Status: 40,00 x 6,00 mm, Stitches = 39.",
       "sha256": "9775b0b7b7f4a9707c6234d8a32c3bc2d6b246e4c51b75f77831b969c1df7104",
       "notes": "Header #PES0110."
+    },
+    {
+      "file": "machine/machine-formats.dst",
+      "spec": "machine-formats",
+      "reference": "pe-design-dst",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Source: D:/_sandboxes/PE-reference-notes/machine-formats/a.pes (OpenStitch PES v6, #PES0060, SHA-256 f0ee99e710f001b438af4b585e608bd0b2e61c7fcdc08771572bb4a9363473d1). PE-DESIGN 11.50 (restarted 23:17), App menu > Open (File Open, Files of type 'Embroidery Files (*.PES)'): opened as stitches, 2 items in Sewing Order (red lines, black satin), status 'Total : Width = 40,00 mm, Height = 40,00 mm, Stitches = 248'. Nothing changed. App menu > Export... (greyed on an empty design) opens 'Export to File' (starts in the PE-DESIGN 11 program folder; not used), 'Save as type' list, in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No .pec/.phc offered. Save As offers only PES types (Layout & Editing Ver.11.0 ... older), so Export is the only route to other formats. For EVERY format: no options dialog of any kind (no trim/jump, hoop, colour or stop setting), no warning; the file is written at once. PE writes the extension in upper case (machine-formats.DST etc.); a name typed with another extension is replaced by the type's own. This file: Export type 'Tajima (*.DST)', saved as machine-formats.DST (1847 bytes).",
+      "sha256": "e9fb39e8c2c63f9724d99ffc3b904704e0de5527ab4817f227e491b72f707f39",
+      "notes": "Written by PE as machine-formats.DST."
+    },
+    {
+      "file": "machine/machine-formats.exp",
+      "spec": "machine-formats",
+      "reference": "pe-design-exp",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Source: D:/_sandboxes/PE-reference-notes/machine-formats/a.pes (OpenStitch PES v6, #PES0060, SHA-256 f0ee99e710f001b438af4b585e608bd0b2e61c7fcdc08771572bb4a9363473d1). PE-DESIGN 11.50 (restarted 23:17), App menu > Open (File Open, Files of type 'Embroidery Files (*.PES)'): opened as stitches, 2 items in Sewing Order (red lines, black satin), status 'Total : Width = 40,00 mm, Height = 40,00 mm, Stitches = 248'. Nothing changed. App menu > Export... (greyed on an empty design) opens 'Export to File' (starts in the PE-DESIGN 11 program folder; not used), 'Save as type' list, in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No .pec/.phc offered. Save As offers only PES types (Layout & Editing Ver.11.0 ... older), so Export is the only route to other formats. For EVERY format: no options dialog of any kind (no trim/jump, hoop, colour or stop setting), no warning; the file is written at once. PE writes the extension in upper case (machine-formats.DST etc.); a name typed with another extension is replaced by the type's own. This file: Export type 'Melco (*.EXP)', saved as machine-formats.EXP (1256 bytes).",
+      "sha256": "232fde6224f88fd2bc75d863b6c4d40a40e1420c9752b6f15856cd3ec60f7ac8",
+      "notes": "Written by PE as machine-formats.EXP."
+    },
+    {
+      "file": "machine/machine-formats.pcs",
+      "spec": "machine-formats",
+      "reference": "pe-design-pcs",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Source: D:/_sandboxes/PE-reference-notes/machine-formats/a.pes (OpenStitch PES v6, #PES0060, SHA-256 f0ee99e710f001b438af4b585e608bd0b2e61c7fcdc08771572bb4a9363473d1). PE-DESIGN 11.50 (restarted 23:17), App menu > Open (File Open, Files of type 'Embroidery Files (*.PES)'): opened as stitches, 2 items in Sewing Order (red lines, black satin), status 'Total : Width = 40,00 mm, Height = 40,00 mm, Stitches = 248'. Nothing changed. App menu > Export... (greyed on an empty design) opens 'Export to File' (starts in the PE-DESIGN 11 program folder; not used), 'Save as type' list, in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No .pec/.phc offered. Save As offers only PES types (Layout & Editing Ver.11.0 ... older), so Export is the only route to other formats. For EVERY format: no options dialog of any kind (no trim/jump, hoop, colour or stop setting), no warning; the file is written at once. PE writes the extension in upper case (machine-formats.DST etc.); a name typed with another extension is replaced by the type's own. This file: Export type 'Pfaff (*.PCS)', saved as machine-formats.PCS (2383 bytes).",
+      "sha256": "c40f32fa4da1ec8821c0e2e37f5157eca8c9bbea824e369687c83a00feaa9627",
+      "notes": "Written by PE as machine-formats.PCS."
+    },
+    {
+      "file": "machine/machine-formats.hus",
+      "spec": "machine-formats",
+      "reference": "pe-design-hus",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Source: D:/_sandboxes/PE-reference-notes/machine-formats/a.pes (OpenStitch PES v6, #PES0060, SHA-256 f0ee99e710f001b438af4b585e608bd0b2e61c7fcdc08771572bb4a9363473d1). PE-DESIGN 11.50 (restarted 23:17), App menu > Open (File Open, Files of type 'Embroidery Files (*.PES)'): opened as stitches, 2 items in Sewing Order (red lines, black satin), status 'Total : Width = 40,00 mm, Height = 40,00 mm, Stitches = 248'. Nothing changed. App menu > Export... (greyed on an empty design) opens 'Export to File' (starts in the PE-DESIGN 11 program folder; not used), 'Save as type' list, in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No .pec/.phc offered. Save As offers only PES types (Layout & Editing Ver.11.0 ... older), so Export is the only route to other formats. For EVERY format: no options dialog of any kind (no trim/jump, hoop, colour or stop setting), no warning; the file is written at once. PE writes the extension in upper case (machine-formats.DST etc.); a name typed with another extension is replaced by the type's own. This file: Export type 'Husqvarna/Viking (*.HUS)', saved as machine-formats.HUS (186 bytes).",
+      "sha256": "8a1deb664d7b7adca052969b37062f4ae6105ef3cfc27c53c07159090fae87ed",
+      "notes": "Written by PE as machine-formats.HUS."
+    },
+    {
+      "file": "machine/machine-formats.vip",
+      "spec": "machine-formats",
+      "reference": "pe-design-vip",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Source: D:/_sandboxes/PE-reference-notes/machine-formats/a.pes (OpenStitch PES v6, #PES0060, SHA-256 f0ee99e710f001b438af4b585e608bd0b2e61c7fcdc08771572bb4a9363473d1). PE-DESIGN 11.50 (restarted 23:17), App menu > Open (File Open, Files of type 'Embroidery Files (*.PES)'): opened as stitches, 2 items in Sewing Order (red lines, black satin), status 'Total : Width = 40,00 mm, Height = 40,00 mm, Stitches = 248'. Nothing changed. App menu > Export... (greyed on an empty design) opens 'Export to File' (starts in the PE-DESIGN 11 program folder; not used), 'Save as type' list, in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No .pec/.phc offered. Save As offers only PES types (Layout & Editing Ver.11.0 ... older), so Export is the only route to other formats. For EVERY format: no options dialog of any kind (no trim/jump, hoop, colour or stop setting), no warning; the file is written at once. PE writes the extension in upper case (machine-formats.DST etc.); a name typed with another extension is replaced by the type's own. This file: Export type 'Husqvarna/Viking (*.VIP)', saved as machine-formats.VIP (204 bytes).",
+      "sha256": "555d226f002813032fd2e02ef4b1668e848d64164776e23a063d17486030838a",
+      "notes": "Written by PE as machine-formats.VIP."
+    },
+    {
+      "file": "machine/machine-formats.jef",
+      "spec": "machine-formats",
+      "reference": "pe-design-jef",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Source: D:/_sandboxes/PE-reference-notes/machine-formats/a.pes (OpenStitch PES v6, #PES0060, SHA-256 f0ee99e710f001b438af4b585e608bd0b2e61c7fcdc08771572bb4a9363473d1). PE-DESIGN 11.50 (restarted 23:17), App menu > Open (File Open, Files of type 'Embroidery Files (*.PES)'): opened as stitches, 2 items in Sewing Order (red lines, black satin), status 'Total : Width = 40,00 mm, Height = 40,00 mm, Stitches = 248'. Nothing changed. App menu > Export... (greyed on an empty design) opens 'Export to File' (starts in the PE-DESIGN 11 program folder; not used), 'Save as type' list, in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No .pec/.phc offered. Save As offers only PES types (Layout & Editing Ver.11.0 ... older), so Export is the only route to other formats. For EVERY format: no options dialog of any kind (no trim/jump, hoop, colour or stop setting), no warning; the file is written at once. PE writes the extension in upper case (machine-formats.DST etc.); a name typed with another extension is replaced by the type's own. This file: Export type 'Janome (*.JEF)', saved as machine-formats.JEF (1384 bytes).",
+      "sha256": "69ab882e8b697fae7288531cf7ed02785e94fda400cebcba16674dca350517e6",
+      "notes": "Written by PE as machine-formats.JEF."
+    },
+    {
+      "file": "machine/machine-formats.sew",
+      "spec": "machine-formats",
+      "reference": "pe-design-sew",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Source: D:/_sandboxes/PE-reference-notes/machine-formats/a.pes (OpenStitch PES v6, #PES0060, SHA-256 f0ee99e710f001b438af4b585e608bd0b2e61c7fcdc08771572bb4a9363473d1). PE-DESIGN 11.50 (restarted 23:17), App menu > Open (File Open, Files of type 'Embroidery Files (*.PES)'): opened as stitches, 2 items in Sewing Order (red lines, black satin), status 'Total : Width = 40,00 mm, Height = 40,00 mm, Stitches = 248'. Nothing changed. App menu > Export... (greyed on an empty design) opens 'Export to File' (starts in the PE-DESIGN 11 program folder; not used), 'Save as type' list, in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No .pec/.phc offered. Save As offers only PES types (Layout & Editing Ver.11.0 ... older), so Export is the only route to other formats. For EVERY format: no options dialog of any kind (no trim/jump, hoop, colour or stop setting), no warning; the file is written at once. PE writes the extension in upper case (machine-formats.DST etc.); a name typed with another extension is replaced by the type's own. This file: Export type 'Janome (*.SEW)', saved as machine-formats.SEW (8808 bytes).",
+      "sha256": "db7dbf6e081223ebb359a45671a59aea6155ad5ff2a0ce9533f61246a53106bb",
+      "notes": "Written by PE as machine-formats.SEW."
+    },
+    {
+      "file": "machine/machine-formats.xxx",
+      "spec": "machine-formats",
+      "reference": "pe-design-xxx",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Source: D:/_sandboxes/PE-reference-notes/machine-formats/a.pes (OpenStitch PES v6, #PES0060, SHA-256 f0ee99e710f001b438af4b585e608bd0b2e61c7fcdc08771572bb4a9363473d1). PE-DESIGN 11.50 (restarted 23:17), App menu > Open (File Open, Files of type 'Embroidery Files (*.PES)'): opened as stitches, 2 items in Sewing Order (red lines, black satin), status 'Total : Width = 40,00 mm, Height = 40,00 mm, Stitches = 248'. Nothing changed. App menu > Export... (greyed on an empty design) opens 'Export to File' (starts in the PE-DESIGN 11 program folder; not used), 'Save as type' list, in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No .pec/.phc offered. Save As offers only PES types (Layout & Editing Ver.11.0 ... older), so Export is the only route to other formats. For EVERY format: no options dialog of any kind (no trim/jump, hoop, colour or stop setting), no warning; the file is written at once. PE writes the extension in upper case (machine-formats.DST etc.); a name typed with another extension is replaced by the type's own. This file: Export type 'Singer (*.XXX)', saved as machine-formats.XXX (3375 bytes).",
+      "sha256": "1080c8e8864f04bb5847ff199422517262002d93e80bb8bff5854829a490372a",
+      "notes": "Written by PE as machine-formats.XXX."
     }
   ]
 }

@@ -14,17 +14,17 @@ Specs: 151 · pass 151 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Editing | Manual Punch: shapes made of several sewing-direction lines… | reference | `satin-lock-column-3p5`, `satin-zigzag-column` |
 | Editing | Sewing order editing… | reference; reference pending | `optimize-entry-exit`, `shape-start-points` |
 | Editing | Thread colour, sew type, straight sewing direction… | reference | `auto-satin-bent-band` |
-| Files | DST read/write, configurable jumps-for-trim… | internal-regression; reference pending | `machine-formats` |
+| Files | DST read/write, configurable jumps-for-trim… | reference; reference pending | `machine-formats` |
 | Files | Design Property… | reference | `pes-design-properties` |
-| Files | EXP read/write… | internal-regression; reference pending | `machine-formats` |
-| Files | HUS read and write (LZ77 + Huffman streams, HUS chart)… | internal-regression; reference pending | `machine-formats` |
-| Files | JEF read/write (Janome chart, stops, hoop code)… | internal-regression; reference pending | `machine-formats` |
-| Files | PCS read/write (1/6 mm grid, hoop byte)… | internal-regression; reference pending | `machine-formats` |
+| Files | EXP read/write… | reference; reference pending | `machine-formats` |
+| Files | HUS read and write (LZ77 + Huffman streams, HUS chart)… | reference; reference pending | `machine-formats` |
+| Files | JEF read/write (Janome chart, stops, hoop code)… | reference; reference pending | `machine-formats` |
+| Files | PCS read/write (1/6 mm grid, hoop byte)… | reference; reference pending | `machine-formats` |
 | Files | PES v6 thread table… | oracle | `pes-thread-chart-roundtrip` |
 | Files | PES write v1 and v6… | oracle; reference pending | `machine-rbr`, `pes-csewseg-trims`, `pes-default-v6`, `pes-library-convert-v6` |
-| Files | SEW read/write (Janome SEW chart)… | internal-regression; reference pending | `machine-formats` |
-| Files | VIP read and write (HUS streams, obfuscated RGB colour table)… | internal-regression; reference pending | `machine-formats` |
-| Files | XXX read/write… | internal-regression; reference pending | `machine-formats` |
+| Files | SEW read/write (Janome SEW chart)… | reference; reference pending | `machine-formats` |
+| Files | VIP read and write (HUS streams, obfuscated RGB colour table)… | reference; reference pending | `machine-formats` |
+| Files | XXX read/write… | reference; reference pending | `machine-formats` |
 | Lettering | Fit text to outline (text on a path)… | reference | `text-fit-ahhhh`, `text-fit-default`, `text-fit-halign-left`, `text-fit-halign-right`, `text-fit-halign-spaced`, `text-fit-orient-upright`, `text-fit-otherside`, `text-fit-satin-ahhhh`, `text-fit-size-12`, `text-fit-size-6`, `text-fit-spacing-m1`, `text-fit-spacing-p2`, `text-fit-valign-below`, `text-fit-valign-center` |
 | Lettering | Text Transform… | reference | `text-transform-1`, `text-transform-10`, `text-transform-11`, `text-transform-12`, `text-transform-15`, `text-transform-16`, `text-transform-17`, `text-transform-18`, `text-transform-19`, `text-transform-2`, `text-transform-20`, `text-transform-21`, `text-transform-22`, `text-transform-23`, `text-transform-24`, `text-transform-25`, `text-transform-26`, `text-transform-3`, `text-transform-4`, `text-transform-5`, `text-transform-6`, `text-transform-7`, `text-transform-8`, `text-transform-9` |
 | Lettering | Text entry and attributes… | reference | `text-defaults-fill`, `text-defaults-h`, `text-line-spacing-100`, `text-line-spacing-150`, `text-line-spacing-50`, `text-sewing-order`, `text-size-h`, `text-size-hg` |
@@ -55,7 +55,7 @@ Specs: 151 · pass 151 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 | Spec | Status | Tier | Internal regression | Oracle | Reference | Machine |
 |---|---|---|---|---|---|---|
-| `machine/machine-formats` | pass | internal-regression | pass | — | pending | pending |
+| `machine/machine-formats` | pass | reference | pass | — | pass | pending |
 | `machine/machine-rbr` | pass | reference | — | — | pass | — |
 | `pes/pes-csewseg-trims` | pass | reference | pass | — | pass | — |
 | `pes/pes-default-v6` | pass | reference | pass | — | pass | pending |
