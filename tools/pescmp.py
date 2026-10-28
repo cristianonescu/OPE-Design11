@@ -91,14 +91,24 @@ def nearest(a, b):
 
 
 def raster(f, origin, extent, scale=5):
+    """Stitch lines drawn 2 px wide at `scale` px/mm. A stitch is drawn the same way whichever
+    way it is sewn: PIL puts a 2 px line's second pixel on a side that depends on the drawing
+    direction, so the endpoints are put in a fixed order first (without this, a design and its
+    own reversed stream overlap by only 0.55). Pixel positions are rounded from the file's
+    0.1 mm units, so equal coordinates land on equal pixels whatever the origin."""
     img = Image.new("L", (int(extent[0] * scale) + 4, int(extent[1] * scale) + 4), 0)
     g = ImageDraw.Draw(img)
     pts, kinds = f["pts"], f["kinds"]
+
+    def px(v, o):
+        return int(np.floor(round((v - o) * 10.0) * scale / 10.0 + 0.5)) + 2
+
     for i in range(1, len(pts)):
         if kinds[i] != "stitch" or kinds[i - 1] == "trim":
             continue
-        (x0, y0), (x1, y1) = pts[i - 1][:2] - origin, pts[i][:2] - origin
-        g.line([(x0 * scale + 2, y0 * scale + 2), (x1 * scale + 2, y1 * scale + 2)], fill=255, width=2)
+        a = (px(pts[i - 1][0], origin[0]), px(pts[i - 1][1], origin[1]))
+        b = (px(pts[i][0], origin[0]), px(pts[i][1], origin[1]))
+        g.line(sorted([a, b]), fill=255, width=2)
     return np.array(img) > 0
 
 

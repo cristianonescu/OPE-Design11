@@ -119,6 +119,54 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
     needs objc2 `define_class!` with `unsafe` blocks, see DISTRIBUTION.md "macOS double-click")
     and PES thumbnails on macOS and Windows.
 
+## Beyond PE-DESIGN
+
+PE-DESIGN compatibility stays the primary goal and the phases above come first. After that,
+OpenStitch adds what other digitizing products offer and PE-DESIGN 11 does not. The survey
+of Wilcom EmbroideryStudio and Hatch, Bernina V9, mySewnet, Janome Artistic Digitizer, Tajima
+DG by Pulse, Embird, Ink/Stitch (concepts only), Embrilliance and Floriani is in
+[research/competitive-features.md](research/competitive-features.md): a comparison matrix,
+per-feature notes with the stitch-generation idea, effort and licensing, and a ranked
+backlog. Every item lands as a new attribute or command that is off unless chosen, so the
+PE-DESIGN reference specs stay green. The rows are listed as "Planned (beyond PE-DESIGN)" in
+[FEATURE_MATRIX.md](FEATURE_MATRIX.md).
+
+| Phase | Backlog items | Scope |
+|---|---|---|
+| A Fill library | B1 contour/spiral fill · B6 density profiles and two-colour blend · B7 3D puff mode · B8 crosshatch and lace · B12 carving lines and knockdown fill | `openstitch-design` generators and inspector rows |
+| B Satin quality | B3 corner handling (mitre/cap/lap) and short stitches · B5 pull/push compensation, automatic underlay by width, fabric table · B10 variable-width satin line | model change with `.osd` migration; needs a sew-out |
+| C Routing | B4 auto-routed running stitches and Redwork, then satin branching · B11 closest join, auto start/end, continue digitizing, overlap removal | `route.rs`, `order.rs`, Pen tool |
+| D Turning fills | B2 two-guide fills and stitch-angle maps · B9 maze and tiled meander fills, randomisation | builds on A and C |
+| E Tools and lettering | B13 density map, troubleshoot, thread-brand conversion, auto hoop · B14 stitch-file resize with density · B15 baselines, saved kerning, team names, closest-point letter connections | engine commands and editor panes |
+
+Status of each item (sketch = the algorithm, parameters, model change and test specs, written
+before any code; the ranking and the proposed tracks are in
+[research/beyond/readiness.md](research/beyond/readiness.md)):
+
+| Item | Feature | Phase | Sketch | Status |
+|---|---|---|---|---|
+| B1 | Contour (offset) fill | A | [research/beyond/contour-fill.md](research/beyond/contour-fill.md) | Sketched; not started |
+| B2 | Two-guide fills and stitch-angle maps | D | [research/beyond/guided-fill-and-angle-maps.md](research/beyond/guided-fill-and-angle-maps.md) | Sketched; not started |
+| B3 | Satin corners and short stitches | B | [research/beyond/satin-corners-and-short-stitches.md](research/beyond/satin-corners-and-short-stitches.md) | Sketched; not started |
+| B4 | Auto-routed running stitches, Redwork, satin branching | C | [research/beyond/auto-route-and-branching.md](research/beyond/auto-route-and-branching.md) | Sketched; not started |
+| B5 | Compensation model, automatic underlay by width, fabric table | B | [research/beyond/compensation-and-underlay.md](research/beyond/compensation-and-underlay.md) | Sketched; not started |
+| B6 | Density profiles, two-colour blend, hidden travel | A | [research/beyond/density-profiles-and-blend.md](research/beyond/density-profiles-and-blend.md) | Sketched; not started |
+| B7 | 3D puff mode | A | [research/beyond/puff-mode.md](research/beyond/puff-mode.md) | Sketched; not started |
+| B8 | Crosshatch, curved crosshatch, lace | A | [research/beyond/crosshatch-and-lace.md](research/beyond/crosshatch-and-lace.md) | Sketched; not started |
+| B9 | Maze and meander fills, fur, randomisation | D | [research/beyond/meander-maze-and-randomisation.md](research/beyond/meander-maze-and-randomisation.md) | Sketched; not started |
+| B10 | Variable-width satin line | B | [research/beyond/variable-width-satin-line.md](research/beyond/variable-width-satin-line.md) | Sketched; not started |
+| B11 | Closest join, auto start/end, continue digitizing, overlap removal | C | [research/beyond/closest-join-and-overlap.md](research/beyond/closest-join-and-overlap.md) | Sketched; not started |
+| B12 | Carving lines, knockdown fill | A | [research/beyond/carving-and-knockdown.md](research/beyond/carving-and-knockdown.md) | Sketched; not started |
+| B13 | Density map, troubleshoot, thread conversion, auto hoop | E | [research/beyond/quality-tools.md](research/beyond/quality-tools.md) | Sketched; not started |
+| B14 | Stitch-file resize with density | E | [research/beyond/stitch-file-resize.md](research/beyond/stitch-file-resize.md) | Sketched; not started |
+| B15 | Lettering: baselines, kerning, team names, connections | E | [research/beyond/lettering-depth.md](research/beyond/lettering-depth.md) | Sketched; not started |
+
+Deferred: linear colour-gradient and tartan fills, shape and vine fills, photo
+thread-painting, sequin/chenille/bead types (machine-specific), the TrueType turning-satin
+rework, an intelligent multi-hoop split with editable lines, VP3 and other extra formats.
+The patents named in the research document are checked by number before the related item
+ships.
+
 ## Blocked
 
 Wireless transfer, Link, USB Link, network machine settings and the Design Database's Card

@@ -1372,10 +1372,15 @@ pub fn rotated_bounds(contours: &[Contour], angle: f64) -> Option<Rect> {
 /// Row positions (rotated space): `spacing` apart, or with gradation `spacing` divided by the
 /// gradation's density fraction where the row is (see [`Gradation::fraction`]).
 ///
-/// A pattern (PE-DESIGN) gradation places its first row on the start edge and its last on the
-/// far edge, takes each gap's density halfway across the gap, and splits what is left before
-/// the far edge evenly, as PE-DESIGN 11.50 does (region-travel-u-gradation reference). A continuous one keeps the placement designs saved
-/// before patterns had: rows from half a spacing in.
+/// A pattern (PE-DESIGN) gradation sews rows at equal steps of the cumulative line count: the
+/// density falls linearly from Max to Min across the region, the region holds a whole number
+/// of gaps (the line count the profile integrates to, rounded down), and row k lies where the
+/// density integrated from the start edge reaches k gaps' worth, so the first row is on the
+/// start edge and the last on the far edge. This is PE-DESIGN 11.50's placement
+/// (region-travel-u-gradation: 40 rows over 30 mm at 4.5 lines/mm, all within 0.12 mm,
+/// 0.04 mm on average; placing each gap at its midpoint density drifted 0.4 mm by the far
+/// edge). A continuous one keeps the placement designs saved before patterns had: rows from
+/// half a spacing in.
 pub fn row_positions(
     contours: &[Contour],
     angle: f64,
@@ -1391,35 +1396,26 @@ pub fn row_positions(
     let h = b.height();
     let gap = |y: f64| spacing / gradation.map_or(1.0, |g| g.fraction((y - b.min_y) / h));
     let mut ys = Vec::new();
-    if gradation.is_some_and(|g| g.steps.is_some()) {
+    if let Some(g) = gradation.filter(|g| g.steps.is_some()) {
         // Rows on an edge are sampled just inside it.
         let inside = 1e-3_f64.min(h / 4.0);
-        // Each gap takes the density halfway across it, as PE-DESIGN's rows do (within 0.07 mm
-        // on its default pattern, against 0.31 mm for the density at the row).
-        let mid_gap = |y: f64| {
-            let mut g = gap(y);
-            for _ in 0..12 {
-                g = gap(y + g / 2.0);
-            }
-            g
-        };
-        let mut y = b.min_y;
-        let mut last_gap = mid_gap(y);
-        while ys.len() < 100_000 {
-            ys.push(y.clamp(b.min_y + inside, b.max_y - inside));
-            let g = mid_gap(y);
-            if y + g >= b.max_y - 1e-9 {
-                // The rest up to the far edge, in equal steps no longer than the last gap.
-                let rest = b.max_y - y;
-                let n = (rest / last_gap.max(1e-9) - 1e-9).ceil().max(1.0) as usize;
-                for k in 1..=n {
-                    let yk = y + rest * k as f64 / n as f64;
-                    ys.push(yk.clamp(b.min_y + inside, b.max_y - inside));
-                }
-                break;
-            }
-            last_gap = g;
-            y += g;
+        // Density fraction a at the start edge, b at the far edge; the line count integrated
+        // up to y (from the start edge) is (a·y + (b − a)·y²/2h) / spacing.
+        let (a, b_far) = (g.fraction(0.0), g.fraction(1.0));
+        let total = h * (a + b_far) / 2.0 / spacing;
+        let n = (total + 1e-9).floor().clamp(1.0, 100_000.0);
+        let q = (b_far - a) / (2.0 * h);
+        for k in 0..=n as usize {
+            let target = total * k as f64 / n;
+            // Solve q·y² + a·y − target·spacing = 0 for y ≥ 0.
+            let c = -target * spacing;
+            let y = if q.abs() < 1e-12 {
+                -c / a
+            } else {
+                (-a + (a * a - 4.0 * q * c).max(0.0).sqrt()) / (2.0 * q)
+            };
+            let y = if k == n as usize { h } else { y };
+            ys.push((b.min_y + y).clamp(b.min_y + inside, b.max_y - inside));
         }
         return ys;
     }
