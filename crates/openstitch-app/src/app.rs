@@ -1146,6 +1146,23 @@ impl EditorApp {
         }
     }
 
+    /// macOS: with no default application menu (see `main.rs`), Cmd+Q and Cmd+W close the
+    /// window through the unsaved-changes prompt and Cmd+M minimises it. Taken before
+    /// everything else, whatever has the keyboard and whichever suite window fills the editor,
+    /// as the menu's key equivalents were. Platform-independent so it is tested everywhere;
+    /// `update` calls it on macOS only.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    fn macos_app_shortcuts(&mut self, ctx: &egui::Context) {
+        let take = |k| {
+            ctx.input_mut(|i| i.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, k)))
+        };
+        if take(Key::Q) || take(Key::W) {
+            self.guarded(Pending::Exit);
+        } else if take(Key::M) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(true));
+        }
+    }
+
     fn screenshot_step(&mut self, ctx: &egui::Context) {
         let Some(shot) = &mut self.screenshot else {
             return;
@@ -1264,6 +1281,8 @@ impl eframe::App for EditorApp {
         }
         // Before the shortcuts, so the prompt takes Enter and Escape.
         crate::close_ui::window(self, &ctx);
+        #[cfg(target_os = "macos")]
+        self.macos_app_shortcuts(&ctx);
         if self.database.open || self.creator.open || self.sewing.open {
             // The other suite windows take the whole window, as separate programs do.
             self.update_title(&ctx);
@@ -1620,6 +1639,56 @@ mod tests {
         app.open_path(&file);
         assert!(!app.is_dirty(), "a freshly opened design is clean");
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn cmd_q_quits_through_the_prompt() {
+        let ctx = egui::Context::default();
+        let press = |app: &mut EditorApp, key: Key| {
+            let mut raw = egui::RawInput::default();
+            raw.events
+                .push(egui::Event::ModifiersChanged(Modifiers::COMMAND));
+            raw.events.push(egui::Event::Key {
+                key,
+                physical_key: None,
+                pressed: true,
+                repeat: false,
+                modifiers: Modifiers::COMMAND,
+            });
+            let mut consumed = false;
+            let mut out = ctx.run_ui(raw, |ui| {
+                app.macos_app_shortcuts(ui.ctx());
+                consumed = ui.ctx().input(|i| {
+                    !i.events
+                        .iter()
+                        .any(|e| matches!(e, egui::Event::Key { .. }))
+                });
+            });
+            out.textures_delta.clear();
+            consumed
+        };
+        let mut app = EditorApp::new(Launch::default());
+        press(&mut app, Key::Q);
+        assert!(app.exit_approved(), "clean: quits at once");
+
+        let mut app = EditorApp::new(Launch::default());
+        app.execute(&ellipse()).expect("edit");
+        let consumed = press(&mut app, Key::Q);
+        assert!(app.close_prompt.is_open(), "dirty: the prompt");
+        assert!(!app.exit_approved());
+        assert!(consumed, "the key is consumed, so nothing else sees it");
+
+        press(&mut app, Key::M);
+        assert!(!app.exit_approved(), "Cmd+M only minimises");
+
+        // Cmd+W is the same request as Cmd+Q.
+        let mut app = EditorApp::new(Launch::default());
+        app.execute(&ellipse()).expect("edit");
+        press(&mut app, Key::W);
+        assert!(
+            app.close_prompt.is_open() && !app.exit_approved(),
+            "Cmd+W asks too"
+        );
     }
 
     #[test]

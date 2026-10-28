@@ -668,13 +668,24 @@ pub fn windows(app: &mut EditorApp, ctx: &egui::Context) {
                         ui.end_row();
                     }
                 }
-                for (what, keys) in [
+                let quit: &[(&str, &str)] = if cfg!(target_os = "macos") {
+                    &[
+                        (
+                            "Quit / close the window (asks to save changes)",
+                            "Cmd+Q, Cmd+W",
+                        ),
+                        ("Minimise", "Cmd+M"),
+                    ]
+                } else {
+                    &[]
+                };
+                for &(what, keys) in quit.iter().chain(&[
                     ("Move the selection 0.1 mm / 1 mm", "Arrows / Shift+Arrows"),
                     ("Finish a shape", "Return"),
                     ("Cancel", "Esc"),
                     ("Pan", "Space+drag, middle button"),
                     ("Zoom at the pointer", "Pinch, Ctrl+scroll"),
-                ] {
+                ]) {
                     ui.label(what);
                     ui.label(RichText::new(keys).monospace());
                     ui.end_row();

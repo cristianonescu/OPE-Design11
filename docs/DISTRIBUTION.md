@@ -224,6 +224,20 @@ code: `crates/openstitch-update`, `crates/openstitch-app/src/update_ui.rs`).
   the owner allowing `unsafe` in one small, separately audited crate (a ~40-line objc2
   delegate that forwards the paths to the editor through a channel; the same exception as the
   Quick Look and Explorer thumbnailers below).
+- **macOS application menu.** `OpenStitch.app` installs no application menu (the bold menu
+  next to the Apple menu is empty): `main.rs` builds the event loop with winit's
+  `with_default_menu(false)`. winit's default menu named its items after the process
+  ("About openstitch", "Quit openstitch"; `CFBundleName` is not consulted) and its Quit item
+  ended the process through `NSApplication terminate:`, which never reaches the window's close
+  request, so Cmd+Q lost unsaved changes without the prompt (winit 0.30.13 / eframe 0.37, which
+  has no hook into `applicationShouldTerminate:`; a delegate needs `unsafe` objc2 code, see
+  *macOS double-click*). Without the menu the keys reach the editor: Cmd+Q and Cmd+W close
+  through the unsaved-changes prompt, Cmd+M minimises (`EditorApp::macos_app_shortcuts`,
+  listed in Help ▸ Keyboard Shortcuts). Not available: Cmd+H / Hide Others, Services and the
+  menu's About (Help ▸ About OpenStitch remains). Quitting from the Dock icon's menu or at
+  logout still terminates without the prompt. A native menu with the right names and a Quit
+  item routed through the prompt needs a menu crate such as `muda` (safe API over objc2);
+  not done yet.
 - **Flatpak is not on Flathub.** The bundle comes from the `Flatpak` workflow; publishing on
   Flathub needs offline cargo sources (see [Flatpak](#flatpak)) and the owner's submission.
 - File-manager thumbnails exist on Linux only; see below.

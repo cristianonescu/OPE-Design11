@@ -17,6 +17,8 @@ enum Phase {
     Available(up::Update),
     /// A check the user asked for found nothing newer.
     UpToDate,
+    /// This build cannot check (no release tag, Flatpak, development build): the reason.
+    Unavailable(String),
     Downloading {
         update: up::Update,
         rx: Receiver<Result<up::Staged, String>>,
@@ -130,8 +132,7 @@ impl UpdateState {
         self.manual = manual;
         let Some(current) = self.current.clone() else {
             if manual {
-                self.fail(
-                    None,
+                self.unavailable(
                     "This build has no release tag (a development build), so it cannot check for updates.",
                 );
             }
@@ -145,7 +146,7 @@ impl UpdateState {
                     }
                     _ => "A development build does not check for updates.",
                 };
-                self.fail(None, why);
+                self.unavailable(why);
             }
             return;
         }
@@ -210,6 +211,11 @@ impl UpdateState {
             }
             Err(e) => self.fail(Some(update), &format!("cannot start the download: {e}")),
         }
+    }
+
+    fn unavailable(&mut self, why: &str) {
+        self.phase = Phase::Unavailable(why.to_string());
+        self.open = true;
     }
 
     fn fail(&mut self, update: Option<up::Update>, error: &str) {
@@ -498,6 +504,13 @@ pub fn window(app: &mut EditorApp, ctx: &egui::Context) {
                     click = Click::Dismiss;
                 }
             }
+            Phase::Unavailable(why) => {
+                ui.label(RichText::new("Updates are not available for this build.").strong());
+                ui.label(why);
+                if ui.button("Close").clicked() {
+                    click = Click::Dismiss;
+                }
+            }
             Phase::Failed { update, error } => {
                 ui.label(RichText::new("The update did not go through.").strong());
                 ui.label(error);
@@ -591,6 +604,17 @@ mod tests {
         assert_eq!(u.tag(), "v0.1.0-alpha.4");
         assert!(u.applicable(), "the sample shows an enabled Update button");
         assert!(version_line().starts_with("Version "));
+
+        // Help ▸ Check for Updates on a build without a release tag: not a failure.
+        let mut app = EditorApp::new(Launch::default());
+        app.update
+            .start_check(true, false, &egui::Context::default());
+        assert!(
+            matches!(&app.update.phase, Phase::Unavailable(why) if why.contains("no release tag")),
+            "{:?}",
+            matches!(app.update.phase, Phase::Failed { .. })
+        );
+        assert!(app.update.open);
     }
 
     #[test]

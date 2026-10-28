@@ -32,7 +32,8 @@
 //! updates at startup"; `OPENSTITCH_NO_UPDATE_CHECK` turns it off); `--show update` opens the
 //! dialog with sample notes for screenshots, `--show close-prompt` the unsaved-changes prompt.
 //! Closing the window, File ▸ New or Open with unsaved changes asks "Save changes to NAME?"
-//! (Save, Don't Save, Cancel); a `--screenshot` run closes without asking once its image is
+//! (Save, Don't Save, Cancel); on macOS Cmd+Q and Cmd+W ask too (the app runs without the
+//! system menu, see `macos_event_loop`); a `--screenshot` run closes without asking once its image is
 //! written, and a `--script` can answer the prompt (`sclick`, `key:Enter`, `key:Escape`).
 //! `--screenshot` renders a few frames, writes the window contents as PNG and exits (used for
 //! the documentation images and for checking the build on a platform).
@@ -235,6 +236,24 @@ fn listen(
     Ok(server)
 }
 
+/// macOS: no default application menu. winit names its items after the process ("Quit
+/// openstitch", #116) and its Quit item (Cmd+Q) terminates the application without a window
+/// close request, skipping the unsaved-changes prompt (#115); the editor handles Cmd+Q and
+/// Cmd+W (close through the prompt) and Cmd+M (minimise) itself. Cmd+H and the menu's About,
+/// Services and Hide are not available (see docs/DISTRIBUTION.md "macOS application menu").
+#[cfg(target_os = "macos")]
+fn macos_event_loop() -> Option<eframe::EventLoopBuilderHook> {
+    Some(Box::new(|builder| {
+        use winit::platform::macos::EventLoopBuilderExtMacOS;
+        builder.with_default_menu(false);
+    }))
+}
+
+#[cfg(not(target_os = "macos"))]
+fn macos_event_loop() -> Option<eframe::EventLoopBuilderHook> {
+    None
+}
+
 /// The app icon (assets/icons, written by tools/gen_icons.py from the logo) as 64×64 RGBA.
 fn window_icon() -> egui::IconData {
     egui::IconData {
@@ -275,6 +294,7 @@ fn main() -> eframe::Result {
             .with_icon(window_icon()),
         renderer: eframe::Renderer::Wgpu,
         wgpu_options: wgpu_options(),
+        event_loop_builder: macos_event_loop(),
         ..Default::default()
     };
     eframe::run_native(
