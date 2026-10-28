@@ -1704,6 +1704,42 @@
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 9: slant forward (italic). 75,10 x 10,30 mm, 1250 st, box (12.5, 40.0)-(87.6, 50.3) mm. Save As PES default type (#PES0110).",
       "sha256": "4100bc02fa8a783d55833d88284ecea24ed70f50f6d1065e4203cf54a79eb271",
       "notes": "Header #PES0110."
+    },
+    {
+      "file": "machine/machine-jumps.pes",
+      "spec": "machine-jumps",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of jumps.svg (viewBox 0 0 100 100 = 100 x 100 mm): six 5 x 5 mm squares at x = 10, 16, 23, 31, 40, 51 mm (gaps 1, 2, 3, 4, 6 mm), all #ff0000 -> 800 RED; imported centred on the page as Fill Stitch with PE's import attributes (line Not Sewn, under sewing on, density 4.5, direction as the import sets it), colours mapped from the SVG fill; nothing changed after the import. Save As PES (#PES0110). Status bar 46,00 x 5,00 mm, Stitches = 534.",
+      "sha256": "3616e75ba9723545562b935c6dc1ababe412e99e72cf7f616aa49f7e299246c1",
+      "notes": "Recorded 15:03. Imported as one block (Sewing Order 1 item). PEC: 525 stitches as the harness counts them; the 2, 3, 4 and 6 mm gaps are trimmed moves of 3.16, 4.12, 5.10 and 7.07 mm needle to needle, the 1 mm gap a plain stitch."
+    },
+    {
+      "file": "machine/machine-trim-bound.pes",
+      "spec": "machine-trim-bound",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of trimbound.svg (viewBox 0 0 100 100 = 100 x 100 mm): eight 5 x 5 mm red squares at x = 10, 15.5, 21.3, 27.3, 33.5, 40, 46.8, 53.8 mm (gaps 0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0 mm); imported centred on the page as Fill Stitch with PE's import attributes (line Not Sewn, under sewing on, density 4.5, direction as the import sets it), colours mapped from the SVG fill; nothing changed after the import. Save As PES (#PES0110). Status bar 48,80 x 5,00 mm, Stitches = 705.",
+      "sha256": "11ca452fd1501095682e6f9bb1ae1d9838b916f5fbf9dddd33ce7f55dfbc5e31",
+      "notes": "Recorded 15:41-15:44. PEC: 698 stitches as the harness counts them; 4 trims on needle-to-needle moves of 2.42, 2.69, 2.97 and 3.16 mm (the gaps 1.2, 1.5, 1.8 and 2.0 plus the under-sewing insets); the 0.5, 0.8 and 1.0 mm gaps have no jump at all, each sewn as a plain stitch."
+    },
+    {
+      "file": "machine/machine-trim-fine.pes",
+      "spec": "machine-trim-fine",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of trimfine.svg (viewBox 0 0 100 100 = 100 x 100 mm): five 5 x 5 mm red squares at x = 10, 16.0, 22.1, 28.3, 34.6 mm (gaps 1.0, 1.1, 1.2, 1.3 mm); imported centred on the page as Fill Stitch with PE's import attributes (line Not Sewn, under sewing on, density 4.5, direction as the import sets it), colours mapped from the SVG fill; nothing changed after the import. Save As PES (#PES0110). Status bar 29,60 x 5,00 mm, Stitches = 436.",
+      "sha256": "46733434da7ed0a808b948361274cda03621cc4b72af4e0bfe6fa8e89ba1cc04",
+      "notes": "Recorded 15:56-16:00. PEC: 428 stitches as the harness counts them; 3 trims on moves of 2.33, 2.42 and 2.51 mm (the gaps 1.1, 1.2, 1.3); the 1.0 mm gap (a 2.2 mm move) is a plain stitch. The trim bound lies between a 2.2 and a 2.33 mm needle-to-needle move."
     }
   ]
 }
