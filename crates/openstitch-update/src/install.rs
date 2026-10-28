@@ -119,7 +119,12 @@ pub fn classify(c: &Context) -> Install {
     let Some(exe) = c.exe.as_deref() else {
         return Install::Unsupported("the executable's path is unknown".into());
     };
-    if exe.components().any(|p| p.as_os_str() == "target") {
+    // Both separators: a Windows path is classified the same on every OS (tests).
+    if exe
+        .to_string_lossy()
+        .split(['/', '\\'])
+        .any(|p| p == "target")
+    {
         return Install::Development;
     }
     if c.flatpak {
