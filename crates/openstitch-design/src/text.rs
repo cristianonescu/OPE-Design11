@@ -130,10 +130,11 @@ pub struct TextSpec {
     pub envelope: Option<u8>,
 }
 
-/// Text Transform presets OpenStitch lays out: 1 and 2 (arches over and under), the
-/// envelopes in `envelope_presets.rs` (3–12, 15–26), but not yet 13 and 14 (fans).
-pub const ENVELOPE_PRESETS: [u8; 24] = [
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+/// Text Transform presets OpenStitch lays out: all 26, 1 and 2 (arches over and under) by
+/// construction, the rest (3–26, the fans 13 and 14 included) as the envelopes in
+/// `envelope_presets.rs`.
+pub const ENVELOPE_PRESETS: [u8; 26] = [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
 ];
 
 /// The arches' angle: the text's width over the radius of its inner line (PE-DESIGN 11.50:
@@ -1836,6 +1837,46 @@ H",
         assert!((last.max_y - first.max_y).abs() < 1.0, "{first:?} {last:?}");
         assert!(first.height() < 0.65 * last.height(), "{first:?} {last:?}");
         assert!((last.height() - straight.height()).abs() < 3.0, "{last:?}");
+        // 13 fans out: every H keeps its height, its top corners stay put and its bottom
+        // corners draw in towards the centre (PE-DESIGN 11.50: the bottom edge is the straight
+        // text at 0.70 about its centre, text-transform-13; 14 does the same to the top).
+        let plain = lay("HHHHHHH", 10.0);
+        for (n, keep_top) in [(13, true), (14, false)] {
+            let g = with(n).glyphs;
+            let (c, w) = (straight.center().x, straight.width());
+            for (i, glyph) in g.iter().enumerate() {
+                let b = bounds(&glyph.contours);
+                assert!((b.height() - straight.height()).abs() < 2.0, "{n}: {b:?}");
+                let pts: Vec<Vec2> = glyph.contours.iter().flat_map(|c| c.path()).collect();
+                let edge = |top: bool| -> (f64, f64) {
+                    let y = if top { b.min_y } else { b.max_y };
+                    let xs = pts.iter().filter(|p| (p.y - y).abs() < 4.0).map(|p| p.x);
+                    (
+                        xs.clone().fold(f64::INFINITY, f64::min),
+                        xs.fold(f64::NEG_INFINITY, f64::max),
+                    )
+                };
+                let (kept, scaled) = if keep_top {
+                    (edge(true), edge(false))
+                } else {
+                    (edge(false), edge(true))
+                };
+                let sb = bounds(&plain.glyphs[i].contours);
+                assert!(
+                    (kept.0 - sb.min_x).abs() < 6.0 && (kept.1 - sb.max_x).abs() < 6.0,
+                    "{n} {i}: {kept:?} vs {sb:?}"
+                );
+                let expect = |x: f64| c + (x - c) * 0.7;
+                assert!(
+                    (scaled.0 - expect(sb.min_x)).abs() < 0.02 * w,
+                    "{n} {i}: {scaled:?}"
+                );
+                assert!(
+                    (scaled.1 - expect(sb.max_x)).abs() < 0.02 * w,
+                    "{n} {i}: {scaled:?}"
+                );
+            }
+        }
         // 9 slants: the box keeps its width, the first H leans right.
         let b = bounds(&with(9).contours());
         assert!((b.width() - straight.width()).abs() < 3.0, "{b:?}");

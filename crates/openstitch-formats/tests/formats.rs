@@ -8,6 +8,8 @@ use openstitch_formats::{
     FileType, FormatError, dst, exp, hus, jef, lzh, pcs, pec, pes, phc, sew, shv, vip, xxx,
 };
 
+use std::path::PathBuf;
+
 const JEF_DATE: &str = "20261018120000";
 
 fn sewn(p: &StitchPattern) -> Vec<[f64; 2]> {
@@ -15,6 +17,30 @@ fn sewn(p: &StitchPattern) -> Vec<[f64; 2]> {
         .iter()
         .filter(|s| s.command == Command::Stitch)
         .map(|s| [s.x, s.y])
+        .collect()
+}
+
+/// Needle points relative to the first one: the writers centre a design on (0, 0), as
+/// PE-DESIGN does, so a round trip keeps shape and order but not the absolute position.
+fn relative(p: &StitchPattern) -> Vec<[f64; 2]> {
+    let s = sewn(p);
+    let Some(first) = s.first().copied() else {
+        return s;
+    };
+    s.iter()
+        .map(|q| [q[0] - first[0], q[1] - first[1]])
+        .collect()
+}
+
+/// `(jump, dx, dy)` of every DST record after the header up to the end record, y down.
+fn dst_records(data: &[u8]) -> Vec<(bool, i64, i64)> {
+    data[dst::HEADER_SIZE..]
+        .chunks(3)
+        .take_while(|r| r[2] & 0xF3 != 0xF3)
+        .map(|r| {
+            let (dx, dy) = dst::decode(r[0], r[1], r[2]);
+            (r[2] & 0x80 != 0, i64::from(dx), i64::from(dy))
+        })
         .collect()
 }
 
@@ -55,24 +81,32 @@ fn dst_reads_oracle_file_like_reference() {
 }
 
 #[test]
-fn dst_rewrite_is_byte_identical_to_reference() {
-    let original = data("oracle.dst");
-    assert_eq!(
-        dst::write(&dst::read(&original).expect("read")).expect("write"),
-        original
-    );
-}
-
-#[test]
-fn dst_long_stitches_are_split() {
+fn dst_long_stitches_are_written_as_jumps_and_one_stitch() {
+    // PE-DESIGN keeps one needle penetration per stitch: the full 12.1 mm pieces are jumps.
     let mut p = StitchPattern::new();
     p.stitch_to(0.0, 0.0);
     p.stitch_to(500.0, -300.0);
     p.push(Command::End);
-    let back = dst::read(&dst::write(&p).expect("write")).expect("read");
-    let s = sewn(&back);
-    assert_eq!(s.last(), Some(&[500.0, -300.0]));
-    assert_eq!(s.len(), 6); // 0,0 + ceil(500/121)=5 segments
+    let data = dst::write(&p).expect("write");
+    let records = dst_records(&data);
+    // Three zero-length jumps, the move to the first point (centred), its stitch, then the
+    // long stitch: four jumps of 121 along x (y the proportional share of what is left) and
+    // the remainder as a stitch.
+    assert_eq!(&records[..3], &[(true, 0, 0); 3]);
+    let first = records.iter().position(|r| !r.0).expect("a stitch");
+    assert_eq!(records[first], (false, 0, 0));
+    assert_eq!(
+        &records[first + 1..first + 6],
+        &[
+            (true, 121, -72),
+            (true, 121, -72),
+            (true, 121, -73),
+            (true, 121, -73),
+            (false, 16, -10)
+        ]
+    );
+    let back = dst::read(&data).expect("read");
+    assert_eq!(relative(&back), [[0.0, 0.0], [500.0, -300.0]]);
 }
 
 #[test]
@@ -93,15 +127,26 @@ fn dst_trim_jump_count_is_configurable() {
             },
         )
         .expect("write");
-        assert_eq!((data.len() - 512) / 3, 3 + 1 + n + 1); // stitches + jump + trim jumps + end
+        let records = dst_records(&data);
+        // n zero-length jumps open the file; the trimmed 4 mm move is padded to n jump records
+        // with zero-length jumps before its last record; so is the jump home at the end.
+        assert_eq!(&records[..n], &vec![(true, 0, 0); n][..]);
+        let mut runs = Vec::new();
+        let mut run = 0;
+        for r in &records {
+            if r.0 {
+                run += 1;
+            } else if run > 0 {
+                runs.push(run);
+                run = 0;
+            }
+        }
+        runs.push(run);
+        assert_eq!(runs, [n + 1, n, n], "n = {n}");
         let back = dst::read_with(&data, n).expect("read");
-        assert_eq!(back.count(Command::Trim), 1);
-        assert_eq!(back.count(Command::Jump), 1);
+        assert_eq!(back.count(Command::Trim), 2, "the move and the jump home");
+        assert_eq!(relative(&back), [[0.0, 0.0], [10.0, 0.0], [50.0, 10.0]]);
     }
-    assert_eq!(
-        dst::trim_jump_sequence(4).iter().map(|d| d.0).sum::<i64>(),
-        0
-    );
 }
 
 #[test]
@@ -550,15 +595,6 @@ fn exp_reads_oracle_file_like_reference() {
     );
 }
 
-#[test]
-fn exp_rewrite_is_byte_identical_to_reference() {
-    let original = data("oracle.exp");
-    assert_eq!(
-        exp::write(&exp::read(&original).expect("read")).expect("write"),
-        original
-    );
-}
-
 fn long_move_pattern() -> StitchPattern {
     let mut p = StitchPattern::new();
     p.stitch_to(0.0, 0.0);
@@ -569,31 +605,38 @@ fn long_move_pattern() -> StitchPattern {
 
 #[test]
 fn exp_long_moves_are_split_within_signed_byte_range() {
-    let back = exp::read(&exp::write(&long_move_pattern()).expect("write")).expect("read");
-    assert_eq!(sewn(&back).last(), Some(&[401.0, -300.0]));
-    assert_eq!(back.count(Command::Jump), 4); // ceil(400 / 127)
+    let data = exp::write(&long_move_pattern()).expect("write");
+    let back = exp::read(&data).expect("read");
+    assert_eq!(relative(&back), [[0.0, 0.0], [401.0, -300.0]]);
+    // The move to the first point (2 jumps), the 40 mm move (4 jumps, 127 along x with y
+    // proportional) and the jump home (2 jumps), as `80 02` records; trims are inferred from
+    // the runs longer than one record.
+    assert_eq!(back.count(Command::Jump), 8);
+    assert_eq!(back.count(Command::Trim), 2);
+    assert_eq!(data.iter().filter(|&&b| b == 0x80).count(), 8);
 }
 
 // MARK: JEF
 
 #[test]
 fn jef_reads_oracle_file_like_reference() {
+    // pyembroidery infers a trim from any jump over 3 mm; OpenStitch only from a jump run
+    // longer than one record (PE-DESIGN writes a stitch over 12.7 mm as a jump and a stitch),
+    // so the records are compared without either inference.
     let expected = stitches("oracle_jef_read.json");
-    let pattern = jef::read(&data("oracle.jef")).expect("read");
-    assert_eq!(pattern.stitches, expected.stitches);
+    let pattern = jef::read_with(&data("oracle.jef"), None).expect("read");
+    let without_trims: Vec<Stitch> = expected
+        .stitches
+        .into_iter()
+        .filter(|s| s.command != Command::Trim)
+        .collect();
+    assert_eq!(pattern.stitches, without_trims);
     assert_eq!(hexes(&pattern.threads), expected.threads);
-}
-
-#[test]
-fn jef_rewrite_is_byte_identical_to_reference() {
-    let original = data("oracle.jef");
-    let options = jef::WriteOptions {
-        date: Some(JEF_DATE.into()),
-        ..Default::default()
-    };
     assert_eq!(
-        jef::write_with(&jef::read(&original).expect("read"), &options).expect("write"),
-        original
+        jef::read(&data("oracle.jef"))
+            .expect("read")
+            .count(Command::Trim),
+        0
     );
 }
 
@@ -655,9 +698,13 @@ fn jef_command_trims_write_zero_jumps() {
     };
     let data = jef::write_with(&p, &options).expect("write");
     let records = &data[0x74 + 8..];
+    // The opening zero-length jump, the first stitch (folded into the move to it), the two
+    // zero-length jumps of the trim, the stitch, the end record and its padding.
     assert_eq!(
         records,
-        [0, 0, 0x80, 0x02, 0, 0, 0x80, 0x02, 0, 0, 1, 0, 0x80, 0x10]
+        [
+            0x80, 0x02, 0, 0, 0, 0, 0x80, 0x02, 0, 0, 0x80, 0x02, 0, 0, 1, 0, 0x80, 0x10, 0, 0
+        ]
     );
 }
 
@@ -672,18 +719,21 @@ fn hus_reads_oracle_file_like_reference() {
 }
 
 #[test]
-fn hus_written_by_openstitch_reads_back_identically_in_the_reference() {
-    // openstitch.hus is this writer's output (LZ77 + Huffman streams); the oracle decoder
-    // (pyembroidery's EmbCompress) read it into openstitch_hus_read.json.
-    let written = hus::write(&hus::read(&data("oracle.hus")).expect("read")).expect("write");
+fn hus_written_by_openstitch_reads_back_as_the_oracle_design() {
+    // openstitch.hus is this writer's output (LZ77 + Huffman streams, PE-DESIGN's record
+    // layout). An earlier version of it, with the same compressor, was decoded by pyembroidery's
+    // EmbCompress to the oracle's stitches (openstitch_hus_read.json); the layout has changed
+    // since, the compression (`lzh::tests`) has not.
+    let original = hus::read(&data("oracle.hus")).expect("read");
+    let written = hus::write(&original).expect("write");
     assert_golden("openstitch.hus", &written);
-    let reference = stitches("openstitch_hus_read.json");
-    let original = stitches("oracle_hus_read.json");
-    assert_eq!(reference.stitches, original.stitches);
-    assert_eq!(reference.threads, original.threads);
+    let back = hus::read(&written).expect("reread");
+    assert_eq!(relative(&back), relative(&original));
+    assert_eq!(hexes(&back.threads), hexes(&original.threads));
+    assert_eq!(back.count(Command::Trim), original.count(Command::Trim));
     assert_eq!(
-        hus::read(&written).expect("reread").stitches,
-        original.stitches
+        back.count(Command::ColorChange),
+        original.count(Command::ColorChange)
     );
 }
 
@@ -696,7 +746,7 @@ fn hus_streams_are_compressed() {
     p.push(Command::End);
     let bytes = hus::write(&p).expect("write");
     assert!(bytes.len() < 3 * 5000 / 4, "{} bytes", bytes.len());
-    assert_eq!(sewn(&hus::read(&bytes).expect("read")), sewn(&p));
+    assert_eq!(relative(&hus::read(&bytes).expect("read")), relative(&p));
 }
 
 #[test]
@@ -711,9 +761,12 @@ fn hus_long_moves_split_and_commands_round_trip() {
     p.stitch_to(-480.0, 210.0);
     p.push(Command::End);
     let back = hus::read(&hus::write(&p).expect("write")).expect("read");
+    // The trim is PE-DESIGN's zero-length jump after the move; the 50 mm stitch is four
+    // stitches of up to 12 mm (HUS alone splits a stitch into stitches).
     assert_eq!(back.count(Command::Trim), 1);
     assert_eq!(back.count(Command::ColorChange), 1);
-    assert_eq!(sewn(&back).last(), Some(&[-480.0, 210.0]));
+    assert_eq!(back.count(Command::Stitch), 2 + 4 + 1);
+    assert_eq!(relative(&back).last(), Some(&[-480.0, 210.0]));
     assert_eq!(hexes(&back.threads), ["#ff0000", "#00c600"]); // nearest HUS chart entries
 }
 
@@ -728,7 +781,8 @@ fn vip_round_trips_rgb_colours_and_stitches() {
     assert_eq!(&bytes[..4], &vip::MAGIC.to_le_bytes());
     assert_golden("openstitch.vip", &bytes);
     let back = vip::read(&bytes).expect("read");
-    assert_eq!(back.stitches, original.stitches);
+    assert_eq!(relative(&back), relative(&original));
+    assert_eq!(back.count(Command::Trim), original.count(Command::Trim));
     assert_eq!(hexes(&back.threads), ["#e01010", "#1040c0"]);
 }
 
@@ -806,16 +860,7 @@ fn pcs_reads_oracle_file_like_reference() {
 }
 
 #[test]
-fn pcs_rewrite_is_byte_identical_to_reference() {
-    let original = data("oracle.pcs");
-    assert_eq!(
-        pcs::write(&pcs::read(&original).expect("read")).expect("write"),
-        original
-    );
-}
-
-#[test]
-fn pcs_coordinates_are_stored_in_sixths_of_a_millimetre() {
+fn pcs_coordinates_are_stored_in_sixths_of_a_millimetre_with_a_fraction_byte() {
     let mut p = with_threads(&[0x00FF00]);
     p.stitch_to(0.0, 0.0);
     p.stitch_to(7.0, -13.0); // 4.2, 7.8 file units
@@ -825,19 +870,29 @@ fn pcs_coordinates_are_stored_in_sixths_of_a_millimetre() {
     assert_eq!(data[1], pcs::Hoop::Large as u8);
     let back = pcs::read(&data).expect("read");
     let commands: Vec<Command> = back.stitches.iter().map(|s| s.command).collect();
+    // A colour record, the first stitch, the stitch, a jump from there and a jump to the
+    // move's end, and the stitch at the move's end.
     assert_eq!(
         commands,
         [
             Command::Stitch,
             Command::Stitch,
             Command::Jump,
+            Command::Jump,
+            Command::Stitch,
             Command::End
         ]
     );
-    assert_eq!(back.stitches[1].x, 4.0 * pcs::UNIT_SCALE);
-    assert_eq!(back.stitches[1].y, -8.0 * pcs::UNIT_SCALE);
-    assert_eq!(back.stitches[2].x, -12000.0 * pcs::UNIT_SCALE);
-    assert_eq!(pcs::write(&back).expect("rewrite"), data);
+    // The 1/256 fraction byte keeps the 0.1 mm grid: positions come back within 0.01.
+    for (a, b) in relative(&back)
+        .iter()
+        .zip([[0.0, 0.0], [7.0, -13.0], [-20000.0, 30000.0]])
+    {
+        assert!(
+            (a[0] - b[0]).abs() < 0.01 && (a[1] - b[1]).abs() < 0.01,
+            "{a:?} vs {b:?}"
+        );
+    }
 }
 
 #[test]
@@ -873,15 +928,6 @@ fn sew_reads_oracle_file_like_reference() {
 }
 
 #[test]
-fn sew_rewrite_is_byte_identical_to_reference() {
-    let original = data("oracle.sew");
-    assert_eq!(
-        sew::write(&sew::read(&original).expect("read")).expect("write"),
-        original
-    );
-}
-
-#[test]
 fn sew_palette_never_uses_the_unknown_entry() {
     assert_eq!(sew::sew_palette(&with_threads(&[0x000000])), [1]);
 }
@@ -889,8 +935,13 @@ fn sew_palette_never_uses_the_unknown_entry() {
 #[test]
 fn sew_long_moves_are_split_within_signed_byte_range() {
     let back = sew::read(&sew::write(&long_move_pattern()).expect("write")).expect("read");
-    assert_eq!(sewn(&back).last(), Some(&[401.0, -300.0]));
-    assert_eq!(back.count(Command::Jump), 4); // ceil(400 / 127)
+    assert_eq!(relative(&back), [[0.0, 0.0], [401.0, -300.0]]);
+    // The 40 mm move folded into the stitch after it: three jumps (only the axes over 12.7 mm
+    // move) and the stitch. Before it the way from PE-DESIGN's start point (`sew::START_POINT`,
+    // 24.7 mm below the first needle point here): a zero-length jump, one jump and a stitch.
+    assert_eq!(back.count(Command::Jump), 5);
+    assert_eq!(back.stitches[0], Stitch::new(0.0, 0.0, Command::Jump));
+    assert_eq!(back.stitches[2], Stitch::new(-41.0, 247.0, Command::Stitch));
 }
 
 // MARK: XXX
@@ -904,15 +955,6 @@ fn xxx_reads_oracle_file_like_reference() {
 }
 
 #[test]
-fn xxx_rewrite_is_byte_identical_to_reference() {
-    let original = data("oracle.xxx");
-    assert_eq!(
-        xxx::write(&xxx::read(&original).expect("read")).expect("write"),
-        original
-    );
-}
-
-#[test]
 fn xxx_end_offset_points_past_the_stitch_records() {
     let data = data("oracle.xxx");
     let end = u32::from_le_bytes(data[0xFC..0x100].try_into().expect("4 bytes")) as usize;
@@ -920,21 +962,36 @@ fn xxx_end_offset_points_past_the_stitch_records() {
 }
 
 #[test]
-fn xxx_long_stitch_uses_sixteen_bit_form() {
+fn xxx_long_stitches_are_jumps_plus_a_stitch_and_trimmed_moves_use_the_sixteen_bit_form() {
     let mut p = StitchPattern::new();
     p.stitch_to(0.0, 0.0);
-    p.stitch_to(124.0, 0.0); // exactly the split limit: one long-form record
+    p.stitch_to(124.0, 0.0); // over 12 mm: a 12 mm jump and a 0.4 mm stitch
     p.push(Command::End);
     let data = xxx::write(&p).expect("write");
-    assert_eq!(&data[0x102..0x107], &[0x7D, 124, 0, 0, 0]);
-    // The reference reader treats the long form as a move.
+    // `7F 01 00 00`, then the (trimmed) move to the first point as `7E` with 16-bit deltas
+    // and its zero-length stitch, then the long stitch.
+    assert_eq!(&data[0x100..0x104], &[0x7F, 0x01, 0, 0]);
+    assert_eq!(&data[0x104..0x10B], &[0x7E, 0xC2, 0xFF, 0, 0, 0, 0]);
+    assert_eq!(&data[0x10B..0x111], &[0x7F, 0x01, 120, 0, 4, 0]);
     let commands: Vec<Command> = xxx::read(&data)
         .expect("read")
         .stitches
         .iter()
         .map(|s| s.command)
         .collect();
-    assert_eq!(commands, [Command::Stitch, Command::Jump, Command::End]);
+    assert_eq!(
+        commands,
+        [
+            Command::Jump,
+            Command::Trim,
+            Command::Jump,
+            Command::Stitch,
+            Command::Jump,
+            Command::Stitch,
+            Command::Jump,
+            Command::End
+        ]
+    );
 }
 
 // MARK: FileType
@@ -957,32 +1014,272 @@ fn file_type_lookup_by_extension_and_path() {
 }
 
 #[test]
-fn every_fixture_round_trips_byte_identically_through_file_type() {
-    // oracle.hus holds pyembroidery's uncompressed literal streams; openstitch.hus is the same
-    // design as OpenStitch compresses it. SHV is read only.
+fn every_fixture_round_trips_through_file_type() {
+    // Every writable format reads its oracle fixture, writes it in PE-DESIGN's layout and reads
+    // that back to the same needle points, colour changes and threads. SHV is read only.
     for name in common::FIXTURE_FILES
         .into_iter()
-        .filter(|&n| FileType::from_path(n).is_some_and(FileType::can_write) && n != "oracle.hus")
+        .filter(|&n| FileType::from_path(n).is_some_and(FileType::can_write))
     {
         let t = FileType::from_path(name).expect("type");
-        let original = data(name);
-        let mut pattern = t.read(&original).expect("read");
-        pattern.set_name("oracle");
-        let written = match t {
-            FileType::Jef => jef::write_with(
-                &pattern,
-                &jef::WriteOptions {
-                    date: Some(JEF_DATE.into()),
-                    ..Default::default()
-                },
-            ),
-            // pyembroidery's `1t`; FileType writes version 6 with objects.
-            FileType::Pes => {
-                pes::write_with(&pattern, &pes::WriteOptions::parse("1t").expect("1t"))
-            }
-            _ => t.write(&pattern),
+        let original = t.read(&data(name)).expect("read");
+        let back = t.read(&t.write(&original).expect("write")).expect("reread");
+        let mut points = relative(&back);
+        if t == FileType::Sew {
+            points.dedup(); // PE-DESIGN's zero-length stitch before a colour change
         }
-        .expect("write");
-        assert_eq!(written, original, "{name}");
+        assert_eq!(points, relative(&original), "{name}");
+        assert_eq!(
+            back.count(Command::ColorChange),
+            original.count(Command::ColorChange),
+            "{name}"
+        );
+        // DST carries no colours; PCS writes PE-DESIGN's fixed 16-colour table.
+        if !matches!(t, FileType::Dst | FileType::Pcs) {
+            assert_eq!(hexes(&back.threads), hexes(&original.threads), "{name}");
+        }
+    }
+}
+
+// MARK: PE-DESIGN 11.50 layout
+
+/// PE-DESIGN's export of `machine-formats.pes` (compat/reference/machine), or `None` outside
+/// the repository checkout.
+fn pe_design_export(ext: &str) -> Option<Vec<u8>> {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../compat/reference/machine")
+        .join(format!("machine-formats.{ext}"));
+    std::fs::read(path).ok()
+}
+
+/// The design PE-DESIGN exported: two Red running lines with a trimmed move between them, a
+/// colour change and a Black satin of 15 mm stitches (OpenStitch's own PES, 248 stitches).
+fn machine_formats_design() -> StitchPattern {
+    let p = pes::read(&data("machine-formats.pes")).expect("read");
+    assert_eq!(p.count(Command::Stitch), 248);
+    assert_eq!(p.count(Command::Trim), 1);
+    assert_eq!(p.count(Command::ColorChange), 1);
+    p
+}
+
+fn dst_header_lines(data: &[u8]) -> Vec<String> {
+    String::from_utf8_lossy(&data[..dst::HEADER_SIZE])
+        .split('\r')
+        .filter(|l| l.len() > 3 && !l.starts_with("LA:"))
+        .map(str::to_owned)
+        .collect()
+}
+
+#[test]
+fn dst_records_and_header_match_pe_design() {
+    let Some(pe) = pe_design_export("dst") else {
+        return;
+    };
+    let ours = dst::write(&machine_formats_design()).expect("write");
+    assert_eq!(dst_header_lines(&ours), dst_header_lines(&pe));
+    assert_eq!(ours[dst::HEADER_SIZE..], pe[dst::HEADER_SIZE..]);
+}
+
+#[test]
+fn exp_matches_pe_design_byte_for_byte() {
+    let Some(pe) = pe_design_export("exp") else {
+        return;
+    };
+    assert_eq!(exp::write(&machine_formats_design()).expect("write"), pe);
+}
+
+#[test]
+fn jef_records_and_header_match_pe_design_except_the_date() {
+    let Some(pe) = pe_design_export("jef") else {
+        return;
+    };
+    let ours = jef::write(&machine_formats_design()).expect("write");
+    assert_eq!(ours.len(), pe.len());
+    assert_eq!(ours[..8], pe[..8]);
+    // The hoop block for 50 x 50 mm (0x44) is -1 in PE-DESIGN's file and 50 in OpenStitch's.
+    assert_eq!(ours[0x16..0x44], pe[0x16..0x44]);
+    assert_eq!(ours[0x54..], pe[0x54..]);
+}
+
+#[test]
+fn sew_records_match_pe_design() {
+    let Some(pe) = pe_design_export("sew") else {
+        return;
+    };
+    let ours = sew::write(&machine_formats_design()).expect("write");
+    assert_eq!(ours[..6], pe[..6], "colour count and chart indexes");
+    // From PE-DESIGN's start point (`sew::START_POINT`) the first needle point is one stitch
+    // record away; every record after it is the JEF stream.
+    assert_eq!(ours[0x1D78..], pe[0x1D78..]);
+}
+
+/// A PE-DESIGN SEW reference beside `machine-formats.*`.
+fn pe_design_sew_file(name: &str) -> Option<Vec<u8>> {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../compat/reference/machine")
+        .join(name);
+    std::fs::read(path).ok()
+}
+
+#[test]
+fn sew_stream_is_design_relative_and_starts_where_pe_design_does() {
+    // PE-DESIGN's SEW export of machine-formats' design moved 10 mm right and down on the
+    // page is byte-identical to the one in place; OpenStitch's is too, from the moved PES.
+    let (Some(asis), Some(moved), Some(moved_pes)) = (
+        pe_design_export("sew"),
+        pe_design_sew_file("sew-a-moved10.sew"),
+        pe_design_sew_file("sew-a-moved10.pes"),
+    ) else {
+        return;
+    };
+    assert_eq!(asis, moved, "PE-DESIGN's two exports");
+    let p = pes::read(&moved_pes).expect("read");
+    assert_eq!(p.count(Command::Stitch), 248);
+    let ours = sew::write(&p).expect("write");
+    assert_eq!(ours[0x1D78..], asis[0x1D78..]);
+    // A 20 x 20 mm square PE-DESIGN drew at the page centre (filled, with a running stitch
+    // outline): the same start point, 15.9 mm left of and 9.7 mm above the centre, reached in
+    // a jump and a stitch. PE-DESIGN exports its own objects from their first needle point,
+    // the end of the PEC's first jump (its tie-in: there, 0.3 mm back, there again), which the
+    // PES reader does not take as a needle point, so PE-DESIGN's stream has one record more
+    // (the 0.3 mm step back) and arrives 0.3 mm further; every record after that is the same.
+    let (Some(pe), Some(square_pes)) = (
+        pe_design_sew_file("sew-square-centre.sew"),
+        pe_design_sew_file("sew-square-centre.pes"),
+    ) else {
+        return;
+    };
+    let p = pes::read(&square_pes).expect("read");
+    assert_eq!(p.count(Command::Stitch), 599);
+    let ours = sew::write(&p).expect("write");
+    assert_eq!(ours[..4], pe[..4], "colour count and chart index");
+    let end = |d: &[u8]| {
+        d.windows(2)
+            .position(|w| w == [0x80, 0x10])
+            .expect("end record")
+    };
+    let (o, r) = (&ours[0x1D78..], &pe[0x1D78..]);
+    let (o, r) = (&o[..end(o)], &r[..end(r)]);
+    assert_eq!(o[..8], r[..8], "zero-length jump, then the 12.7 mm jump");
+    assert_eq!(
+        r[8..12],
+        [32, (-70_i8) as u8, (-3_i8) as u8, 0],
+        "PE-DESIGN: 500, then 497"
+    );
+    assert_eq!(o[8..10], [29, (-70_i8) as u8], "OpenStitch: 497");
+    assert_eq!(o[10..], r[12..]);
+}
+
+#[test]
+fn xxx_records_and_header_counts_match_pe_design() {
+    let Some(pe) = pe_design_export("xxx") else {
+        return;
+    };
+    let ours = xxx::write(&machine_formats_design()).expect("write");
+    let end = |d: &[u8]| u32::from_le_bytes(d[0xFC..0x100].try_into().expect("4 bytes")) as usize;
+    assert_eq!(end(&ours), end(&pe));
+    assert_eq!(
+        ours[0x17..0x39],
+        pe[0x17..0x39],
+        "counts, extents, end position"
+    );
+    assert_eq!(ours[0x100..end(&ours) + 6], pe[0x100..end(&pe) + 6]);
+    // The colour list follows; PE-DESIGN's RGB for its chart colour 800 RED is E3 31 1F where
+    // OpenStitch's PEC chart (pyembroidery's table) has ED 17 1F, so only Black is compared.
+    assert_eq!(ours[end(&ours) + 10..end(&ours) + 14], [0, 0, 0, 0]);
+    assert_eq!(pe[end(&pe) + 10..end(&pe) + 14], [0, 0, 0, 0]);
+}
+
+#[test]
+fn pcs_matches_pe_design_byte_for_byte() {
+    let Some(pe) = pe_design_export("pcs") else {
+        return;
+    };
+    assert_eq!(pcs::write(&machine_formats_design()).expect("write"), pe);
+}
+
+/// The header up to the extents and the three decompressed streams of a HUS or VIP file.
+fn hus_streams(data: &[u8]) -> (Vec<u8>, [Vec<u8>; 3]) {
+    let u32le = |o: usize| u32::from_le_bytes(data[o..o + 4].try_into().expect("4 bytes")) as usize;
+    let records = u32le(4);
+    let offsets = [u32le(0x14), u32le(0x18), u32le(0x1C)];
+    let streams = [
+        lzh::expand(&data[offsets[0]..offsets[1]], records).expect("commands"),
+        lzh::expand(&data[offsets[1]..offsets[2]], records).expect("x"),
+        lzh::expand(&data[offsets[2]..], records).expect("y"),
+    ];
+    (data[..0x14].to_vec(), streams)
+}
+
+#[test]
+fn hus_streams_and_header_match_pe_design() {
+    let Some(pe) = pe_design_export("hus") else {
+        return;
+    };
+    let ours = hus::write(&machine_formats_design()).expect("write");
+    let (header_pe, streams_pe) = hus_streams(&pe);
+    let (header_ours, streams_ours) = hus_streams(&ours);
+    assert_eq!(
+        header_ours, header_pe,
+        "magic, record and colour counts, extents"
+    );
+    assert_eq!(streams_ours, streams_pe);
+    assert_eq!(ours[0x2A..0x2E], pe[0x2A..0x2E], "HUS chart indexes");
+}
+
+#[test]
+fn vip_streams_and_header_match_pe_design() {
+    let Some(pe) = pe_design_export("vip") else {
+        return;
+    };
+    let ours = vip::write(&machine_formats_design()).expect("write");
+    let (header_pe, streams_pe) = hus_streams(&pe);
+    let (header_ours, streams_ours) = hus_streams(&ours);
+    assert_eq!(
+        header_ours, header_pe,
+        "magic, record and colour counts, extents"
+    );
+    assert_eq!(streams_ours, streams_pe);
+    assert_eq!(
+        ours[0x2A..0x2E],
+        pe[0x2A..0x2E],
+        "the word libembroidery calls the table length"
+    );
+    // The obfuscated colour table differs by the RGB of Red (see the XXX test).
+    assert_eq!(
+        ours[0x36..0x44],
+        pe[0x36..0x44],
+        "the words after the colour table"
+    );
+}
+
+#[test]
+fn pe_design_exports_read_back_with_one_colour_change_and_their_entry_stitches() {
+    // Stitch counts differ by format because of how each marks the needle point a frame
+    // move ends at: DST, EXP, JEF and VIP do not (the next stitch is the first penetration),
+    // HUS, PCS and XXX add a zero-length stitch there, SEW one before the colour change, and
+    // HUS splits the 15 mm satin stitches into two stitches.
+    for (ext, stitches, trims) in [
+        ("dst", 248, 2),
+        ("exp", 248, 1),
+        ("jef", 248, 1),
+        ("sew", 249, 0),
+        ("xxx", 248, 2),
+        ("pcs", 251, 0),
+        ("hus", 431, 1),
+        ("vip", 248, 1),
+    ] {
+        let Some(pe) = pe_design_export(ext) else {
+            return;
+        };
+        let p = FileType::from_extension(ext)
+            .expect("type")
+            .read(&pe)
+            .expect("read");
+        assert_eq!(p.count(Command::Stitch), stitches, "{ext}");
+        assert_eq!(p.count(Command::ColorChange), 1, "{ext}");
+        assert_eq!(p.count(Command::Trim), trims, "{ext}");
+        let b = p.bounds();
+        assert_eq!((b.width(), b.height()), (400.0, 400.0), "{ext}");
     }
 }

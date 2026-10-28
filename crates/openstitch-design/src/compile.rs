@@ -21,14 +21,19 @@ use openstitch_core::{Command, Stitch, StitchPattern, Thread, round_coordinate};
 /// `trim_distance` is 0 by default: every frame move inside the design is trimmed, as in
 /// PE-DESIGN 11.50's files. In 177 of its PES files (compat/reference and the owner's round-2
 /// folders, 2026-10-27) every interior move carries the PEC trim flag and a plain jump appears only
-/// as the first record and right after a colour change; the shortest trimmed move is 3.0 mm, and
-/// travel shorter than that is sewn across. Multi-needle designs use PE-DESIGN's "minimum jump
-/// stitch length for trimming" setting instead ([`Compiler::for_design`]).
+/// as the first record and right after a colour change. A move between objects no longer than
+/// `sew_across_distance` is not a jump at all but a stitch across the gap: PE-DESIGN sews a
+/// 2.24 mm needle-to-needle move across and trims a 2.33 mm one (compat machine-trim-fine,
+/// machine-trim-bound, machine-jumps, 2026-10-28), so the bound is 2.3 mm. Multi-needle
+/// designs use PE-DESIGN's "minimum jump stitch length for trimming" setting for the trims
+/// instead ([`Compiler::for_design`]).
 #[derive(Clone, Copy, Debug)]
 pub struct Compiler {
     pub trim_distance: f64,
     pub connect_distance: f64,
     pub max_stitch: f64,
+    /// A move between objects up to this long (0.1 mm) is sewn as a stitch.
+    pub sew_across_distance: f64,
 }
 
 impl Default for Compiler {
@@ -37,6 +42,7 @@ impl Default for Compiler {
             trim_distance: 0.0,
             connect_distance: 40.0,
             max_stitch: 120.0,
+            sew_across_distance: 23.0,
         }
     }
 }
@@ -104,6 +110,11 @@ impl Writer {
             return;
         }
         if within_element && d <= self.cfg.connect_distance && !self.cut {
+            self.stitch_line(p);
+            return;
+        }
+        // PE-DESIGN sews a short move between objects across as a stitch rather than jumping.
+        if !within_element && d <= self.cfg.sew_across_distance && !self.cut {
             self.stitch_line(p);
             return;
         }
@@ -253,7 +264,10 @@ fn sew_object(w: &mut Writer, object: &DesignObject, design: &Design) {
     }
 }
 
-/// Sews fixed needle points: runs split at jumps and trims, one element per colour block.
+/// Sews fixed needle points: runs split at jumps and trims, one element per colour block. The
+/// points are the machine's, so a stitch longer than `max_stitch` stays one penetration, as
+/// PE-DESIGN 11.50 exports an opened stitch file (compat machine-formats: its 15 mm satin
+/// stitches are one jump and one stitch in every format, never two stitches).
 fn sew_block(w: &mut Writer, block: &StitchBlock) {
     // A feed pattern is jumps only: sewn as the jumps themselves.
     if !block.stitches.is_empty() && block.stitches.iter().all(|s| s.command == Command::Jump) {
@@ -301,7 +315,7 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
                 w.sew(Element {
                     thread: thread_for(block_index),
                     runs: std::mem::replace(&mut pending, vec![Vec::new()]),
-                    whole: false,
+                    whole: true,
                 });
                 block_index += 1;
             }
@@ -311,7 +325,7 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
     w.sew(Element {
         thread: thread_for(block_index),
         runs: pending,
-        whole: false,
+        whole: true,
     });
 }
 
@@ -351,7 +365,10 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
             }
             // PE-DESIGN's fill under sewing runs straight on into the top stitching.
             if region.underlay
-                && region.underlay_style == crate::model::UnderlayStyle::EdgeFill
+                && matches!(
+                    region.underlay_style,
+                    crate::model::UnderlayStyle::EdgeFill | crate::model::UnderlayStyle::Cross
+                )
                 && let Some(path) = region.travel_path()
             {
                 layers = vec![region::join_layers(layers, &closed, holes, path)];

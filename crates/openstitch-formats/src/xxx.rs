@@ -1,16 +1,19 @@
 //! Singer XXX: 0xFC-byte little-endian header (record count, colour count, extents, end
 //! position), the offset of the end of the stitch data at 0xFC, then records from 0x100:
-//! 2-byte signed (dx, dy) stitches with y up, `7D dx(16le) dy(16le)` long move,
-//! `7F 01 dx dy` jump, `7F 03 dx dy` trim (plus move), `7F 08 dx dy` colour change,
-//! `7F 7F 02 14` end. After the end marker: `00 00`, then `00 R G B` per colour, zero entries
-//! up to 21 colours, `00 FF FF FF`, `00 01`.
+//! 2-byte signed (dx, dy) stitches with y up, `7D dx(16le) dy(16le)` long stitch,
+//! `7E dx(16le) dy(16le)` trimmed frame move, `7F 01 dx dy` jump, `7F 03 dx dy` trim (plus
+//! move), `7F 08 dx dy` colour change, `7F 7F 03 14` end. After the end marker: `00 00`, then
+//! `00 R G B` per colour, zero entries up to 21 colours, `00 FF FF FF`, `00 01`.
+//! The writer lays the records out as PE-DESIGN 11.50's export does (see [`write`]).
 
 use crate::io::{ByteReader, ByteWriter, signed8};
+use crate::layout::{self, Event};
 use crate::{FormatError, Result};
-use openstitch_core::{Command, Stitch, StitchPattern, Thread, round_coordinate};
+use openstitch_core::{Command, Stitch, StitchPattern, Thread};
 
-/// Deltas of ±124 or more are written in the long form; moves are split at 124 first.
-pub const MAX_DELTA: f64 = 124.0;
+/// Largest delta of a short record; jumps and split stitches are clamped to ±120 as
+/// PE-DESIGN clamps them.
+pub const MAX_DELTA: f64 = 120.0;
 const STITCH_OFFSET: usize = 0x100;
 
 // MARK: Reading
@@ -35,6 +38,11 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
         if b1 == 0x7D || b1 == 0x7E {
             if reader.remaining() < 4 {
                 break;
+            }
+            // 7E is PE-DESIGN's trimmed frame move; 7D a long stitch, read as a move like
+            // the reference reader does.
+            if b1 == 0x7E {
+                pattern.stitches.push(Stitch::new(x, y, Command::Trim));
             }
             x += signed16(reader.u16le()?);
             y -= signed16(reader.u16le()?);
@@ -98,60 +106,104 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
 
 // MARK: Writing
 
+/// Writes the stream as PE-DESIGN 11.50 exports it (`compat/reference/machine/machine-formats.xxx`):
+/// the design centred on (0, 0); `7F 01 00 00` first; every frame move folded into the stitch
+/// after it and followed by a zero-length stitch there (the first needle point): a trimmed
+/// move (the first one and every move after a trim) as one `7E` record with 16-bit deltas, a
+/// plain move as `7F 01` jumps with each axis clamped to ±120; a stitch over 12 mm as `7F 01`
+/// jumps plus one stitch for the remainder; a colour change as `7F 08 00 00` written after the
+/// move to the next block's first needle point, before its zero-length stitch; and after the
+/// last stitch a `7F 01` jump run back to (0, 0), then `7F 7F 03 14`. The header's end
+/// position is the last stitch; the two words after it and the word at 0xF6 are zero, as
+/// PE-DESIGN writes them. PE-DESIGN fills the unused colour slots with a default palette and
+/// appends a second table after the colour list; OpenStitch writes zeros there.
 pub fn write(input: &StitchPattern) -> Result<Vec<u8>> {
-    let mut pattern = input.interpolating_long_moves(MAX_DELTA, MAX_DELTA);
+    let mut pattern = input.clone();
     pattern.fix_thread_count(None);
+    let events = layout::events(&pattern);
+    let max = MAX_DELTA as i64;
 
-    // Records first: the header needs their count, extents and end position.
     let mut body = ByteWriter::default();
     let mut records = 0_i64;
-    let (mut xx, mut yy) = (0_i64, 0_i64);
-    let (mut min_x, mut min_y, mut max_x, mut max_y) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
-    let mut visit = |xx: i64, yy: i64| {
-        min_x = min_x.min(xx);
-        max_x = max_x.max(xx);
-        min_y = min_y.min(yy);
-        max_y = max_y.max(yy);
+    let (mut x, mut y) = (0_i64, 0_i64);
+    let (mut last_stitch_x, mut last_stitch_y) = (0_i64, 0_i64);
+    let (mut min_x, mut min_y, mut max_x, mut max_y) = (0_i64, 0_i64, 0_i64, 0_i64);
+    let mut visit = |x: i64, y: i64| {
+        min_x = min_x.min(x);
+        max_x = max_x.max(x);
+        min_y = min_y.min(y);
+        max_y = max_y.max(y);
     };
-    for s in &pattern.stitches {
-        let dx = round_coordinate(s.x) - xx;
-        let dy = round_coordinate(s.y) - yy;
-        match s.command {
-            Command::Stitch => {
-                xx += dx;
-                yy += dy;
-                if dx.abs() < 124 && dy.abs() < 124 {
-                    body.u8(dx);
-                    body.u8(-dy);
+    fn jump(body: &mut ByteWriter, records: &mut i64, dx: i64, dy: i64) {
+        body.append(&[0x7F, 0x01]);
+        body.u8(dx);
+        body.u8(-dy);
+        *records += 1;
+    }
+    jump(&mut body, &mut records, 0, 0);
+    let mut color_pending = false;
+    let mut i = 0;
+    while i < events.len() {
+        match events[i] {
+            Event::Move {
+                x: tx,
+                y: ty,
+                trimmed,
+            } => {
+                let target = layout::next_stitch(&events, i).unwrap_or((tx, ty));
+                if trimmed {
+                    body.u8(0x7E);
+                    body.u16le(target.0 - x);
+                    body.u16le(-(target.1 - y));
+                    records += 1;
                 } else {
-                    body.u8(0x7D);
-                    body.u16le(dx);
-                    body.u16le(-dy);
+                    for (dx, dy) in layout::split_clamped(target.0 - x, target.1 - y, max) {
+                        jump(&mut body, &mut records, dx, dy);
+                    }
+                }
+                (x, y) = target;
+                visit(x, y);
+                if color_pending {
+                    body.append(&[0x7F, 0x08, 0x00, 0x00]);
+                    color_pending = false;
+                }
+                body.append(&[0, 0]);
+                records += 1;
+                (last_stitch_x, last_stitch_y) = (x, y);
+                if layout::next_stitch(&events, i).is_some() {
+                    i += 1;
                 }
             }
-            Command::Jump => {
-                xx += dx;
-                yy += dy;
-                body.append(&[0x7F, 0x01]);
-                body.u8(dx);
-                body.u8(-dy);
+            Event::Stitch { x: tx, y: ty } => {
+                if color_pending {
+                    body.append(&[0x7F, 0x08, 0x00, 0x00]);
+                    color_pending = false;
+                }
+                let pieces = layout::split_clamped(tx - x, ty - y, max);
+                let (last, head) = pieces.split_last().expect("at least one piece");
+                for &(dx, dy) in head {
+                    jump(&mut body, &mut records, dx, dy);
+                }
+                body.u8(last.0);
+                body.u8(-last.1);
+                records += 1;
+                x = tx;
+                y = ty;
+                visit(x, y);
+                (last_stitch_x, last_stitch_y) = (x, y);
             }
-            Command::Trim => body.append(&[0x7F, 0x03, 0x00, 0x00]), // cut in place
-            Command::ColorChange | Command::Stop => {
-                xx += dx;
-                yy += dy;
-                body.append(&[0x7F, 0x08]);
-                body.u8(dx);
-                body.u8(-dy);
+            Event::ColorChange | Event::Stop => color_pending = true,
+            Event::End => {
+                if color_pending {
+                    body.append(&[0x7F, 0x08, 0x00, 0x00]);
+                }
+                for (dx, dy) in layout::split_clamped(-x, -y, max) {
+                    jump(&mut body, &mut records, dx, dy);
+                }
+                break;
             }
-            Command::End => break,
         }
-        records += 1;
-        visit(xx, yy);
-    }
-    visit(xx, yy); // end position
-    if records == 0 {
-        (min_x, min_y, max_x, max_y) = (0, 0, 0, 0);
+        i += 1;
     }
 
     let mut w = ByteWriter::default();
@@ -162,16 +214,16 @@ pub fn write(input: &StitchPattern) -> Result<Vec<u8>> {
     w.u16le(0);
     w.u16le(max_x - min_x);
     w.u16le(max_y - min_y);
-    w.u16le(xx);
-    w.u16le(-yy);
-    w.u16le(-min_x);
-    w.u16le(max_y);
+    w.u16le(last_stitch_x);
+    w.u16le(-last_stitch_y);
+    w.u16le(0);
+    w.u16le(0);
     w.fill(0, 0x42 + 4 + 0x73);
-    w.u16le(0x20);
+    w.u16le(0);
     w.fill(0, 8);
     w.u32le((STITCH_OFFSET + body.len()) as i64);
     w.append(&body.bytes);
-    w.append(&[0x7F, 0x7F, 0x02, 0x14, 0x00, 0x00]);
+    w.append(&[0x7F, 0x7F, 0x03, 0x14, 0x00, 0x00]);
     for t in &pattern.threads {
         w.append(&[0, t.red, t.green, t.blue]);
     }

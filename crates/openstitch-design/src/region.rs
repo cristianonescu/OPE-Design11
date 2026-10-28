@@ -278,6 +278,14 @@ fn layers_inner(
                 out.push(rows(angle - 45.0));
             }
             UnderlayStyle::EdgeFill => out.extend(fill_underlay(closed, r, angle, holes)),
+            UnderlayStyle::Cross => match cross_underlay(closed, r, angle, holes) {
+                Some(layers) => out.extend(layers),
+                None => {
+                    out.push(edge());
+                    out.push(rows(angle + 45.0));
+                    out.push(rows(angle - 45.0));
+                }
+            },
         }
     }
     let shaped =
@@ -387,6 +395,245 @@ fn fill_underlay(
         Some(&mut TravelGraph::new(closed, holes)),
         25.0,
     )]
+}
+
+/// Stitch pitch (0.1 mm) of the walks along the inset outline between the lines of
+/// PE-DESIGN's cross under sewing: the 2.83 mm gap between lines 2 mm apart is sewn in two,
+/// a 1.6 mm walk in one.
+const CROSS_JOIN_PITCH: f64 = 20.0;
+/// PE-DESIGN sews a cross under sewing line of exactly the stitch length in two stitches (a
+/// 4.0 mm line in two of 2.0), so the lines are cut at this much less (0.1 mm).
+const CROSS_LINE_SLACK: f64 = 0.2;
+/// Pitch of the travel to each half's corner (0.1 mm): equal stitches up to 2.5 mm.
+const CROSS_TRAVEL_PITCH: f64 = 25.0;
+
+/// PE-DESIGN 11.50's second under sewing type, measured on its output (sweep-satin-us-type-2,
+/// sweep-fill-us-type-2): the running stitch 1 mm inside the outline from the start point
+/// (as the first type), then two layers of parallel lines 1 mm inside the outline, the first
+/// at the sewing direction minus 45°, the second at plus 45°, `underlay_spacing` apart (2 mm
+/// by default), in stitches of the region's stitch length. Each layer is sewn in two halves.
+/// A half's lines lie one spacing apart from its far corner (the region's extreme point
+/// across the lines) up to the line through the start point; the half travels straight to
+/// that corner in 2.5 mm stitches, walks the inset outline to the line end nearer the start
+/// point, sews the lines as a serpentine with the walks between them along the outline
+/// (2 mm stitches), and walks back to the start point. The half whose corner comes first
+/// along the outline from the start point goes first. `None` (the plain crossing rows) for a region whose inset is not a
+/// single outline or that a line crosses more than once.
+fn cross_underlay(
+    closed: &[Contour],
+    r: &RegionSewing,
+    angle: f64,
+    holes: &[Contour],
+) -> Option<Vec<Vec<Run>>> {
+    let inset: Vec<Contour> = if r.kind == RegionType::Satin {
+        satin_inset(closed, holes)?
+    } else {
+        let mut shape: Vec<Contour> = closed.to_vec();
+        shape.extend(holes.iter().cloned());
+        crate::boolean::contours(&crate::boolean::offset(&shape, -FILL_UNDERLAY_INSET, false))
+    };
+    let outline: Vec<&Contour> = inset
+        .iter()
+        .filter(|c| c.closed && c.points.len() >= 3)
+        .collect();
+    let [outline] = outline[..] else {
+        return None;
+    };
+    let entry = r
+        .entry
+        .or_else(|| closed.first().and_then(|c| c.points.first().copied()))?;
+    let start = crate::route::snap(std::slice::from_ref(outline), entry);
+    let mut edge = generate::running(&outline.starting_at(start), FILL_UNDERLAY_PITCH, 1);
+    if r.kind != RegionType::Satin {
+        // The fill's edge run is entered from the start point on the outline.
+        edge.insert(0, crate::route::snap(closed, entry));
+    }
+    let mut pieces = vec![edge];
+    let spacing = r.underlay_spacing_mm() * 10.0;
+    let stitch = r.stitch_length * 10.0;
+    for a in [angle + 45.0, angle - 45.0] {
+        pieces.extend(cross_layer(outline, a, spacing, stitch, start)?);
+    }
+    Some(vec![join(
+        pieces,
+        Some(&mut TravelGraph::new(closed, holes)),
+        CROSS_TRAVEL_PITCH,
+    )])
+}
+
+/// One layer of [`cross_underlay`]: the lines along geometry angle `a`, in two halves.
+fn cross_layer(
+    outline: &Contour,
+    a: f64,
+    spacing: f64,
+    stitch: f64,
+    start: Vec2,
+) -> Option<Vec<Run>> {
+    let rad = a.to_radians();
+    let points = outline.outline_points();
+    let rotated: Vec<Vec2> = points.iter().map(|p| p.rotated(-rad)).collect();
+    let s = start.rotated(-rad);
+    let imin = (0..rotated.len()).min_by(|&i, &j| rotated[i].y.total_cmp(&rotated[j].y))?;
+    let imax = (0..rotated.len()).max_by(|&i, &j| rotated[i].y.total_cmp(&rotated[j].y))?;
+    let line = |y: f64| -> Option<Option<(Vec2, Vec2)>> {
+        match spans_at(std::slice::from_ref(outline), &[], a, y).as_slice() {
+            [] => Some(None),
+            [span] => Some(Some((
+                unrotate(*span.start(), y, a),
+                unrotate(*span.end(), y, a),
+            ))),
+            _ => None,
+        }
+    };
+    let mut halves: Vec<(Vec2, Vec<(Vec2, Vec2)>)> = Vec::new();
+    for (corner, from, step) in [
+        (points[imin], rotated[imin].y, spacing),
+        (points[imax], rotated[imax].y, -spacing),
+    ] {
+        let mut lines = Vec::new();
+        let mut y = from + step;
+        while (s.y - y) * step.signum() > 1e-6 && lines.len() < 100_000 {
+            if let Some(l) = line(y)? {
+                lines.push(l);
+            }
+            y += step;
+        }
+        halves.push((corner, lines));
+    }
+    // The half whose corner comes first along the outline from the start point goes first
+    // (PE-DESIGN: the left end of a rectangle started at the middle of its bottom edge, for
+    // both layers).
+    let total: f64 = outline
+        .path()
+        .windows(2)
+        .map(|w| w[0].distance(w[1]))
+        .sum::<f64>()
+        .max(1e-9);
+    let from_start = |p: Vec2| {
+        (outline_position(outline, p) - outline_position(outline, start)).rem_euclid(total)
+    };
+    halves.sort_by(|a, b| from_start(a.0).total_cmp(&from_start(b.0)));
+    let mut runs = Vec::new();
+    for (corner, lines) in halves {
+        if lines.is_empty() {
+            continue;
+        }
+        let mut run = vec![corner];
+        let mut at = corner;
+        for (e0, e1) in lines {
+            let (d0, d1) = (
+                outline_distance(outline, at, e0),
+                outline_distance(outline, at, e1),
+            );
+            let (near, far) = if (d0 - d1).abs() < 0.5 {
+                // The first line from a corner: the end nearer the start point along the outline.
+                if outline_distance(outline, e0, start) <= outline_distance(outline, e1, start) {
+                    (e0, e1)
+                } else {
+                    (e1, e0)
+                }
+            } else if d0 <= d1 {
+                (e0, e1)
+            } else {
+                (e1, e0)
+            };
+            run.extend(
+                subdivide(&outline_walk(outline, at, near), CROSS_JOIN_PITCH)
+                    .into_iter()
+                    .skip(1),
+            );
+            run.extend(
+                subdivide(&[near, far], (stitch - CROSS_LINE_SLACK).max(1.0))
+                    .into_iter()
+                    .skip(1),
+            );
+            at = far;
+        }
+        run.extend(
+            subdivide(&outline_walk(outline, at, start), CROSS_JOIN_PITCH)
+                .into_iter()
+                .skip(1),
+        );
+        runs.push(run);
+    }
+    Some(runs)
+}
+
+/// Where `p` lies along `c`'s outline (flattened, closed): the distance along it from the
+/// first point to the nearest point of the outline to `p`.
+fn outline_position(c: &Contour, p: Vec2) -> f64 {
+    let path = c.path();
+    let (mut best, mut at, mut along) = (f64::INFINITY, 0.0, 0.0);
+    for w in path.windows(2) {
+        let (a, b) = (w[0], w[1]);
+        let (ab, ap) = (b - a, p - a);
+        let len2 = ab.x * ab.x + ab.y * ab.y;
+        let t = if len2 < 1e-18 {
+            0.0
+        } else {
+            ((ap.x * ab.x + ap.y * ab.y) / len2).clamp(0.0, 1.0)
+        };
+        let d = p.distance(a.lerp(b, t));
+        if d < best {
+            (best, at) = (d, along + t * len2.sqrt());
+        }
+        along += len2.sqrt();
+    }
+    at
+}
+
+/// The shorter way along `c`'s outline from `a` to `b` (both on it), as a path through the
+/// vertices between them.
+fn outline_walk(c: &Contour, a: Vec2, b: Vec2) -> Vec<Vec2> {
+    let path = c.path();
+    let total: f64 = path.windows(2).map(|w| w[0].distance(w[1])).sum();
+    if total < 1e-9 {
+        return vec![a, b];
+    }
+    let (pa, pb) = (outline_position(c, a), outline_position(c, b));
+    // Vertex positions along the outline, with the vertex itself.
+    let mut vertices: Vec<(f64, Vec2)> = Vec::new();
+    let mut along = 0.0;
+    for w in path.windows(2) {
+        along += w[0].distance(w[1]);
+        vertices.push((along, w[1]));
+    }
+    // Forward: the vertices strictly between pa and pb going round in drawing order.
+    let between = |from: f64, to: f64, v: f64| {
+        if from <= to {
+            v > from && v < to
+        } else {
+            v > from || v < to
+        }
+    };
+    let forward: Vec<Vec2> = vertices
+        .iter()
+        .filter(|(v, _)| between(pa, pb, *v % total))
+        .map(|(_, p)| *p)
+        .collect();
+    let f = (pb - pa).rem_euclid(total);
+    let mut out = vec![a];
+    if f <= total - f {
+        out.extend(forward);
+    } else {
+        out.extend(
+            vertices
+                .iter()
+                .filter(|(v, _)| between(pb, pa, *v % total))
+                .map(|(_, p)| *p)
+                .rev(),
+        );
+    }
+    out.push(b);
+    out
+}
+
+/// The shorter distance along `c`'s outline between `a` and `b` (both on it).
+fn outline_distance(c: &Contour, a: Vec2, b: Vec2) -> f64 {
+    outline_walk(c, a, b)
+        .windows(2)
+        .map(|w| w[0].distance(w[1]))
+        .sum()
 }
 
 /// A stored direction angle (degrees counter-clockwise on screen, as PE-DESIGN's Sewing

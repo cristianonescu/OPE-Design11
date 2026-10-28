@@ -12,9 +12,12 @@ letters keep their x positions, the stems of the H's give the envelope's top and
 the highest and lowest needle point of each stem column. Each edge is a least-squares fit of
 those samples (fractions of the straight box) on a constant, a slope and eight cosine terms,
 dropping outliers; for curved presets each knot (u = k/32 along the text) is the outermost
-of the samples near it, so peaks are kept, and the fit fills the gaps between letters. Slants are fitted from the
-letters' corners; the arcs (1 and 2) and the fans (13 and 14) are not envelopes of this kind
-and are left out of the table.
+of the samples near it, so peaks are kept, and the fit fills the gaps between letters. Slants
+and fans are fitted from the letters' corners: a fan keeps one edge of the straight box and
+scales the other about the text's centre, each letter sheared linearly between them. The arcs
+(1 and 2) are not envelopes of this kind and are left out of the table.
+
+The stitchtool binary: target/debug/stitchtool, or the path in STITCHTOOL.
 """
 
 import json
@@ -25,7 +28,8 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TOOL = ROOT / "target" / "debug" / ("stitchtool.exe" if os.name == "nt" else "stitchtool")
+TOOL = Path(os.environ.get("STITCHTOOL") or
+            ROOT / "target" / "debug" / ("stitchtool.exe" if os.name == "nt" else "stitchtool"))
 REF = ROOT / "compat" / "reference" / "text"
 X0, X1, YT, YB = 12.7, 87.3, 39.7, 50.0
 W, H = X1 - X0, YB - YT
@@ -33,6 +37,9 @@ KNOTS = 33
 # Presets whose letters stay at their x positions; 9 and 10 slant.
 COLUMN = [3, 4, 5, 6, 7, 8, 11, 12, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
 SLANT = [9, 10]
+# Fans: 13 shrinks the bottom edge about the centre, 14 the top edge.
+FAN = [13, 14]
+LETTER = 8.7
 
 
 def needle_points(path):
@@ -180,6 +187,33 @@ def slant_preset(n):
     return top, bottom
 
 
+def corner_scales(letters):
+    """(top, bottom) scale of the letters' corners about the text's centre, least squares over
+    every letter's two top and two bottom corners against the straight text's."""
+    pitch = (W - LETTER) / (len(letters) - 1)
+    c = X0 + W / 2
+    num = {1: 0.0, 2: 0.0}
+    den = {1: 0.0, 2: 0.0}
+    for i, pts in enumerate(letters):
+        top, bottom = min(y for _, y in pts), max(y for _, y in pts)
+        for k, edge in ((1, top), (2, bottom)):
+            near = [x for x, y in pts if abs(y - edge) < 0.4]
+            for straight, moved in ((X0 + i * pitch, min(near)), (X0 + i * pitch + LETTER, max(near))):
+                num[k] += (moved - c) * (straight - c)
+                den[k] += (straight - c) ** 2
+    return num[1] / den[1], num[2] / den[2]
+
+
+def fan_preset(n):
+    """A trapezoid: each edge is the straight text scaled about its centre (PE-DESIGN 11.50:
+    13 keeps the top and shrinks the bottom to 0.70, 14 the other way round at 0.69)."""
+    st, sb = corner_scales(needle_points(REF / f"text-transform-{n}.pes"))
+    us = [k / (KNOTS - 1) for k in range(KNOTS)]
+    top = [(round(0.5 + (u - 0.5) * st, 4), 0.0) for u in us]
+    bottom = [(round(0.5 + (u - 0.5) * sb, 4), 1.0) for u in us]
+    return top, bottom
+
+
 def fmt(edge):
     return "[" + ", ".join(f"({x:.4f}, {y:.4f})" for x, y in edge) + "]"
 
@@ -199,8 +233,13 @@ def main():
     print()
     print("/// (preset number, top edge, bottom edge).")
     print("pub static ENVELOPES: &[(u8, Edge, Edge)] = &[")
-    for n in sorted(COLUMN + SLANT):
-        top, bottom = column_preset(n) if n in COLUMN else slant_preset(n)
+    for n in sorted(COLUMN + SLANT + FAN):
+        if n in COLUMN:
+            top, bottom = column_preset(n)
+        elif n in SLANT:
+            top, bottom = slant_preset(n)
+        else:
+            top, bottom = fan_preset(n)
         print(f"    ({n}, {fmt(top)}, {fmt(bottom)}),")
     print("];")
 

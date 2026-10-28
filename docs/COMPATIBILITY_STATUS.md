@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 151 · pass 151 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 158 · pass 158 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -14,38 +14,39 @@ Specs: 151 · pass 151 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Editing | Manual Punch: shapes made of several sewing-direction lines… | reference | `satin-lock-column-3p5`, `satin-zigzag-column` |
 | Editing | Sewing order editing… | reference; reference pending | `optimize-entry-exit`, `shape-start-points` |
 | Editing | Thread colour, sew type, straight sewing direction… | reference | `auto-satin-bent-band` |
-| Files | DST read/write, configurable jumps-for-trim… | internal-regression; reference pending | `machine-formats` |
+| Files | DST read/write, configurable jumps-for-trim… | reference; reference pending | `machine-formats` |
 | Files | Design Property… | reference | `pes-design-properties` |
-| Files | EXP read/write… | internal-regression; reference pending | `machine-formats` |
-| Files | HUS read and write (LZ77 + Huffman streams, HUS chart)… | internal-regression; reference pending | `machine-formats` |
-| Files | JEF read/write (Janome chart, stops, hoop code)… | internal-regression; reference pending | `machine-formats` |
-| Files | PCS read/write (1/6 mm grid, hoop byte)… | internal-regression; reference pending | `machine-formats` |
+| Files | EXP read/write… | reference; reference pending | `machine-formats` |
+| Files | HUS read and write (LZ77 + Huffman streams, HUS chart)… | reference; reference pending | `machine-formats` |
+| Files | JEF read/write (Janome chart, stops, hoop code)… | reference; reference pending | `machine-formats` |
+| Files | PCS read/write (1/6 mm grid, hoop byte)… | reference; reference pending | `machine-formats` |
 | Files | PES v6 thread table… | oracle | `pes-thread-chart-roundtrip` |
-| Files | PES write v1 and v6… | oracle; reference pending | `machine-rbr`, `pes-csewseg-trims`, `pes-default-v6`, `pes-library-convert-v6` |
-| Files | SEW read/write (Janome SEW chart)… | internal-regression; reference pending | `machine-formats` |
-| Files | VIP read and write (HUS streams, obfuscated RGB colour table)… | internal-regression; reference pending | `machine-formats` |
-| Files | XXX read/write… | internal-regression; reference pending | `machine-formats` |
+| Files | PES write v1 and v6… | oracle; reference pending | `machine-jumps`, `machine-rbr`, `machine-trim-bound`, `machine-trim-fine`, `pes-csewseg-trims`, `pes-default-v6`, `pes-library-convert-v6` |
+| Files | SEW read/write (Janome SEW chart)… | reference; reference pending | `machine-formats` |
+| Files | VIP read and write (HUS streams, obfuscated RGB colour table)… | reference; reference pending | `machine-formats` |
+| Files | XXX read/write… | reference; reference pending | `machine-formats` |
 | Lettering | Fit text to outline (text on a path)… | reference | `text-fit-ahhhh`, `text-fit-default`, `text-fit-halign-left`, `text-fit-halign-right`, `text-fit-halign-spaced`, `text-fit-orient-upright`, `text-fit-otherside`, `text-fit-satin-ahhhh`, `text-fit-size-12`, `text-fit-size-6`, `text-fit-spacing-m1`, `text-fit-spacing-p2`, `text-fit-valign-below`, `text-fit-valign-center` |
-| Lettering | Text Transform… | reference | `text-transform-1`, `text-transform-10`, `text-transform-11`, `text-transform-12`, `text-transform-15`, `text-transform-16`, `text-transform-17`, `text-transform-18`, `text-transform-19`, `text-transform-2`, `text-transform-20`, `text-transform-21`, `text-transform-22`, `text-transform-23`, `text-transform-24`, `text-transform-25`, `text-transform-26`, `text-transform-3`, `text-transform-4`, `text-transform-5`, `text-transform-6`, `text-transform-7`, `text-transform-8`, `text-transform-9` |
+| Lettering | Text Transform… | reference | `text-transform-1`, `text-transform-10`, `text-transform-11`, `text-transform-12`, `text-transform-13`, `text-transform-14`, `text-transform-15`, `text-transform-16`, `text-transform-17`, `text-transform-18`, `text-transform-19`, `text-transform-2`, `text-transform-20`, `text-transform-21`, `text-transform-22`, `text-transform-23`, `text-transform-24`, `text-transform-25`, `text-transform-26`, `text-transform-3`, `text-transform-4`, `text-transform-5`, `text-transform-6`, `text-transform-7`, `text-transform-8`, `text-transform-9` |
 | Lettering | Text entry and attributes… | reference | `text-defaults-fill`, `text-defaults-h`, `text-line-spacing-100`, `text-line-spacing-150`, `text-line-spacing-50`, `text-sewing-order`, `text-size-h`, `text-size-hg` |
 | Line sew types | Motif (OpenStitch's own motif library… | reference | `line-candlewick-default`, `line-candlewick-startend-feed`, `line-candlewick-startend-run`, `line-chain-default`, `line-chain-startend-feed`, `line-chain-startend-l2side-feed`, `line-chain-startend-l2side-run`, `line-chain-startend-mid-feed`, `line-chain-startend-mid-run`, `line-chain-startend-run`, `line-e-default`, `line-stem-default`, `line-stem-startend-feed`, `line-stem-startend-run`, `line-v-default` |
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
 | Line sew types | Running (pitch, run times 1… | reference | `line-running-default`, `line-triple-default` |
 | Line sew types | Zigzag: width, density… | reference | `line-zigzag-default`, `line-zigzag-density-max` |
-| Region sew types | Fill (tatami: angle or auto direction… | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5-h33`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-density-min`, `sweep-fill-dir-135`, `sweep-fill-dir-30`, `sweep-fill-dir-45`, `sweep-fill-dir-90`, `sweep-fill-freq-10`, `sweep-fill-freq-40`, `sweep-fill-pitch-2p0`, `sweep-fill-pitch-3p0`, `sweep-fill-pitch-6p0`, `sweep-fill-pitch-max`, `sweep-fill-pitch-min`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max`, `sweep-fill-us-default`, `sweep-fill-us-density-dense`, `sweep-fill-us-density-light`, `u-gradation-50-50`, `u-gradation-80-20`, `u-gradation-95-50`, `u-gradation-blend-blue`, `u-gradation-dir-90`, `u-gradation-pattern-2`, `u-gradation-pattern-3`, `u-gradation-pattern-4`, `u-gradation-pattern-5`, `u-gradation-pattern-6`, `u-gradation-pattern-7`, `u-gradation-pattern-8` |
+| Region sew types | Fill (tatami: angle or auto direction… | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5-h33`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-density-min`, `sweep-fill-dir-135`, `sweep-fill-dir-30`, `sweep-fill-dir-45`, `sweep-fill-dir-90`, `sweep-fill-freq-10`, `sweep-fill-freq-40`, `sweep-fill-pitch-2p0`, `sweep-fill-pitch-3p0`, `sweep-fill-pitch-6p0`, `sweep-fill-pitch-max`, `sweep-fill-pitch-min`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max`, `sweep-fill-us-default`, `sweep-fill-us-density-dense`, `sweep-fill-us-density-light`, `sweep-fill-us-type-2`, `u-gradation-50-50`, `u-gradation-80-20`, `u-gradation-95-50`, `u-gradation-blend-blue`, `u-gradation-dir-90`, `u-gradation-pattern-2`, `u-gradation-pattern-3`, `u-gradation-pattern-4`, `u-gradation-pattern-5`, `u-gradation-pattern-6`, `u-gradation-pattern-7`, `u-gradation-pattern-8` |
 | Region sew types | Programmable fill… | reference | `programmable-fill-45` |
-| Region sew types | Satin: a zigzag across the column… | internal-regression; reference pending | `auto-satin-bent-band`, `region-travel-u-satin`, `satin-auto-bend-30-nohalf`, `satin-auto-bend-30`, `satin-auto-bend-45-nohalf`, `satin-auto-bend-45`, `satin-auto-bend-60`, `satin-auto-bend-75-nohalf`, `satin-auto-bend-75`, `satin-auto-bend-90-nohalf`, `satin-feather`, `satin-gradation`, `satin-sections-h`, `satin-zigzag-rect`, `satin-zigzag-skeleton`, `sweep-satin-density-4p5`, `sweep-satin-density-max`, `sweep-satin-density-min`, `sweep-satin-pull-0p5`, `sweep-satin-pull-max`, `sweep-satin-us-default`, `sweep-satin-width-10`, `sweep-satin-width-15`, `sweep-satin-width-2`, `sweep-satin-width-3` |
+| Region sew types | Satin: a zigzag across the column… | internal-regression; reference pending | `auto-satin-bent-band`, `region-travel-u-satin`, `satin-auto-bend-30-nohalf`, `satin-auto-bend-30`, `satin-auto-bend-45-nohalf`, `satin-auto-bend-45`, `satin-auto-bend-60`, `satin-auto-bend-75-nohalf`, `satin-auto-bend-75`, `satin-auto-bend-90-nohalf`, `satin-feather`, `satin-gradation`, `satin-sections-h`, `satin-zigzag-rect`, `satin-zigzag-skeleton`, `sweep-satin-density-4p5`, `sweep-satin-density-max`, `sweep-satin-density-min`, `sweep-satin-pull-0p5`, `sweep-satin-pull-max`, `sweep-satin-us-default`, `sweep-satin-us-type-2`, `sweep-satin-width-10`, `sweep-satin-width-15`, `sweep-satin-width-2`, `sweep-satin-width-3` |
 
 ## By audit item
 
 | Item | Tier | Specs |
 |---|---|---|
-| 1 | internal-regression; reference pending | `satin-feather`, `satin-gradation`, `satin-lock-column-3p5`, `satin-zigzag-column`, `satin-zigzag-rect`, `satin-zigzag-skeleton`, `sweep-satin-density-4p5`, `sweep-satin-density-max`, `sweep-satin-density-min`, `sweep-satin-pull-0p5`, `sweep-satin-pull-max`, `sweep-satin-us-default`, `sweep-satin-width-10`, `sweep-satin-width-15`, `sweep-satin-width-2`, `sweep-satin-width-3` |
+| 1 | internal-regression; reference pending | `satin-feather`, `satin-gradation`, `satin-lock-column-3p5`, `satin-zigzag-column`, `satin-zigzag-rect`, `satin-zigzag-skeleton`, `sweep-satin-density-4p5`, `sweep-satin-density-max`, `sweep-satin-density-min`, `sweep-satin-pull-0p5`, `sweep-satin-pull-max`, `sweep-satin-us-default`, `sweep-satin-us-type-2`, `sweep-satin-width-10`, `sweep-satin-width-15`, `sweep-satin-width-2`, `sweep-satin-width-3` |
 | 2 | oracle; reference pending | `pes-default-v6`, `pes-library-convert-v6` |
 | 3 | internal-regression | `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `region-travel-u-satin`, `running-stitch-path-exclusions`, `satin-sections-h`, `u-gradation-50-50`, `u-gradation-80-20`, `u-gradation-95-50`, `u-gradation-blend-blue`, `u-gradation-dir-90`, `u-gradation-pattern-2`, `u-gradation-pattern-3`, `u-gradation-pattern-4`, `u-gradation-pattern-5`, `u-gradation-pattern-6`, `u-gradation-pattern-7`, `u-gradation-pattern-8` |
+| 4 | reference | `machine-jumps`, `machine-trim-bound`, `machine-trim-fine` |
 | 7 | reference | `auto-satin-bent-band`, `satin-auto-bend-30-nohalf`, `satin-auto-bend-30`, `satin-auto-bend-45-nohalf`, `satin-auto-bend-45`, `satin-auto-bend-60`, `satin-auto-bend-75-nohalf`, `satin-auto-bend-75`, `satin-auto-bend-90-nohalf` |
 | 14 | reference | `programmable-fill-45` |
-| 15 | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5-h33`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-density-min`, `sweep-fill-dir-135`, `sweep-fill-dir-30`, `sweep-fill-dir-45`, `sweep-fill-dir-90`, `sweep-fill-freq-10`, `sweep-fill-freq-40`, `sweep-fill-pitch-2p0`, `sweep-fill-pitch-3p0`, `sweep-fill-pitch-6p0`, `sweep-fill-pitch-max`, `sweep-fill-pitch-min`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max`, `sweep-fill-us-default`, `sweep-fill-us-density-dense`, `sweep-fill-us-density-light` |
+| 15 | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5-h33`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-density-min`, `sweep-fill-dir-135`, `sweep-fill-dir-30`, `sweep-fill-dir-45`, `sweep-fill-dir-90`, `sweep-fill-freq-10`, `sweep-fill-freq-40`, `sweep-fill-pitch-2p0`, `sweep-fill-pitch-3p0`, `sweep-fill-pitch-6p0`, `sweep-fill-pitch-max`, `sweep-fill-pitch-min`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max`, `sweep-fill-us-default`, `sweep-fill-us-density-dense`, `sweep-fill-us-density-light`, `sweep-fill-us-type-2` |
 | 16 | reference | `machine-rbr`, `optimize-entry-exit` |
 | 17 | internal-regression | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
 | 18 | oracle | `pes-thread-chart-roundtrip` |
@@ -55,8 +56,11 @@ Specs: 151 · pass 151 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 | Spec | Status | Tier | Internal regression | Oracle | Reference | Machine |
 |---|---|---|---|---|---|---|
-| `machine/machine-formats` | pass | internal-regression | pass | — | pending | pending |
+| `machine/machine-formats` | pass | reference | pass | — | pass | pending |
+| `machine/machine-jumps` | pass | reference | pass | — | pass | — |
 | `machine/machine-rbr` | pass | reference | — | — | pass | — |
+| `machine/machine-trim-bound` | pass | reference | pass | — | pass | — |
+| `machine/machine-trim-fine` | pass | reference | pass | — | pass | — |
 | `pes/pes-csewseg-trims` | pass | reference | pass | — | pass | — |
 | `pes/pes-default-v6` | pass | reference | pass | — | pass | pending |
 | `pes/pes-design-properties` | pass | reference | pass | — | pass | — |
@@ -138,12 +142,14 @@ Specs: 151 · pass 151 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/sweep-fill-us-default` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-us-density-dense` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-us-density-light` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-fill-us-type-2` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-satin-density-4p5` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-satin-density-max` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-satin-density-min` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-satin-pull-0p5` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-satin-pull-max` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-satin-us-default` | pass | reference | pass | — | pass | — |
+| `stitches/sweep-satin-us-type-2` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-satin-width-10` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-satin-width-15` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-satin-width-2` | pass | reference | pass | — | pass | — |
@@ -186,6 +192,8 @@ Specs: 151 · pass 151 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `text/text-transform-10` | pass | reference | — | — | pass | — |
 | `text/text-transform-11` | pass | reference | — | — | pass | — |
 | `text/text-transform-12` | pass | reference | — | — | pass | — |
+| `text/text-transform-13` | pass | reference | — | — | pass | — |
+| `text/text-transform-14` | pass | reference | — | — | pass | — |
 | `text/text-transform-15` | pass | reference | — | — | pass | — |
 | `text/text-transform-16` | pass | reference | — | — | pass | — |
 | `text/text-transform-17` | pass | reference | — | — | pass | — |

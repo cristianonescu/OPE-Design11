@@ -256,10 +256,18 @@ Line references are relative to `crates/`.
 
 ## 4. Trims between underlay, top stitching and outline of one object
 
-- **Raised 2026-10-28** (reference `machine-jumps.pes`, parked with the parked-references session):
-  six same-colour fill squares with 1, 2, 3, 4 and 6 mm gaps: PE-DESIGN trims the 2, 3, 4 and 6 mm
-  moves and leaves the 1 mm move a plain jump, so "every interior move is trimmed" (#69) has a
-  lower bound between 1 and 2 mm; OpenStitch trims all five. Settled (`machine-rbr.pes`, reference
+- **Settled 2026-10-28** (references `machine-jumps.pes`, `machine-trim-bound.pes`,
+  `machine-trim-fine.pes`, specs of the same names at the reference tier): between same-colour
+  parts PE-DESIGN 11.50 sews a needle-to-needle move of up to 2.24 mm across as a plain stitch
+  (no jump at all) and trims a move of 2.33 mm and more (gaps of 0.5, 0.8 and 1.0 mm sewn, 1.1 mm
+  and up trimmed, with its exit 0.5 mm inside the right edge and 1 mm up and its entry 0.5 mm
+  inside the next left edge: moves of sqrt((gap + 1)^2 + 1)). OpenStitch's compiler now sews a
+  move of up to 2.3 mm between objects across (`Compiler::sew_across_distance`) and trims every
+  longer one, so no plain interior jump is written. Open: where PE-DESIGN puts the optimized
+  exit and entry (0.5 mm inside the edges; OpenStitch's lie on the edges, so the specs draw the
+  squares at PE's needle-to-needle moves), and the value PE's multi-needle "minimum jump stitch
+  length for trimming" field shows (read the Design Settings dialog; the recordings were made
+  with the multi-needle machine type at its default). Also settled (`machine-rbr.pes`, reference
   tier): objects drawn red, blue, red sew as both reds (one block, a trim between them) then blue,
   one colour change, as `order.optimize` does.
 
@@ -426,6 +434,20 @@ Line references are relative to `crates/`.
   Medium / Light) cannot be reproduced:
   - OpenStitch's Double is two crossing ±45° layers.
   - Zigzag outlines have no underlay at all.
+- **Settled 2026-10-27/28 from the under sewing sweep (`sweep-satin-us-*`, `sweep-fill-us-*`):**
+  PE-DESIGN 11.50's Region sew pane offers two type buttons (the second's icon a double layer
+  of crossing rows) and a Density of Dense / Medium / Light; no spacing or inset fields. The
+  first type is modelled (`EdgeFill` for fill, `EdgeZigzag` for satin: the edge run 1 mm
+  inside, rows 2 mm apart). The second type is modelled since 2026-10-28 as `Cross`
+  (`underlayStyle: cross`): the same edge run, then two layers of lines 1 mm inside the
+  outline at the sewing direction minus and plus 45°, 2 mm apart (2.83 mm along the edges),
+  in 4 mm stitches (a line of exactly 4 mm in two), each layer sewn in two halves from the
+  region's far corners towards the start point (the half whose corner comes first along the
+  outline from the start point first), straight travel to the corner at 2.5 mm, walks along
+  the inset outline at 2 mm, back to the start point at the end; specs sweep-satin-us-type-2
+  (395 stitches to PE's 404) and sweep-fill-us-type-2 (2650 to 2651) at the reference tier.
+  Still open: Density Dense / Light (PE: row spacing 1.41 / 3.45 mm against Medium's 2.0,
+  `sweep-fill-us-density-*`), and which of the two types PE applies to the other region kinds.
 - **Module:**
   - `openstitch-design/src/model.rs:613-625,822`: the styles and a 2 mm spacing.
   - `openstitch-design/src/region.rs:15,120-156`: satin underlay runs parallel to the top
@@ -924,13 +946,49 @@ Line references are relative to `crates/`.
   then a 4 × 6 grid; ticking Transform applies preset 3; fitted text cannot be transformed,
   and fitting cancels it). OpenStitch lays out 24 of them, from envelopes fitted to PE's
   output by `tools/fit_envelopes.py` (specs text-transform-N, reference tier: bounds within
-  0.5 mm, every H stem's top and bottom within 0.5 mm). Still open: 13 and 14 (fan out / in),
-  which skew each letter differently.
+  0.5 mm, every H stem's top and bottom within 0.5 mm). 13 and 14 (fan out / in) since
+  2026-10-28: each letter keeps its height and is sheared linearly between one edge of the
+  straight box and the other edge scaled by 0.70 about the text's centre (13 shrinks the
+  bottom, 14 the top; fitted from the letters' corners); specs text-transform-13/-14 at the
+  reference tier by their box. Their stitch counts are 41-43 % above PE-DESIGN's (1653 vs
+  1171, 1659 vs 1159) against +14 % on the straight-edged presets: the fill rows across
+  sheared stems, for the text-fill item below.
 - **Sewing order inside a text (checked 2026-10-27):** not a gap. PE-DESIGN 11.50 also sews
   every letter's region first, then every letter's outline, one colour block each (spec
   text-sewing-order, reference tier). Still open: the guide disables "some editing of
   individual characters" on user-mapped text without naming them; checking which needs
   characters registered with Brother's tools, which the project does not use.
+- **Machine format exports (calibrated 2026-10-28):** PE-DESIGN 11.50's DST, EXP, JEF, SEW,
+  XXX, PCS, HUS and VIP exports of one OpenStitch design (`compat/reference/machine`, spec
+  `machine-formats`, reference tier) showed the writers differed in how they laid out a frame
+  move, a trim, a colour change, a stitch longer than a record and the origin. The writers now
+  follow PE-DESIGN record for record (EXP and PCS byte for byte; the rules are tabulated in
+  FILE_FORMATS.md "PE-DESIGN's record layout"): the design centred on the stream origin, a long
+  stitch as jumps plus one stitch (one needle penetration), a frame move as a jump run with no
+  trim record (DST padded to three records, XXX one `7E` record, VIP `88`, HUS a zero-length
+  jump), the move's remainder folded into the next stitch in JEF, SEW, XXX and VIP, PCS's fixed
+  16-colour table indexed by its colour records, HUS's `0x00C8FC5D` magic. The readers follow:
+  a single jump no longer than a record is read as the long part of a stitch, not a trim (JEF,
+  EXP), `80 02` is an EXP jump, PE-DESIGN's HUS trim marker and XXX `7E` moves read as trims,
+  PCS's index byte and fraction byte are read. SEW's start point (settled 2026-10-28,
+  `sew-a-moved10.*`, `sew-square-centre.*`): the stream is relative to the design (PE-DESIGN's
+  export of the same design moved 10 mm on the page is byte-identical) and starts 15.9 mm left
+  of and 9.7 mm above the design centre, the same for the 40 mm design and the 20 x 20 mm
+  square, the way to the first needle point sewn as a stitch and split like one; the writer
+  starts there and the reader keeps the move, so the SEW compare is record for record from the
+  first one. The spec exports OpenStitch's saved a.pes itself (`stitches.import`), the file
+  PE-DESIGN opened, so the writers are compared on exactly PE-DESIGN's input whatever the
+  stitch generator does later; an imported stitch block's needle points are exported as
+  recorded (a 15 mm stitch stays one penetration, as PE-DESIGN exports the opened file; the
+  compiler used to split it at the machine's longest stitch). The square's export also shows
+  PE-DESIGN exporting its own objects from their
+  first needle point, the end of the PEC's first jump (its tie-in: there, 0.3 mm back, there
+  again), where OpenStitch's PES reader starts at the first PEC stitch record: one record more
+  in PE-DESIGN's stream, the rest identical (`sew_stream_is_design_relative_and_starts_where_pe_design_does`).
+  Still open, each settled by one more export: how the folding formats write a frame move shorter
+  than one record; VIP's exact piece length (7.5–7.9 mm); JEF's `-1` hoop block; XXX's header
+  tables and palette filler; SEW's 340 header bytes; DST's `AX`/`AY`; PE-DESIGN's RGB for chart
+  colour 800 RED (`E3 31 1F`) against the PEC chart table's `ED 17 1F`.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.

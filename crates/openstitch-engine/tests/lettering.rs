@@ -281,7 +281,12 @@ fn text_transform_presets_are_set_refused_when_fitted_and_cancelled_by_fitting()
         json!({"ids": [2], "envelope": 22}),
     );
     assert_eq!(envelope(&s), Some(22));
-    for bad in [json!(0), json!(27), json!(13), json!("arch")] {
+    // The fans (13 and 14) lay out since 2026-10-28: every preset 1-26 is accepted.
+    for n in [13, 14] {
+        run(&mut s, "object.setText", json!({"ids": [2], "envelope": n}));
+        assert_eq!(envelope(&s), Some(n));
+    }
+    for bad in [json!(0), json!(27), json!("arch")] {
         assert!(
             s.execute(
                 "object.setText",

@@ -1,5 +1,6 @@
 //! Pfaff / Husqvarna Viking VIP: the HUS layout with magic `0x0190FC5D`, followed at 0x2A by a
-//! u32 colour-table length and an RGB colour table (4 bytes per colour: R, G, B, 1) that is
+//! u32 that libembroidery reads as the colour-table length (PE-DESIGN 11.50 writes
+//! `0x2E + 8 × colours` there) and an RGB colour table (4 bytes per colour: R, G, B, 1) that is
 //! obfuscated with a fixed 400-byte key and chained XOR (`out[i] = rgb[i] ^ KEY[i] ^ out[i-1]`),
 //! then (as libembroidery lays it out) `colours + 1` u32 values of 1, a u32 0 and a u16 0, so the
 //! command stream starts at `0x38 + 8 × colours`. The three record streams are those of
@@ -7,9 +8,10 @@
 //!
 //! Source: libembroidery's `readVip` / `writeVip` and its key table (zlib licence, see
 //! THIRD_PARTY_NOTICES.md). pyembroidery 1.5.1 has no VIP module, so there is no independent
-//! oracle; the key limits a file to 100 colours.
+//! oracle; the key limits a file to 100 colours. The records are laid out as PE-DESIGN
+//! 11.50's export (see [`hus::encode`]).
 
-use crate::hus::{self, Encoded};
+use crate::hus::{self, Dialect, Encoded};
 use crate::io::{ByteReader, ByteWriter};
 use crate::{FormatError, Result};
 use openstitch_core::{StitchPattern, Thread};
@@ -20,7 +22,7 @@ pub const MAX_COLORS: usize = KEY.len() / 4;
 
 pub fn read(data: &[u8]) -> Result<StitchPattern> {
     let mut reader = ByteReader::new(data);
-    let header = hus::read_header(&mut reader, MAGIC, "VIP")?;
+    let header = hus::read_header(&mut reader, &[MAGIC], "VIP")?;
     if header.colors > MAX_COLORS {
         return Err(FormatError::ValueOutOfRange(format!(
             "VIP: {} colours (at most {MAX_COLORS})",
@@ -46,7 +48,7 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
 }
 
 pub fn write(pattern: &StitchPattern) -> Result<Vec<u8>> {
-    let e: Encoded = hus::encode(pattern);
+    let e: Encoded = hus::encode(pattern, Dialect::Vip);
     let n = e.palette.len();
     if n > MAX_COLORS {
         return Err(FormatError::ValueOutOfRange(format!(
@@ -56,7 +58,7 @@ pub fn write(pattern: &StitchPattern) -> Result<Vec<u8>> {
     let mut w = ByteWriter::default();
     w.u32le(i64::from(MAGIC));
     hus::write_header(&mut w, &e, n, 0x38 + 8 * n);
-    w.u32le(4 * n as i64);
+    w.u32le(0x2E + 8 * n as i64);
     let mut previous = 0_u8;
     for (c, t) in e.palette.iter().enumerate() {
         for (k, v) in [t.red, t.green, t.blue, 1].into_iter().enumerate() {
