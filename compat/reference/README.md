@@ -18,7 +18,7 @@ header fields, and the names of the object classes. Nothing here studies undocum
    what to draw or open in PE-DESIGN, and which settings to use.
 
 Some specs say to open OpenStitch's own export, for example `pes-default-v6`. These files are in
-`target/compat/work/<id>/` after a run. Copy them into the VM.
+`target/compat/work/<id>/` after a run. Open them in PE-DESIGN on the machine where it is installed.
 
 ## 2. Make it in PE-DESIGN 11
 
@@ -46,9 +46,9 @@ not match its entry, is an error. It never counts as a pass.
   "spec": "satin-zigzag-rect",
   "reference": "pe-design",
   "madeBy": "Your name",
-  "peDesignVersion": "11.30",
+  "peDesignVersion": "11.50",
   "date": "2026-10-20",
-  "os": "Windows 11 23H2 (VM)",
+  "os": "Windows 11 Pro 10.0.26200",
   "settings": "Satin Stitch, Direction 90°, Density 3.0 lines/mm, under sewing off; Save As PES (default version)",
   "sha256": "<output of: shasum -a 256 compat/reference/stitches/satin-zigzag-rect.pes>",
   "notes": "anything unexpected you saw"

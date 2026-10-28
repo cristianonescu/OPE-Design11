@@ -6,9 +6,9 @@ evidence, a reproducible test and the proposed fix. The audit was made at `7b022
 
 ## What "reference behaviour" means here
 
-**No item in this audit is verified against PE-DESIGN 11 output yet:**
-- [FEATURE_MATRIX.md](FEATURE_MATRIX.md) has no Verified Compatible rows.
-- The reference tier in [COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md) is empty.
+Since 2026-10-27 the items are checked against files saved by the owner's PE-DESIGN 11.50
+(black box). [COMPATIBILITY_STATUS.md](COMPATIBILITY_STATUS.md) lists, per item, the specs
+at the reference tier; the "Next 11" list below records what is still open.
 
 The audit uses the reference evidence that is available and permitted under
 [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md):
@@ -55,8 +55,8 @@ dearest:
    - Save the results as PES and DST, then compare them with the harness below.
    - This settles every "Needs reference" value: densities, underlay geometry, connection
      points, trims and envelope shapes.
-   - It needs a PE-DESIGN installation activated with the owner's licence, in the VM from
-     [VM_PLAN.md](VM_PLAN.md).
+   - It uses the owner's licensed PE-DESIGN 11.50 on their own machine; the procedure is in
+     [compat/reference/README.md](../compat/reference/README.md).
 2. **PES files the owner saves from their own PE-DESIGN** (allowed). Studying fields that no
    public source describes, from those files alone, is allowed as project policy (owner's
    decision, 2026-10-27; see [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md)). The law is
