@@ -185,7 +185,7 @@ encrypted purchase format). See the Blocked rows in [FEATURE_MATRIX.md](FEATURE_
   Half Stitch and on a curved band; Fit text on a line and a square, kerning on "AVA"; Stamp from an
   owner-drawn pattern, a two-colour text, an editable hole-sewing pair, the Cutwork and Embroidered
   Patch wizards, non-ASCII Design Property text; frame moves between 2.2 and 2.4 mm for the exact trim bound (0.5–2.0 mm gaps and four-colour
-  ordering are recorded), satin columns 16–25 mm wide for PE's extra centre run, and the
+  ordering are recorded), satin columns over 30 mm wide (16–30 mm are sent whole), and the
   other-format exports once their writers match.
 - A test sew-out of an OpenStitch-written file on the owner's Brother machine (the machine
   tier).

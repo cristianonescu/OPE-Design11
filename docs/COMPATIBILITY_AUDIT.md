@@ -99,11 +99,10 @@ Line references are relative to `crates/`.
 
 ## 1. Satin is sewn as a square wave, not a zigzag
 
-- **Wide columns (2026-10-28, `machine-satin-width-30.pes`, reference tier; `-20.pes` parked):**
-  PE-DESIGN sends a 30 mm satin crossing to the machine whole (every stitch 30 mm, 209 stitches on
-  a 40 × 30 mm column at density 4.5) and OpenStitch matches it; on the 40 × 20 mm column PE-DESIGN
-  keeps the 20 mm crossings whole too but adds a run of 4 mm stitches along the column (417
-  stitches, OpenStitch 208): the rule for that extra run is unknown.
+- **Wide columns (2026-10-28, `machine-satin-width-16/18/20/22/25/30.pes`, reference tier):**
+  PE-DESIGN sends satin crossings of 16 to 30 mm to the machine whole (every stitch the full
+  width, 209 stitches on each 40 mm column at density 4.5) and OpenStitch matches it: no split
+  below 30 mm.
 
 - **Impact:** severity 5.
   - Every satin row goes straight across, then takes a short stitch along the edge to the next

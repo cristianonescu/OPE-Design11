@@ -1,0 +1,105 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "machine-satin-width-18",
+  "area": "machine",
+  "title": "Satin crossings of 18 mm are not split",
+  "description": "A 40 x 18 mm rectangle sewn as satin across the 18 mm (Direction 90 degrees), density 4.5, under sewing off: PE-DESIGN keeps the 18 mm crossings whole (209 needle points, every stitch 18 mm): no split. OpenStitch splits satin stitches over 12 mm, so the reference pins what PE-DESIGN sends to the machine.",
+  "covers": {
+    "audit": [
+      1
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Satin: a zigzag across the column"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference machine/machine-satin-width-18.pes (pe-refs-3, 2026-10-28): 211 stitches, longest 18.0 mm"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "machine-satin-width-18",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 18
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "satin",
+        "angle": 90,
+        "density": 4.5,
+        "underlay": false
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "machine/machine-satin-width-18.pes",
+      "make": "On a 100 x 100 mm Design Page draw (or import) a 40 x 18 mm rectangle from (10, 10) mm. Line Not Sewn; region Satin Stitch, Direction Manual straight line 90 degrees, Density 4.5, Under sewing off, Pull compensation 0.0. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "longest-stitch",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN's crossings reach across the whole column",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN's count",
+      "reference": {
+        "tolerance": {
+          "percent": 10
+        }
+      }
+    }
+  ]
+}

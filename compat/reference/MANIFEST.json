@@ -38,6 +38,66 @@
       "notes": "Sewing Order after the import: 1 = both red squares, 2 = blue."
     },
     {
+      "file": "machine/machine-satin-width-16.pes",
+      "spec": "machine-satin-width-16",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of an SVG (viewBox 0 0 100 100 = 100 x 100 mm) with one 40 x 16 mm rectangle (#ff0000); the rectangles import centred on the page as Fill Stitch (PE's import attributes: line Not Sewn, under sewing on, density 4.5), colours mapped from the SVG fills. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Direction Manual straight line 90 degrees, Pull compensation 0.0 mm. Save As PES (#PES0110). Status bar 40,00 x 16,00 mm, Stitches = 211.",
+      "sha256": "4438ecf7f1288909ead607fde97e62500d481e9257077121c3b8c9c504cdd74f",
+      "notes": "PEC: every crossing is one stitch across the column."
+    },
+    {
+      "file": "machine/machine-satin-width-18.pes",
+      "spec": "machine-satin-width-18",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of an SVG (viewBox 0 0 100 100 = 100 x 100 mm) with one 40 x 18 mm rectangle (#ff0000); the rectangles import centred on the page as Fill Stitch (PE's import attributes: line Not Sewn, under sewing on, density 4.5), colours mapped from the SVG fills. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Direction Manual straight line 90 degrees, Pull compensation 0.0 mm. Save As PES (#PES0110). Status bar 40,00 x 18,00 mm, Stitches = 211.",
+      "sha256": "4604d54b01d664f7d8290b5d00fdf1e7ea536d75580a41876e5bf81384953b6f",
+      "notes": "PEC: every crossing is one stitch across the column."
+    },
+    {
+      "file": "machine/machine-satin-width-20.pes",
+      "spec": "machine-satin-width-20",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of an SVG (viewBox 0 0 100 100 = 100 x 100 mm) with one 40 x 20 mm rectangle (#ff0000); the rectangles import centred on the page as Fill Stitch (PE's import attributes: line Not Sewn, under sewing on, density 4.5), colours mapped from the SVG fills. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Direction Manual straight line 90 degrees, Pull compensation 0.0 mm. Save As PES (#PES0110). Status bar 40,00 x 20,00 mm, Stitches = 211.",
+      "sha256": "9df2615ac55701143a26c759e010d9fa98e7f402ab5a82a796d54a0a8fcdff4a",
+      "notes": "PEC: every crossing is one stitch across the column."
+    },
+    {
+      "file": "machine/machine-satin-width-22.pes",
+      "spec": "machine-satin-width-22",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of an SVG (viewBox 0 0 100 100 = 100 x 100 mm) with one 40 x 22 mm rectangle (#ff0000); the rectangles import centred on the page as Fill Stitch (PE's import attributes: line Not Sewn, under sewing on, density 4.5), colours mapped from the SVG fills. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Direction Manual straight line 90 degrees, Pull compensation 0.0 mm. Save As PES (#PES0110). Status bar 40,00 x 22,00 mm, Stitches = 211.",
+      "sha256": "ef2e4a79e0123ff8ce67fa2bd7ab25e597285cb4aa154e0badb5dd8d41c2b57a",
+      "notes": "PEC: every crossing is one stitch across the column."
+    },
+    {
+      "file": "machine/machine-satin-width-25.pes",
+      "spec": "machine-satin-width-25",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Settings multi-needle machine type, Custom Size 100 x 100 mm; Options unchanged (Optimize Entry/Exit Points on, Jump Stitch Trimming on). Home > Import Patterns > from Vector Image... of an SVG (viewBox 0 0 100 100 = 100 x 100 mm) with one 40 x 25 mm rectangle (#ff0000); the rectangles import centred on the page as Fill Stitch (PE's import attributes: line Not Sewn, under sewing on, density 4.5), colours mapped from the SVG fills. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Direction Manual straight line 90 degrees, Pull compensation 0.0 mm. Save As PES (#PES0110). Status bar 40,00 x 25,00 mm, Stitches = 211.",
+      "sha256": "7c9f03c57486724de5156183811f79cd6428bc8c344efb007c71fd394a34f61f",
+      "notes": "PEC: every crossing is one stitch across the column."
+    },
+    {
       "file": "machine/machine-satin-width-30.pes",
       "spec": "machine-satin-width-30",
       "reference": "pe-design",
