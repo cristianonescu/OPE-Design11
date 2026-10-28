@@ -943,10 +943,17 @@ Line references are relative to `crates/`.
   16-colour table indexed by its colour records, HUS's `0x00C8FC5D` magic. The readers follow:
   a single jump no longer than a record is read as the long part of a stitch, not a trim (JEF,
   EXP), `80 02` is an EXP jump, PE-DESIGN's HUS trim marker and XXX `7E` moves read as trims,
-  PCS's index byte and fraction byte are read. Still open, each settled by one more export:
-  PE-DESIGN's SEW start point (15.9 mm left of and 9.7 mm below the design centre in the one
-  file; OpenStitch starts at the centre and its SEW reader keeps nothing before the first
-  stitch, so the spec compares from there); how the folding formats write a frame move shorter
+  PCS's index byte and fraction byte are read. SEW's start point (settled 2026-10-28,
+  `sew-a-moved10.*`, `sew-square-centre.*`): the stream is relative to the design (PE-DESIGN's
+  export of the same design moved 10 mm on the page is byte-identical) and starts 15.9 mm left
+  of and 9.7 mm above the design centre, the same for the 40 mm design and the 20 x 20 mm
+  square, the way to the first needle point sewn as a stitch and split like one; the writer
+  starts there and the reader keeps the move, so the SEW compare is record for record from the
+  first one. The square's export also shows PE-DESIGN exporting its own objects from their
+  first needle point, the end of the PEC's first jump (its tie-in: there, 0.3 mm back, there
+  again), where OpenStitch's PES reader starts at the first PEC stitch record: one record more
+  in PE-DESIGN's stream, the rest identical (`sew_stream_is_design_relative_and_starts_where_pe_design_does`).
+  Still open, each settled by one more export: how the folding formats write a frame move shorter
   than one record; VIP's exact piece length (7.5–7.9 mm); JEF's `-1` hoop block; XXX's header
   tables and palette filler; SEW's 340 header bytes; DST's `AX`/`AY`; PE-DESIGN's RGB for chart
   colour 800 RED (`E3 31 1F`) against the PEC chart table's `ED 17 1F`.

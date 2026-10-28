@@ -122,7 +122,8 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    embroidery fonts.
 5. **Machine stream:** the per-format compares of DST, EXP, JEF, PCS, SEW, XXX, HUS and VIP
    against PE-DESIGN's exports pass since 2026-10-28 (the writers follow PE-DESIGN's record
-   layout; FILE_FORMATS.md "PE-DESIGN's record layout"). Left: PE-DESIGN's SEW start point and
+   layout; FILE_FORMATS.md "PE-DESIGN's record layout"; the SEW stream from PE-DESIGN's own
+   start point since the round-3 SEW exports). Left:
    how the folding formats write a move shorter than one record (one export each, listed in the
    audit); the lower bound under which PE-DESIGN leaves a frame move untrimmed (between 1 and
    2 mm, round-3 recording `machine-jumps`); the same compares on a design with short moves.

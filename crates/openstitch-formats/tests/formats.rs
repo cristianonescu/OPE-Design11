@@ -937,9 +937,11 @@ fn sew_long_moves_are_split_within_signed_byte_range() {
     let back = sew::read(&sew::write(&long_move_pattern()).expect("write")).expect("read");
     assert_eq!(relative(&back), [[0.0, 0.0], [401.0, -300.0]]);
     // The 40 mm move folded into the stitch after it: three jumps (only the axes over 12.7 mm
-    // move) and the stitch; the move to the first point is dropped on read.
-    assert_eq!(back.count(Command::Jump), 3);
-    assert_eq!(back.stitches[0].command, Command::Stitch);
+    // move) and the stitch. Before it the way from PE-DESIGN's start point (`sew::START_POINT`,
+    // 24.7 mm below the first needle point here): a zero-length jump, one jump and a stitch.
+    assert_eq!(back.count(Command::Jump), 5);
+    assert_eq!(back.stitches[0], Stitch::new(0.0, 0.0, Command::Jump));
+    assert_eq!(back.stitches[2], Stitch::new(-41.0, 247.0, Command::Stitch));
 }
 
 // MARK: XXX
@@ -1100,16 +1102,72 @@ fn jef_records_and_header_match_pe_design_except_the_date() {
 }
 
 #[test]
-fn sew_records_match_pe_design_after_the_first_stitch() {
+fn sew_records_match_pe_design() {
     let Some(pe) = pe_design_export("sew") else {
         return;
     };
     let ours = sew::write(&machine_formats_design()).expect("write");
     assert_eq!(ours[..6], pe[..6], "colour count and chart indexes");
-    // PE-DESIGN reaches the first needle point from its start point with one stitch record;
-    // OpenStitch starts at the centre and needs a jump and a stitch (see `sew::write`).
-    assert_eq!(ours[0x1D78..0x1D7C], pe[0x1D78..0x1D7C]);
-    assert_eq!(ours[0x1D82..], pe[0x1D7E..]);
+    // From PE-DESIGN's start point (`sew::START_POINT`) the first needle point is one stitch
+    // record away; every record after it is the JEF stream.
+    assert_eq!(ours[0x1D78..], pe[0x1D78..]);
+}
+
+/// A PE-DESIGN SEW reference beside `machine-formats.*`.
+fn pe_design_sew_file(name: &str) -> Option<Vec<u8>> {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../compat/reference/machine")
+        .join(name);
+    std::fs::read(path).ok()
+}
+
+#[test]
+fn sew_stream_is_design_relative_and_starts_where_pe_design_does() {
+    // PE-DESIGN's SEW export of machine-formats' design moved 10 mm right and down on the
+    // page is byte-identical to the one in place; OpenStitch's is too, from the moved PES.
+    let (Some(asis), Some(moved), Some(moved_pes)) = (
+        pe_design_export("sew"),
+        pe_design_sew_file("sew-a-moved10.sew"),
+        pe_design_sew_file("sew-a-moved10.pes"),
+    ) else {
+        return;
+    };
+    assert_eq!(asis, moved, "PE-DESIGN's two exports");
+    let p = pes::read(&moved_pes).expect("read");
+    assert_eq!(p.count(Command::Stitch), 248);
+    let ours = sew::write(&p).expect("write");
+    assert_eq!(ours[0x1D78..], asis[0x1D78..]);
+    // A 20 x 20 mm square PE-DESIGN drew at the page centre (filled, with a running stitch
+    // outline): the same start point, 15.9 mm left of and 9.7 mm above the centre, reached in
+    // a jump and a stitch. PE-DESIGN exports its own objects from their first needle point,
+    // the end of the PEC's first jump (its tie-in: there, 0.3 mm back, there again), which the
+    // PES reader does not take as a needle point, so PE-DESIGN's stream has one record more
+    // (the 0.3 mm step back) and arrives 0.3 mm further; every record after that is the same.
+    let (Some(pe), Some(square_pes)) = (
+        pe_design_sew_file("sew-square-centre.sew"),
+        pe_design_sew_file("sew-square-centre.pes"),
+    ) else {
+        return;
+    };
+    let p = pes::read(&square_pes).expect("read");
+    assert_eq!(p.count(Command::Stitch), 599);
+    let ours = sew::write(&p).expect("write");
+    assert_eq!(ours[..4], pe[..4], "colour count and chart index");
+    let end = |d: &[u8]| {
+        d.windows(2)
+            .position(|w| w == [0x80, 0x10])
+            .expect("end record")
+    };
+    let (o, r) = (&ours[0x1D78..], &pe[0x1D78..]);
+    let (o, r) = (&o[..end(o)], &r[..end(r)]);
+    assert_eq!(o[..8], r[..8], "zero-length jump, then the 12.7 mm jump");
+    assert_eq!(
+        r[8..12],
+        [32, (-70_i8) as u8, (-3_i8) as u8, 0],
+        "PE-DESIGN: 500, then 497"
+    );
+    assert_eq!(o[8..10], [29, (-70_i8) as u8], "OpenStitch: 497");
+    assert_eq!(o[10..], r[12..]);
 }
 
 #[test]

@@ -2,7 +2,8 @@
 //! padding up to 0x1D78, then JEF-style 2-byte signed (dx, dy) records with y up. Controls:
 //! `80 01 dx dy` colour change, `80 02 dx dy` jump (`80 04` is read as a jump too), `80 10` end
 //! (PE-DESIGN pads 16 zero bytes after it). pyembroidery 1.5.1 only reads SEW; the records
-//! are laid out as PE-DESIGN 11.50's export (see [`write`]).
+//! are laid out as PE-DESIGN 11.50's export, from its start point (see [`write`],
+//! [`START_POINT`]).
 
 use crate::io::{ByteReader, ByteWriter, signed8};
 use crate::jef;
@@ -69,28 +70,26 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
         pattern.stitches.push(Stitch::new(x, y, command));
     }
     pattern.stitches.push(Stitch::new(x, y, Command::End));
-    // The frame move from the machine's start point to the first needle point is not kept:
-    // where PE-DESIGN starts the stream is not yet known (see `write`), and the design starts
-    // at its first needle point in every other respect.
-    if let Some(first) = pattern
-        .stitches
-        .iter()
-        .position(|s| s.command == Command::Stitch)
-    {
-        pattern.stitches.drain(..first);
-    }
     Ok(pattern)
 }
 
 // MARK: Writing
 
+/// Where PE-DESIGN 11.50 starts a SEW stream, in 0.1 mm from the centre of the design's
+/// needle-point bounds (+y down): 15.9 mm left of it and 9.7 mm above it, the same in both
+/// reference files (`machine-formats.sew`, a 40 mm design; `sew-square-centre.sew`, a 20 mm
+/// one). The stream is design-relative (the export is byte-identical after the design is moved
+/// on the page, `sew-a-moved10.sew`); the way from the start point to the first needle point
+/// is a stitch, split like any long stitch (one record for the 11 mm way of
+/// `machine-formats.sew`, a jump and a stitch for the square's 25 mm one).
+pub const START_POINT: (i64, i64) = (-159, -97);
+
 /// Writes the records as PE-DESIGN 11.50's SEW export lays them out (the JEF stream of
 /// [`jef::janome_records`] with a zero-length stitch before each colour change), starting at
-/// the centre of the design. PE-DESIGN starts its SEW stream 15.9 mm left of and 9.7 mm below
-/// the centre in the one reference file, a rule not yet known, and fills 340 header bytes
-/// after the colour list whose meaning is unknown; OpenStitch leaves them zero. Trims are the
-/// jump runs (SEW has no trim record); a stop is written as a colour change to the same
-/// thread. Colours are stored as the nearest SEW chart entry.
+/// [`START_POINT`]. PE-DESIGN fills 340 header bytes after the colour list whose meaning is
+/// unknown; OpenStitch leaves them zero. Trims are the jump runs (SEW has no trim record); a
+/// stop is written as a colour change to the same thread. Colours are stored as the nearest
+/// SEW chart entry.
 pub fn write(input: &StitchPattern) -> Result<Vec<u8>> {
     let mut pattern = input.clone();
     pattern.fix_thread_count(None);
@@ -108,11 +107,17 @@ pub fn write(input: &StitchPattern) -> Result<Vec<u8>> {
         w.u16le(i as i64);
     }
     w.fill(0, STITCH_OFFSET - w.len());
-    let (records, _) = jef::janome_records(
-        &layout::events(&pattern),
-        &jef::WriteOptions::default(),
-        true,
-    );
+    let mut events = layout::events(&pattern);
+    for e in &mut events {
+        match e {
+            layout::Event::Move { x, y, .. } | layout::Event::Stitch { x, y } => {
+                *x -= START_POINT.0;
+                *y -= START_POINT.1;
+            }
+            _ => {}
+        }
+    }
+    let (records, _) = jef::janome_records(&events, &jef::WriteOptions::default(), true);
     w.append(&records);
     w.fill(0, 16);
     Ok(w.bytes)

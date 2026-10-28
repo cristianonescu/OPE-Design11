@@ -54,6 +54,10 @@
     {
       "kind": "measured",
       "note": "PE-DESIGN 11.50's exports of this design in DST, EXP, PCS, HUS, VIP, JEF, SEW and XXX (compat/reference/machine, 2026-10-27): a stitch longer than a record is a jump plus a stitch (HUS: two stitches); a frame move is a jump run with no trim record (DST pads it to three jump records with zero-length jumps; XXX writes a trimmed move as one 7E record; VIP writes 88; HUS a zero-length jump); JEF, SEW, XXX and VIP fold the move's remainder into the first stitch after it; DST, EXP and XXX jump back to the origin at the end; PCS writes a fixed 16-colour table and indexes it from the colour-change records"
+    },
+    {
+      "kind": "measured",
+      "note": "SEW start point (pe-refs-3, 2026-10-28, compat/reference/machine/sew-a-moved10.* and sew-square-centre.*): PE-DESIGN's SEW export of machine-formats' design moved 10 mm right and down is byte-identical to the one in place, so the stream is relative to the design; its first record moves from a start point 15.9 mm left of and 9.7 mm above the design centre to the first needle point as one stitch (a jump and a stitch for the square's 24.9 mm way; the same offset from the square's centre). OpenStitch's SEW writer starts at (-15.9, -9.7) mm from the centre; the SEW reader keeps that first move. The square's export also shows PE-DESIGN exporting its own objects from their first needle point, the end of the PEC's first jump (the tie-in: there, 0.3 mm back, there again), which the PES reader does not take as a needle point: one record more in PE-DESIGN's stream, the rest identical."
     }
   ],
   "script": [
@@ -384,7 +388,7 @@
       "source": {
         "export": "a.sew"
       },
-      "evidence": "PE-DESIGN 11's SEW export of the same stitches, compared from the first needle point on: the SEW reader drops the frame move before the first stitch, because PE-DESIGN starts the SEW stream at a point 15.9 mm left of and 9.7 mm below the design centre (one file; the rule is unknown) while OpenStitch starts at the centre as in JEF. To settle the origin rule: export the same a.pes to SEW after moving it 10 mm right and 10 mm down on the page, and export a 20 x 20 mm square drawn at the page centre to SEW; the first stitch record of each shows whether the origin follows the page position, the design size, or neither.",
+      "evidence": "PE-DESIGN 11's SEW export of the same stitches. PE-DESIGN starts the stream 15.9 mm left of and 9.7 mm above the design centre and sews the way to the first needle point as a stitch; the stream is design-relative (sew-a-moved10.sew, the same design moved 10 mm on the page, is byte-identical; sew-square-centre.sew, a 20 x 20 mm square, starts at the same offset from its centre). OpenStitch starts there too, so the records are identical from the first one.",
       "reference": {
         "id": "pe-design-sew"
       }

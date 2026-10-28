@@ -1824,6 +1824,54 @@
       "settings": "Source: D:/_sandboxes/PE-reference-notes/machine-formats/a.pes (OpenStitch PES v6, #PES0060, SHA-256 f0ee99e710f001b438af4b585e608bd0b2e61c7fcdc08771572bb4a9363473d1). PE-DESIGN 11.50 (restarted 23:17), App menu > Open (File Open, Files of type 'Embroidery Files (*.PES)'): opened as stitches, 2 items in Sewing Order (red lines, black satin), status 'Total : Width = 40,00 mm, Height = 40,00 mm, Stitches = 248'. Nothing changed. App menu > Export... (greyed on an empty design) opens 'Export to File' (starts in the PE-DESIGN 11 program folder; not used), 'Save as type' list, in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No .pec/.phc offered. Save As offers only PES types (Layout & Editing Ver.11.0 ... older), so Export is the only route to other formats. For EVERY format: no options dialog of any kind (no trim/jump, hoop, colour or stop setting), no warning; the file is written at once. PE writes the extension in upper case (machine-formats.DST etc.); a name typed with another extension is replaced by the type's own. This file: Export type 'Singer (*.XXX)', saved as machine-formats.XXX (3375 bytes).",
       "sha256": "1080c8e8864f04bb5847ff199422517262002d93e80bb8bff5854829a490372a",
       "notes": "Written by PE as machine-formats.XXX."
+    },
+    {
+      "file": "machine/sew-a-moved10.pes",
+      "spec": "machine-formats",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "SEW start-point request (parked-refs via the coordinator), pe-refs-3, 2026-10-28 16:06-16:09, PE-DESIGN 11.50, Windows 11 Pro 10.0.26300. Design Settings multi-needle, Custom 100 x 100 mm. App menu > Open the OpenStitch export a.pes (the machine-formats source, #PES0060, SHA-256 f0ee99e710f001b438af4b585e608bd0b2e61c7fcdc08771572bb4a9363473d1; opens as stitches, Total 40,00 x 40,00 mm, 248 st, centred on the page: (20,20)-(60,60) mm); Ctrl+A, dragged 10 mm right and 10 mm down with Snap to Grid (now (30,30)-(70,70) mm; status still 40,00 x 40,00 mm, 248 st); Save As PES.",
+      "sha256": "24bb35a41e12874e359e9d55a3d6f6100aa3e229f83c75936470de24c3dca50e",
+      "notes": "Header #PES0110: the stitch design after the move."
+    },
+    {
+      "file": "machine/sew-a-moved10.sew",
+      "spec": "machine-formats",
+      "reference": "pe-design-sew",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "SEW start-point request (parked-refs via the coordinator), pe-refs-3, 2026-10-28 16:06-16:09, PE-DESIGN 11.50, Windows 11 Pro 10.0.26300. Design Settings multi-needle, Custom 100 x 100 mm. The moved design above, App menu > Export..., Save as type Janome (*.SEW), full path typed; PE writes the extension in upper case. 8808 bytes.",
+      "sha256": "db7dbf6e081223ebb359a45671a59aea6155ad5ff2a0ce9533f61246a53106bb",
+      "notes": "Byte-identical to machine-formats.sew (PE's export of the same design in place, sew-a-asis.SEW in the owner's notes): the SEW stream carries no page position."
+    },
+    {
+      "file": "machine/sew-square-centre.pes",
+      "spec": "machine-formats",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "SEW start-point request (parked-refs via the coordinator), pe-refs-3, 2026-10-28 16:06-16:09, PE-DESIGN 11.50, Windows 11 Pro 10.0.26300. Design Settings multi-needle, Custom 100 x 100 mm. New; Rectangle tool dragged (40,40)-(60,60) mm (page centre), line Running Stitch (red, pitch 2.0), region Fill Stitch (red, under sewing on, density 4.5, direction 45; the tool's attributes), 20,00 x 20,00 mm, 602 st; Save As PES.",
+      "sha256": "9cae3ac3588b2c2dcfeab2b37ff65d796f197fa0975ea9b49938577c0df75557",
+      "notes": "Header #PES0110; 599 stitches as the harness counts them."
+    },
+    {
+      "file": "machine/sew-square-centre.sew",
+      "spec": "machine-formats",
+      "reference": "pe-design-sew",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "SEW start-point request (parked-refs via the coordinator), pe-refs-3, 2026-10-28 16:06-16:09, PE-DESIGN 11.50, Windows 11 Pro 10.0.26300. Design Settings multi-needle, Custom 100 x 100 mm. The square above, App menu > Export..., Janome (*.SEW).",
+      "sha256": "bd11e630c66380079935a75f966dad06a7632a770258c1caeaef691872c23274",
+      "notes": "Written by PE as sew-square-centre.SEW. Its start point lies 15.9 mm left of and 9.7 mm above the design centre, as machine-formats.sew's; its first needle point is the end of the PEC's first jump (PE's own tie-in: there, 0.3 mm back, there again)."
     }
   ]
 }

@@ -25,7 +25,7 @@ Notes that do not change the fixture bytes:
 | JEF | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (records and header identical except the date and one hoop block) | |
 | XXX | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (records and counts identical) | Two header tables and the unused colour slots PE-DESIGN fills are left zero. |
 | PCS | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (byte-identical) | Fixed 16-colour table, 1/6 mm grid with a fraction byte. |
-| SEW | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (records identical from the first stitch on) | PE-DESIGN's start point rule and 340 header bytes unknown. |
+| SEW | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (records identical, from PE-DESIGN's start point) | PE-DESIGN's 340 header bytes unknown. |
 | HUS | ✅ | ✅ | Oracle-verified read; PE-DESIGN 11.50 reference write (streams and header identical) | Own LZ77 + Huffman compressor (`lzh`); 29-colour HUS chart. |
 | VIP | ✅ | ✅ | PE-DESIGN 11.50 reference write (streams and header identical); colour table confirmed by libembroidery's reader | No independent stitch decoder exists (pyembroidery has no VIP module; libembroidery's decompressor is a stub). |
 | SHV | ✅ | ❌ (read only) | Oracle-verified read | No public writer or description of the unknown header bytes; `FileType::Shv.can_write()` is false. |
@@ -237,11 +237,13 @@ Shared by every format:
 | HUS | jumps 8 mm, stitches 12 mm, proportional | two stitches | `81` run, `81 (0,0)` when trimmed, then `80 (0,0)` | `84` | `90` |
 | VIP | `ceil(longer axis / 7.5 mm)` equal pieces | jumps + stitch | `88 (0,0)` when trimmed, then the pieces folded into the next stitch | `84` | `90` |
 
-Open questions, each answered by one more PE-DESIGN export: PE-DESIGN's SEW start point (it
-begins 15.9 mm left of and 9.7 mm below the design centre in the one file; a second SEW export
-of the same design moved on the page, and one of a differently sized design, would show the
-rule; OpenStitch starts at the centre, and its SEW reader drops the move before the first
-stitch); how JEF, SEW, XXX and VIP write a frame move shorter than one record (folded into a
+SEW's start point is not the centre: PE-DESIGN starts the stream 15.9 mm left of and 9.7 mm
+above the design centre (the same for a 40 mm design and a 20 x 20 mm square,
+`sew-square-centre.sew`) and sews the way to the first needle point as a stitch, split like a
+long one; the stream carries no page position (`sew-a-moved10.sew`, the same design moved
+10 mm, is byte-identical). OpenStitch starts there (`sew::START_POINT`).
+
+Open questions, each answered by one more PE-DESIGN export: how JEF, SEW, XXX and VIP write a frame move shorter than one record (folded into a
 stitch, as the rule above implies, or a jump plus a zero-length stitch; a design with a 3 mm
 move between two objects would show it); the exact VIP piece length (7.5–7.9 mm fit the
 file); JEF's `-1` in the 50 × 50 mm hoop block of a 40 mm design whose hoop code is 50 × 50;
@@ -349,9 +351,8 @@ Records as JEF: 2-byte signed (dx, dy) with y up; `80 01 dx dy` colour change, `
 jump (`80 04` read as jump too), `80 10` end, then 16 zero bytes. PE-DESIGN writes a
 zero-length stitch before each colour change. Chart index 0 ("Unknown") is read but never
 written. No trim record: trims are the jump runs; stops become colour changes to the same
-thread. Max delta ±127. OpenStitch starts the stream at the design's centre; PE-DESIGN's start
-point in the one reference file is 15.9 mm left of and 9.7 mm below it (rule unknown, see
-above), so the reader keeps nothing before the first stitch.
+thread. Max delta ±127. The stream starts 15.9 mm left of and 9.7 mm above the design centre, where
+PE-DESIGN starts it (see "PE-DESIGN's record layout").
 
 ## HUS and VIP stream compression (`lzh`)
 
