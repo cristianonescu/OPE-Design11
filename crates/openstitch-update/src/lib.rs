@@ -10,6 +10,7 @@
 //! network. Nothing here runs unless the build carries a release tag
 //! ([`version::current`]) and the install kind is one that can be updated ([`Install`]).
 
+mod apply;
 mod checksums;
 mod client;
 mod github;
@@ -17,6 +18,9 @@ mod install;
 mod select;
 mod version;
 
+pub use apply::{
+    ApplyError, Launch, Staged, cleanup_previous, download_dir, launch, restart, stage, swap,
+};
 pub use checksums::{Checksums, Sha256};
 pub use client::{Client, DownloadError, Fetched, MAX_ASSET_BYTES, MAX_TEXT_BYTES};
 pub use github::{Asset, Release};

@@ -80,7 +80,10 @@ client that asks GitHub for releases and downloads them, over rustls with the Mo
 certificates bundled by webpki-roots and the ring cryptography provider; semver orders versions;
 sha2 checks a download against the release's `SHA256SUMS`. ureq, rustls, semver and sha2 are
 MIT OR Apache-2.0; webpki-roots is MPL-2.0 (the root list, used unmodified) and CDLA-Permissive-2.0;
-ring is Apache-2.0 AND ISC (with OpenSSL-licensed assembly). No files copied.
+ring is Apache-2.0 AND ISC (with OpenSSL-licensed assembly). The downloaded packages are unpacked
+with zip (MIT; https://github.com/zip-rs/zip2), tar (MIT OR Apache-2.0;
+https://github.com/alexcrichton/tar-rs) and flate2 (MIT OR Apache-2.0, already used for PNG). No
+files copied.
 
 ## libembroidery — https://github.com/Embroidermodder/libembroidery
 
