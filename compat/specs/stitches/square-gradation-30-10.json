@@ -1,0 +1,137 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "square-gradation-30-10",
+  "area": "stitches",
+  "title": "Gradation Max 30 % / Min 10 % on a 40 × 40 mm fill",
+  "description": "The 40 × 40 mm fill at 0°, under sewing off, with pattern 1 rescaled to Max 30 %, Min 10 % (steps 30/28/25/23/20/18/15/13/10 %).",
+  "covers": {
+    "audit": [
+      15
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Fill (tatami: angle or auto direction"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Fill Stitch: Density, Pull compensation, Under sewing"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference stitches/square-gradation-30-10.pes (pe-refs-3 gradation sweep, 2026-10-28): 491 stitches"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 40
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "angle": 0,
+        "density": 4.5,
+        "underlay": false,
+        "gradationPattern": true,
+        "gradationMax": 30,
+        "gradationMin": 10
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "fill.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/square-gradation-30-10.pes",
+      "make": "On a 100 × 100 mm Design Page draw a 40 × 40 mm square from (10, 10) to (50, 50) mm. Line Not Sewn; region Fill Stitch, Direction Manual 0°, Under sewing unticked, Density 4.5, Gradation ticked with pattern 1, Max 30 %, Min 10 % (steps 30/28/25/23/20/18/15/13/10 %). Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "trims-inside",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "trim"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "expected": 0,
+      "evidence": "one region: no trim",
+      "reference": {}
+    },
+    {
+      "id": "jumps-inside",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "jump"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "expected": 0,
+      "evidence": "one region: no jump",
+      "reference": {}
+    },
+    {
+      "id": "row-width",
+      "measure": {
+        "kind": "rowWidth"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "expected": 40.0,
+      "tolerance": {
+        "mm": 0.05
+      },
+      "evidence": "rows run from edge to edge",
+      "reference": {}
+    },
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN's count for this gradation (the same 15 % as region-travel-u-gradation)",
+      "reference": {
+        "tolerance": {
+          "percent": 15
+        }
+      }
+    }
+  ]
+}

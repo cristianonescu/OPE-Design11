@@ -626,6 +626,18 @@
       "notes": "Status bar: Width 30,00 mm, Height 30,00 mm, Stitches = 219. Round 1's auto-satin-bent-band (Half Stitch on, density 4.5, under sewing on) showed 433."
     },
     {
+      "file": "stitches/satin-auto-bend-90.pes",
+      "spec": "satin-auto-bend-90",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Design Page 100 x 100 mm; Home > Import Patterns > from Vector Image... of an SVG (viewBox 0 0 100 100) with the polygon (0,0) (30,0) (30,30) (25,30) (25,5) (0,5) mm (the satin-auto-bend-90-nohalf band); the shape imports centred as Fill Stitch, line Not Sewn, colour 800 RED. Shape selected: region Satin Stitch; Sewing Attributes: Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch TICKED, Pull compensation 0.0. Save As PES (#PES0110). Status bar 30,00 x 30,00 mm, Stitches = 219.",
+      "sha256": "c0f285e84de7f90f429aa0bd7d087c63aced9047dcfb197d8a259328c8fb27bc",
+      "notes": "The companion of satin-auto-bend-90-nohalf with Half Stitch on."
+    },
+    {
       "file": "stitches/satin-feather.pes",
       "spec": "satin-feather",
       "reference": "pe-design",
@@ -696,6 +708,30 @@
       "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Option > Options > Optimize Entry/Exit Points unticked; every shape drawn with the Shapes gallery tools, line Not Sewn (Line), region Fill Stitch with Under sewing unticked and every other attribute at its default (density 4.5 line/mm, Manual straight line 45 degrees, step pitch 4.0 mm, frequency 30 %, pull compensation 0.0 mm); thread colour chosen in the Color tab with the tool active, before each drag: Rectangle (2,2)-(22,22) mm, 800 RED; Rectangle (26,2)-(46,12), 007 PRUSSIAN BLUE; Ellipse (50,2)-(70,12), 027 FRESH GREEN; Heart (74,2)-(94,22), 019 SKY BLUE; Diamond (2,26)-(22,46), 058 DARK BROWN; 4-point star (26,26)-(46,46), 030 VERMILION; Triangle (50,26)-(70,46), 070 CORNFLOWER BLUE; Drop (74,26)-(94,46), 005 SILVER; Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "e9a142667d07a5b925a69de288fdaaec4e03dc3451bbc9d3183564fd5c36df87",
       "notes": "Eight colour blocks in drawing order. A survey file made just before it (16 shapes in one colour, same settings, not committed) showed every Shape-tool shape ending where it starts: rectangles (square, 20 x 10, 10 x 20), ellipses, Round Rectangle, heart, diamond, hexagon, 4- and 5-point stars (the 5-point star at the notch between its lower points), crescent and drop at the lowest outline point on the vertical centre line; triangle, pentagon and octagon at the left end of the bottom edge."
+    },
+    {
+      "file": "stitches/square-gradation-30-10.pes",
+      "spec": "square-gradation-30-10",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on); Shapes > Rectangle dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm; line Not Sewn (Line); region Fill Stitch, colour 800 RED (as the tool showed); Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm (house button), Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog: pattern 1, Max 30 %, Min 10 % (steps 30/28/25/23/20/18/15/13/10 %). Save As PES (#PES0110). Status bar 40,00 x 40,00 mm, Stitches = 491.",
+      "sha256": "55d5f60465c3f0efeccac48f1b30b2029ba9b27936ce611fbdd0c0f3e8d0a74b",
+      "notes": "Gradation on the plain square: the sweep-fill base, no legs, no under sewing."
+    },
+    {
+      "file": "stitches/square-gradation-default.pes",
+      "spec": "square-gradation-default",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on); Shapes > Rectangle dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm; line Not Sewn (Line); region Fill Stitch, colour 800 RED (as the tool showed); Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm (house button), Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog: pattern 1, Max 53 %, Min 5 % (steps 53/47/41/35/29/23/17/11/5 %), Blend off, direction 0. Save As PES (#PES0110). Status bar 40,00 x 40,00 mm, Stitches = 675.",
+      "sha256": "540ff0fef161318f0caa4e50e3165e827a7b419d7c61bab99929b68fc78fffd4",
+      "notes": "Gradation on the plain square: the sweep-fill base, no legs, no under sewing."
     },
     {
       "file": "stitches/sweep-fill-density-2p5.pes",
@@ -996,6 +1032,42 @@
       "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). UNDER SEWING (fill base, Under sewing ticked): the Region sew pane shows, under the Under sewing check box, two type buttons on a first row (first selected by default; the second's icon shows a double layer of crossing rows) and three more buttons on a second row that stay greyed for Fill and Satin, plus a Density drop-down: Dense / Medium (default) / Light. No spacing, inset or length fields. Satin offers the same controls (default first type, Medium). This file: under sewing Density Light. Status: 40,00 x 40,00 mm, Stitches = 2252.",
       "sha256": "d8a0e2adbcc66ad012089e93475a62028873136c389274fa362424993d43e2e4",
       "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/sweep-satin-density-0p2.pes",
+      "spec": "sweep-satin-density-0p2",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on); Shapes > Rectangle dragged (10,10)-(50,16) mm = 40,00 x 6,00 mm; line Not Sewn (Line); region Satin Stitch, colour 800 RED; Sewing Attributes > Region sew: Under sewing unticked, Direction Manual straight line 90 degrees, Pull compensation 0.0 mm, Gradation unticked, Half Stitch greyed (ticked); Density 0,2 line/mm (typed with the locale's decimal comma; the field has one decimal, so 0,15 rounds to 0,2). Save As PES (#PES0110). Status bar 40,00 x 6,00 mm, Stitches = 43.",
+      "sha256": "4594148b868d5d56e470851419df6a30ebf27cd096ed01481eeb637bd8b4e989",
+      "notes": "A first save of each name had Gradation still ticked (remembered by the tool) and was replaced."
+    },
+    {
+      "file": "stitches/sweep-satin-density-0p3.pes",
+      "spec": "sweep-satin-density-0p3",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on); Shapes > Rectangle dragged (10,10)-(50,16) mm = 40,00 x 6,00 mm; line Not Sewn (Line); region Satin Stitch, colour 800 RED; Sewing Attributes > Region sew: Under sewing unticked, Direction Manual straight line 90 degrees, Pull compensation 0.0 mm, Gradation unticked, Half Stitch greyed (ticked); Density 0,3 line/mm (typed with the locale's decimal comma; the field has one decimal, so 0,15 rounds to 0,2). Save As PES (#PES0110). Status bar 40,00 x 6,00 mm, Stitches = 47.",
+      "sha256": "63f6abe6cf1bc137aef0b53582682ee30b6686e8740d0db9527142be67ca4ef0",
+      "notes": "A first save of each name had Gradation still ticked (remembered by the tool) and was replaced."
+    },
+    {
+      "file": "stitches/sweep-satin-density-0p5.pes",
+      "spec": "sweep-satin-density-0p5",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-28",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on); Shapes > Rectangle dragged (10,10)-(50,16) mm = 40,00 x 6,00 mm; line Not Sewn (Line); region Satin Stitch, colour 800 RED; Sewing Attributes > Region sew: Under sewing unticked, Direction Manual straight line 90 degrees, Pull compensation 0.0 mm, Gradation unticked, Half Stitch greyed (ticked); Density 0,5 line/mm (typed with the locale's decimal comma; the field has one decimal, so 0,15 rounds to 0,2). Save As PES (#PES0110). Status bar 40,00 x 6,00 mm, Stitches = 55.",
+      "sha256": "2cd0b5759cb5921d6d10748a7843f2a9ca7ed89396f80164d89ca884c7df8643",
+      "notes": "A first save of each name had Gradation still ticked (remembered by the tool) and was replaced."
     },
     {
       "file": "stitches/sweep-satin-density-4p5.pes",

@@ -181,8 +181,7 @@ encrypted purchase format). See the Blocked rows in [FEATURE_MATRIX.md](FEATURE_
   fill and satin sweeps, the gradation sweep (Max/Min, the eight presets, Blend, Direction, no
   under sewing), Auto satin bends 30–120°, the Fit-text sweep (spacing, size, AHHHH, satin), one
   sample of every PES object kind, and two machine-stream designs (trim threshold, colour order).
-  Still to record: gradation on a plain square and at other Max/Min pairs; satin bends at 90° with
-  Half Stitch and on a curved band; Fit text on a line and a square, kerning on "AVA"; Stamp from an
+  Still to record: satin bends on a curved band; Fit text on a line and a square, kerning on "AVA"; Stamp from an
   owner-drawn pattern, a two-colour text, an editable hole-sewing pair, the Cutwork and Embroidered
   Patch wizards, non-ASCII Design Property text; frame moves between 2.2 and 2.4 mm for the exact trim bound (0.5–2.0 mm gaps and four-colour
   ordering are recorded), satin columns over 30 mm wide (16–30 mm are sent whole), and the
