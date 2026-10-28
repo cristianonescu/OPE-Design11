@@ -290,11 +290,25 @@ fn layers_inner(
         RegionType::Fill if !shaped => {
             generate::fill_edge_to_edge(closed, &params, holes, r.fill_shift(), r.entry)
         }
-        // A feathered edge alone keeps the sawtooth (PE-DESIGN 11.50, satin-feather).
+        // A feathered edge alone keeps the sawtooth (PE-DESIGN 11.50, satin-feather); so does
+        // a pattern gradation on a satin split at its start point (satin-gradation).
         RegionType::Satin
             if !shaped || (r.sewn_gradation().is_none() && r.split_length.is_none()) =>
         {
             sawtooth_satin(closed, r, &params, holes)
+        }
+        RegionType::Satin if r.split_length.is_none() && r.sewn_feather().is_none() => {
+            let lattice = r
+                .sewn_gradation()
+                .filter(|g| g.steps.is_some())
+                .map(|g| row_positions(closed, params.angle, params.row_spacing, Some(g)));
+            match (lattice, r.entry) {
+                (Some(lattice), Some(e)) => {
+                    split_satin(closed, holes, &params, Some(&lattice), e, None)
+                        .map_or_else(|| shaped_rows(closed, r, &params, holes), |run| vec![run])
+                }
+                _ => shaped_rows(closed, r, &params, holes),
+            }
         }
         _ => shaped_rows(closed, r, &params, holes),
     };
@@ -579,10 +593,6 @@ fn satin_underlay_rows(
 /// a row is never cut along an edge.
 const EDGE_ROW_INSET: f64 = 0.01;
 
-/// Where satin splits at its start point, the last row of each half stops this far (0.1 mm)
-/// short of the start point (PE-DESIGN 11: 0.2 mm).
-const SPLIT_GAP: f64 = 2.0;
-
 /// Running stitch of the travel along the edge to each half of a split satin (0.1 mm).
 const SPLIT_TRAVEL_PITCH: f64 = 20.0;
 
@@ -599,7 +609,7 @@ fn sawtooth_satin(
     let pitch = 2.0 * p.row_spacing;
     if let Some(run) = r
         .entry
-        .and_then(|e| split_satin(closed, holes, p, pitch, e, r.sewn_feather()))
+        .and_then(|e| split_satin(closed, holes, p, None, e, r.sewn_feather()))
     {
         return vec![run];
     }
@@ -894,17 +904,22 @@ fn pulled_spans(closed: &[Contour], holes: &[Contour], p: &RegionParams, y: f64)
         .collect()
 }
 
-/// Satin whose start point `entry` lies inside the column, as PE-DESIGN 11 sews a rectangle
-/// (its default start point is the middle of the bottom edge): from the start point along its
-/// edge to one end of the column, the sawtooth back towards the start point, the last row
-/// [`SPLIT_GAP`] short of it reached along the far edge, then the same for the other half,
-/// ending at the start point again. `None` (sewn whole) for several parts, holes, a row cut in
-/// two, or a start point within a row of either end.
+/// Satin split at its start point, as PE-DESIGN 11.50 sews it (satin-zigzag-rect,
+/// satin-gradation): from the start point along the edge to one end of the region, a sawtooth
+/// back towards the start point, a hop of one line along the far edge and a crossing, home along
+/// the near edge; then the same from the other end. The satin's lines lie on a lattice: `lattice`
+/// (rotated row positions from the region's first edge to its last; the cumulative-line-count
+/// rows of a pattern gradation) or, without one, a line every half `pitch` from each end. Each
+/// half's crossings sit on every other line counted from its own end, as far as the next one
+/// would reach the start point's line; the hop goes to the line after the last crossing, at most
+/// to the start point's line (PE-DESIGN: 0.3 mm hops at 3 lines/mm, one lattice row with
+/// gradation). `None` where the split does not apply (holes, several contours, a start point
+/// on an edge row).
 fn split_satin(
     closed: &[Contour],
     holes: &[Contour],
     p: &RegionParams,
-    pitch: f64,
+    lattice: Option<&[f64]>,
     entry: Vec2,
     feather: Option<Feather>,
 ) -> Option<Run> {
@@ -915,7 +930,8 @@ fn split_satin(
     let at = e.rotated(-p.angle.to_radians());
     let b = rotated_bounds(closed, p.angle)?;
     let (lo, hi) = (b.min_y + EDGE_ROW_INSET, b.max_y - EDGE_ROW_INSET);
-    if at.y < lo + pitch || at.y > hi - pitch {
+    let line = p.row_spacing;
+    if at.y < lo + 2.0 * line || at.y > hi - 2.0 * line {
         return None;
     }
     let one = |y: f64| -> Option<Span> {
@@ -934,21 +950,53 @@ fn split_satin(
             (*s.end(), *s.start())
         }
     };
-    let half = |from: f64, step: f64| -> Option<Vec<(f64, Span)>> {
-        let stop = at.y - step.signum() * (SPLIT_GAP + pitch.abs() * 0.25);
-        let mut rows = Vec::new();
-        let mut y = from;
-        while (stop - y) * step.signum() > 0.0 && rows.len() < 100_000 {
-            rows.push((y, one(y)?));
-            y += step;
+    // The lines of each half, from its own end towards the start point.
+    let lines = |from_low: bool| -> Vec<f64> {
+        match lattice {
+            Some(l) if l.len() >= 2 => {
+                if from_low {
+                    l.to_vec()
+                } else {
+                    l.iter().rev().copied().collect()
+                }
+            }
+            _ => {
+                let (from, step) = if from_low { (lo, line) } else { (hi, -line) };
+                (0..100_000)
+                    .map(|k| from + step * k as f64)
+                    .take_while(|y| (y - from).abs() <= hi - lo + 1e-9)
+                    .collect()
+            }
         }
-        let last = at.y - step.signum() * SPLIT_GAP;
-        rows.push((last, one(last)?));
+    };
+    let half = |from_low: bool| -> Option<Vec<(f64, Span)>> {
+        let lines = lines(from_low);
+        let sign = if from_low { 1.0 } else { -1.0 };
+        // A line within half a line spacing of the start point is the start point's line.
+        let before = |y: f64| (at.y - y) * sign > line / 2.0;
+        let mut rows = Vec::new();
+        let mut k = 0;
+        while k < lines.len() && before(lines[k]) {
+            rows.push((lines[k], one(lines[k])?));
+            if lines.get(k + 2).is_none_or(|&y| !before(y)) {
+                break;
+            }
+            k += 2;
+        }
+        if rows.is_empty() {
+            return None;
+        }
+        let hop = lines
+            .get(k + 1)
+            .copied()
+            .filter(|&y| (y - at.y) * sign < 1e-9)
+            .unwrap_or(at.y);
+        rows.push((hop, one(hop)?));
         Some(rows)
     };
     let pt = |x: f64, y: f64| unrotate(x, y, p.angle);
     let mut run = vec![e];
-    for rows in [half(lo, pitch)?, half(hi, -pitch)?] {
+    for rows in [half(true)?, half(false)?] {
         let (near, _) = ends(&rows[0].1);
         let first = pt(near, rows[0].0);
         let path = crate::paths::inside_path(e, first, closed, holes).unwrap_or(vec![e, first]);

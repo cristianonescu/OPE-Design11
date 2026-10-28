@@ -936,7 +936,12 @@ Line references are relative to `crates/`.
   the region, and rows at equal steps of the cumulative line count: the region holds the
   nearest whole number of gaps to the line count the profile integrates to (a flat pattern
   rounds down like a plain fill), the first row on the start edge and the last on the far
-  edge. region-travel-u-gradation passes at the reference tier; all 40 of its rows lie within
+  edge. Satin takes the same rows as its lines (satin-gradation, 2026-10-28, needle for
+  needle: 37 stitches as PE-DESIGN's, mean needle distance 0.01 mm): a satin split at its start
+  point puts the crossings of each half on every other line counted from that half's own end, a
+  hop of one line and a crossing close the half, and the "7.6 mm travel" the parked file showed
+  is the diagonal crossing of the widest gap. The same lattice rule gives the uniform split
+  satin its 0.3 mm hop (satin-zigzag-rect, unchanged). region-travel-u-gradation passes at the reference tier; all 40 of its rows lie within
   0.12 mm of PE-DESIGN's (0.04 mm on average; the earlier midpoint-density placement drifted
   to 0.4 mm by the far edge), and the round-3 Max/Min sweeps (80/20, 95/50, 50/50, pattern 2)
   fit the same rule within 0.1 mm. Designs saved with the old single far-side percentage
