@@ -672,15 +672,29 @@ fn satin_at_the_minimum_density_crosses_on_every_line() {
         .map(|w| w[0].distance(w[1]))
         .fold(0.0_f64, f64::max);
     assert!((longest - 116.6).abs() < 0.5, "{longest}");
-    // At 3 lines/mm the sawtooth skips a line: crossings 0.67 mm apart.
+    // At 3 lines/mm the start point lies on line 60 and the single line next to the far end
+    // (0.33 mm) is not crossed: the 30 crossings of the left half spread evenly over the 59
+    // lines before the hop (0.678 mm apart, as satin-feather's 0.69 mm over 29 lines), then
+    // the hop of one line (0.33 mm) to the start point's line.
     r.density = 3.0;
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
-    let xs: Vec<f64> = runs[0]
+    let mut xs: Vec<f64> = runs[0]
         .windows(2)
         .filter(|w| (w[0].x - w[1].x).abs() < 0.01 && (w[0].y - w[1].y).abs() > 59.0)
         .map(|w| w[0].x)
+        .filter(|&x| x < 300.5)
         .collect();
-    assert!((xs[1] - xs[0] - 200.0 / 30.0).abs() < 0.05, "{xs:?}");
+    xs.sort_by(f64::total_cmp);
+    xs.dedup_by(|a, b| (*a - *b).abs() < 0.01);
+    assert_eq!(xs.len(), 31, "{xs:?}");
+    for w in xs[..30].windows(2) {
+        assert!(
+            (w[1] - w[0] - 59.0 * (100.0 / 30.0) / 29.0).abs() < 0.01,
+            "{xs:?}"
+        );
+    }
+    assert!((xs[30] - xs[29] - 10.0 / 3.0).abs() < 0.05, "{xs:?}");
+    assert!((xs[30] - 300.0).abs() < 1e-6, "{xs:?}");
 }
 
 #[test]

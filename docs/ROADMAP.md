@@ -103,8 +103,10 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    left: PE's exact remainder handling on the start leg (0.05 mm) and the fan's inner crowding
    (0.3-0.4 mm against our 0.25-0.3 mm), both below the file's 0.1 mm grid in effect. Done 2026-10-28 as well: the gradation pattern on a split
    satin (satin-gradation, needle for needle). Also done 2026-10-28: the minimum-density
-   sawtooth (sweep-satin-density-min: a crossing on every line above a 10 mm period, needle
-   for needle; the exact period limit needs the column at 0.15-0.5 lines/mm). Next on this
+   sawtooth (sweep-satin-density-min, needle for needle: the crossings count back from the
+   start point's line, which the round-3 column at 0.2, 0.3 and 0.5 lines/mm confirmed record
+   for record; left: the bound under which a single-line gap next to the far end is not
+   crossed, between 0.33 and 2 mm). Next on this
    track: the second under sewing type (sweep-satin-us-type-2).
 3. **Lines:** Start/End Type Feed/Run for stem, candlewicking and chain, with the L2 marker and
    the Feed/Run choice in the editor; open lines and chain diamonds; candlewicking Low and

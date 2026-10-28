@@ -593,28 +593,20 @@ fn satin_underlay_rows(
 /// a row is never cut along an edge.
 const EDGE_ROW_INSET: f64 = 0.01;
 
-/// The widest sawtooth period (0.1 mm) PE-DESIGN 11.50 sews over two lines: beyond it the
-/// crossings sit on every line. At 0.1 lines/mm a 40 x 6 mm column has crossings every 10 mm
-/// (one line) with 11.7 mm diagonals, not every 20 mm with 20.9 mm ones
-/// (sweep-satin-density-min); at 3 lines/mm and above two lines (0.67 mm) are skipped, and
-/// the U of region-travel-u-satin keeps 30 mm diagonals over two lines, so the limit is a
-/// spacing, not a stitch length, somewhere between 0.67 and 20 mm. Pinned by nothing closer
-/// yet; the same column at 0.15, 0.2, 0.3 and 0.5 lines/mm (periods 13.3, 10, 6.7, 4 mm)
-/// would settle it.
-const SAWTOOTH_MAX_PERIOD: f64 = 100.0;
-
-/// Lines per sawtooth period: two (a crossing along the direction, the return slanted over
-/// the next line) unless two lines span more than [`SAWTOOTH_MAX_PERIOD`].
-fn sawtooth_step(line: f64) -> usize {
-    if 2.0 * line > SAWTOOTH_MAX_PERIOD {
-        1
-    } else {
-        2
-    }
-}
-
 /// Running stitch of the travel along the edge to each half of a split satin (0.1 mm).
 const SPLIT_TRAVEL_PITCH: f64 = 20.0;
+
+/// How close to a split satin's start point a lattice line is the start point's own line
+/// (0.1 mm): 0.05 mm, PE-DESIGN's file resolution. Such a line is the second half's hop; the
+/// first half hops to the line before it (see [`split_satin`]).
+const START_LINE_SLACK: f64 = 0.5;
+
+/// The shortest single-line gap a split satin crosses next to its far end (0.1 mm): 1 mm.
+/// PE-DESIGN 11.50 crosses a 2 mm one (the round-3 column at 0.5 lines/mm: lines 0 and 1,
+/// then every other line) and not a 0.33 mm one (satin-feather at 3 lines/mm: the crossings
+/// spread evenly instead); the bound lies between, pinned by nothing closer (the 40 x 6 mm
+/// column at 1, 1.5 and 2 lines/mm would).
+const CROSSING_MERGE_GAP: f64 = 10.0;
 
 /// Fixed-direction satin as PE-DESIGN 11 sews it: rows two crossings apart from the region's
 /// first edge to its last, each row sewn whole in one direction and the stitch to the next row
@@ -626,7 +618,7 @@ fn sawtooth_satin(
     p: &RegionParams,
     holes: &[Contour],
 ) -> Vec<Run> {
-    let pitch = sawtooth_step(p.row_spacing) as f64 * p.row_spacing;
+    let pitch = 2.0 * p.row_spacing;
     if let Some(run) = r
         .entry
         .and_then(|e| split_satin(closed, holes, p, None, e, r.sewn_feather()))
@@ -925,17 +917,21 @@ fn pulled_spans(closed: &[Contour], holes: &[Contour], p: &RegionParams, y: f64)
 }
 
 /// Satin split at its start point, as PE-DESIGN 11.50 sews it (satin-zigzag-rect,
-/// satin-gradation): from the start point along the edge to one end of the region, a sawtooth
-/// back towards the start point, a hop of one line along the far edge and a crossing, home along
-/// the near edge; then the same from the other end. The satin's lines lie on a lattice: `lattice`
-/// (rotated row positions from the region's first edge to its last; the cumulative-line-count
-/// rows of a pattern gradation) or, without one, a line every line spacing from each end. Each
-/// half's crossings sit on every other line counted from its own end (on every line when two
-/// lines span more than [`SAWTOOTH_MAX_PERIOD`]), as far as the next one would reach the start
-/// point's line; the hop goes to the line after the last crossing, at most
-/// to the start point's line (PE-DESIGN: 0.3 mm hops at 3 lines/mm, one lattice row with
-/// gradation). `None` where the split does not apply (holes, several contours, a start point
-/// on an edge row).
+/// satin-gradation, sweep-satin-density-min): from the start point along the edge to one end
+/// of the region, a sawtooth back towards the start point, a hop of one line along the far edge
+/// and a crossing, home along the near edge; then the same from the other end. The satin's
+/// lines lie on a lattice: `lattice` (rotated row positions from the region's first edge to its
+/// last; the cumulative-line-count rows of a pattern gradation) or, without one, a line every
+/// line spacing from each end. Each half hops to the last lattice line at or before the start
+/// point coming from its end and sets its crossings on every other line counting back from the
+/// hop, plus the far end's line. PE-DESIGN does that at every density: 0.3 mm hops at
+/// 3 lines/mm; at 0.1 to 0.5 lines/mm (the round-3 column) a crossing on the line next to the
+/// far end, then every other line up to the hop on the start point's own line; on the
+/// gradation rows likewise, where a row within [`START_LINE_SLACK`] of the start point is the
+/// second half's hop only. A single-line gap shorter than [`CROSSING_MERGE_GAP`] next to the
+/// far end is not crossed: those crossings spread evenly (satin-feather at 3 lines/mm). `None`
+/// where the split does not apply (holes, several contours, a start point within a line of
+/// either end).
 fn split_satin(
     closed: &[Contour],
     holes: &[Contour],
@@ -987,34 +983,57 @@ fn split_satin(
             }
         }
     };
-    let step = sawtooth_step(line);
-    // A start point within a sawtooth period of either end leaves no half on that side.
-    let margin = step as f64 * line - 1e-6;
-    if at.y < lo + margin || at.y > hi - margin {
-        return None;
-    }
     let half = |from_low: bool| -> Option<Vec<(f64, Span)>> {
         let lines = lines(from_low);
         let sign = if from_low { 1.0 } else { -1.0 };
-        // A line within half a line spacing of the start point is the start point's line.
-        let before = |y: f64| (at.y - y) * sign > line / 2.0;
-        let mut rows = Vec::new();
-        let mut k = 0;
-        while k < lines.len() && before(lines[k]) {
-            rows.push((lines[k], one(lines[k])?));
-            if lines.get(k + step).is_none_or(|&y| !before(y)) {
-                break;
+        // The hop line: the last lattice line at or before the start point coming from this
+        // half's end. A line on the start point (the uniform lattice with the start on a line:
+        // its edge rows sit [`EDGE_ROW_INSET`] inside the region, so the line lies that far
+        // past the point) is the hop of both halves. A line within [`START_LINE_SLACK`] of the
+        // start point without lying on it is the second half's hop only (satin-gradation:
+        // row 12 lies 0.02 mm from the start point; PE-DESIGN's left half hops to row 11, its
+        // right half crosses at the start point).
+        let h = lines.iter().rposition(|&y| {
+            let d = (at.y - y) * sign;
+            if d.abs() <= EDGE_ROW_INSET + 1e-6 {
+                true
+            } else if d.abs() <= START_LINE_SLACK {
+                !from_low
+            } else {
+                d > 0.0
             }
-            k += step;
-        }
-        if rows.is_empty() {
+        })?;
+        if h == 0 {
             return None;
         }
-        let hop = lines
-            .get(k + 1)
-            .copied()
-            .filter(|&y| (y - at.y) * sign < 1e-9)
-            .unwrap_or(at.y);
+        // Crossings on every other line counting back from the hop, and on the far end's line.
+        let mut idx: Vec<usize> = (1..h).rev().step_by(2).collect();
+        if idx.last() != Some(&0) {
+            idx.push(0);
+        }
+        idx.reverse();
+        let mut ys: Vec<f64> = idx.iter().map(|&k| lines[k]).collect();
+        // A single line between the far end's crossing and the next one, shorter than
+        // [`CROSSING_MERGE_GAP`], is not crossed: the crossings before the hop spread evenly
+        // from the far end's line to the last one instead (satin-feather at 3 lines/mm: 15
+        // crossings 0.69 mm apart over 29 lines, then the 0.33 mm hop).
+        if idx.get(1) == Some(&1) && ys.len() >= 3 && (ys[1] - ys[0]).abs() < CROSSING_MERGE_GAP {
+            let (first, last, n) = (ys[0], ys[ys.len() - 1], ys.len() - 2);
+            ys = (0..=n)
+                .map(|k| first + (last - first) * k as f64 / n as f64)
+                .collect();
+        }
+        let mut rows = Vec::new();
+        for y in ys {
+            rows.push((y, one(y)?));
+        }
+        // The hop on the start point's own line crosses at the start point itself (PE-DESIGN's
+        // last crossing lands on it; the end lock steps back along that crossing).
+        let hop = if (at.y - lines[h]).abs() <= START_LINE_SLACK {
+            at.y
+        } else {
+            lines[h]
+        };
         rows.push((hop, one(hop)?));
         Some(rows)
     };
