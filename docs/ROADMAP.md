@@ -98,7 +98,7 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
 3. **Lines:** Start/End Type Feed/Run for stem, candlewicking and chain, with the L2 marker and
    the Feed/Run choice in the editor; open lines and chain diamonds; candlewicking Low and
    High. The motif line cannot be compared: PE-DESIGN's default motif is Brother's own artwork.
-4. **Lettering:** Text Transform presets 13 and 14 (fan out / in); per-character colour and
+4. **Lettering:** (Text Transform presets 13 and 14 done 2026-10-28) per-character colour and
    multi-character selection; Connection Points; minimum font sizes and small-text fonts;
    kerning that reflows the line; editing several characters at once on the canvas; shaping for
    embroidery fonts.
