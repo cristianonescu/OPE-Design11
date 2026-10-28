@@ -73,6 +73,15 @@ docs/LEGAL_AND_LICENSING.md.
 Linked into the editor for clipboard images (already a dependency of eframe). MIT OR
 Apache-2.0; no files copied.
 
+## ureq, rustls, webpki-roots, ring, semver, sha2 — https://github.com/algesten/ureq, https://github.com/rustls/rustls, https://github.com/dtolnay/semver, https://github.com/RustCrypto/hashes
+
+Linked into the editor through `openstitch-update` (docs/research/updater.md): ureq is the HTTPS
+client that asks GitHub for releases and downloads them, over rustls with the Mozilla root
+certificates bundled by webpki-roots and the ring cryptography provider; semver orders versions;
+sha2 checks a download against the release's `SHA256SUMS`. ureq, rustls, semver and sha2 are
+MIT OR Apache-2.0; webpki-roots is MPL-2.0 (the root list, used unmodified) and CDLA-Permissive-2.0;
+ring is Apache-2.0 AND ISC (with OpenSSL-licensed assembly). No files copied.
+
 ## libembroidery — https://github.com/Embroidermodder/libembroidery
 
 Consulted (not linked) for the PCS, SEW, XXX, HUS, VIP, PHC and CSD layouts. The 400-byte VIP colour-table

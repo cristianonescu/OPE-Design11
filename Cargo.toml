@@ -15,6 +15,7 @@ members = [
     "crates/openstitch-library",
     "crates/openstitch-remote",
     "crates/openstitch-compat",
+    "crates/openstitch-update",
 ]
 exclude = ["crates/openstitch-formats/fuzz"]
 
