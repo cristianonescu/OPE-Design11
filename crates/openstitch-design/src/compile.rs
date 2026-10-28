@@ -253,7 +253,10 @@ fn sew_object(w: &mut Writer, object: &DesignObject, design: &Design) {
     }
 }
 
-/// Sews fixed needle points: runs split at jumps and trims, one element per colour block.
+/// Sews fixed needle points: runs split at jumps and trims, one element per colour block. The
+/// points are the machine's, so a stitch longer than `max_stitch` stays one penetration, as
+/// PE-DESIGN 11.50 exports an opened stitch file (compat machine-formats: its 15 mm satin
+/// stitches are one jump and one stitch in every format, never two stitches).
 fn sew_block(w: &mut Writer, block: &StitchBlock) {
     // A feed pattern is jumps only: sewn as the jumps themselves.
     if !block.stitches.is_empty() && block.stitches.iter().all(|s| s.command == Command::Jump) {
@@ -301,7 +304,7 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
                 w.sew(Element {
                     thread: thread_for(block_index),
                     runs: std::mem::replace(&mut pending, vec![Vec::new()]),
-                    whole: false,
+                    whole: true,
                 });
                 block_index += 1;
             }
@@ -311,7 +314,7 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
     w.sew(Element {
         thread: thread_for(block_index),
         runs: pending,
-        whole: false,
+        whole: true,
     });
 }
 

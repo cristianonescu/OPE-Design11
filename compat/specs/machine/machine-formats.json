@@ -3,7 +3,7 @@
   "id": "machine-formats",
   "area": "machine",
   "title": "Machine formats carry the same stitches, trims and colour stops as PE-DESIGN 11's exports",
-  "description": "One small design with every machine-level event: a trim inside a colour (two Red running lines 40 mm apart), a colour change (Black after Red), and 15 mm satin stitches that the relative formats have to split. PE-DESIGN 11 opens OpenStitch's a.pes as stitches and exports it to each format; the exports are compared record by record with OpenStitch's own writers: how a frame move, a trim, a colour change and a long stitch are written, the header fields and the origin. The writers follow PE-DESIGN's layout (crates/openstitch-formats/src/layout.rs; docs/FILE_FORMATS.md).",
+  "description": "One small design with every machine-level event: a trim inside a colour (two Red running lines 40 mm apart), a colour change (Black after Red), and 15 mm satin stitches that the relative formats have to split. The design is OpenStitch's saved stitch file a.pes (crates/openstitch-formats/tests/fixtures/machine-formats.pes: two running lines and a 40 x 15 mm satin at 4.5 lines/mm, drawn on 2026-10-27), imported here as stitches so that the exports hold exactly the stitches PE-DESIGN 11 exported: PE-DESIGN opens a.pes as stitches and exports it to each format, and the exports are compared record by record with OpenStitch's own writers: how a frame move, a trim, a colour change and a long stitch are written, the header fields and the origin. The writers follow PE-DESIGN's layout (crates/openstitch-formats/src/layout.rs; docs/FILE_FORMATS.md); an imported stitch block's needle points are exported as recorded, a 15 mm stitch as one penetration. The stitch generator is tested by the stitches specs, not here.",
   "covers": {
     "audit": [],
     "featureMatrix": [
@@ -60,6 +60,12 @@
       "note": "SEW start point (pe-refs-3, 2026-10-28, compat/reference/machine/sew-a-moved10.* and sew-square-centre.*): PE-DESIGN's SEW export of machine-formats' design moved 10 mm right and down is byte-identical to the one in place, so the stream is relative to the design; its first record moves from a start point 15.9 mm left of and 9.7 mm above the design centre to the first needle point as one stitch (a jump and a stitch for the square's 24.9 mm way; the same offset from the square's centre). OpenStitch's SEW writer starts at (-15.9, -9.7) mm from the centre; the SEW reader keeps that first move. The square's export also shows PE-DESIGN exporting its own objects from their first needle point, the end of the PEC's first jump (the tie-in: there, 0.3 mm back, there again), which the PES reader does not take as a needle point: one record more in PE-DESIGN's stream, the rest identical."
     }
   ],
+  "inputs": [
+    {
+      "from": "crates/openstitch-formats/tests/fixtures/machine-formats.pes",
+      "name": "machine-formats-source.pes"
+    }
+  ],
   "script": [
     {
       "command": "design.new",
@@ -70,72 +76,11 @@
       }
     },
     {
-      "command": "shape.polygon",
+      "command": "stitches.import",
       "params": {
-        "points": [
-          [
-            20,
-            20
-          ],
-          [
-            60,
-            20
-          ]
-        ],
-        "closed": false,
-        "outline": "Red"
-      }
-    },
-    {
-      "command": "shape.polygon",
-      "params": {
-        "points": [
-          [
-            20,
-            60
-          ],
-          [
-            60,
-            60
-          ]
-        ],
-        "closed": false,
-        "outline": "Red"
-      }
-    },
-    {
-      "command": "object.setLine",
-      "params": {
-        "ids": [
-          1,
-          2
-        ],
-        "type": "running",
-        "color": "Red",
-        "pitch": 2.5,
-        "runTimes": 1
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 20,
-        "y": 30,
-        "width": 40,
-        "height": 15,
-        "fill": "Black"
-      }
-    },
-    {
-      "command": "object.setRegion",
-      "params": {
-        "id": 3,
-        "type": "satin",
-        "color": "Black",
-        "angle": 90,
-        "density": 4.5,
-        "underlay": false
-      }
+        "path": "machine-formats-source.pes"
+      },
+      "id": "import"
     }
   ],
   "exports": [
@@ -209,10 +154,6 @@
       "make": "As for the DST reference, exported as Pfaff / Husqvarna Viking VIP."
     }
   ],
-  "machine": {
-    "record": "machine/machine-formats.json",
-    "make": "Sew target/compat/work/machine-formats/a.pes on a Brother single-needle machine (medium-weight woven cotton, tear-away stabiliser): the two Red lines must sew with one thread cut between them (no thread span across the 40 mm gap), the machine must stop once for Black, and the satin must sew its 15 mm stitches whole with no needle holes along the long edges. Record the result, the cut, and whether the machine showed the design as 40 x 40 mm."
-  },
   "measurements": [
     {
       "id": "trim",
@@ -477,5 +418,9 @@
         "id": "pe-design-vip"
       }
     }
-  ]
+  ],
+  "machine": {
+    "record": "machine/machine-formats.json",
+    "make": "Sew target/compat/work/machine-formats/a.pes on a Brother single-needle machine (medium-weight woven cotton, tear-away stabiliser): the two Red lines must sew with one thread cut between them (no thread span across the 40 mm gap), the machine must stop once for Black, and the satin must sew its 15 mm stitches whole with no needle holes along the long edges. Record the result, the cut, and whether the machine showed the design as 40 x 40 mm."
+  }
 }

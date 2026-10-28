@@ -389,7 +389,9 @@ writes are compared record by record (`compare`, 0.1 mm, PCS 0.2 mm) with OpenSt
 of the same stitches; SHV and CSD stay in the owner's notes (read-only formats, no writer to
 compare). Before the writers followed PE-DESIGN's layout the compare failed in every format
 (441–619 differing entries, the HUS magic rejected); the differences and the rules now written
-are in FILE_FORMATS.md "PE-DESIGN's record layout" and in the audit. The SEW compare runs
+are in FILE_FORMATS.md "PE-DESIGN's record layout" and in the audit. The spec imports OpenStitch's saved a.pes
+(the file PE-DESIGN opened) and exports it, so the compare does not depend on the stitch
+generator; imported stitch blocks keep their needle points whole on export. The SEW compare runs
 from the first record: the round-3 exports (`sew-a-moved10.sew`, byte-identical to the export
 of the unmoved design; `sew-square-centre.sew`) showed PE-DESIGN's SEW stream is design-relative
 and starts 15.9 mm left of and 9.7 mm above the design centre, where OpenStitch now starts it.

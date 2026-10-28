@@ -949,7 +949,12 @@ Line references are relative to `crates/`.
   of and 9.7 mm above the design centre, the same for the 40 mm design and the 20 x 20 mm
   square, the way to the first needle point sewn as a stitch and split like one; the writer
   starts there and the reader keeps the move, so the SEW compare is record for record from the
-  first one. The square's export also shows PE-DESIGN exporting its own objects from their
+  first one. The spec exports OpenStitch's saved a.pes itself (`stitches.import`), the file
+  PE-DESIGN opened, so the writers are compared on exactly PE-DESIGN's input whatever the
+  stitch generator does later; an imported stitch block's needle points are exported as
+  recorded (a 15 mm stitch stays one penetration, as PE-DESIGN exports the opened file; the
+  compiler used to split it at the machine's longest stitch). The square's export also shows
+  PE-DESIGN exporting its own objects from their
   first needle point, the end of the PEC's first jump (its tie-in: there, 0.3 mm back, there
   again), where OpenStitch's PES reader starts at the first PEC stitch record: one record more
   in PE-DESIGN's stream, the rest identical (`sew_stream_is_design_relative_and_starts_where_pe_design_does`).
