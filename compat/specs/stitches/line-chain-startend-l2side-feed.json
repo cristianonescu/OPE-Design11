@@ -1,0 +1,154 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "line-chain-startend-l2side-feed",
+  "area": "stitches",
+  "title": "Chain Stitch on a closed line, entry L1 (23.8, 30), exit L2 (50, 30), Start/End Feed",
+  "description": "A closed straight line (10,10)-(50,10)-(50,30)-(10,30) mm sewn as Chain Stitch at PE-DESIGN's defaults, with the line entry point L1 at (23.8, 30) and the exit point L2 at (50, 30), Start/End Type Feed. PE-DESIGN 11.50 keeps every element where it is without the moved points and only changes where the sewing starts and ends: the pattern starts with the link at the exit point L2 and ends with the link before it. Compared: the stitch count, where the needle starts and ends, and the longest stitch.",
+  "covers": {
+    "featureMatrix": [
+      {
+        "area": "Line sew types",
+        "feature": "Motif (OpenStitch's own motif library"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293444.html",
+      "note": "Start/End Type (Feed, Run) for motif, stem, candlewicking and chain lines whose entry/exit point was changed"
+    },
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md, Next 11: motif, stem, candlewick and chain lines restart at a moved entry point"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.polygon",
+      "params": {
+        "points": [
+          [
+            10,
+            10
+          ],
+          [
+            50,
+            10
+          ],
+          [
+            50,
+            30
+          ],
+          [
+            10,
+            30
+          ]
+        ],
+        "closed": true,
+        "outline": "Red"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          1
+        ],
+        "type": "none"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "ids": [
+          1
+        ],
+        "type": "chain",
+        "color": "Red",
+        "startEnd": "feed"
+      }
+    },
+    {
+      "command": "object.setEntryExit",
+      "params": {
+        "id": 1,
+        "lineEntry": [
+          23.8,
+          30
+        ],
+        "lineExit": [
+          50,
+          30
+        ]
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "line.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/line-chain-startend-l2side-feed.pes",
+      "make": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid). Shapes > Closed Straight Line: click (10, 10), (50, 10), (50, 30) and double-click (10, 30) mm. Region Not Sewn; line colour 800 RED; line sew type Chain Stitch at the attributes PE-DESIGN shows for the type (triangle, size 4.0, time 5, arrange 1st). With Select > Select Entry/Exit Points drag L1 along the outline to (23.8, 30) mm, between two links of the bottom edge, and L2 round to the corner (50, 30) (PE-DESIGN does not let it up the right edge). In Sewing Attributes > Line sew set Start/End Type Feed. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system, where PE-DESIGN shows L1 and L2, and the status-bar size and stitch count in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "PE-DESIGN reference: needle points on the same line",
+      "reference": {
+        "tolerance": {
+          "percent": 1
+        }
+      }
+    },
+    {
+      "id": "ends",
+      "measure": {
+        "kind": "needleEnds"
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "PE-DESIGN reference: where the sewing starts and ends (Start/End Type)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    },
+    {
+      "id": "stitch-length-max",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "PE-DESIGN reference: longest stitch (the run along the line, the elements)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    }
+  ]
+}

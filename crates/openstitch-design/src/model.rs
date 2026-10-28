@@ -1226,6 +1226,18 @@ pub enum Arrange {
     Alternate,
 }
 
+/// How motif, stem, candlewicking and chain lines get from the entry point (L1) into the
+/// pattern when the points were moved (PE-DESIGN's Start/End Type).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StartEnd {
+    /// Start with the pattern, which begins and ends at the exit point (PE-DESIGN's default).
+    #[default]
+    Feed,
+    /// Start at the entry point (L1) and run along the line to where the pattern begins.
+    Run,
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ChainShape {
@@ -1287,6 +1299,13 @@ pub struct LineSewing {
     /// open ones from the nearer end.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub entry: Option<Vec2>,
+    /// Line exit point (PE-DESIGN L2), 0.1 mm, on the outline. The pattern of a closed stem,
+    /// candlewick or chain line begins and ends there.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exit: Option<Vec2>,
+    /// Start/End Type of closed motif, stem, candlewick and chain lines with an entry point.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub start_end: StartEnd,
 }
 
 impl LineSewing {
@@ -1330,6 +1349,8 @@ impl LineSewing {
             half_stitch: zigzag,
             underlay: zigzag,
             entry: None,
+            exit: None,
+            start_end: StartEnd::Feed,
         }
     }
 

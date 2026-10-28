@@ -262,6 +262,88 @@ fn chain_links_stay_within_their_size() {
     assert_eq!(peaks, 20 * 2);
 }
 
+/// The rectangle of compat line-*-startend-*: (10,10)-(50,10)-(50,30)-(10,30) mm, closed; its
+/// bottom edge is sewn towards -x.
+fn startend_rect() -> Vec<Vec2> {
+    Contour::rectangle(100.0, 100.0, 400.0, 200.0).path()
+}
+
+#[test]
+fn moved_points_keep_chain_links_in_place_and_start_where_pe_does() {
+    let path = startend_rect();
+    let at = |x: f64| lines::arc_of(&path, v2(x, 300.0));
+    let link = |j: f64| v2(500.0 - j * 400.0 / 13.0, 300.0);
+    let line = lines::LoopLine::Chain {
+        size: 40.0,
+        times: 5,
+        arrange: Arrange::Normal,
+    };
+    let in_place = lines::chain(&path, 40.0, ChainShape::Triangle, 5, Arrange::Normal);
+    let same_points = |run: &Run| {
+        run.iter()
+            .all(|p| in_place.iter().any(|q| q.distance(*p) < 1e-6))
+    };
+    // Feed: the pattern starts with the link of the exit point (L2 at 25.5 mm: link 7) and
+    // goes round to the one before.
+    let (feed, lead) = lines::start_loop(&path, line, at(255.0), None).expect("feed");
+    assert!(!lead && same_points(&feed));
+    assert!(feed[0].distance(link(7.0)) < 1e-6);
+    assert_eq!(feed.len(), in_place.len());
+    // Run: from the entry point's link (L1 at 29.8 mm: link 6) one stitch on to link 7.
+    let (run, lead) = lines::start_loop(&path, line, at(255.0), Some(at(298.0))).expect("run");
+    assert!(lead && same_points(&run));
+    assert!(run[0].distance(link(6.0)) < 1e-6);
+    assert_eq!(&run[1..], &feed[..]);
+    // The shorter way may be backwards: L2 at the corner (50, 30), L1 at 23.8 mm (link 8)
+    // leads back over links 7 to 0 (line-chain-startend-l2side-run.pes).
+    let (run, _) = lines::start_loop(&path, line, at(500.0), Some(at(238.0))).expect("back");
+    for (k, j) in (0..=8).rev().enumerate() {
+        assert!(run[k].distance(link(f64::from(j))) < 1e-6);
+    }
+}
+
+#[test]
+fn moved_points_start_stem_and_candlewick_at_the_exit_element_and_lead_in_with_run() {
+    let path = startend_rect();
+    let (exit, entry) = (
+        lines::arc_of(&path, v2(255.0, 300.0)),
+        Some(lines::arc_of(&path, v2(298.0, 300.0))),
+    );
+    let stem = lines::LoopLine::Stem {
+        width: 20.0,
+        spacing: 15.0,
+        angle: 45.0,
+        single: false,
+    };
+    // Stations 400/27 apart on the bottom edge: L2's is the 16th (263.0), L1's the 13th (307.4).
+    let station = |j: f64| v2(500.0 - j * 400.0 / 27.0, 300.0);
+    let (feed, _) = lines::start_loop(&path, stem, exit, None).expect("feed");
+    assert!(feed[0].distance(station(16.0)) < 1e-6);
+    let (run, lead) = lines::start_loop(&path, stem, exit, entry).expect("run");
+    assert!(lead);
+    for (k, j) in [13.0, 14.0, 15.0, 16.0].into_iter().enumerate() {
+        assert!(run[k].distance(station(j)) < 1e-6);
+    }
+    assert_eq!(&run[4..], &feed[1..]);
+    // Candlewicking starts with the running stitch into L2's knot (centred 4 × 400/7 along
+    // the bottom edge, from where that knot begins) and sews that knot last.
+    let knots = lines::LoopLine::Candlewick {
+        size: 50.0,
+        points: 24,
+        spacing: 10.0,
+        pitch: 25.0,
+    };
+    let (feed, lead) = lines::start_loop(&path, knots, exit, None).expect("candlewick");
+    assert!(lead);
+    assert!(feed[0].distance(v2(500.0 - 4.0 * 400.0 / 7.0 + 25.0, 300.0)) < 1e-6);
+    let front = v2(500.0 - 4.0 * 400.0 / 7.0 - 25.0, 300.0);
+    assert_eq!(
+        feed[1..].iter().position(|p| p.distance(front) < 1e-6),
+        Some(1)
+    );
+    assert!(feed.last().expect("stitches").distance(front) < 1e-6);
+}
+
 #[test]
 fn cutting_lines_go_to_the_needle_matching_their_direction() {
     let square = Contour::rectangle(0.0, 0.0, 100.0, 100.0);

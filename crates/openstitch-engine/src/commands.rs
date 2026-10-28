@@ -12,7 +12,7 @@ use openstitch_design::text::{self, TextAlign, TextDirection, TextSpec};
 use openstitch_design::{
     Arrange, Bezier, ChainShape, Compiler, Contour, Design, DesignObject, DesignPage, Feather,
     FeatherSide, Gradation, Layout, LineSewing, LineType, ObjectKind, Rect, RegionSewing,
-    RegionType, RunningStitchPath, Transform, UnderlayStyle, Vec2, v2,
+    RegionType, RunningStitchPath, StartEnd, Transform, UnderlayStyle, Vec2, v2,
 };
 use serde_json::{Value, json};
 
@@ -1528,6 +1528,11 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     "bool",
                     "Zigzag: running stitch a quarter of the width to each side first",
                 ),
+                opt(
+                    "startEnd",
+                    "feed|run",
+                    "Closed stem, candlewick and chain lines with moved points: the pattern begins and ends at the exit point L2; start with it (feed) or run there from the entry point L1 (run)",
+                ),
             ],
             |s, p| {
                 let idx = indexes(p, &s.design)?;
@@ -1573,6 +1578,17 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         return Err(p.invalid("arrange", "must be normal, mirror or alternate"));
                     }
                 };
+                let start_end = match p
+                    .get("startEnd")
+                    .map(|_| p.string("startEnd", None))
+                    .transpose()?
+                    .as_deref()
+                {
+                    None => None,
+                    Some("feed") => Some(StartEnd::Feed),
+                    Some("run") => Some(StartEnd::Run),
+                    Some(_) => return Err(p.invalid("startEnd", "must be feed or run")),
+                };
                 let chain_shape = match p
                     .get("chainShape")
                     .map(|_| p.string("chainShape", None))
@@ -1597,15 +1613,20 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         .line
                         .clone()
                         .unwrap_or_else(|| LineSewing::new(LineType::Running, default_line()));
-                    // Switching the type gives the new type's own attributes, as PE-DESIGN does;
-                    // the colour and the entry point stay.
+                    // Switching the type gives the new type's own attributes, as PE-DESIGN does
+                    // (Start/End Type back to Feed); the colour and the entry and exit points
+                    // stay.
                     if let Some(Some(k)) = kind
                         && k != l.kind
                     {
                         l = LineSewing {
                             entry: l.entry,
+                            exit: l.exit,
                             ..LineSewing::new(k, l.thread.clone())
                         };
+                    }
+                    if let Some(se) = start_end {
+                        l.start_end = se;
                     }
                     if let Some(c) = &color {
                         l.thread = c.clone();

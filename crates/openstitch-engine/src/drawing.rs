@@ -531,6 +531,11 @@ fn entry_exit_command() -> CommandSpec {
                 "[x, y] mm | null",
                 "Line entry point (L1): closed outlines start there, open ones from the nearer end",
             ),
+            opt(
+                "lineExit",
+                "[x, y] mm | null",
+                "Line exit point (L2): the pattern of closed stem, candlewick and chain lines begins and ends there",
+            ),
         ],
         |s, p| {
             let id = p.int("id", None, 0, i64::MAX)? as u64;
@@ -544,9 +549,12 @@ fn entry_exit_command() -> CommandSpec {
                     "object {id}: entry and exit points can be set on shapes only"
                 )));
             }
-            let keys = ["regionEntry", "regionExit", "lineEntry"];
+            let keys = ["regionEntry", "regionExit", "lineEntry", "lineExit"];
             if !keys.iter().any(|k| p.has(k) || p.is_null(k)) {
-                return Err(p.invalid("regionEntry", "give regionEntry, regionExit or lineEntry"));
+                return Err(p.invalid(
+                    "regionEntry",
+                    "give regionEntry, regionExit, lineEntry or lineExit",
+                ));
             }
             // Some(None) clears, Some(Some(p)) sets, None leaves alone.
             let read =
@@ -559,17 +567,18 @@ fn entry_exit_command() -> CommandSpec {
                         Ok(None)
                     }
                 };
-            let (re, rx, le) = (
+            let (re, rx, le, lx) = (
                 read("regionEntry")?,
                 read("regionExit")?,
                 read("lineEntry")?,
+                read("lineExit")?,
             );
             let closed: Vec<_> = o.contours.iter().filter(|c| c.closed).cloned().collect();
             // Clearing a point the object cannot have is fine; setting one is not.
             if (matches!(re, Some(Some(_))) || matches!(rx, Some(Some(_)))) && o.region.is_none() {
                 return Err(p.failed(format!("object {id} has no region sewing")));
             }
-            if matches!(le, Some(Some(_))) && o.line.is_none() {
+            if (matches!(le, Some(Some(_))) || matches!(lx, Some(Some(_)))) && o.line.is_none() {
                 return Err(p.failed(format!("object {id} has no line sewing")));
             }
             if let Some(r) = &mut o.region {
@@ -580,20 +589,28 @@ fn entry_exit_command() -> CommandSpec {
                     r.exit = v.map(|q| openstitch_design::route::snap(&closed, q));
                 }
             }
-            if let (Some(v), Some(l)) = (le, &mut o.line) {
-                l.entry = v.map(|q| {
-                    o.contours
-                        .iter()
-                        .filter_map(|c| c.nearest(q))
-                        .min_by(|a, b| a.point.distance(q).total_cmp(&b.point.distance(q)))
-                        .map_or(q, |n| n.point)
-                });
+            let on_outline = |q: openstitch_design::Vec2| {
+                o.contours
+                    .iter()
+                    .filter_map(|c| c.nearest(q))
+                    .min_by(|a, b| a.point.distance(q).total_cmp(&b.point.distance(q)))
+                    .map_or(q, |n| n.point)
+            };
+            let (le, lx) = (le.map(|v| v.map(on_outline)), lx.map(|v| v.map(on_outline)));
+            if let Some(l) = &mut o.line {
+                if let Some(v) = le {
+                    l.entry = v;
+                }
+                if let Some(v) = lx {
+                    l.exit = v;
+                }
             }
             let mm = |v: Option<openstitch_design::Vec2>| v.map(|q| [q.x / MM, q.y / MM]);
             Ok(json!({
                 "regionEntry": mm(o.region.as_ref().and_then(|r| r.entry)),
                 "regionExit": mm(o.region.as_ref().and_then(|r| r.exit)),
                 "lineEntry": mm(o.line.as_ref().and_then(|l| l.entry)),
+                "lineExit": mm(o.line.as_ref().and_then(|l| l.exit)),
             }))
         },
     )
