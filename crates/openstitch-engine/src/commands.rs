@@ -640,14 +640,18 @@ fn shape_commands() -> Vec<CommandSpec> {
             ]),
             |s, p| {
                 let rx = p.req("rx", 0.1, 1000.0)?;
-                let e = Contour::ellipse(
+                // Four Bézier quarter arcs from the bottom centre, as PE-DESIGN's Ellipse
+                // tool draws (its running stitch samples each quarter's parameter).
+                let e = shapes::arc(
                     v2(
                         p.req("cx", -5000.0, 5000.0)? * MM,
                         p.req("cy", -5000.0, 5000.0)? * MM,
                     ),
                     rx * MM,
                     p.opt("ry", rx, 0.1, 1000.0)? * MM,
-                    72,
+                    90.0,
+                    360.0,
+                    shapes::ArcMode::Chord,
                 );
                 add_shape_ending(s, p, e, Some(shapes::bottom_centre))
             },
