@@ -38,6 +38,7 @@ SCENES = {
     "overview": (["--demo", "--select", "2"],
                  [("docs/images/rust-editor-overview.png", 1600), ("docs/images/readme/editor.png", 1280)]),
     "appmenu": (["--demo", "--show", "appmenu"], [("docs/images/rust-editor-appmenu.png", 1600)]),
+    "update": (["--demo", "--show", "update"], [("docs/images/rust-editor-update.png", 1600)]),
     "view-dark": (["--demo", "--ribbon", "view", "--pane", "color", "--select", "2", "--theme", "dark"],
                   [("docs/images/rust-editor-view-dark.png", 1600)]),
     "stitches-tab": (["badge.pes", "--select", "1", "--ribbon", "stitches"],

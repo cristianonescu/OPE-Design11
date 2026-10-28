@@ -119,6 +119,52 @@ file, which is imported into a new design). Windows and Linux (tarball, AppImage
 Flatpak) pass the double-clicked file that way. macOS Finder does not; see *macOS double-click*
 under Known limits.
 
+## Updates
+
+The editor updates itself (design and decision: [research/updater.md](research/updater.md);
+code: `crates/openstitch-update`, `crates/openstitch-app/src/update_ui.rs`).
+
+- **When.** A plain interactive start (at most a file to open; `--no-splash` is fine) of a
+  release build starts a check on a background thread; `--screenshot`, `--script`, `--listen`
+  and the other options that set up a view do not, nor does a development build (debug, or a
+  binary under a cargo `target/` directory), a Flatpak, or a start with
+  `OPENSTITCH_NO_UPDATE_CHECK` set. Options ▸ *Check for Updates Now* and Help ▸ *Check for
+  Updates* ask on demand and also report "You have the latest version" or the error.
+- **What is newer.** The build's tag (`OPENSTITCH_RELEASE_TAG` at build time; About shows it)
+  is compared with GitHub's release list using semantic versioning with pre-release precedence
+  (`0.1.0-alpha.3 < 0.1.0-alpha.4 < 0.1.0-beta.1 < 0.1.0`). A pre-release build sees newer
+  pre-releases and stable releases; a stable build sees stable releases only unless Options ▸
+  *Include pre-releases* is on. Drafts are never offered. The check is one anonymous request
+  (GitHub allows 60 an hour per address); offline or on any error the start is silent.
+- **The dialog.** Shows the notes of every release newer than the running one (the release
+  body: `docs/releases/<tag>.md` plus GitHub's generated list), newest first. *Dismiss* closes
+  it; with *Don't remind me about this version* ticked the version is remembered in `ui.json`
+  (`updates.skipVersion`) and offered again only when something newer appears. *Update* is
+  disabled while the design has unsaved changes.
+- **Update.** Downloads `SHA256SUMS`, then the package for this install to a temporary folder,
+  refusing it unless its SHA-256 matches, over HTTPS only (rustls) and only from the
+  repository's release URLs. Then, per install:
+
+  | Install | Package | How it is applied |
+  |---|---|---|
+  | Windows portable (exe outside Program Files) | `OpenStitch-<tag>-windows-x86_64.zip` | `openstitch.exe` is unpacked beside the running one as `.new`, the running exe is renamed `.old`, the new one takes its place, and the editor restarts; `.old` is removed at the next start |
+  | Windows MSI (`%ProgramFiles%\OpenStitch`) | `OpenStitch-<tag>-windows-x86_64.msi` | The editor exits and a detached `cmd` runs `msiexec /i … /passive /norestart` (Windows asks for permission, the usual publisher-unknown prompt for an unsigned package), then starts the installed editor |
+  | macOS `OpenStitch.app` | `OpenStitch-<tag>-macos-universal.zip` | The zip is unpacked beside the bundle, the bundle is renamed `OpenStitch.app.old`, the new one takes its place and is started with `open -n`; the download sets no quarantine attribute, so Gatekeeper does not ask again |
+  | Linux AppImage | `OpenStitch-<tag>-linux-x86_64.AppImage` | The new image replaces `$APPIMAGE` (desktop integration keeps pointing at the same path) and is started |
+  | Linux tarball | `OpenStitch-<tag>-linux-x86_64.tar.gz` | `bin/openstitch` is replaced; the thumbnailer is not (reinstall the tarball for that) |
+  | Flatpak | — | `flatpak update`; the editor never checks |
+
+  A location the user cannot write (an app bundle installed by an administrator, a system
+  prefix) makes the update fail with the reason and a link to the release page. The restarted
+  editor gets the same command-line arguments and shows "Updated from X to Y" in the status
+  bar.
+- **Settings** in `ui.json` under `updates`: `check` (default true), `includePrereleases`
+  (default false), `skipVersion`.
+- **Testing a build without a release:** with `OPENSTITCH_UPDATE_API` and
+  `OPENSTITCH_UPDATE_DOWNLOADS` set, the client uses that API base and download prefix (plain
+  http allowed) instead of GitHub. The release pipeline publishes `SHA256SUMS` since
+  v0.1.0-alpha.4, the first version that checks; a release without it is never applied.
+
 ## Known limits
 
 - **MSI validation.** `light` runs with `-sice:ICE50` because the Start-menu shortcut uses

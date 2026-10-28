@@ -99,6 +99,20 @@ The builds are not code-signed yet:
 Stable releases and pre-releases (alpha, beta, rc) are published from tags; see
 [Releases](#releases).
 
+### Updates
+
+The editor keeps itself current. At a plain start it asks GitHub whether a newer release
+exists; if so, a dialog shows the release notes with three choices: **Dismiss**, **Don't remind
+me about this version** (quiet until a newer one appears) and **Update**, which downloads the
+package for your system, checks it against the release's `SHA256SUMS`, installs it and restarts
+OpenStitch. The portable zip, the MSI (Windows Installer asks for permission), the macOS app and
+the Linux AppImage and tarball all update in place; a Flatpak updates through Flatpak. Options ▸
+*Check for updates at startup* turns the check off, *Include pre-releases* opts a stable build
+into alphas and betas, and *Check for Updates Now* asks right away. Builds from source and the
+artifacts of `main` have no release tag and never check. The first version with the updater is
+v0.1.0-alpha.4: earlier alphas must be replaced by hand once more. Details:
+[docs/DISTRIBUTION.md](docs/DISTRIBUTION.md#updates).
+
 ## Build from source
 
 ### Prerequisites
