@@ -938,8 +938,13 @@ Line references are relative to `crates/`.
   then a 4 × 6 grid; ticking Transform applies preset 3; fitted text cannot be transformed,
   and fitting cancels it). OpenStitch lays out 24 of them, from envelopes fitted to PE's
   output by `tools/fit_envelopes.py` (specs text-transform-N, reference tier: bounds within
-  0.5 mm, every H stem's top and bottom within 0.5 mm). Still open: 13 and 14 (fan out / in),
-  which skew each letter differently.
+  0.5 mm, every H stem's top and bottom within 0.5 mm). 13 and 14 (fan out / in) since
+  2026-10-28: each letter keeps its height and is sheared linearly between one edge of the
+  straight box and the other edge scaled by 0.70 about the text's centre (13 shrinks the
+  bottom, 14 the top; fitted from the letters' corners); specs text-transform-13/-14 at the
+  reference tier by their box. Their stitch counts are 41-43 % above PE-DESIGN's (1653 vs
+  1171, 1659 vs 1159) against +14 % on the straight-edged presets: the fill rows across
+  sheared stems, for the text-fill item below.
 - **Sewing order inside a text (checked 2026-10-27):** not a gap. PE-DESIGN 11.50 also sews
   every letter's region first, then every letter's outline, one colour block each (spec
   text-sewing-order, reference tier). Still open: the guide disables "some editing of

@@ -1928,7 +1928,7 @@ fn text_docs(text_required: bool) -> Vec<ParamDoc> {
         opt(
             "envelope",
             "int | null",
-            "Text Transform preset, 1-26 in the palette's reading order (13 and 14 not yet available); null turns it off. Not for text fitted to an outline",
+            "Text Transform preset, 1-26 in the palette's reading order; null turns it off. Not for text fitted to an outline",
         ),
         opt(
             "lineSpacing",

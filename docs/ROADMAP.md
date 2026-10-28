@@ -118,7 +118,8 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    text alike; the 'H' references match only because an H's stems are vertical) — the structural
    gap behind text-fit-*, text-transform-* and text-sewing-order; the fitted circle's running
    stitch follows PE-DESIGN's Bézier halving since 2026-10-28 (text-fit-default mean needle
-   distance 0.27 → 0.20 mm). Text Transform presets 13 and 14 (fan out / in); per-character colour and
+   distance 0.27 → 0.20 mm); Text Transform presets 13 and 14 (fan out / in) done 2026-10-28.
+   Left: per-character colour and
    multi-character selection; Connection Points; minimum font sizes and small-text fonts;
    kerning that reflows the line; editing several characters at once on the canvas; shaping for
    embroidery fonts.

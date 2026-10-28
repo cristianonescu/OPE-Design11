@@ -375,8 +375,11 @@ at its defaults, 800 RED, Save As default type.
   `crates/openstitch-design/src/envelope_presets.rs`. The specs check the box (`bounds`) and the
   14 stems (`columns`, 1.05 mm half width: OpenStitch's fill rows end on the stem edges) within
   0.5 mm. The arches set the letters rigidly along an arc whose inner line keeps the text's
-  width (1.879 rad), 0.55 % of the width left of centre, as PE does. 13 and 14 (fans) have no
-  spec: they skew each letter differently and are not laid out yet.
+  width (1.879 rad), 0.55 % of the width left of centre, as PE does. 13 and 14 (fans, since
+  2026-10-28) are fitted from the letters' corners: each letter keeps its height and is sheared
+  between one edge of the straight box and the other edge scaled by 0.70 about the centre (13
+  the bottom, 14 the top); their stems slant, so their specs check the box and the counts and
+  the unit test checks every letter's corners.
 
 ### `machine-formats`: reference, 2026-10-28
 
