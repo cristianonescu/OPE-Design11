@@ -1872,6 +1872,30 @@
       "settings": "SEW start-point request (parked-refs via the coordinator), pe-refs-3, 2026-10-28 16:06-16:09, PE-DESIGN 11.50, Windows 11 Pro 10.0.26300. Design Settings multi-needle, Custom 100 x 100 mm. The square above, App menu > Export..., Janome (*.SEW).",
       "sha256": "bd11e630c66380079935a75f966dad06a7632a770258c1caeaef691872c23274",
       "notes": "Written by PE as sew-square-centre.SEW. Its start point lies 15.9 mm left of and 9.7 mm above the design centre, as machine-formats.sew's; its first needle point is the end of the PEC's first jump (PE's own tie-in: there, 0.3 mm back, there again)."
+    },
+    {
+      "file": "stitches/sweep-fill-us-type-2.pes",
+      "spec": "sweep-fill-us-type-2",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). UNDER SEWING (fill base, Under sewing ticked): the Region sew pane shows, under the Under sewing check box, two type buttons on a first row (first selected by default; the second's icon shows a double layer of crossing rows) and three more buttons on a second row that stay greyed for Fill and Satin, plus a Density drop-down: Dense / Medium (default) / Light. No spacing, inset or length fields. Satin offers the same controls (default first type, Medium). This file: under sewing second type, Density Medium. Status: 40,00 x 40,00 mm, Stitches = 2653.",
+      "sha256": "d5df35e5bb0bd76a0b8a1db83969578b43739d6fa72081faf0e6765d1df1008e",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/sweep-satin-us-type-2.pes",
+      "spec": "sweep-satin-us-type-2",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-27",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "File > New (Design Page 100 x 100 mm, grid 1 mm, Snap to Grid on, as last used); Shapes > Rectangle, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing unticked, Density 4.5 line/mm, Gradation off, Direction Manual straight line 0 degrees, Stitch Type first button, Half Stitch greyed (ticked), Running Stitch Path first button, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, Feathered edge off; square dragged (10,10)-(50,50) mm = 40,00 x 40,00 mm. Each file: that square selected, ONE attribute changed in Sewing Attributes, Save As PES default type (#PES0110). SATIN BASE: as the common base but rectangle (10,10)-(50,16) mm = 40,00 x 6,00 mm, region Satin Stitch, Direction Manual straight line 90 degrees, Under sewing unticked, Half Stitch greyed (ticked), Running Stitch Path first button, Pull compensation 0.0; satin's own defaults confirmed with the house buttons: Density 4.5 line/mm, Pull compensation 0.0 mm. Satin density field: min 0.1 (typing 0), max 14.0 (typing 99); satin pull max 2.0 mm (typing 99). UNDER SEWING (fill base, Under sewing ticked): the Region sew pane shows, under the Under sewing check box, two type buttons on a first row (first selected by default; the second's icon shows a double layer of crossing rows) and three more buttons on a second row that stay greyed for Fill and Satin, plus a Density drop-down: Dense / Medium (default) / Light. No spacing, inset or length fields. Satin offers the same controls (default first type, Medium). This file: as above, second type. Status: 40,00 x 6,00 mm, Stitches = 407.",
+      "sha256": "c1025814af99050d09ec331a429cca61287b1e1aa2e109021dcaf680a9cbf6ba",
+      "notes": "Header #PES0110."
     }
   ]
 }
