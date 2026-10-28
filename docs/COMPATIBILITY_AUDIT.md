@@ -902,10 +902,12 @@ Line references are relative to `crates/`.
   fill (PE offers it; OpenStitch refuses it until it sews it).
 - **Gradation:** the pattern is PE-DESIGN's since 2026-10-27: Max/Min density with evenly
   spaced step values (default Max 53 %, Min 5 %, 9 steps), the density falling linearly across
-  the region, each gap at the density halfway across it, rows from edge to edge.
-  region-travel-u-gradation passes at the reference tier; its top rows lie 0.06 mm from PE's
-  on average (0.24 mm with equal bands). Designs saved with the old single far-side percentage still sew a
-  continuous fall from 100 %. The guide's exclusions apply: not with a feathered edge, Auto
+  the region, and rows at equal steps of the cumulative line count: the region holds the whole
+  number of gaps the profile integrates to, the first row on the start edge and the last on
+  the far edge. region-travel-u-gradation passes at the reference tier; all 40 of its rows lie
+  within 0.12 mm of PE-DESIGN's (0.04 mm on average; the earlier midpoint-density placement
+  drifted to 0.4 mm by the far edge). Designs saved with the old single far-side percentage
+  still sew a continuous fall from 100 %. The guide's exclusions apply: not with a feathered edge, Auto
   direction or text (refused when set, not sewn when a file holds them anyway). Still missing:
   other preset patterns, per-step editing, Blend (two-colour blending), the gradation direction
   arrow, and programmable fill (PE offers it; OpenStitch refuses it until it sews it).
