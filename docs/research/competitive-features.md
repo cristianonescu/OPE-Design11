@@ -920,12 +920,20 @@ B4 and B5.
   Fractal Fill and the like identify the vendors' features in this document only. OpenStitch
   commands use generic names (contour fill, guided fill, density profile, corner style,
   knockdown fill, thread conversion).
-- **Patents named in the sources, to check by number before the related item ships:**
-  US 8532810 (skeleton-based satin from strokes; D12, and OpenStitch's existing skeleton
-  satin), US 7996103 (gradient-direction photo stitches; F16), Embrilliance's auto-split for
-  multi-position hoops (W1, D14). Expired per their filing dates, but to be confirmed:
-  US 5541847, US 6934599, US 6587745, WO2005061774. This is not legal advice; it is the list
-  for the owner's lawyer.
+- **Patents named in the sources, to check by number before the related item ships.** The
+  facts per patent (holder, dates, status shown, what claim 1 covers, the item it touches,
+  a design-around in plain words) are in [beyond/patents.md](beyond/patents.md). Correction
+  to the first version of this list: US 8532810 is Vistaprint's auto-digitizing
+  fragment-ordering patent (priority 1998, shown expired), not a skeleton-satin patent, so
+  D12 and OpenStitch's skeleton satin have no live patent on this list. Shown active and
+  therefore the ones to read: Brother's US 7996103 (per-pixel angle features with a
+  coverage-and-colour test for connectors; F16's direction-aware variant only, to 2030),
+  BriTon Leap's US 9492937 / US 10023982 (appliqué cut files derived from stitch data; O7
+  cut files from imported stitch files) and US 10358753 / US 11060220 (tracing a bitmap of
+  stitch data to add outline or fill stitches; `object.toShapes`'s coverage trace, B12 on
+  stitch blocks, B14's fill fallback, to about 2035). Shown expired or ceased: US 5541847,
+  US 6934599, US 6587745, WO2005061774, US 6600966 (Embrilliance's hoop split). This is
+  not legal advice; it is the list for the owner's lawyer.
 - **No vendor artwork.** Pattern tiles, motifs, meander tiles, fonts and thread charts beyond
   colour facts are OpenStitch's own, as today.
 - **pyembroidery (MIT)** remains the oracle for any new format (W6).

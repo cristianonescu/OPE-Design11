@@ -165,7 +165,12 @@ Deferred: linear colour-gradient and tartan fills, shape and vine fills, photo
 thread-painting, sequin/chenille/bead types (machine-specific), the TrueType turning-satin
 rework, an intelligent multi-hoop split with editable lines, VP3 and other extra formats.
 The patents named in the research document are checked by number before the related item
-ships.
+ships; the facts per patent and the items each touches are in
+[research/beyond/patents.md](research/beyond/patents.md) (shown active: Brother's
+US 7996103 for the deferred direction-aware photo stitch, and BriTon Leap's families for cut
+files from stitch data and for tracing a bitmap of stitch data, which concern
+`object.toShapes`, B12 on stitch blocks and B14's fill fallback; the rest shown expired or
+ceased). Not legal advice: the list for the owner's lawyer.
 
 ## Blocked
 
