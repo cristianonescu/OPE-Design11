@@ -376,7 +376,10 @@ File ▸ Open (also a recent file, or Open in Layout & Editing from the Design D
 ask "Save changes to NAME?" ([screenshot](images/rust-editor-close-prompt.png)): **Save**
 (Enter) saves (Save As when the design has no file yet) and goes on, **Don't Save** goes on
 and discards the changes, **Cancel** (Esc) returns to the editor. A cancelled Save As returns
-to the editor too. As PE-DESIGN 11 does.
+to the editor too. As PE-DESIGN 11 does. On macOS Cmd+Q quits through the same prompt: the
+editor installs no default application menu (its Quit would terminate the app without asking),
+so Cmd+M minimises through the editor and Cmd+H, About, Services and Hide Others are not
+available from a menu.
 
 ### Option button
 

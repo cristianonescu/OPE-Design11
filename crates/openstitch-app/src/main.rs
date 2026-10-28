@@ -236,6 +236,23 @@ fn listen(
 }
 
 /// The app icon (assets/icons, written by tools/gen_icons.py from the logo) as 64×64 RGBA.
+/// macOS: no default application menu. Its Quit item (Cmd+Q) terminates the application
+/// without a window close request, skipping the unsaved-changes prompt; the editor handles
+/// Cmd+Q (quit through the prompt) and Cmd+M (minimise) itself. Cmd+H and the menu's About,
+/// Services and Hide are not available (see docs/UI_LAYOUT.md).
+#[cfg(target_os = "macos")]
+fn macos_event_loop() -> Option<eframe::EventLoopBuilderHook> {
+    Some(Box::new(|builder| {
+        use winit::platform::macos::EventLoopBuilderExtMacOS;
+        builder.with_default_menu(false);
+    }))
+}
+
+#[cfg(not(target_os = "macos"))]
+fn macos_event_loop() -> Option<eframe::EventLoopBuilderHook> {
+    None
+}
+
 fn window_icon() -> egui::IconData {
     egui::IconData {
         rgba: include_bytes!("../../../assets/icons/openstitch-64.rgba").to_vec(),
@@ -275,6 +292,7 @@ fn main() -> eframe::Result {
             .with_icon(window_icon()),
         renderer: eframe::Renderer::Wgpu,
         wgpu_options: wgpu_options(),
+        event_loop_builder: macos_event_loop(),
         ..Default::default()
     };
     eframe::run_native(
