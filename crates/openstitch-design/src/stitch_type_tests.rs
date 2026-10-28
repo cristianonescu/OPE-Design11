@@ -370,6 +370,63 @@ fn cutting_lines_go_to_the_needle_matching_their_direction() {
 }
 
 #[test]
+fn auto_satin_ends_on_its_start_point_and_travels_forward_along_the_outline() {
+    // The 5 mm band bent through 60° of compat satin-auto-bend-60 (0.1 mm): PE-DESIGN 11.50
+    // starts at the first vertex, runs 0.5 mm inside the outer (top) edge to the far end, sews
+    // the satin back with one needle point per rung and ends on the start point.
+    let band = Contour::new(
+        vec![
+            v2(0.0, 0.0),
+            v2(300.0, 0.0),
+            v2(386.6, 150.0),
+            v2(343.3, 175.0),
+            v2(271.1, 50.0),
+            v2(0.0, 50.0),
+        ],
+        true,
+    );
+    let mut r = region(RegionType::Satin);
+    r.auto_direction = true;
+    r.underlay = false;
+    r.density = 3.0;
+    let run = crate::region::layers(std::slice::from_ref(&band), &r, &[])
+        .pop()
+        .expect("top")
+        .pop()
+        .expect("run");
+    let last = run[run.len() - 1];
+    assert!(last.distance(v2(0.0, 0.0)) < 2.0, "ends at {last:?}");
+    // The lead travel (before the first rung, which is at the far end) stays by the top edge.
+    let first_rung = run
+        .iter()
+        .position(|p| p.x > 330.0 && p.y > 100.0)
+        .expect("far end reached");
+    let lead = &run[..first_rung];
+    assert!(lead.len() > 10, "{lead:?}");
+    for p in lead.iter().filter(|p| p.x > 50.0 && p.x < 250.0) {
+        assert!(
+            p.y > 0.0 && p.y < 10.0,
+            "lead by the top edge, not {p:?}: {lead:?}"
+        );
+    }
+    // Along the straight leg the needle points alternate between the edges at exactly a
+    // spacing (3.33 mm / 10 → 0.333 mm): the rungs are square to the leg and on one lattice.
+    let leg: Vec<Vec2> = run[first_rung..]
+        .iter()
+        .copied()
+        .filter(|p| p.x > 10.0 && p.x < 200.0 && (p.y.abs() < 0.5 || (p.y - 50.0).abs() < 0.5))
+        .collect();
+    assert!(leg.len() > 50, "{}", leg.len());
+    for w in leg.windows(2) {
+        assert!((w[0].y - w[1].y).abs() > 40.0, "alternate edges: {w:?}");
+        assert!(
+            ((w[0].x - w[1].x).abs() - 10.0 / 3.0).abs() < 0.05,
+            "a spacing apart: {w:?}"
+        );
+    }
+}
+
+#[test]
 fn half_stitch_thins_the_inner_side_of_bends() {
     let straight = Contour::new(hline(200.0), false);
     assert_eq!(

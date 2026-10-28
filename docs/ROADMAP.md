@@ -92,9 +92,16 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
 
 1. **Fill:** PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
    Frequency default); the programmable fill density; Stitch Type (turning ends) and Half
-   Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend.
+   Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
+   rows follow PE-DESIGN's cumulative-density placement since 2026-10-28 (#95: every row of
+   the U within 0.12 mm, overlap 0.83 → 0.89); left for the U: PE's section order for fills in
+   several parts (right leg, left leg, then the top bar ending at the first vertex).
 2. **Satin:** Half Stitch for Auto satin (the corner fan now produces the crowding it acts
-   on); the remaining density-3 differences on bends; Miter limit.
+   on); Miter limit. Auto satin's needle lattice (whole spacings from the far end, the
+   remainder at the start point), its forward start travel and its end on the start point
+   follow PE-DESIGN since 2026-10-28 (satin-auto-bend-60: mean needle distance 0.20 → 0.09 mm);
+   left: PE's exact remainder handling on the start leg (0.05 mm) and the fan's inner crowding
+   (0.3-0.4 mm against our 0.25-0.3 mm), both below the file's 0.1 mm grid in effect.
 3. **Lines:** Start/End Type Feed/Run for stem, candlewicking and chain, with the L2 marker and
    the Feed/Run choice in the editor; open lines and chain diamonds; candlewicking Low and
    High. The motif line cannot be compared: PE-DESIGN's default motif is Brother's own artwork.
