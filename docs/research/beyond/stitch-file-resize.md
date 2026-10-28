@@ -52,7 +52,7 @@ stitches with one character:
 | Class | Signature (consecutive stitches `s_i`, vectors `v_i`) | Recovered geometry |
 |---|---|---|
 | **satin** | alternating direction (`v_i · v_{i+1} < 0`), similar length (`|v_i|` within 30 % of a running median), length ≥ 1.0 mm, the midpoints of consecutive stitches advancing by a small, steady step | two rails = the odd and even needle points smoothed; rung spacing = the median midpoint step |
-| **fill** | long runs of stitches of near-equal length along one direction (a row), rows alternating direction, consecutive rows a constant distance apart, needle points on a shifted grid | row direction, row spacing (median), stitch length (median), the covered area from `coverage::trace` |
+| **fill** | long runs of stitches of near-equal length along one direction (a row), rows alternating direction, consecutive rows a constant distance apart, needle points on a shifted grid | row direction, row spacing (median), stitch length (median), the covered area as the union of the row spans (no raster) |
 | **run** | stitches of near-equal length with small turning angles, not alternating | the path = the needle points; pitch = median length |
 | **tie / lock** | 3–6 stitches under 1 mm at a run's start or end | kept as is |
 | **other** | anything else (motif, cross, manual) | kept as is (scaled geometrically) |
@@ -76,8 +76,9 @@ gradation fill classifies row by row with a varying spacing (recorded per row).
     **original** rung spacing (`column::satin` on rungs rebuilt from the scaled rails at the
     old spacing). Width grows with the scale, the stitch count grows with the length. If a
     scaled rung exceeds `maxStitch` (12.1 mm), split it (the split-length attribute's rule).
-  - **fill**: scale the covered area (its outline polygons from the coverage trace, or from
-    the row spans directly), then regenerate rows at the original row spacing and stitch
+  - **fill**: scale the covered area, taken from the recovered row spans directly (the
+    union of the rows' extents, not a traced bitmap: the patent note in
+    [patents.md](patents.md) says why the raster route is avoided), then regenerate rows at the original row spacing and stitch
     length with `generate::fill_edge_to_edge` at the original angle; the Frequency shift is
     the original grid shift; travel between sections as a fill today. The original needle
     pattern is not preserved (it cannot be, the grid changes), but the density is.
