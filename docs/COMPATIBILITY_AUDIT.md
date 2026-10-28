@@ -99,6 +99,15 @@ Line references are relative to `crates/`.
 
 ## 1. Satin is sewn as a square wave, not a zigzag
 
+- **Minimum density (2026-10-28, `sweep-satin-density-0p2/0p3/0p5.pes`, reference tier):** between
+  PE-DESIGN's minimum 0.1 lines/mm (parked: PE sews 5 crossings 10 mm apart) and 0.5, the crossings
+  are joined by diagonals whose longest stitch OpenStitch matches exactly (11.66, 8.99, 7.21 mm) with
+  the counts within 10 %. PE's density field has one decimal, so 0.15 cannot be set.
+- **Wide columns (2026-10-28, `machine-satin-width-16/18/20/22/25/30.pes`, reference tier):**
+  PE-DESIGN sends satin crossings of 16 to 30 mm to the machine whole (every stitch the full
+  width, 209 stitches on each 40 mm column at density 4.5) and OpenStitch matches it: no split
+  below 30 mm.
+
 - **Impact:** severity 5.
   - Every satin row goes straight across, then takes a short stitch along the edge to the next
     row.
@@ -269,7 +278,9 @@ Line references are relative to `crates/`.
   length for trimming" field shows (read the Design Settings dialog; the recordings were made
   with the multi-needle machine type at its default). Also settled (`machine-rbr.pes`, reference
   tier): objects drawn red, blue, red sew as both reds (one block, a trim between them) then blue,
-  one colour change, as `order.optimize` does.
+  one colour change, as `order.optimize` does. Also (`machine-rbr-far.pes`, `machine-rbgb.pes`, reference tier): the reds merge even
+  70 mm apart, and red, blue, green, blue sews red, both blues, green: same colours merge in
+  first-occurrence order across other colours.
 
 - **Impact:** severity 4. One same-coloured rectangle with underlay and an outline sews with
   3 trims and 3 jumps. That means more cuts, more tie-offs and longer sew time.
@@ -401,7 +412,7 @@ Line references are relative to `crates/`.
   direction turns linearly with the distance along it, over three band widths for a 90° turn (two
   for 60°), centred on the outer corner; each rung reaches across to the inner edge, so the inner
   ends crowd towards the inner corner. The satin reaches the band's square ends.
-- **Bend sweep (2026-10-28, references `satin-auto-bend-30/45/75.pes` and their `-nohalf` twins):**
+- **Bend sweep (2026-10-28, references `satin-auto-bend-30/45/75/90.pes` and their `-nohalf` twins):**
   PE-DESIGN's count is the same at 30°, 45°, 60° and 75° (171–177 stitches on the 5 mm band) and the
   same with Half Stitch on or off; OpenStitch is within 10 % and the longest crossing within 0.5 mm
   at all three (reference tier). At 120° PE-DESIGN sews 161 stitches with a 10 mm longest crossing
@@ -1040,7 +1051,9 @@ Line references are relative to `crates/`.
   6: 5/16/26/34/41/46/50/52/53, 7: 5/26/41/50/53/50/41/26/5, 8: 53/32/17/8/5/8/17/32/53) and Blend
   sews two colour blocks (second colour first); their specs check only the routing until the model
   has per-step values and Blend. Raised: without under sewing PE-DESIGN sews 434 stitches on the U
-  where OpenStitch sews 366 (`u-gradation-nous.pes`, parked): the under-sewing layer hides a
+  where OpenStitch sews 366 (`u-gradation-nous.pes`, parked; on a plain 40 × 40 mm square without
+  under sewing the gap is within tolerance: `square-gradation-default.pes` 673 / 644 and
+  `square-gradation-30-10.pes` 489 / 461 at the reference tier, so the U's legs carry most of it): the under-sewing layer hides a
   difference in the gradation rows themselves. Still missing: per-step editing, Blend, the
   gradation direction arrow, and programmable fill (PE offers it; OpenStitch refuses it until it
   sews it).

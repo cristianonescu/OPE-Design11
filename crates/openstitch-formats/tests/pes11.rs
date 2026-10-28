@@ -261,6 +261,7 @@ fn round_3_object_files_read_their_stitches_and_stop_cleanly() {
         "o-rounded-rect",
         "o-text-transform-1",
         "o-text-vertical",
+        "o-text-10-letters",
     ] {
         let bytes = data(&format!("pe11/{name}.pes"));
         let p = pes::read(&bytes).expect(name);
