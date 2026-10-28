@@ -1,0 +1,167 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "text-fit-size-12",
+  "area": "text",
+  "title": "Fit Text at size 12 mm",
+  "description": "ABCDE at 12 mm fitted to the circle (unfitted 56.8 x 12.7 mm, 1312 stitches).",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Lettering",
+        "feature": "Fit text to outline (text on a path)"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/05_1810870.html",
+      "note": "Fit Text to Outline"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference text/text-fit-size-12.pes (pe-refs-3 Fit-text sweep, 2026-10-28)"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 50,
+        "cy": 50,
+        "rx": 30,
+        "outline": "Red"
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "ABCDE",
+        "font": "lato-bold",
+        "size": 12,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 2,
+        "type": "fill"
+      }
+    },
+    {
+      "command": "text.setPath",
+      "params": {
+        "id": 2,
+        "path": 1
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "text.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "text/text-fit-size-12.pes",
+      "make": "As text-fit-default (60 mm circle in running stitch, ABCDE Lato Bold 8 mm Fill 800 RED, Fit Text to Outline at its defaults) but text size 12.0 mm. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "mid-angle",
+      "measure": {
+        "kind": "polar",
+        "center": [
+          50,
+          50
+        ],
+        "ring": 30,
+        "property": "midAngle"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: needle points off the 30 mm circle, seen from its centre",
+      "reference": {
+        "tolerance": {
+          "deg": 3,
+          "modulo": 360
+        }
+      }
+    },
+    {
+      "id": "angle-span",
+      "measure": {
+        "kind": "polar",
+        "center": [
+          50,
+          50
+        ],
+        "ring": 30,
+        "property": "angleSpan"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: needle points off the 30 mm circle, seen from its centre",
+      "reference": {
+        "tolerance": {
+          "deg": 4
+        }
+      }
+    },
+    {
+      "id": "min-radius",
+      "measure": {
+        "kind": "polar",
+        "center": [
+          50,
+          50
+        ],
+        "ring": 30,
+        "property": "minRadius"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: needle points off the 30 mm circle, seen from its centre",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "max-radius",
+      "measure": {
+        "kind": "polar",
+        "center": [
+          50,
+          50
+        ],
+        "ring": 30,
+        "property": "maxRadius"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: needle points off the 30 mm circle, seen from its centre",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    }
+  ]
+}

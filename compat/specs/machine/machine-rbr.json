@@ -1,0 +1,131 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "machine-rbr",
+  "area": "machine",
+  "title": "Same-colour objects drawn apart sew as one block",
+  "description": "Three 10 × 10 mm fill squares drawn red, blue, red: PE-DESIGN sews both red squares first (one colour block with a trim between them), then the blue one: one colour change, not two.",
+  "covers": {
+    "audit": [
+      16
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES write v1 and v6"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference machine/machine-rbr.pes (pe-refs-3, 2026-10-28): Sewing Order 1 = both red squares, 2 = blue; 1 colour change"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "machine-rbr",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 10,
+        "height": 10,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 30,
+        "y": 10,
+        "width": 10,
+        "height": 10,
+        "fill": "Blue"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 50,
+        "y": 10,
+        "width": 10,
+        "height": 10,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          1,
+          3
+        ],
+        "type": "fill",
+        "color": "Red",
+        "angle": 45,
+        "underlay": true
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          2
+        ],
+        "type": "fill",
+        "color": "Blue",
+        "angle": 45,
+        "underlay": true
+      }
+    },
+    {
+      "command": "order.optimize",
+      "params": {}
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "machine/machine-rbr.pes",
+      "make": "Import an SVG (100 × 100 mm) with three 10 × 10 mm squares at x = 10 (red), 30 (blue), 50 (red) mm, y = 10 mm, as Fill Stitch at PE-DESIGN's import defaults; change nothing. Save with Save As as PES (PE-DESIGN 11's default PES version) under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting you changed in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "colour-changes",
+      "measure": {
+        "kind": "commandCount",
+        "command": "colorChange"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "red, red, blue: one change",
+      "reference": {}
+    },
+    {
+      "id": "trims",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "trim"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "one trim between the red squares",
+      "reference": {}
+    }
+  ]
+}

@@ -225,3 +225,54 @@ fn line_attributes() {
     assert_eq!(wide.bounds, [600, 600, 700, 700]);
     assert!(!one("r22-line-noUnder").line_under_sewing);
 }
+
+#[test]
+fn round_3_object_files_read_their_stitches_and_stop_cleanly() {
+    // One file per remaining object kind (tests/fixtures/pe11/PROVENANCE.md, "Round 3"): the
+    // PEC stitches always read, and the object list either reads or stops at a named class
+    // without panicking. The classes are mapped by later work.
+    for name in [
+        "o-applique-heart",
+        "o-arc-string",
+        "o-arc",
+        "o-closed-curve",
+        "o-closed-freehand",
+        "o-fan",
+        "o-gallery-heart",
+        "o-group-two-rects",
+        "o-hoop-100x100-s",
+        "o-hoop-130x180-single",
+        "o-machine-single-100x100",
+        "o-manual-curve",
+        "o-manual-running",
+        "o-manual-straight",
+        "o-open-curve",
+        "o-open-freehand",
+        "o-page-200x200",
+        "o-region-concentric",
+        "o-region-cross",
+        "o-region-flexible-spiral",
+        "o-region-net-fill",
+        "o-region-piping",
+        "o-region-radial",
+        "o-region-spiral",
+        "o-region-stippling",
+        "o-region-zigzag-net",
+        "o-rounded-rect",
+        "o-text-transform-1",
+        "o-text-vertical",
+    ] {
+        let bytes = data(&format!("pe11/{name}.pes"));
+        let p = pes::read(&bytes).expect(name);
+        assert!(
+            p.stitches.len() > 20,
+            "{name}: {} stitches",
+            p.stitches.len()
+        );
+        if let Ok(section) = pes::read_objects(&bytes) {
+            for s in &section.shapes {
+                assert!(s.vertices.len() >= 2, "{name}");
+            }
+        }
+    }
+}
