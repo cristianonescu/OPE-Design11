@@ -643,6 +643,46 @@ fn gradation_pattern_sews_rows_at_equal_steps_of_the_cumulative_line_count() {
 }
 
 #[test]
+fn satin_at_the_minimum_density_crosses_on_every_line() {
+    // The 40 x 6 mm column of compat sweep-satin-density-min at 0.1 lines/mm, start point at
+    // the middle of the bottom edge: PE-DESIGN 11.50 sews crossings 10 mm apart (every line)
+    // with 11.7 mm diagonals, not 20 mm apart with 20.9 mm ones.
+    let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 60.0)];
+    let mut r = region(RegionType::Satin);
+    r.angle = 90.0;
+    r.density = 0.1;
+    r.underlay = false;
+    r.entry = Some(v2(300.0, 160.0));
+    let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
+    let run = &runs[0];
+    let mut crossings: Vec<f64> = run
+        .windows(2)
+        .filter(|w| (w[0].x - w[1].x).abs() < 0.01 && (w[0].y - w[1].y).abs() > 59.0)
+        .map(|w| w[0].x)
+        .collect();
+    crossings.sort_by(f64::total_cmp);
+    assert_eq!(
+        crossings,
+        [100.0, 200.0, 300.0, 300.0, 400.0, 500.0],
+        "{run:?}"
+    );
+    let longest = run
+        .windows(2)
+        .map(|w| w[0].distance(w[1]))
+        .fold(0.0_f64, f64::max);
+    assert!((longest - 116.6).abs() < 0.5, "{longest}");
+    // At 3 lines/mm the sawtooth skips a line: crossings 0.67 mm apart.
+    r.density = 3.0;
+    let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
+    let xs: Vec<f64> = runs[0]
+        .windows(2)
+        .filter(|w| (w[0].x - w[1].x).abs() < 0.01 && (w[0].y - w[1].y).abs() > 59.0)
+        .map(|w| w[0].x)
+        .collect();
+    assert!((xs[1] - xs[0] - 200.0 / 30.0).abs() < 0.05, "{xs:?}");
+}
+
+#[test]
 fn satin_gradation_splits_on_every_other_lattice_line() {
     // The 20 x 5 mm rectangle of compat satin-gradation: satin at 3 lines/mm with PE-DESIGN's
     // default pattern, under sewing off, start point at the middle of the bottom edge.

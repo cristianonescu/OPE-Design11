@@ -951,7 +951,13 @@ Line references are relative to `crates/`.
   point puts the crossings of each half on every other line counted from that half's own end, a
   hop of one line and a crossing close the half, and the "7.6 mm travel" the parked file showed
   is the diagonal crossing of the widest gap. The same lattice rule gives the uniform split
-  satin its 0.3 mm hop (satin-zigzag-rect, unchanged). region-travel-u-gradation passes at the reference tier; all 40 of its rows lie within
+  satin its 0.3 mm hop (satin-zigzag-rect, unchanged). At the minimum density (0.1 lines/mm,
+  sweep-satin-density-min, 2026-10-28, needle for needle) PE-DESIGN puts a crossing on every
+  line instead of every other one: 10 mm apart with 11.7 mm diagonals, where skipping a line
+  would space them 20 mm with 20.9 mm diagonals. The rule is a spacing (the U keeps 30 mm
+  diagonals over two lines at 4.5 lines/mm), between 0.67 mm (3 lines/mm skips) and 20 mm;
+  OpenStitch stops skipping above a 10 mm period. Still open: the exact limit (the column at
+  0.15, 0.2, 0.3 and 0.5 lines/mm would pin it). region-travel-u-gradation passes at the reference tier; all 40 of its rows lie within
   0.12 mm of PE-DESIGN's (0.04 mm on average; the earlier midpoint-density placement drifted
   to 0.4 mm by the far edge), and the round-3 Max/Min sweeps (80/20, 95/50, 50/50, pattern 2)
   fit the same rule within 0.1 mm. Designs saved with the old single far-side percentage

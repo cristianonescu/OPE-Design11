@@ -593,6 +593,26 @@ fn satin_underlay_rows(
 /// a row is never cut along an edge.
 const EDGE_ROW_INSET: f64 = 0.01;
 
+/// The widest sawtooth period (0.1 mm) PE-DESIGN 11.50 sews over two lines: beyond it the
+/// crossings sit on every line. At 0.1 lines/mm a 40 x 6 mm column has crossings every 10 mm
+/// (one line) with 11.7 mm diagonals, not every 20 mm with 20.9 mm ones
+/// (sweep-satin-density-min); at 3 lines/mm and above two lines (0.67 mm) are skipped, and
+/// the U of region-travel-u-satin keeps 30 mm diagonals over two lines, so the limit is a
+/// spacing, not a stitch length, somewhere between 0.67 and 20 mm. Pinned by nothing closer
+/// yet; the same column at 0.15, 0.2, 0.3 and 0.5 lines/mm (periods 13.3, 10, 6.7, 4 mm)
+/// would settle it.
+const SAWTOOTH_MAX_PERIOD: f64 = 100.0;
+
+/// Lines per sawtooth period: two (a crossing along the direction, the return slanted over
+/// the next line) unless two lines span more than [`SAWTOOTH_MAX_PERIOD`].
+fn sawtooth_step(line: f64) -> usize {
+    if 2.0 * line > SAWTOOTH_MAX_PERIOD {
+        1
+    } else {
+        2
+    }
+}
+
 /// Running stitch of the travel along the edge to each half of a split satin (0.1 mm).
 const SPLIT_TRAVEL_PITCH: f64 = 20.0;
 
@@ -606,7 +626,7 @@ fn sawtooth_satin(
     p: &RegionParams,
     holes: &[Contour],
 ) -> Vec<Run> {
-    let pitch = 2.0 * p.row_spacing;
+    let pitch = sawtooth_step(p.row_spacing) as f64 * p.row_spacing;
     if let Some(run) = r
         .entry
         .and_then(|e| split_satin(closed, holes, p, None, e, r.sewn_feather()))
@@ -909,9 +929,10 @@ fn pulled_spans(closed: &[Contour], holes: &[Contour], p: &RegionParams, y: f64)
 /// back towards the start point, a hop of one line along the far edge and a crossing, home along
 /// the near edge; then the same from the other end. The satin's lines lie on a lattice: `lattice`
 /// (rotated row positions from the region's first edge to its last; the cumulative-line-count
-/// rows of a pattern gradation) or, without one, a line every half `pitch` from each end. Each
-/// half's crossings sit on every other line counted from its own end, as far as the next one
-/// would reach the start point's line; the hop goes to the line after the last crossing, at most
+/// rows of a pattern gradation) or, without one, a line every line spacing from each end. Each
+/// half's crossings sit on every other line counted from its own end (on every line when two
+/// lines span more than [`SAWTOOTH_MAX_PERIOD`]), as far as the next one would reach the start
+/// point's line; the hop goes to the line after the last crossing, at most
 /// to the start point's line (PE-DESIGN: 0.3 mm hops at 3 lines/mm, one lattice row with
 /// gradation). `None` where the split does not apply (holes, several contours, a start point
 /// on an edge row).
@@ -931,9 +952,6 @@ fn split_satin(
     let b = rotated_bounds(closed, p.angle)?;
     let (lo, hi) = (b.min_y + EDGE_ROW_INSET, b.max_y - EDGE_ROW_INSET);
     let line = p.row_spacing;
-    if at.y < lo + 2.0 * line || at.y > hi - 2.0 * line {
-        return None;
-    }
     let one = |y: f64| -> Option<Span> {
         match pulled_spans(closed, holes, p, y).as_slice() {
             [s] => Some(s.clone()),
@@ -969,6 +987,12 @@ fn split_satin(
             }
         }
     };
+    let step = sawtooth_step(line);
+    // A start point within a sawtooth period of either end leaves no half on that side.
+    let margin = step as f64 * line - 1e-6;
+    if at.y < lo + margin || at.y > hi - margin {
+        return None;
+    }
     let half = |from_low: bool| -> Option<Vec<(f64, Span)>> {
         let lines = lines(from_low);
         let sign = if from_low { 1.0 } else { -1.0 };
@@ -978,10 +1002,10 @@ fn split_satin(
         let mut k = 0;
         while k < lines.len() && before(lines[k]) {
             rows.push((lines[k], one(lines[k])?));
-            if lines.get(k + 2).is_none_or(|&y| !before(y)) {
+            if lines.get(k + step).is_none_or(|&y| !before(y)) {
                 break;
             }
-            k += 2;
+            k += step;
         }
         if rows.is_empty() {
             return None;
