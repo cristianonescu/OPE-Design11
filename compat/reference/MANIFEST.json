@@ -1070,18 +1070,6 @@
       "notes": ""
     },
     {
-      "file": "stitches/u-gradation-nous.pes",
-      "spec": "u-gradation-nous",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-28",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Design Page 100 x 100 mm (grid 1 mm, Snap to Grid on); Shapes > Outline > Closed Straight Line through (10,10) (40,10) (40,40) (30,40) (30,20) (20,20) (20,40) (10,40) mm (the U of region-travel-u-fill); shape selected: line Not Sewn (Line), region Fill Stitch, Color pane Region 800 EMBROIDERY RED; Sewing Attributes > Region sew: Under sewing ticked (first type, Density Medium), Density 4.5 line/mm, Direction Manual straight line 0 degrees, Stitch Type first, Running Stitch Path first (Inside), Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm; Gradation ticked, Pattern... dialog 'Gradation Pattern Setting' (8 preset icons in 4 rows x 2 columns, numbered row by row; Max and Min sliders, keyboard Up/Down = 1 %, Max stops at 95 %, Min at 5 %; nine step sliders following the preset's shape between Max and Min; Blend check box; Density 4.5; Direction 0 degree, the same field as the region's Direction). This file: pattern 1, Max 53 %, Min 5 %, Blend off; and Sewing Attributes > Region sew > Under sewing unticked. Save As PES (Layout & Editing Ver.11.0 File, #PES0110). Status bar 30,00 x 30,00 mm, Stitches = 436.",
-      "sha256": "0ece121da062ef539f0473e717131216de7031db1a1419587baa9d8cf819e9c0",
-      "notes": ""
-    },
-    {
       "file": "stitches/u-gradation-pattern-2.pes",
       "spec": "u-gradation-pattern-2",
       "reference": "pe-design",
