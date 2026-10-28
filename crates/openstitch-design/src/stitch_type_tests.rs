@@ -547,27 +547,38 @@ fn gradation_spreads_rows_towards_the_far_side() {
 }
 
 #[test]
-fn gradation_pattern_sews_from_edge_to_edge_with_the_density_halfway_across_each_gap() {
-    // 90 mm tall, PE-DESIGN's default pattern: 53 % of 4.5 rows/mm at the top falling linearly
-    // to 5 % at the bottom.
-    let c = vec![Contour::rectangle(0.0, 0.0, 400.0, 900.0)];
+fn gradation_pattern_sews_rows_at_equal_steps_of_the_cumulative_line_count() {
+    // The U of compat region-travel-u-gradation: 30 mm tall at 4.5 lines/mm with PE-DESIGN's
+    // default pattern (53 % at the top falling linearly to 5 % at the bottom). PE-DESIGN 11.50
+    // sews 40 rows; a 30 × 30 mm square has the same rows.
+    let c = vec![Contour::rectangle(100.0, 100.0, 300.0, 300.0)];
     let spacing = 10.0 / 4.5;
     let g = crate::Gradation::PE_DEFAULT;
     let ys = crate::region::row_positions(&c, 0.0, spacing, Some(&g));
+    assert_eq!(ys.len(), 40, "{ys:?}");
     // First row on the start edge, last on the far edge (sampled just inside).
-    assert!(ys[0] < 0.01 && ys[ys.len() - 1] > 900.0 - 0.01, "{ys:?}");
-    // Every gap but the last ones sews the density at its own middle.
-    for w in ys.windows(2).skip(1).take(ys.len() / 2) {
-        let gap = w[1] - w[0];
-        let middle = (w[0] + gap / 2.0) / 900.0;
-        let expected = spacing / g.fraction(middle);
-        assert!((gap - expected).abs() < 1e-3, "{w:?}: {gap} vs {expected}");
+    assert!(ys[0] < 100.01 && ys[39] > 400.0 - 0.01, "{ys:?}");
+    // PE-DESIGN's rows (page mm, from its reference file), every one within 0.12 mm.
+    let pe = [
+        10.0, 10.4, 10.8, 11.3, 11.7, 12.2, 12.6, 13.1, 13.5, 14.0, 14.5, 15.0, 15.5, 16.0, 16.5,
+        17.0, 17.6, 18.1, 18.7, 19.3, 19.9, 20.5, 21.1, 21.8, 22.4, 23.1, 23.8, 24.6, 25.3, 26.1,
+        27.0, 27.9, 28.8, 29.8, 30.9, 32.1, 33.5, 35.1, 37.1, 40.0,
+    ];
+    for (y, p) in ys.iter().zip(pe) {
+        assert!((y / 10.0 - p).abs() <= 0.12, "{y} vs {p}: {ys:?}");
+    }
+    // Equal steps of the cumulative line count: the density integrated over every gap is the
+    // same, 39 gaps for the 39.15 lines the profile integrates to.
+    let lines = |y0: f64, y1: f64| {
+        let f = |y: f64| g.fraction((y - 100.0) / 300.0);
+        (y1 - y0) * (f(y0) + f(y1)) / 2.0 / spacing
+    };
+    let per_gap = lines(ys[0], ys[1]);
+    assert!((per_gap - 39.15 / 39.0).abs() < 0.01, "{per_gap}");
+    for w in ys.windows(2) {
+        assert!((lines(w[0], w[1]) - per_gap).abs() < 1e-3, "{w:?}");
     }
     assert!((g.fraction(0.5) - 0.29).abs() < 1e-12);
-    // The rest before the far edge is split evenly, no step longer than the last gap.
-    let gaps: Vec<f64> = ys.windows(2).map(|w| w[1] - w[0]).collect();
-    let last = gaps[gaps.len() - 1];
-    assert!(last <= spacing / 0.05 + 1e-6, "{gaps:?}");
     let mut r = region(RegionType::Fill);
     r.gradation = Some(crate::Gradation::PE_DEFAULT);
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
