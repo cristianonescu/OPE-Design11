@@ -1,0 +1,20 @@
+[package]
+name = "openstitch-update"
+description = "Self-update for the OpenStitch editor: GitHub release check, verified download, in-place replacement and restart"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+# Same as the editor, the only user of this crate (zip 9 needs 1.88).
+rust-version = "1.95"
+
+[dependencies]
+serde_json.workspace = true
+# Pre-release-correct version ordering (0.1.0-alpha.3 < 0.1.0-alpha.4 < 0.1.0).
+semver = "1"
+# Blocking HTTPS client; rustls with the bundled Mozilla roots, no async runtime.
+ureq = { version = "3", default-features = false, features = ["rustls", "gzip"] }
+# SHA-256 of a download, checked against the release's SHA256SUMS.
+sha2 = "0.11"
+
+[lints]
+workspace = true
