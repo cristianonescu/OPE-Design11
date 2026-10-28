@@ -1,7 +1,11 @@
 # Feature matrix
 
 Status values: Not Investigated · Documented · Implemented · Partially Compatible ·
-Verified Compatible · Blocked.
+Verified Compatible · Blocked · Planned (beyond PE-DESIGN).
+
+"Planned (beyond PE-DESIGN)" rows are features PE-DESIGN 11 does not have; they come from
+[research/competitive-features.md](research/competitive-features.md) and land only as new
+attributes or commands that are off unless chosen, so compatibility is unaffected.
 
 "Documented" rows come from Brother's public online user's guide; headings and links are in
 [research/pedesign11-manual-toc.md](research/pedesign11-manual-toc.md). "Verified Compatible" requires a reproducible test against PE-DESIGN 11 reference
@@ -176,3 +180,18 @@ PE-DESIGN reference, sew-out) is generated from the compatibility report into
 | Editor | Undo/redo (⌘Z, ⇧⌘Z / Ctrl+Y) with one step per gesture, also when a gesture takes several engine commands | Implemented | `corner_scale_fallback_undoes_in_one_step`; scripted ⌘Z/⌘Y run | Edit-menu titles ("Undo Rotate") |
 | Editor | Sewing simulator: slider, play/pause with speed, step, needle marker, current colour; statistics (stitches, jumps, trims, colour changes, size, colours) matching `design.generate` | Implemented | `render_model_stops_at_simulator_position`, `stats_match_engine_and_compiled_design`; docs/images/rust-editor-sim.png | Thread length, sewing time; compare with PE-DESIGN's Stitch Simulator |
 | Editor | Self-update: startup check of GitHub releases (semver with pre-release order), dialog with the unseen releases' notes, Dismiss, "Don't remind me about this version", Update (download, SHA256SUMS check, in-place swap or MSI, restart); Options: check at startup, include pre-releases, check now | Implemented (v0.1.0-alpha.4) | `crates/openstitch-update` (26 tests against a local HTTP server: tag grammar, install kinds, selection, checksums, download, stage/swap/cleanup), `editor/updates.rs` (`skipped_version_stays_quiet_until_a_newer_one`), `update_ui.rs`; docs/research/updater.md (end-to-end record), docs/images/rust-editor-update.png | Signed packages (minisign) so a compromised release host cannot serve a tampered build; delta downloads; the tarball's thumbnailer |
+| Beyond PE-DESIGN | Contour (offset) fill: rings, single and double spiral, join styles, echo outside the shape (B1) | Planned (beyond PE-DESIGN) | research/competitive-features.md F1 | Phase A |
+| Beyond PE-DESIGN | Density profiles on fills and satin columns, two-colour blend command, hidden travel for open fills (B6) | Planned (beyond PE-DESIGN) | research/competitive-features.md F5, F6, F17 | Phase A |
+| Beyond PE-DESIGN | 3D puff satin mode: density, caps, no underlay or pull compensation, foam stop, ordering (B7) | Planned (beyond PE-DESIGN) | research/competitive-features.md F10 | Phase A |
+| Beyond PE-DESIGN | Crosshatch, curved crosshatch and double-zigzag lace as a region type (B8) | Planned (beyond PE-DESIGN) | research/competitive-features.md F7 | Phase A |
+| Beyond PE-DESIGN | Carving lines drawn on fills; knockdown (laydown) fill sewn first (B12) | Planned (beyond PE-DESIGN) | research/competitive-features.md F11, F12 | Phase A |
+| Beyond PE-DESIGN | Satin corner handling (mitre / cap / lap) and short stitches on inner curves for columns and regions (B3) | Planned (beyond PE-DESIGN) | research/competitive-features.md O3, O4 | Phase B |
+| Beyond PE-DESIGN | Pull compensation in mm per side and %, push compensation, automatic underlay by width with first and second underlay, editable fabric table (B5) | Planned (beyond PE-DESIGN) | research/competitive-features.md D4–D6 | Phase B; `.osd` migration |
+| Beyond PE-DESIGN | Satin line with variable width: width keys, two rails, tapered ends (B10) | Planned (beyond PE-DESIGN) | research/competitive-features.md O2 | Phase B |
+| Beyond PE-DESIGN | Auto-routed running stitches (Euler path), Redwork, satin branching with one entry and exit (B4) | Planned (beyond PE-DESIGN) | research/competitive-features.md D1, D2, O10 | Phase C |
+| Beyond PE-DESIGN | Closest join per object, auto start/end, continue digitizing, automatic overlap removal (B11) | Planned (beyond PE-DESIGN) | research/competitive-features.md D3, D7 | Phase C |
+| Beyond PE-DESIGN | Guided fill with two guides; stitch-angle maps with several direction lines per region (B2) | Planned (beyond PE-DESIGN) | research/competitive-features.md F2–F4 | Phase D |
+| Beyond PE-DESIGN | Maze and tiled meander fills, zigzag (fur) variant, seeded hand-stitch randomisation (B9) | Planned (beyond PE-DESIGN) | research/competitive-features.md F8, F9 | Phase D |
+| Beyond PE-DESIGN | Quality tools: density map, troubleshoot rules, thread-brand conversion, automatic hoop selection (B13) | Planned (beyond PE-DESIGN) | research/competitive-features.md D15, W2, W3 | Phase E |
+| Beyond PE-DESIGN | Stitch-file resize with density recalculation and density tuning (B14) | Planned (beyond PE-DESIGN) | research/competitive-features.md D14 | Phase E; patent check |
+| Beyond PE-DESIGN | Lettering: baseline model, saved kerning pairs, team names from CSV, closest-point letter connections (B15) | Planned (beyond PE-DESIGN) | research/competitive-features.md D9–D13 | Phase E |
