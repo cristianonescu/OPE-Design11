@@ -1374,7 +1374,7 @@ Line references are relative to `crates/`.
   only" match), and the three are kept only for files that name them. Still to do for the
   spec's thread-table compare: SVG-import and hex fills stay exact custom threads in OpenStitch
   while PE-DESIGN snaps them to the chart with Brother's catalogue code (800, 513, …); that
-  needs the codes for all 61 entries (13 known from this and earlier captures) and goes with
+  needs the codes for all 61 entries, known since the round-4 chart reading (see below), and goes with
   the palette work (#136). The machine-format references (`machine-formats`, red and black)
   pick the same entries under both metrics.
 - **Thread-chart CSV and the built-in palette (2026-10-29, #136):** PE-DESIGN 11.50 has no
@@ -1403,6 +1403,15 @@ Line references are relative to `crates/`.
   Left for the parked `machine-sample-basic` spec: the writers' compare must skip PE's
   zero-length stitches, and OpenStitch's DST/EXP/HUS/VIP write a trim where PE writes only the
   colour change.
+- **Brother catalogue codes (2026-10-29, #119, #136):** pe-refs-4 read PE-DESIGN 11.50's BROTHER
+  EMBROIDERY chart from Sewing Attributes ▸ Color: 61 rows, codes 001 WHITE to 900 BLACK, brand
+  EMBROIDERY, no row for PEC 62–64 (so the 61-entry match set of #119 is PE's own chart).
+  Matched to the PEC chart by name, every code lands on one PEC entry 1–61 and all 30 pairs PE
+  writes in the owner's `#PES0110` thread tables agree. pyembroidery's table names PEC 42 and 57
+  both "Flesh Pink"; PE's files put 124 FLESH PINK at 57, so 307 LINEN is 42, and the chart
+  table now calls 42 "Linen" (PE's RGB for it is still pyembroidery's guess). The dialog's own
+  first column (1 BLACK, 2 WHITE, 3 RED, …) is not the PEC index. API:
+  `openstitch_core::BROTHER_EMBROIDERY`, `brother_embroidery_code`, `pec_index_of_brother_code`.
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 - **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,

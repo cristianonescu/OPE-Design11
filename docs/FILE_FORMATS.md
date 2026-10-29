@@ -88,6 +88,16 @@ rgb(255, 128, 0) to 11 Deep Gold rather than 62 Orange (`thread-match-swatches.p
 matcher picks the chart entry for JEF, SEW, HUS and PCS. `approximate_index` is the "approximate" palette matcher
 (city-block winner, squared-Euclidean fallback) for the built-in sew palette.
 
+Brother catalogue codes: PE-DESIGN 11.50's BROTHER EMBROIDERY chart has exactly 61 rows, one
+per PEC entry 1–61, with a 3-digit code and brand `EMBROIDERY` (none for 62–64).
+`openstitch_core::BROTHER_EMBROIDERY` lists `(PEC index, code, name)` for all 61, with
+`brother_embroidery_code(pec_index)` and `pec_index_of_brother_code(code)` (800 RED = PEC 5,
+405 BLUE = 2, 900 BLACK = 20). Sources: the chart's rows read from PE's Sewing Attributes ▸ Color
+tab, matched to the PEC chart by name and checked against the 30 pairs PE writes in the owner's
+own `#PES0110` thread tables (all agree); 307 LINEN is PEC 42 by elimination (pyembroidery names
+42 and 57 both "Flesh Pink", and PE's files put 124 FLESH PINK at 57). The dialog's own first
+column (1 BLACK, 2 WHITE, 3 RED, …) is not the PEC index.
+
 ## PES
 
 `#PESvvvv` signature, u32 offset of the PEC section, version-dependent object section, PEC
