@@ -138,7 +138,9 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    (fill track) and the multi-needle minimum-length field's value; the same compares on a
    design with short moves. The parked references (satin gradation, Text Transform presets 13
    and 14, under sewing type 2, satin density minimum, the trim bound) have all landed.
-6. **PES:** turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
+6. **PES:** the selected hoop is written to the v6 header in mm and an over-size export
+   warns instead of failing, as PE-DESIGN does (2026-10-29, #125); left: the v6 page and grid
+   fields and the hoop in v1. Turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
    write editable shapes and text; PES v7–v11 and the hoop and Design Page fields (from the
    owner's own files only, as [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest

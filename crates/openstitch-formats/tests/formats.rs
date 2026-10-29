@@ -590,6 +590,29 @@ fn pec_splits_moves_over_2047_units_like_pe_design_dst() {
     );
 }
 
+/// The v6 header's hoop width and height (u16 mm after the metadata strings and two flags)
+/// carry the chosen hoop; without one they stay pyembroidery's 100 × 100 (issue #125).
+#[test]
+fn pes_v6_header_carries_the_hoop_size() {
+    let mut p = with_threads(&[0]);
+    p.stitch_to(0.0, 0.0);
+    p.stitch_to(100.0, 50.0);
+    p.push(Command::End);
+    // No metadata: "#PES0060", u32 PEC offset, u16 hoop, "02", five empty strings, two u16 flags.
+    let at = 8 + 4 + 2 + 2 + 5 + 4;
+    let u16_at = |b: &[u8], i: usize| u16::from_le_bytes([b[i], b[i + 1]]);
+    let default = pes::write(&p).expect("write");
+    assert_eq!((u16_at(&default, at), u16_at(&default, at + 2)), (100, 100));
+    let options = pes::WriteOptions {
+        hoop_mm: Some((130, 180)),
+        ..pes::WriteOptions::default()
+    };
+    let hooped = pes::write_with(&p, &options).expect("write");
+    assert_eq!((u16_at(&hooped, at), u16_at(&hooped, at + 2)), (130, 180));
+    assert_eq!(hooped.len(), default.len());
+    assert_eq!(sewn(&pes::read(&hooped).expect("read")), sewn(&p));
+}
+
 #[test]
 fn pec_long_deltas_round_trip() {
     let mut p = with_threads(&[0]);
