@@ -32,11 +32,15 @@ Pulse Cascade Fill [[DG15]](https://embroidery.pulsemicro.com/dg15-levels.html);
 effect Contour and the Square/Rounded spirals from a focus point
 [[Embird]](https://www.embird.net/machine-embroidery-tutorials/studio-next/par_fill.htm).
 
-PE-DESIGN 11 has Concentric Circle, Spiral and Flexible Spiral (shrinking copies of the
-outline towards a centre point, which OpenStitch implements in `regions::flexible_spiral`)
-and the Background Fill wizard's echo lines. None follows the outline at a constant
-distance, so a long thin shape gets rings that are thick at one end and collapse at the
-other. Constant-distance offsetting is the point of this feature.
+PE-DESIGN 11 has Concentric Circle (circles about a centre point, clipped to the shape),
+Spiral, Flexible Spiral (shrinking copies of the outline towards a centre point, which
+OpenStitch implements in `regions::flexible_spiral`) and the Background Fill wizard's echo
+lines. Correction (2026-10-29, #138, references `spiral-*`): PE-DESIGN 11.50's Spiral Stitch
+*is* a constant-distance offset spiral, a single spiral in the terms below, turns 0.5 mm apart
+on both axes of a 40 × 30 mm rectangle; OpenStitch sews it that way (`crate::spiral`, the ring
+tree and blend of §2.1–2.3). What PE-DESIGN lacks, and this feature still adds, is offset
+rings as separate loops, the double spiral, echo rings outside the shape, join styles and
+repeats.
 
 ## 2. Geometry
 

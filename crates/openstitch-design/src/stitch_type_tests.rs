@@ -1169,6 +1169,9 @@ fn stitch_limit(r: &RegionSewing) -> f64 {
             w.hypot(10.0 / r.density).max(pitch)
         }
         RegionType::DecorativeFill => pitch * 1.5,
+        // A blended spiral turn may run 0.05 mm over the pitch, as PE-DESIGN 11.50's does
+        // (2.04 mm at a 2 mm pitch, spiral-circle40).
+        RegionType::Spiral => pitch + 0.5,
         _ => pitch,
     }
 }
@@ -1190,10 +1193,17 @@ fn every_region_type_sews_inside_with_bounded_stitches() {
         let runs = layers.last().expect("top layer");
         let points: usize = runs.iter().map(Vec::len).sum();
         assert!(points > 100, "{kind:?}: {points} points");
+        // PE-DESIGN 11.50 sews Concentric Circle's whole circles, trims, then the cut ones
+        // (references concentric-*); every other type travels from part to part.
+        let expected_runs = if kind == RegionType::ConcentricCircle {
+            2
+        } else {
+            1
+        };
         assert_eq!(
             runs.len(),
-            1,
-            "{kind:?}: travel joins everything into one run"
+            expected_runs,
+            "{kind:?}: travel joins everything into {expected_runs} run(s)"
         );
         let limit = stitch_limit(&r);
         for run in runs {
@@ -1205,6 +1215,10 @@ fn every_region_type_sews_inside_with_bounded_stitches() {
         }
         let tol = if kind == RegionType::ZigzagNetFill {
             r.pattern_size_mm().0 * 5.0 + 0.6
+        } else if kind == RegionType::Spiral {
+            // Stitches along a hole's own edge are chords: PE-DESIGN 11.50's reach 0.16 mm into
+            // the hole (spiral-ring40-hole15).
+            1.5
         } else {
             0.6
         };
@@ -1223,6 +1237,12 @@ fn every_region_type_sews_inside_with_bounded_stitches() {
         d.add(DesignObject::shape(region_contours.clone(), Some(r), None));
         let p = Compiler::default().compile(&d);
         assert_eq!(p.count(Command::Jump), 1, "{kind:?}");
+        if kind == RegionType::ConcentricCircle {
+            assert!(
+                p.count(Command::Trim) >= 1,
+                "the trim before the cut circles"
+            );
+        }
     }
 }
 
@@ -1401,35 +1421,46 @@ fn circles_and_spirals_start_where_asked() {
         let outside = crate::region::layers(&c, &r, &[]).pop().expect("top");
         r.start_inside = true;
         let inside = crate::region::layers(&c, &r, &[]).pop().expect("top");
-        let first = |runs: &[Run]| runs[0][0].distance(centre);
-        assert!(first(&outside) > 120.0, "{kind:?}: {}", first(&outside));
-        assert!(first(&inside) < 30.0, "{kind:?}: {}", first(&inside));
+        let first = |run: &Run| run[0].distance(centre);
+        assert!(
+            first(&outside[0]) > 120.0,
+            "{kind:?}: {}",
+            first(&outside[0])
+        );
+        // Concentric Circle's second Start Point button sews the same stitches backwards: the
+        // cut circles first, then the whole circles from the middle out (PE-DESIGN 11.50,
+        // concentric-circle40-start2).
+        let middle_out = if kind == RegionType::ConcentricCircle {
+            inside.last().expect("whole circles")
+        } else {
+            &inside[0]
+        };
+        assert!(first(middle_out) < 30.0, "{kind:?}: {}", first(middle_out));
     }
-    // Concentric rings sit at multiples of the spacing (1 / 1.5 mm).
+    // Concentric circles sit at multiples of the spacing (1 / 2.0 mm, PE-DESIGN's default),
+    // needle points on the 0.1 mm grid.
     let rings = crate::region::layers(&c, &region(RegionType::ConcentricCircle), &[]);
-    let spacing = 10.0 / 1.5;
-    let on_ring = rings[0]
+    let spacing = 10.0 / 2.0;
+    let on_ring = rings[0][0]
         .iter()
-        .flatten()
         .filter(|p| {
-            let k = (p.distance(centre) - spacing / 2.0) / spacing;
-            (k - k.round()).abs() < 0.05
+            let k = p.distance(centre) / spacing;
+            (k - k.round()).abs() * spacing < 1.0
         })
         .count();
-    let total: usize = rings[0].iter().map(Vec::len).sum();
-    assert!(on_ring as f64 > total as f64 * 0.9);
-    // Spirals turn either way.
-    let mut cw = region(RegionType::Spiral);
-    cw.start_inside = true;
-    let mut ccw = cw.clone();
-    ccw.counterclockwise = true;
+    assert!(on_ring as f64 > rings[0][0].len() as f64 * 0.9);
+    // Spirals turn either way: with the outline, or against it.
+    let mut with = region(RegionType::Spiral);
+    with.start_inside = true;
+    let mut against = with.clone();
+    against.counterclockwise = true;
     let turn = |r: &RegionSewing| {
         let runs = crate::region::layers(&c, r, &[]).pop().expect("top");
         let p = &runs[0];
         let (a, b) = (p[3] - centre, p[4] - centre);
         a.x * b.y - a.y * b.x
     };
-    assert!(turn(&cw) > 0.0 && turn(&ccw) < 0.0);
+    assert!(turn(&with) * turn(&against) < 0.0);
 }
 
 #[test]

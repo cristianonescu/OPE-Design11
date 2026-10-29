@@ -1018,6 +1018,8 @@ impl RegionSewing {
                 RegionType::Fill | RegionType::Satin => 4.5,
                 RegionType::ProgrammableFill => 2.5,
                 RegionType::Piping => 1.0,
+                // PE-DESIGN 11.50's Concentric Circle and Spiral Stitch: 2.0 lines/mm.
+                RegionType::ConcentricCircle | RegionType::Spiral => 2.0,
                 _ => 1.5,
             },
             stitch_length: 4.0,

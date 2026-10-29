@@ -330,11 +330,13 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
 }
 
 /// Closed outlines of the visible inner shape `object` is sewn around, when it has hole
-/// sewing on.
+/// sewing on. The inner shape stays a hole when its own region is Not Sewn, as in PE-DESIGN
+/// 11.50 (references `concentric-ring-hole15`, `spiral-ring-hole15`: a 40 mm circle with a
+/// 15 mm hole whose inner circle sews nothing).
 fn holes_above(object: &DesignObject, design: &Design) -> Vec<Contour> {
     crate::holes::paired_inner(object, design)
-        .filter(|o| o.visible)
-        .and_then(crate::holes::region_contours)
+        .filter(|o| o.visible && o.is_outline())
+        .map(|o| o.contours.iter().filter(|c| c.closed).cloned().collect())
         .unwrap_or_default()
 }
 
@@ -361,7 +363,17 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
             let mut layers = region::layers_with(&closed, region, holes, user);
             if let Some(top) = layers.last_mut() {
                 let runs = stamp::apply(std::mem::take(top), &region.stamps);
-                *top = route::route_region(runs, &closed, region.entry, region.exit, 25.0);
+                // PE-DESIGN 11.50 sews Concentric Circle and Spiral in the order the Start
+                // Point button gives, jumping in and ending where the pattern ends (references
+                // concentric-*, spiral-*): no travel from R1 or to R2, no reversal.
+                *top = if matches!(
+                    region.kind,
+                    RegionType::ConcentricCircle | RegionType::Spiral
+                ) {
+                    runs
+                } else {
+                    route::route_region(runs, &closed, region.entry, region.exit, 25.0)
+                };
             }
             // PE-DESIGN's fill under sewing runs straight on into the top stitching.
             if region.underlay

@@ -221,16 +221,19 @@ mod tests {
         let c = v2(120.0, 260.0);
         r.center = Some(c);
         let spacing = 10.0 / r.density;
-        let points = layers(&square, &r);
-        assert!(points.len() > 100);
-        // Ring radii are multiples of the spacing (plus one offset): distances to the centre
-        // fall into narrow bands.
-        let phase = |p: &Vec2| (p.distance(c) / spacing).fract();
+        assert!(layers(&square, &r).len() > 100);
+        // The whole circles (the first run; PE-DESIGN sews the cut ones after a trim) have
+        // radii that are multiples of the spacing, needle points on the 0.1 mm grid: distances
+        // to the centre fall into narrow bands.
+        let runs = crate::region::layers(std::slice::from_ref(&square), &r, &[])
+            .pop()
+            .expect("top");
+        let points = &runs[0];
         let off = points
             .iter()
             .filter(|p| {
-                let f = (phase(p) - phase(&points[points.len() / 2])).rem_euclid(1.0);
-                f.min(1.0 - f) > 0.1
+                let k = p.distance(c) / spacing;
+                (k - k.round()).abs() * spacing > 1.0
             })
             .count();
         assert!(off * 10 < points.len(), "{off} of {}", points.len());
