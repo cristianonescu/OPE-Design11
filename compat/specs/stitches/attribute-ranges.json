@@ -2,8 +2,8 @@
   "schema": "openstitch-compat/1",
   "id": "attribute-ranges",
   "area": "stitches",
-  "title": "Frequency and run-time ranges follow the guide",
-  "description": "object.setRegion refuses a Frequency outside 0–50 %; object.setLine refuses 6 run times for E and V stitch and accepts 5, and accepts 6 chain times.",
+  "title": "Frequency, run-time and density ranges follow the guide and PE-DESIGN's fields",
+  "description": "object.setRegion refuses a Frequency outside 0–50 %; object.setLine refuses 6 run times for E and V stitch and accepts 5, and accepts 6 chain times; Fill and Satin Density accept 0.1 and 14.0 lines/mm and refuse values just outside (PE-DESIGN 11.50's field: typing 0 shows 0,1, typing 99 shows 14,0; issue #139 asked for a 0.2 floor).",
   "covers": {
     "audit": [
       15
@@ -33,6 +33,10 @@
       "kind": "guide",
       "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293378.html",
       "note": "run times 1–5; E/V stroke times 1–3; Chain Time 1–6"
+    },
+    {
+      "kind": "measured",
+      "note": "compat/reference/MANIFEST.json, entries sweep-fill-density-min.pes and sweep-satin-density-min.pes (PE-DESIGN 11.50, 2026-10-27): Density field min 0.1 (typing 0 shows 0,1), max 14.0 (typing 99); both files sew at 0.1 lines/mm and their specs pass at the reference tier"
     }
   ],
   "script": [
@@ -152,6 +156,118 @@
       },
       "expected": false,
       "evidence": "guide: Chain Time 1–6"
+    },
+    {
+      "id": "fill-density-0p1",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "type": "fill",
+          "density": 0.1
+        }
+      },
+      "expected": false,
+      "evidence": "PE-DESIGN 11.50 Density field: typing 0 shows 0,1 (sweep-fill-density-min)"
+    },
+    {
+      "id": "fill-density-0p09",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "type": "fill",
+          "density": 0.09
+        }
+      },
+      "expected": true,
+      "evidence": "below PE-DESIGN's minimum 0.1"
+    },
+    {
+      "id": "fill-density-14",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "type": "fill",
+          "density": 14.0
+        }
+      },
+      "expected": false,
+      "evidence": "PE-DESIGN 11.50 Density field: typing 99 shows 14,0"
+    },
+    {
+      "id": "fill-density-14p1",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "type": "fill",
+          "density": 14.1
+        }
+      },
+      "expected": true,
+      "evidence": "above PE-DESIGN's maximum 14.0"
+    },
+    {
+      "id": "satin-density-0p1",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "type": "satin",
+          "density": 0.1
+        }
+      },
+      "expected": false,
+      "evidence": "PE-DESIGN 11.50 satin Density field: min 0.1 (sweep-satin-density-min)"
+    },
+    {
+      "id": "satin-density-0p09",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "type": "satin",
+          "density": 0.09
+        }
+      },
+      "expected": true,
+      "evidence": "below PE-DESIGN's minimum 0.1"
+    },
+    {
+      "id": "satin-density-0p2",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "type": "satin",
+          "density": 0.2
+        }
+      },
+      "expected": false,
+      "evidence": "sweep-satin-density-0p2: 0.2 is a valid value, not the floor"
+    },
+    {
+      "id": "programmable-density-0p4",
+      "measure": {
+        "kind": "refused",
+        "command": "object.setRegion",
+        "params": {
+          "id": 1,
+          "type": "programmableFill",
+          "density": 0.4
+        }
+      },
+      "expected": true,
+      "evidence": "other region types keep 0.5–10"
     }
   ]
 }
