@@ -279,8 +279,9 @@ Verified Compatible).
   error-diffused onto the threads plus the fabric colour; fabric cells stay unsewn, so tone
   becomes coverage; rows are staggered by thirds. *Lines* (after Photo Stitch 2): zigzag rows
   whose swing follows darkness (mono) or the local share of each thread (colour); light areas
-  break the line. Lighter threads sew first. Mono stretches contrast first (2nd–98th luminance
-  percentile).
+  break the line. Lighter threads sew first. Mono works on integer Rec. 601 luminance
+  `(30 R + 59 G + 11 B) / 100` and stretches contrast first over the full range, darkest grey to
+  0 and lightest to 255, only when the range is between 1 and 255 exclusive (#128).
 - **Design Center** in PE-DESIGN's four stages: (1) line image: luminance below a threshold;
   (2) figure lines: Zhang–Suen thinning, skeleton traced between end points and junctions
   (branches counted as contiguous neighbour groups, so diagonal steps are not junctions),
