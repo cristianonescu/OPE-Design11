@@ -356,7 +356,34 @@ fn round_3_object_files_read_their_stitches_and_stop_cleanly() {
 
 /// The owner files whose object list the reader parses completely (every object a `CEmbLine`
 /// or a `CEmbNText`, groups included): the writer's round-trip and byte-comparison set.
-const FULLY_PARSED: [&str; 56] = [
+const FULLY_PARSED: [&str; 83] = [
+    "o-text-transform-1",
+    "text-transform-1",
+    "text-transform-2",
+    "text-transform-3",
+    "text-transform-4",
+    "text-transform-5",
+    "text-transform-6",
+    "text-transform-7",
+    "text-transform-8",
+    "text-transform-9",
+    "text-transform-10",
+    "text-transform-11",
+    "text-transform-12",
+    "text-transform-13",
+    "text-transform-14",
+    "text-transform-15",
+    "text-transform-16",
+    "text-transform-17",
+    "text-transform-18",
+    "text-transform-19",
+    "text-transform-20",
+    "text-transform-21",
+    "text-transform-22",
+    "text-transform-23",
+    "text-transform-24",
+    "text-transform-25",
+    "text-transform-26",
     "r27-text-a-space-b",
     "r12-text-a",
     "r13-text-a-20",
@@ -766,7 +793,9 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
             line_spacing: 100.0,
             vertical: false,
             transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            align: 0,
             origin: (600.0, 700.0),
+            envelope: None,
         }],
         groups: Vec::new(),
         unparsed: None,
@@ -805,4 +834,59 @@ fn the_pec_header_carries_pe_designs_fields() {
             );
         }
     }
+}
+
+#[test]
+fn text_transform_presets_read() {
+    // compat/reference/text/text-transform-N: HHHHHHH with Text Transform preset N at the
+    // default level. Each preset has its own code; the strength is the default level's.
+    let codes: [(u16, f32); 26] = [
+        (24, 30.0),
+        (25, 30.0),
+        (0, 50.0),
+        (1, 50.0),
+        (8, 20.0),
+        (9, 20.0),
+        (4, 50.0),
+        (5, 50.0),
+        (10, 10.0),
+        (11, 10.0),
+        (3, 50.0),
+        (2, 50.0),
+        (7, 30.0),
+        (6, 30.0),
+        (18, 20.0),
+        (19, 20.0),
+        (12, 50.0),
+        (14, 50.0),
+        (20, 20.0),
+        (21, 20.0),
+        (17, 50.0),
+        (16, 50.0),
+        (22, 20.0),
+        (23, 20.0),
+        (13, 50.0),
+        (15, 50.0),
+    ];
+    for (k, &(code, strength)) in codes.iter().enumerate() {
+        let name = format!("text-transform-{}", k + 1);
+        let t = &objects_of(&owner_file(&name)).texts[0];
+        let e = t.envelope.expect("CEmbDText");
+        assert_eq!((e.code, e.strength), (code, strength), "{name}");
+        assert_eq!(t.align, 1, "{name}: made centred");
+        assert_eq!(
+            t.origin,
+            (1000.0, 1000.0),
+            "{name}: the click, the alignment point"
+        );
+    }
+    // The arches: the circle round which HHHHHHH is bent (radius, centre x, centre y).
+    let over = objects_of(&owner_file("text-transform-1")).texts[0]
+        .envelope
+        .expect("arch");
+    for (got, want) in over.geometry[..3].iter().zip([408.025, 1000.0, 1408.025]) {
+        assert!((got - want).abs() < 0.01, "{:?}", over.geometry);
+    }
+    let plain = &objects_of(&owner_file("o-text-transform-1")).texts[0];
+    assert_eq!(plain.align, 0, "left aligned");
 }

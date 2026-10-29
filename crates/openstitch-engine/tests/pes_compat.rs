@@ -327,12 +327,8 @@ fn pes_version_11_writes_editable_shapes_and_text_and_refuses_what_it_cannot_hol
             .iter()
             .all(|l| l.font == "Lato" && l.size == 10.0)
     );
-    // text.add centres the text on its point: the click PE-DESIGN stores is the line's start.
-    assert!(
-        text.origin.0 < 900.0 && text.origin.1 == 1000.0,
-        "{:?}",
-        text.origin
-    );
+    // text.add centres the text on its point: PE-DESIGN stores centred text's click there.
+    assert_eq!((text.align, text.origin), (1, (900.0, 1000.0)));
 
     // A space is a letter, as in PE-DESIGN's r27.
     run(

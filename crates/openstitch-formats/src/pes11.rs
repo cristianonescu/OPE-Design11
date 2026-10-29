@@ -28,7 +28,11 @@ mod template;
 const EMB_LINE: &str = "CEmbLine";
 const GROUP_OBJECT: &str = "CGroupObject";
 const EMB_TEXT: &str = "CEmbNText";
+/// Text with a Text Transform: a `CEmbNText` with the transform after its tail.
+const EMB_TEXT_TRANSFORM: &str = "CEmbDText";
 const TTF_LETTER: &str = "CTTFLetter";
+/// Bytes of a `CEmbDText`'s Text Transform after its tail.
+const ENVELOPE: usize = 22;
 /// Bytes of a `CTTFLetter` between its character code and its font name.
 const LETTER_ATTRS: usize = 148;
 /// Bytes of a `CEmbLine` body before its geometry, in every reference file mapped so far.
@@ -223,8 +227,27 @@ pub struct Text {
     pub vertical: bool,
     /// Moves applied after the text was placed: `a b c d tx ty`, as f32 (identity when none).
     pub transform: [f32; 6],
-    /// Where the Text tool was clicked: the left end of the first baseline, file units.
+    /// Text Attributes alignment: 0 left, 1 centre (r12 and o-text-transform-1 left, the
+    /// round-4 centred texts 1). Right is not mapped.
+    pub align: u16,
+    /// Where the Text tool was clicked, file units: the first baseline's alignment point (its
+    /// left end for left-aligned text, its middle for centred text).
     pub origin: (f32, f32),
+    /// Text Transform (`CEmbDText`), if any.
+    pub envelope: Option<Envelope>,
+}
+
+/// A Text Transform: the 22 bytes after a `CEmbDText`'s tail.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Envelope {
+    /// PE-DESIGN's code of the preset (not its place in the palette: preset 1 is 24, 3 is 0).
+    pub code: u16,
+    /// The preset's strength, from the level slider (preset 3: 0 at level 0, 50 at the default,
+    /// 100 at level 100).
+    pub strength: f32,
+    /// The arch presets' circle (radius, centre x, centre y) and a fourth value; the other
+    /// presets leave the last arch's numbers there.
+    pub geometry: [f32; 4],
 }
 
 /// One `CTTFLetter` of a [`Text`].
@@ -397,8 +420,13 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             }
         };
         map.push(None);
-        if class == EMB_TEXT {
-            match read_text(&mut r, &mut map, position as u16)? {
+        if class == EMB_TEXT || class == EMB_TEXT_TRANSFORM {
+            match read_text(
+                &mut r,
+                &mut map,
+                position as u16,
+                class == EMB_TEXT_TRANSFORM,
+            )? {
                 Some(text) => texts.push(text),
                 None => {
                     return done(
@@ -491,6 +519,7 @@ fn read_text(
     r: &mut ByteReader<'_>,
     map: &mut Vec<Option<String>>,
     position: u16,
+    transformed: bool,
 ) -> Result<Option<Text>> {
     let start = r.offset;
     let fail = |r: &mut ByteReader<'_>| {
@@ -540,6 +569,16 @@ fn read_text(
     for (k, v) in transform.iter_mut().enumerate() {
         *v = f32_at(tail, 78 + 4 * k);
     }
+    let envelope = if transformed {
+        let e = r.read(ENVELOPE)?;
+        Some(Envelope {
+            code: u16_at(e, 0),
+            strength: f32_at(e, 2),
+            geometry: [6, 10, 14, 18].map(|k| f32_at(e, k)),
+        })
+    } else {
+        None
+    };
     Ok(Some(Text {
         position,
         bounds,
@@ -548,7 +587,9 @@ fn read_text(
         line_spacing: f32_at(tail, 4),
         vertical: u16_at(tail, 10) != 0,
         transform,
+        align: u16_at(tail, 8),
         origin: (f32_at(tail, 104), f32_at(tail, 108)),
+        envelope,
     }))
 }
 
@@ -724,7 +765,12 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     for slot in &at_position {
         match slot {
             Some(text) => {
-                archive.tag(&mut w, EMB_TEXT);
+                let class = if text.envelope.is_some() {
+                    EMB_TEXT_TRANSFORM
+                } else {
+                    EMB_TEXT
+                };
+                archive.tag(&mut w, class);
                 write_text(&mut w, &mut archive, text);
             }
             None => {
@@ -832,6 +878,7 @@ fn write_text(w: &mut ByteWriter, archive: &mut Archive, t: &Text) {
     }
     let mut tail = template::TEXT_TAIL;
     tail[4..8].copy_from_slice(&t.line_spacing.to_le_bytes());
+    put16(&mut tail, 8, t.align);
     put16(&mut tail, 10, u16::from(t.vertical));
     for (k, v) in t.transform.iter().enumerate() {
         tail[78 + 4 * k..82 + 4 * k].copy_from_slice(&v.to_le_bytes());
@@ -839,6 +886,12 @@ fn write_text(w: &mut ByteWriter, archive: &mut Archive, t: &Text) {
     tail[104..108].copy_from_slice(&t.origin.0.to_le_bytes());
     tail[108..112].copy_from_slice(&t.origin.1.to_le_bytes());
     w.append(&tail);
+    if let Some(e) = &t.envelope {
+        w.u16le(i64::from(e.code));
+        for v in std::iter::once(e.strength).chain(e.geometry) {
+            w.f32le(f64::from(v));
+        }
+    }
 }
 
 /// The header fields after the metadata strings up to the thread count: the hoop (150 × 150 mm,
