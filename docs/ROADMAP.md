@@ -159,6 +159,8 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
     `max(4, round(param · 100 / mmPerPx²))` small-region floor at 4-connectivity and the
     centerline-thinness satin-vs-fill test done 2026-10-29 (#127); Cross Stitch shares that
     prepass with documented grid and per-cell defaults since 2026-10-29 (#132). Next: the rotating-line coverage model for
+    centerline-thinness satin-vs-fill test done 2026-10-29 (#127). Next: Cross Stitch sharing
+    that prepass with documented grid and per-cell defaults (#132); the rotating-line coverage model for
     Photo Stitch 2 only if the captures show the zigzag model is the dominant remaining
     difference (#129). Each is compared with pe-refs-4's captures of PE-DESIGN's output at
     defaults when they land.

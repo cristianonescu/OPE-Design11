@@ -1054,6 +1054,7 @@ Line references are relative to `crates/`.
   On the synthetic grids the cells are the same as before (8 × 4 cells, 6 + 1 coloured);
   what changes is the palette's weighting. Left for #132: PE-DESIGN's recorded defaults from
   the capture, which may move the cell size or the times.
+  optional graph-cut foreground step. #132 follows in its own PR.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.
