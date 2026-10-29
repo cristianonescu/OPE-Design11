@@ -206,21 +206,16 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
     with the (1, 255) guard); Auto Punch's 3×3 modal colour census capped at 100 colours, the
     `max(4, round(param · 100 / mmPerPx²))` small-region floor at 4-connectivity and the
     centerline-thinness satin-vs-fill test done 2026-10-29 (#127); Cross Stitch shares that
-    prepass with documented grid and per-cell defaults since 2026-10-29 (#132). Next: the rotating-line coverage model for
-    centerline-thinness satin-vs-fill test done 2026-10-29 (#127). Next: Cross Stitch sharing
-    that prepass with documented grid and per-cell defaults (#132); the rotating-line coverage model for
-    Photo Stitch 2 only if the captures show the zigzag model is the dominant remaining
-    difference (#129). Each is compared with pe-refs-4's captures of PE-DESIGN's output at
-    defaults when they land.
     prepass with documented grid and per-cell defaults since 2026-10-29 (#132). Compared with
-    PE-DESIGN 11.50's round-4 captures on 2026-10-29: Auto Punch fills at 45° and 5 colours
-    (−2.1 % stitches), Cross Stitch's six diagonal stitches per cell (−0.9 %), Photo Stitch 1's
-    Sew Page Color, 3.0 mm Run Pitch and 10 colours (+5 %). Second round (bars, moved shapes,
-    mono, Photo Stitch 2): Auto Punch's satin/fill bounds 0.7–6.5 mm, Auto-direction satin
-    without under sewing, fill across strokes up to 13 mm, automatic colour count, PE's colour
-    order (R + G + B, highest first, also in Cross Stitch), Sew Page Color in Color mode only.
-    Next: run-to-run travel in Cross Stitch; PE's meander path for Photo Stitch 1 (mono +39 %
-    stitches from short runs) and the per-colour screen angles of Photo Stitch 2, both #129.
+    PE-DESIGN 11.50's round-4 captures on 2026-10-29: Cross Stitch's six diagonal stitches per
+    cell (−0.9 % stitches), Photo Stitch 1's Sew Page Color, 3.0 mm Run Pitch and 10 colours
+    (+5 %); second round (bars, moved shapes, mono, Photo Stitch 2): Auto Punch's satin/fill
+    bounds 0.7–6.5 mm, Auto-direction satin without under sewing, fill across strokes up to
+    13 mm and at 45° beyond, automatic colour count, PE's colour order (R + G + B, highest
+    first, also in Cross Stitch), Sew Page Color in Color mode only (Auto Punch within 3 % of
+    PE's stitches on all four captures). Next: run-to-run travel in Cross Stitch; PE's meander
+    path for Photo Stitch 1 (mono +39 % stitches from short runs) and the per-colour screen
+    angles of Photo Stitch 2, both #129.
 
 ## Beyond PE-DESIGN
 
