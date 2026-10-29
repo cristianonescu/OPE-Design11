@@ -11,7 +11,8 @@
 use crate::io::{ByteReader, ByteWriter, trim_horizontal};
 use crate::{FormatError, Result, layout};
 use openstitch_core::{
-    Bounds, Command, PEC_CHART, Stitch, StitchPattern, Thread, nearest_index, round_coordinate,
+    Bounds, Command, PEC_CHART, Stitch, StitchPattern, Thread, nearest_index, pec_basic_chart,
+    round_coordinate,
 };
 
 pub const ICON_STRIDE: usize = 6;
@@ -317,10 +318,11 @@ pub(crate) fn write_section(input: &StitchPattern, w: &mut ByteWriter) -> Result
 }
 
 /// Maps each colour block's thread to a PEC chart index. Each distinct colour first claims the
-/// nearest still-free chart entry (first-appearance order), then every block takes the nearest
-/// claimed entry, so distinct design colours stay distinct on the machine.
+/// nearest still-free chart entry (first-appearance order, among the 61 entries PE-DESIGN
+/// matches to), then every block takes the nearest claimed entry, so distinct design colours
+/// stay distinct on the machine.
 pub fn pec_color_indexes(threads: &[Thread]) -> Vec<usize> {
-    let mut free: Vec<Option<Thread>> = PEC_CHART.to_vec();
+    let mut free: Vec<Option<Thread>> = pec_basic_chart().to_vec();
     let mut claimed: Vec<Option<Thread>> = vec![None; free.len()];
     let mut seen: Vec<u32> = Vec::new();
     for t in threads {

@@ -1189,6 +1189,28 @@ Line references are relative to `crates/`.
   move (`9e 39 96 95` then 39 × `80 46 00`) do not decode to the DST's vector with the 12-bit
   rule, so its PEC encoding over 204.7 mm stays open and the DST rule is applied at the PEC
   limit; internal regression tier (`pec_splits_moves_over_2047_units_like_pe_design_dst`).
+- **Thread-colour matching (2026-10-29, #119):** nearest-chart matching (PEC colour indexes,
+  JEF/SEW/HUS/PCS charts, image digitizers, `threads.remap`) used a red-mean weighted RGB
+  distance; it is now equal-weight squared Euclidean (ΔR² + ΔG² + ΔB²), and a second
+  "approximate" matcher keeps a city-block minimum beside it and returns the city-block winner
+  (`openstitch_core::approximate_index`), for the built-in sew palette. Checked against the
+  owner's twelve-swatch capture (`compat/reference/pes/thread-match-swatches.pes`, PE-DESIGN
+  11.50, 2026-10-29: twelve RGB fills imported from an SVG and the Brother chart entry PE
+  picked for each): squared Euclidean against chart entries 1–61 reproduces all twelve picks
+  (`pe_design_swatch_picks_are_reproduced`); red-mean missed blue (21 Ultramarine for 405) and
+  cyan (53 Light Blue for 019); city block alone missed four. Two findings against the issue's
+  text and pyembroidery's table: (1) PE-DESIGN's own thread table writes (253, 217, 222) for
+  entry 57 (124 FLESH PINK) where pyembroidery has (255, 204, 204), so the chart table now
+  carries PE's value (entry 42 keeps pyembroidery's identical RGB); PE picked 57 for
+  rgb(240, 200, 220), so ties go to the later entry, not the earlier one the issue asked for.
+  (2) rgb(255, 128, 0) went to 11 Deep Gold (2210 away) and not to 62 Orange (625 away), so
+  entries 62–64 are not candidates: matching runs over the first 61 entries (#136's "basic
+  only" match), and the three are kept only for files that name them. Still to do for the
+  spec's thread-table compare: SVG-import and hex fills stay exact custom threads in OpenStitch
+  while PE-DESIGN snaps them to the chart with Brother's catalogue code (800, 513, …); that
+  needs the codes for all 61 entries (13 known from this and earlier captures) and goes with
+  the palette work (#136). The machine-format references (`machine-formats`, red and black)
+  pick the same entries under both metrics.
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 - **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,

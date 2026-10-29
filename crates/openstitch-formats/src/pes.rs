@@ -16,7 +16,9 @@
 
 use crate::io::{ByteReader, ByteWriter};
 use crate::{FormatError, Result, pec};
-use openstitch_core::{Command, PEC_CHART, StitchPattern, Thread, nearest_index, round_coordinate};
+use openstitch_core::{
+    Command, StitchPattern, Thread, nearest_index, pec_basic_chart, round_coordinate,
+};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
@@ -704,7 +706,7 @@ fn write_blocks(w: &mut ByteWriter, pattern: &StitchPattern, version: Version) -
 /// stitch runs, so without it the needle never goes down where the jump lands.
 fn segments(pattern: &StitchPattern, version: Version, min_x: f64, max_y: f64) -> Vec<SewSegment> {
     let chart: Vec<Option<Thread>> = match version {
-        Version::V1 => PEC_CHART.to_vec(),
+        Version::V1 => pec_basic_chart().to_vec(),
         Version::V6 | Version::V11 => pattern.threads.iter().cloned().map(Some).collect(),
     };
     let code = |i: usize| {

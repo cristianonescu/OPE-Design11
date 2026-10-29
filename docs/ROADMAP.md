@@ -170,6 +170,11 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
 8. **Formats:** CSD export (no public writer); the CSD reader against PE-DESIGN's real file
    (parked round-4 export: 2 stitches and 51 colour changes read); the nearest-thread rule
    for RGB fills (#119, thread-match-swatches records PE-DESIGN's picks).
+8. **Formats:** CSD export (no public writer). Colour matching is equal-weight squared
+   Euclidean with an "approximate" city-block matcher since 2026-10-29 (#119); left: check the
+   picks against the owner's swatch → thread capture, the 94-entry sew palette and user-chart
+   CSV schema (#136), per-machine export limits and hoop codes (#125), the ±2047-unit stitch
+   split (#126).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo

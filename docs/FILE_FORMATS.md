@@ -73,8 +73,13 @@ so no written delta exceeds the 12-bit form (`pec_splits_moves_over_2047_units_l
 vector); the issue's halving proposal matches neither format.
 
 Colour mapping: PEC stores indexes into Brother's fixed 64-entry chart, not RGB. Writer
-assigns each distinct design colour the nearest still-unused chart entry ("red-mean"
-distance), so distinct colours stay distinct on the machine.
+assigns each distinct design colour the nearest still-unused chart entry among 1–61
+(equal-weight squared-Euclidean RGB distance, later chart entry on ties;
+`openstitch_core::nearest_index` over `pec_basic_chart()`, #119), so distinct colours stay
+distinct on the machine. Entries 62–64 are read but never chosen: PE-DESIGN 11.50 sent
+rgb(255, 128, 0) to 11 Deep Gold rather than 62 Orange (`thread-match-swatches.pes`). The same
+matcher picks the chart entry for JEF, SEW, HUS and PCS. `approximate_index` is the "approximate" palette matcher
+(city-block winner, squared-Euclidean fallback) for the built-in sew palette.
 
 ## PES
 
