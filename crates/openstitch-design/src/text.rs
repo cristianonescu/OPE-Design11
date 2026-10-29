@@ -137,9 +137,12 @@ pub const ENVELOPE_PRESETS: [u8; 26] = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
 ];
 
-/// The arches' angle: the text's width over the radius of its inner line (PE-DESIGN 11.50:
-/// 74.6 mm of HHHHHHH round a 39.7 mm radius, compat text-transform-1 and -2).
-const ARCH_ANGLE: f64 = 1.879;
+/// The arches' angle: the straight text's advance width (its letters' advances, from the first
+/// pen position to the last, as PE-DESIGN measures its text box) over the radius of its inner
+/// line. PE-DESIGN 11.50 stores the circle: HHHHHHH, OpenStitch and Agjy 123 at size 10 give
+/// 770 / 408.0, 724 / 383.7 and 570 / 301.9 (0.1 mm), all 1.887 (compat text-transform-1 and the
+/// round-4 Text Transform captures).
+const ARCH_ANGLE: f64 = 1.887;
 
 /// PE-DESIGN sets arched text a little left of the straight text's centre, by this share of
 /// its width (0.3-0.45 mm of 74.6 mm in both arches).
@@ -1343,6 +1346,26 @@ fn transform_layout(l: &mut Layout, t: &Transform) {
     }
 }
 
+/// The straight text's advance width and where it starts along x (layout coordinates, the
+/// alignment point at 0): the shift between a left and a right aligned layout of the text is
+/// its advance, as the alignment moves the pen, not the ink.
+fn advance(plain: &TextSpec, fonts: &[DesignFont]) -> Result<(f64, f64), TextError> {
+    let min_x = |align: TextAlign| -> Result<f64, TextError> {
+        let probe = TextSpec {
+            align,
+            ..plain.clone()
+        };
+        Ok(layout_bounds(&layout_in(&probe, None, fonts)?).map_or(0.0, |b| b.min_x))
+    };
+    let adv = min_x(TextAlign::Left)? - min_x(TextAlign::Right)?;
+    let start = match plain.align {
+        TextAlign::Left => 0.0,
+        TextAlign::Center => -adv / 2.0,
+        TextAlign::Right => -adv,
+    };
+    Ok((adv, start))
+}
+
 /// Text Transform: the straight text set along an arch (1, 2) or warped into an envelope.
 /// Presets OpenStitch does not lay out yet lay the text out straight.
 fn envelope_layout(spec: &TextSpec, preset: u8, fonts: &[DesignFont]) -> Result<Layout, TextError> {
@@ -1358,8 +1381,9 @@ fn envelope_layout(spec: &TextSpec, preset: u8, fonts: &[DesignFont]) -> Result<
     if matches!(preset, 1 | 2) && b.width() > 0.0 {
         // The inner line keeps the text's width: the baseline over the top of a circle (1),
         // the capital line under the bottom of one (2), letters radial and turned with it.
-        let r = b.width() / ARCH_ANGLE;
-        let cx = b.center().x + ARCH_SHIFT * b.width();
+        let (adv, start) = advance(&plain, fonts)?;
+        let r = adv / ARCH_ANGLE;
+        let cx = start + adv / 2.0 + ARCH_SHIFT * adv;
         let reach = (ARCH_ANGLE / 2.0 + 0.6).min(std::f64::consts::PI * 0.98);
         let steps = 240;
         let at = |k: usize| -reach + 2.0 * reach * k as f64 / steps as f64;

@@ -109,11 +109,10 @@
       "source": {
         "export": "a.pes"
       },
-      "evidence": "PE-DESIGN re-sews the arched text from the object (79.20 mm; its own text-transform-1 79.30). OpenStitch's arch layout sews 79.8 mm: it bends the text round a 39.6 mm circle measured on the letters, where PE-DESIGN measures its 40.8 mm circle on its own text box (FILE_FORMATS, CEmbDText)",
-      "reference": {
-        "tolerance": {
-          "mm": 0.7
-        }
+      "evidence": "internal regression: OpenStitch's own arch sews 79.9 mm. Known difference, open in docs/COMPATIBILITY_AUDIT.md item 5: PE-DESIGN re-sews this object at 79.20 mm (its own text-transform-1: 79.30) round the same 40.8 mm circle; OpenStitch places the letters round the circle differently. Not compared at the reference tier until it matches at 0.3 mm",
+      "expected": 79.9,
+      "tolerance": {
+        "mm": 0.05
       }
     },
     {
