@@ -2,10 +2,11 @@
 //! import and export `openstitch.pattern` documents. A design carries the user patterns it
 //! uses, so a project sews the same on every machine; bundled patterns cannot be redefined.
 
-use crate::commands::{CommandSpec, Effect, read_file, req, spec};
+use crate::commands::{CommandSpec, Effect, opt, read_file, req, spec};
 use crate::params::{CommandError, Params};
 use crate::sandbox::Access;
 use crate::session::EngineState;
+use openstitch_design::pattern_text;
 use openstitch_design::patterns::{self, MAX_DOCUMENT, Pattern, PatternKind};
 use serde_json::{Value, json};
 
@@ -55,6 +56,23 @@ fn define(s: &mut EngineState, p: &Params, pattern: Pattern) -> Result<Value, Co
         }
     }
     Ok(json!({ "kind": kind, "id": id, "replaced": existing.is_some() }))
+}
+
+/// A pattern id from a file's stem: lower-case letters, digits and dashes, `pattern` if
+/// nothing usable is left.
+fn file_id(stem: &str) -> String {
+    let mut id: String = stem
+        .chars()
+        .map(|c| match c.to_ascii_lowercase() {
+            c if c.is_ascii_lowercase() || c.is_ascii_digit() => c,
+            _ => '-',
+        })
+        .take(64)
+        .collect();
+    while id.ends_with('-') {
+        id.pop();
+    }
+    if id.is_empty() { "pattern".into() } else { id }
 }
 
 fn parse_value(p: &Params, key: &str) -> Result<Pattern, CommandError> {
@@ -135,14 +153,45 @@ pub fn commands() -> Vec<CommandSpec> {
         ),
         spec(
             "pattern.import",
-            "Read an openstitch.pattern file and add it to the design",
+            "Read an openstitch.pattern file, or a text pattern source in the @DIRECTIVE layout (.pas fill/stamp tile, .pmf motif, .plf decorative row, made in the user's own Programmable Stitch Creator), and add it to the design",
             Effect::Edit,
-            vec![req("path", "string", "Pattern file (.json)")],
+            vec![
+                req("path", "string", "Pattern file (.json, .pas, .pmf or .plf)"),
+                opt(
+                    "id",
+                    "string",
+                    "Text sources: id of the new pattern (default from the file name)",
+                ),
+                opt(
+                    "name",
+                    "string",
+                    "Text sources: name of the new pattern (default the file name)",
+                ),
+            ],
             |s, p| {
-                let (_, data) = read_file(s, p, MAX_DOCUMENT)?;
+                let (path, data) = read_file(s, p, MAX_DOCUMENT)?;
                 let text =
                     String::from_utf8(data).map_err(|_| p.failed("the file is not UTF-8 text"))?;
-                let pattern = patterns::parse(&text).map_err(|e| p.failed(e))?;
+                let pattern = if pattern_text::looks_like(text.as_bytes()) {
+                    let stem = path
+                        .file_stem()
+                        .and_then(|f| f.to_str())
+                        .unwrap_or("pattern")
+                        .to_string();
+                    let id = match p.get("id") {
+                        Some(_) => p.string("id", None)?,
+                        None => file_id(&stem),
+                    };
+                    let name = match p.get("name") {
+                        Some(_) => p.string("name", None)?,
+                        None => stem,
+                    };
+                    pattern_text::parse(&text, &id, &name)
+                        .map_err(|e| p.failed(e))?
+                        .pattern
+                } else {
+                    patterns::parse(&text).map_err(|e| p.failed(e))?
+                };
                 define(s, p, pattern)
             },
         ),

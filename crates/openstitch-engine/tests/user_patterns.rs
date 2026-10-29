@@ -3,6 +3,7 @@
 
 use openstitch_design::Compiler;
 use openstitch_design::patterns::PatternKind;
+use openstitch_design::v2;
 use openstitch_engine::{Session, project};
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -199,6 +200,88 @@ fn patterns_round_trip_through_files_inside_the_sandbox() {
     );
     run(&mut s, "pattern.import", json!({"path": "zigzag.json"}));
     assert_eq!(s.design().patterns.len(), 1);
+    // Text pattern sources in the @DIRECTIVE layout (the user's own Programmable Stitch
+    // Creator files) import as fill, motif and decorative patterns named after the file.
+    std::fs::write(
+        root.join("My Tile.pas"),
+        "@VERSION 40000
+@UNIT 11
+@COOD 2 0 0 8000 8000
+@SYSENV 0
+@TILE 1
+@TILELINE 0 2 0 0 1024 1024
+",
+    )
+    .expect("write");
+    std::fs::write(
+        root.join("zig.pmf"),
+        "@VERSION 40000
+@SYSENV 1024
+@LINE 3 0 512 512 0 1024 512
+",
+    )
+    .expect("write");
+    std::fs::write(
+        root.join("row.plf"),
+        "@VERSION 40000
+@SYSENV 75 75 0
+@TILELINE 0 3 0 512 512 1024 1024 512
+",
+    )
+    .expect("write");
+    let r = run(&mut s, "pattern.import", json!({"path": "My Tile.pas"}));
+    assert_eq!(r["kind"], "fill");
+    assert_eq!(r["id"], "my-tile");
+    let r = run(
+        &mut s,
+        "pattern.import",
+        json!({"path": "zig.pmf", "id": "my-zig", "name": "Zig"}),
+    );
+    assert_eq!(r["kind"], "motif");
+    assert_eq!(r["id"], "my-zig");
+    let r = run(&mut s, "pattern.import", json!({"path": "row.plf"}));
+    assert_eq!(r["kind"], "decorative");
+    assert_eq!(s.design().patterns.len(), 4);
+    let tile = s
+        .design()
+        .patterns
+        .iter()
+        .find(|q| q.id == "my-tile")
+        .expect("tile");
+    assert_eq!(tile.name, "My Tile");
+    assert_eq!(tile.paths, vec![vec![v2(0.0, 0.0), v2(1.0, 1.0)]]);
+    // They sew: the imported tile as a programmable fill, the motif as a motif line.
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 10, "y": 10, "width": 40, "height": 30, "fill": "Red", "outline": "Black"}),
+    );
+    let id = s.design().objects.last().expect("shape").id;
+    let plain = Compiler::default().compile(s.design());
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": id, "type": "programmableFill", "pattern": "my-tile"}),
+    );
+    run(
+        &mut s,
+        "object.setLine",
+        json!({"id": id, "type": "motif", "motif": "my-zig"}),
+    );
+    let sewn = Compiler::default().compile(s.design());
+    assert_ne!(sewn, plain);
+    run(&mut s, "object.delete", json!({"id": id}));
+    for id in ["my-tile", "my-zig", "row"] {
+        let kind = if id == "my-zig" {
+            "motif"
+        } else if id == "row" {
+            "decorative"
+        } else {
+            "fill"
+        };
+        run(&mut s, "pattern.delete", json!({"kind": kind, "id": id}));
+    }
+    assert_eq!(s.design().patterns.len(), 1);
     // A bundled pattern exported and imported again is refused (reserved id).
     assert!(
         s.execute("pattern.import", Some(&json!({"path": "heart.json"})))
@@ -291,7 +374,29 @@ fn hostile_patterns_fail_cleanly() {
     std::fs::write(root.join("big.json"), vec![b' '; (1 << 20) + 1]).expect("write");
     std::fs::write(root.join("binary.json"), [0xff, 0xfe, 0x00]).expect("write");
     std::fs::write(root.join("other.json"), "{\"format\":\"other\"}").expect("write");
-    for f in ["big.json", "binary.json", "other.json"] {
+    std::fs::write(
+        root.join("bad.pas"),
+        "@SYSENV 0
+@TILELINE 0 2 0 0 1 2000
+",
+    )
+    .expect("write");
+    std::fs::write(
+        root.join("bundled.pas"),
+        "@SYSENV 0
+@TILELINE 0 2 0 0 1 1
+",
+    )
+    .expect("write");
+    assert!(
+        s.execute(
+            "pattern.import",
+            Some(&json!({"path": "bundled.pas", "id": "diamonds"}))
+        )
+        .is_err(),
+        "a bundled id is reserved"
+    );
+    for f in ["big.json", "binary.json", "other.json", "bad.pas"] {
         assert!(
             s.execute("pattern.import", Some(&json!({"path": f})))
                 .is_err()

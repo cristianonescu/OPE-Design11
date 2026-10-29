@@ -909,8 +909,12 @@ impl EditorApp {
     }
 
     /// PES versions offered in File ▸ Export ▸ PES: `pesVersion` value and menu label.
-    pub const PES_VERSIONS: [(&'static str, &'static str); 4] = [
+    pub const PES_VERSIONS: [(&'static str, &'static str); 5] = [
         ("6", "Version 6 — RGB colours, names, stitch group"),
+        (
+            "11",
+            "PE-DESIGN 11 (#PES0110) — editable shapes (experimental)",
+        ),
         ("6t", "Version 6, stitches only"),
         ("1", "Version 1 — stitch group, chart colours"),
         ("1t", "Version 1, stitches only (machine only, smallest)"),

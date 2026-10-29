@@ -714,3 +714,163 @@ pub fn pmv_bytes(stitches: &[(f64, f64)]) -> Vec<u8> {
     out.extend_from_slice(&[0u8; 16]);
     out
 }
+
+/// A PMV file read back: the needle points and the two lookup tables, as the layout
+/// [`pmv_bytes`] writes (pyembroidery's description). Needle points are 0.1 mm in the writer's
+/// input orientation (x along the feed, y across, +y as `pmv_bytes` takes it), recovered from
+/// the 0.25 mm packed pairs; the y centre and any width scaling the writer applied are not in
+/// the file, so y is centred on the packed zero.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PmvRead {
+    /// The 36 banner bytes after the magic (`.` × 36 in pyembroidery's files).
+    pub banner: [u8; 36],
+    /// Needle points, 0.1 mm.
+    pub needles: Vec<(f64, f64)>,
+    /// The length table pairs, as stored.
+    pub lengths: Vec<(u16, u16)>,
+    /// The width table pairs, as stored.
+    pub widths: Vec<(u16, u16)>,
+}
+
+/// PMV magic bytes.
+pub const PMV_MAGIC: &[u8; 8] = b"#PMV0001";
+/// Fixed bytes between the banner and the needle count (pyembroidery's layout).
+pub const PMV_PREAMBLE: &[u8; 56] = b"                                                    ";
+/// Most needle points a PMV file read may hold (the writer stops at [`PMV_MAX_NEEDLES`];
+/// files from other writers are accepted up to this bound).
+pub const PMV_READ_MAX_NEEDLES: usize = 4096;
+/// Largest PMV file read.
+pub const PMV_MAX_BYTES: usize = 1 << 16;
+
+/// Reads a PMV file in the layout [`pmv_bytes`] writes. Refuses other magics, a preamble
+/// that differs from pyembroidery's, truncated bodies and inconsistent tables, and never
+/// panics on hostile input.
+pub fn pmv_read(bytes: &[u8]) -> Result<PmvRead, String> {
+    if bytes.len() > PMV_MAX_BYTES {
+        return Err(format!("PMV file larger than {PMV_MAX_BYTES} bytes"));
+    }
+    let mut at = 0usize;
+    let take = |at: &mut usize, n: usize, what: &str| -> Result<&[u8], String> {
+        let end = at.checked_add(n).filter(|&e| e <= bytes.len());
+        match end {
+            Some(end) => {
+                let s = &bytes[*at..end];
+                *at = end;
+                Ok(s)
+            }
+            None => Err(format!("truncated PMV: {what} at byte {at}")),
+        }
+    };
+    let u16_at = |at: &mut usize, what: &str| -> Result<u16, String> {
+        let s = take(at, 2, what)?;
+        Ok(u16::from_le_bytes([s[0], s[1]]))
+    };
+    if take(&mut at, 8, "magic")? != PMV_MAGIC {
+        return Err("not a PMV file: the magic is not #PMV0001".into());
+    }
+    let mut banner = [0u8; 36];
+    banner.copy_from_slice(take(&mut at, 36, "banner")?);
+    if take(&mut at, 56, "preamble")? != PMV_PREAMBLE {
+        return Err("PMV preamble differs from the documented layout".into());
+    }
+    let count = u16_at(&mut at, "needle count")? as usize;
+    let twice = u16_at(&mut at, "needle byte count")? as usize;
+    if twice != count * 2 {
+        return Err(format!(
+            "PMV needle byte count {twice} is not twice the needle count {count}"
+        ));
+    }
+    if count > PMV_READ_MAX_NEEDLES {
+        return Err(format!(
+            "PMV holds {count} needle points, more than {PMV_READ_MAX_NEEDLES}"
+        ));
+    }
+    let packed = take(&mut at, count * 2, "needle points")?;
+    let mut needles = Vec::with_capacity(count);
+    let mut x: i64 = 0;
+    for &[bx, by] in packed.as_chunks::<2>().0 {
+        if bx >= 64 || by >= 32 {
+            return Err(format!(
+                "PMV needle byte pair {bx:#x} {by:#x} is out of range"
+            ));
+        }
+        let dx = if bx >= 32 { bx as i64 - 64 } else { bx as i64 };
+        let y = if by >= 16 { by as i64 - 32 } else { by as i64 };
+        x += dx;
+        // 0.25 mm units → 0.1 mm; y was negated by the writer.
+        needles.push((x as f64 * 2.5, -(y as f64) * 2.5));
+    }
+    if u16_at(&mut at, "body end")? != 0 || u16_at(&mut at, "body end")? != 256 {
+        return Err("PMV body end marker differs from the documented layout".into());
+    }
+    let fixed = take(&mut at, 16, "fixed block")?;
+    if fixed != b"\x00\x00\x00\x00\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00" {
+        return Err("PMV fixed block differs from the documented layout".into());
+    }
+    if u16_at(&mut at, "table lead")? != 256 || u16_at(&mut at, "table lead")? != 0 {
+        return Err("PMV table lead differs from the documented layout".into());
+    }
+    let read_table = |at: &mut usize, what: &str| -> Result<Vec<(u16, u16)>, String> {
+        let head = take(at, 2, what)?;
+        let (last, n) = (head[0] as usize, head[1] as usize);
+        if n == 0 || last + 1 != n {
+            return Err(format!(
+                "PMV {what} table header {last} {n} is inconsistent"
+            ));
+        }
+        let mut t = Vec::with_capacity(n);
+        for _ in 0..n {
+            let a = u16_at(at, what)?;
+            let b = u16_at(at, what)?;
+            t.push((a, b));
+        }
+        Ok(t)
+    };
+    let lengths = read_table(&mut at, "length")?;
+    let widths = read_table(&mut at, "width")?;
+    if u16_at(&mut at, "trailer")? != 0x12 || take(&mut at, 16, "trailer")? != [0u8; 16] {
+        return Err("PMV trailer differs from the documented layout".into());
+    }
+    if at != bytes.len() {
+        return Err(format!(
+            "PMV has {} unexpected trailing bytes",
+            bytes.len() - at
+        ));
+    }
+    Ok(PmvRead {
+        banner,
+        needles,
+        lengths,
+        widths,
+    })
+}
+
+/// A decorative sewing stitch from a PMV file's needle points (mm, back in the editor's
+/// orientation that [`pmv`] exports from), `id`/`name` given. The width is the needle points'
+/// span across the feed, at least 1 mm; points are shifted so the first needle point sits at
+/// x = 0 and the pattern is centred across the feed.
+pub fn pmv_import(bytes: &[u8], id: &str, name: &str) -> Result<SewingStitch, String> {
+    let read = pmv_read(bytes)?;
+    if read.needles.len() < 2 {
+        return Err("PMV holds fewer than 2 needle points".into());
+    }
+    let x0 = read.needles[0].0;
+    let (min_y, max_y) = read
+        .needles
+        .iter()
+        .fold((f64::INFINITY, f64::NEG_INFINITY), |(lo, hi), &(_, y)| {
+            (lo.min(y), hi.max(y))
+        });
+    let mid = (min_y + max_y) / 2.0;
+    let mut s = SewingStitch::new(SewingKind::Decorative);
+    s.id = id.to_string();
+    s.name = name.to_string();
+    s.width = ((max_y - min_y) / 10.0).clamp(1.0, MAX_WIDTH);
+    s.points = read
+        .needles
+        .iter()
+        .map(|&(x, y)| v2((x - x0) / 10.0, -(y - mid) / 10.0))
+        .collect();
+    s.validate()?;
+    Ok(s)
+}

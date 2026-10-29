@@ -83,7 +83,10 @@ pub static PEC_CHART: [Option<Thread>; 65] = [
     Some(Thread::chart(0, 103, 62, "Emerald Green", "54", "Brother")),
     Some(Thread::chart(78, 41, 144, "Purple", "55", "Brother")),
     Some(Thread::chart(47, 126, 32, "Moss Green", "56", "Brother")),
-    Some(Thread::chart(255, 204, 204, "Flesh Pink", "57", "Brother")),
+    // pyembroidery has (255, 204, 204) here; PE-DESIGN 11.50's own thread table writes
+    // (253, 217, 222) for chart entry 57 (124 FLESH PINK, compat/reference/pes/
+    // thread-match-swatches.pes, 2026-10-29). Entry 42 keeps pyembroidery's value.
+    Some(Thread::chart(253, 217, 222, "Flesh Pink", "57", "Brother")),
     Some(Thread::chart(255, 217, 17, "Harvest Gold", "58", "Brother")),
     Some(Thread::chart(9, 91, 166, "Electric Blue", "59", "Brother")),
     Some(Thread::chart(

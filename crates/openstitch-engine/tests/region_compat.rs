@@ -314,6 +314,34 @@ fn frequency_and_run_times_follow_the_guide_ranges() {
         "object.setRegion",
         json!({"id": 1, "frequency": 50}),
     );
+    // Density: PE-DESIGN 11.50's field runs 0.1–14.0 for fill and satin (references
+    // sweep-fill-density-min and sweep-satin-density-min sew at 0.1; issue #139's 0.2 floor is
+    // contradicted by them), 0.5–10 for the other region types.
+    for (kind, density) in [
+        ("fill", 0.1),
+        ("fill", 14.0),
+        ("satin", 0.1),
+        ("satin", 0.2),
+        ("programmableFill", 0.5),
+    ] {
+        run(
+            &mut s,
+            "object.setRegion",
+            json!({"id": 1, "type": kind, "density": density}),
+        );
+    }
+    for (kind, density) in [
+        ("fill", 0.09),
+        ("fill", 14.1),
+        ("satin", 0.09),
+        ("programmableFill", 0.4),
+    ] {
+        let params = json!({"id": 1, "type": kind, "density": density});
+        assert!(
+            s.execute("object.setRegion", Some(&params)).is_err(),
+            "{kind} {density}"
+        );
+    }
     for kind in ["eStitch", "vStitch"] {
         let params = json!({"id": 1, "type": kind, "runTimes": 6});
         assert!(

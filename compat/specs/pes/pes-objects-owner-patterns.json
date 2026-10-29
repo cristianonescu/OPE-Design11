@@ -1,0 +1,188 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-objects-owner-patterns",
+  "area": "pes",
+  "title": "PES 0110 objects with owner-drawn programmable-fill and motif patterns read and written back",
+  "description": "Three PE-DESIGN 11.50 files of one rectangle whose region or line uses a pattern the owner drew in Programmable Stitch Creator (a V tile as .pas, a V motif as .pmf; both in compat/reference/pes): programmable fill, motif fill and a motif line. Each is read by OpenStitch and written again; the stitches and colours survive. Issue #120 (object-kind fixtures: these were the kinds missing from the round-3 set, which has satin, fill, running, text and applique) and issue #131 (the .pas/.pmf grammar: @VERSION 10000, @SYSENV 1, @TILE 1, @TILELINE 0 3 x y..., @LINE 3 x y... in a 0..1024 cell).",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES write v1 and v6"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/pes/owner-v.pas and owner-v.pmf (PE-DESIGN 11.50 Programmable Stitch Creator, 2026-10-29): 72 and 61 bytes of ASCII, CRLF, the directives above; Default Size 7.5 mm"
+    },
+    {
+      "kind": "measured",
+      "note": "compat/reference/pes/obj-*.pes: 641, 144 and 47 stitches for the 30 x 20 mm rectangle"
+    }
+  ],
+  "inputs": [
+    {
+      "from": "compat/reference/pes/obj-progfill-owner-v.pes",
+      "name": "obj-progfill-owner-v.pes"
+    },
+    {
+      "from": "compat/reference/pes/obj-motif-fill-owner-v.pes",
+      "name": "obj-motif-fill-owner-v.pes"
+    },
+    {
+      "from": "compat/reference/pes/obj-motif-line-owner-v.pes",
+      "name": "obj-motif-line-owner-v.pes"
+    }
+  ],
+  "script": [],
+  "exports": [
+    {
+      "path": "obj-progfill-owner-v-rt.pes",
+      "fromInput": "obj-progfill-owner-v.pes"
+    },
+    {
+      "path": "obj-motif-fill-owner-v-rt.pes",
+      "fromInput": "obj-motif-fill-owner-v.pes"
+    },
+    {
+      "path": "obj-motif-line-owner-v-rt.pes",
+      "fromInput": "obj-motif-line-owner-v.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design-progfill-owner-v",
+      "file": "pes/obj-progfill-owner-v.pes",
+      "make": "The rectangle described in the spec; region Prog. Save As PES (default type)."
+    },
+    {
+      "id": "pe-design-motif-fill-owner-v",
+      "file": "pes/obj-motif-fill-owner-v.pes",
+      "make": "The rectangle described in the spec; region Motif Stitch, Pattern1 = owner-v at 5.0 x 5.0 mm, H/V-Arrange first buttons, H/V-Offset 0.0, H/V-Spacing 0.0, Pattern2 off, Direction 0, Row offset 0.0, Run pitch 5.0; line Running Stitch red. Save As PES (default type)."
+    },
+    {
+      "id": "pe-design-motif-line-owner-v",
+      "file": "pes/obj-motif-line-owner-v.pes",
+      "make": "The rectangle described in the spec; region Not Sewn (Region); line Motif Stitch with Motif = owner-v at 5.0 x 5.0 mm, H/V-Arrange first buttons, Offset 0.0, Spacing 0.0, Run pitch 5.0, Start/End Type Feed. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "obj-progfill-owner-v-roundtrip",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "obj-progfill-owner-v-rt.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file read and written again keeps its stitches and colours",
+      "reference": {
+        "id": "pe-design-progfill-owner-v"
+      }
+    },
+    {
+      "id": "obj-progfill-owner-v-version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "obj-progfill-owner-v-rt.pes"
+      },
+      "expected": "0060",
+      "evidence": "OpenStitch writes PES 6 (issue #120: a #PES0110 writer would keep the editable objects)"
+    },
+    {
+      "id": "obj-motif-fill-owner-v-roundtrip",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "obj-motif-fill-owner-v-rt.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file read and written again keeps its stitches and colours",
+      "reference": {
+        "id": "pe-design-motif-fill-owner-v"
+      }
+    },
+    {
+      "id": "obj-motif-fill-owner-v-version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "obj-motif-fill-owner-v-rt.pes"
+      },
+      "expected": "0060",
+      "evidence": "OpenStitch writes PES 6 (issue #120: a #PES0110 writer would keep the editable objects)"
+    },
+    {
+      "id": "obj-motif-line-owner-v-roundtrip",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "obj-motif-line-owner-v-rt.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file read and written again keeps its stitches and colours",
+      "reference": {
+        "id": "pe-design-motif-line-owner-v"
+      }
+    },
+    {
+      "id": "obj-motif-line-owner-v-version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "obj-motif-line-owner-v-rt.pes"
+      },
+      "expected": "0060",
+      "evidence": "OpenStitch writes PES 6 (issue #120: a #PES0110 writer would keep the editable objects)"
+    }
+  ]
+}

@@ -16,7 +16,9 @@
 
 use crate::io::{ByteReader, ByteWriter};
 use crate::{FormatError, Result, pec};
-use openstitch_core::{Command, PEC_CHART, StitchPattern, Thread, nearest_index, round_coordinate};
+use openstitch_core::{
+    Command, StitchPattern, Thread, nearest_index, pec_basic_chart, round_coordinate,
+};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
@@ -63,6 +65,10 @@ pub struct ObjectSection {
     pub objects: Vec<EmbOne>,
     /// PE-DESIGN 11 (`#PES0110`) editable shapes (`CEmbLine`), in file order.
     pub shapes: Vec<crate::pes11::Shape>,
+    /// PE-DESIGN 11 groups: the member indexes of each `CGroupObject`.
+    pub groups: Vec<Vec<u16>>,
+    /// PE-DESIGN 11 Design Page size in mm, when the header had the mapped layout.
+    pub page_mm: Option<(u16, u16)>,
     /// The first object class that was not parsed, if any.
     pub unparsed: Option<String>,
 }
@@ -293,6 +299,8 @@ pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
             let objects = crate::pes11::read_objects(data, r.offset, pec_offset)?;
             section.threads = objects.threads;
             section.shapes = objects.shapes;
+            section.groups = objects.groups;
+            section.page_mm = objects.page_mm;
             section.unparsed = objects.unparsed;
             return Ok(section);
         }
@@ -444,6 +452,9 @@ pub enum Version {
     V1,
     #[default]
     V6,
+    /// PE-DESIGN 11's `#PES0110` with editable objects: written by [`crate::pes11::write`]
+    /// from a design's objects, not from a stitch pattern ([`write_with`] refuses it).
+    V11,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -469,8 +480,18 @@ impl WriteOptions {
     /// The `pesVersion` string of [`WriteOptions::default`].
     pub const DEFAULT_NAME: &str = "6";
 
-    /// Parses pyembroidery's version strings: `1`, `1t`, `6`, `6t`.
+    /// The version strings [`parse`](Self::parse) accepts, for messages.
+    pub const NAMES: &str = "1t, 1, 6, 6t or 11";
+
+    /// Parses pyembroidery's version strings `1`, `1t`, `6`, `6t`, and `11` for PE-DESIGN 11's
+    /// editable `#PES0110` (no `t` form: its point is the objects).
     pub fn parse(s: &str) -> Option<Self> {
+        if s == "11" {
+            return Some(Self {
+                version: Version::V11,
+                truncated: false,
+            });
+        }
         let (v, truncated) = match s.strip_suffix('t') {
             Some(v) => (v, true),
             None => (s, false),
@@ -489,6 +510,12 @@ pub fn write(pattern: &StitchPattern) -> Result<Vec<u8>> {
 }
 
 pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u8>> {
+    if options.version == Version::V11 {
+        return Err(FormatError::UnsupportedFormat(
+            "PES 0110 is written from a design's editable objects (pes11::write), not from stitches"
+                .into(),
+        ));
+    }
     let mut w = ByteWriter::default();
     if options.version == Version::V1 && options.truncated {
         w.ascii("#PES0001");
@@ -500,7 +527,7 @@ pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u
     let pattern = pec::prepare(input);
     w.ascii(match options.version {
         Version::V1 => "#PES0001",
-        Version::V6 => "#PES0060",
+        Version::V6 | Version::V11 => "#PES0060",
     });
     let pec_placeholder = w.len();
     w.u32le(0);
@@ -510,7 +537,7 @@ pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u
             w.u16le(1); // scale to fit
             w.u16le(1); // hoop
         }
-        Version::V6 => write_header_v6(&mut w, &pattern)?,
+        Version::V6 | Version::V11 => write_header_v6(&mut w, &pattern)?,
     }
     if options.truncated {
         w.u16le(0);
@@ -548,7 +575,7 @@ pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u
     Ok(w.bytes)
 }
 
-fn write_string8(w: &mut ByteWriter, s: Option<&str>) {
+pub(crate) fn write_string8(w: &mut ByteWriter, s: Option<&str>) {
     let Some(s) = s else {
         w.u8(0);
         return;
@@ -679,8 +706,8 @@ fn write_blocks(w: &mut ByteWriter, pattern: &StitchPattern, version: Version) -
 /// stitch runs, so without it the needle never goes down where the jump lands.
 fn segments(pattern: &StitchPattern, version: Version, min_x: f64, max_y: f64) -> Vec<SewSegment> {
     let chart: Vec<Option<Thread>> = match version {
-        Version::V1 => PEC_CHART.to_vec(),
-        Version::V6 => pattern.threads.iter().cloned().map(Some).collect(),
+        Version::V1 => pec_basic_chart().to_vec(),
+        Version::V6 | Version::V11 => pattern.threads.iter().cloned().map(Some).collect(),
     };
     let code = |i: usize| {
         pattern

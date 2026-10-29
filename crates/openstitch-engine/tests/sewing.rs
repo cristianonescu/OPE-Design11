@@ -69,6 +69,43 @@ fn sewing_stitches_are_defined_listed_exported_and_undone() {
             .expect("pmv")
             .starts_with(b"#PMV0001")
     );
+    // The exported PMV imports again as a decorative stitch with the same needle points.
+    run(
+        &mut s,
+        "sewing.import",
+        json!({"path": "satin.pmv", "id": "satin-back", "name": "Satin back"}),
+    );
+    let back = s
+        .design()
+        .sewing
+        .iter()
+        .find(|q| q.id == "satin-back")
+        .expect("imported")
+        .clone();
+    assert_eq!(back.kind, SewingKind::Decorative);
+    let original = s
+        .design()
+        .sewing
+        .iter()
+        .find(|q| q.id == "my-satin")
+        .expect("original")
+        .needles();
+    assert_eq!(back.points.len(), original.len());
+    for (a, b) in back.points.iter().zip(&original) {
+        assert!(
+            (a.x - b.x).abs() <= 0.25 + 1e-9 && (a.y - b.y).abs() <= 0.25 + 1e-9,
+            "{a:?} {b:?}"
+        );
+    }
+    run(&mut s, "sewing.import", json!({"path": "satin.pmv"}));
+    assert!(
+        s.design()
+            .sewing
+            .iter()
+            .any(|q| q.id == "satin" && q.name == "satin")
+    );
+    run(&mut s, "sewing.delete", json!({"id": "satin"}));
+    run(&mut s, "sewing.delete", json!({"id": "satin-back"}));
     // The exported JSON (with needles) imports again.
     run(&mut s, "sewing.delete", json!({"id": "my-satin"}));
     assert_eq!(s.design().sewing.len(), 3);
@@ -153,7 +190,8 @@ fn hostile_sewing_input_fails_cleanly() {
     }
     std::fs::write(root.join("bin.json"), [0xff, 0x00]).expect("write");
     std::fs::write(root.join("big.json"), vec![b' '; (1 << 20) + 1]).expect("write");
-    for f in ["bin.json", "big.json"] {
+    std::fs::write(root.join("short.pmv"), b"#PMV0001....").expect("write");
+    for f in ["bin.json", "big.json", "short.pmv"] {
         assert!(
             s.execute("sewing.import", Some(&json!({"path": f})))
                 .is_err()

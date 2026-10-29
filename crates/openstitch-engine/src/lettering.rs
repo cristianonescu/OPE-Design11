@@ -838,7 +838,12 @@ fn export(s: &mut EngineState, p: &Params) -> Result<Value, CommandError> {
         "pesVersion",
         Some(openstitch_formats::pes::WriteOptions::DEFAULT_NAME),
     )?)
-    .ok_or_else(|| p.invalid("pesVersion", "use 1t, 1, 6 or 6t"))?;
+    .ok_or_else(|| {
+        p.invalid(
+            "pesVersion",
+            "use 1t, 1, 6 or 6t (11 needs a design's shapes: design.export)",
+        )
+    })?;
     let dir = p.string("dir", Some(""))?;
     // Every row is laid out, compiled and encoded before any file is written.
     let mut files = Vec::new();

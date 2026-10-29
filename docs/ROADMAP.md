@@ -5,7 +5,7 @@
 | 1 Tooling | Rust workspace, CI on three OSes, fixture generators | Done. |
 | 2 Reference research | Guide-based feature inventory; reference files from a licensed PE-DESIGN 11 | Done: inventory from the public guide; reference files made in a licensed PE-DESIGN 11.50 since 2026-10-27 (`compat/reference/`, provenance in `MANIFEST.json`). |
 | 3 Core engine | Stitch model, threads, document operations, stitch generation | Done: design model, all guide sew types, compiler, command registry, undo, `.osd` projects, CLI and JSON control, MCP. |
-| 4 File interoperability | Every format PE-DESIGN 11 reads or writes; round-trip tests | DST, EXP, JEF, PCS, SEW, XXX, HUS and VIP written record for record as PE-DESIGN 11.50 exports them (reference tier, 2026-10-28); PES, PEC and the readers at oracle tier with fuzzing; SHV, PHC, CSD read-only; PES v1/v6 object section; PE-DESIGN 11 (`#PES0110`) metadata, thread table and editable shapes read; SVG and image import; split exports. |
+| 4 File interoperability | Every format PE-DESIGN 11 reads or writes; round-trip tests | DST, EXP, JEF, PCS, SEW, XXX, HUS and VIP written record for record as PE-DESIGN 11.50 exports them (reference tier, 2026-10-28); PES, PEC and the readers at oracle tier with fuzzing; SHV, PHC, CSD read-only; PES v1/v6 object section; PE-DESIGN 11 (`#PES0110`) metadata, thread table and editable shapes read, and shapes written as editable objects (`pesVersion` 11, 2026-10-29, unverified in PE-DESIGN); SVG and image import; split exports. |
 | 5 Desktop interface | Cross-platform editor (egui) | Done: drawing, Bézier pen and point editing, selection, inspector, object list, undo, simulator, wizards, Design Database mode, Stitch Creator, Stitch Design Factory, printing, USB transfer, self-update, unsaved-changes prompt on close/new/open (macOS: Cmd+Q and Cmd+W too, no system menu). |
 | 6 Advanced | Digitizing, lettering, complex fills, suite programs | Done as independent approximations: Auto Punch, Cross Stitch, Photo Stitch, Design Center; full lettering suite and Font Creator. |
 | 7 Validation | Reference suite, gap closing | In progress: the compatibility harness (`stitchtool compat`) compares OpenStitch's output with PE-DESIGN 11.50's files spec by spec; [COMPATIBILITY_STATUS.md](COMPATIBILITY_STATUS.md) shows the tier each row has reached. No sew-out on a machine yet. |
@@ -43,7 +43,7 @@ for macOS, Windows and Linux. CI builds and tests all three.
 - **Wizards:** background fill (echo, stippling, decorative, crosshatch, stripes), appliqué,
   embroidered patch, cutwork.
 - **Suite programs:** Programmable Stitch Creator (`openstitch.pattern`), Stitch Design Factory
-  (`openstitch.sewing`, SVG and experimental PMV export), Design Database (`openstitch-library`:
+  (`openstitch.sewing`, SVG and experimental PMV export and import), Design Database (`openstitch-library`:
   browse, search, organise, convert, catalogues; `library.*` commands).
 - **Machine and workspace:** machine types, Brother and user hoops, sewing area, thread length
   and sewing time, measure tool, rulers, grid, Reference window, realistic preview; split
@@ -98,6 +98,9 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    several parts (right leg, left leg, then the top bar ending at the first vertex); under
    sewing Density Dense / Light (the second under sewing type, `cross`, is done for fill and
    satin since 2026-10-28, specs sweep-fill-us-type-2 and sweep-satin-us-type-2).
+   Density floor: 0.1 lines/mm for fill and satin, as PE-DESIGN 11.50's field and the
+   `sweep-*-density-min` references (#139's 0.2 floor was checked against them on 2026-10-29
+   and not adopted; `attribute-ranges` covers the boundaries).
 2. **Satin:** Half Stitch for Auto satin (the corner fan now produces the crowding it acts
    on); Miter limit. Auto satin's needle lattice (whole spacings from the far end, the
    remainder at the start point), its forward start travel and its end on the start point
@@ -124,6 +127,8 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    `text.add`, fit each preset's envelope as a function of the value from the parked
    level files, and re-fit the cap-height box (presets 3, 9, 10, 14, 17 miss by up to 2 mm
    on descender letters).
+   distance 0.27 → 0.20 mm; #121 kept it and lifted the 256-chord ceiling, 2026-10-29); Text
+   Transform presets 13 and 14 (fan out / in) done 2026-10-28.
    Left: per-character colour and
    multi-character selection; Connection Points; minimum font sizes and small-text fonts;
    kerning that reflows the line; editing several characters at once on the canvas; shaping for
@@ -138,14 +143,34 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    (fill track) and the multi-needle minimum-length field's value; the same compares on a
    design with short moves. The parked references (satin gradation, Text Transform presets 13
    and 14, under sewing type 2, satin density minimum, the trim bound) have all landed.
-6. **PES:** turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
+   Round 4 (2026-10-29): PE-DESIGN's DST divides an over-long move evenly into
+   121-unit records (long-jump-300, reference tier) and its oversize export carries no
+   hoop check (hoop-oversize-export). Parked with their numbers: the ten-format export of
+   a two-colour design (the PES reader drops PE-DESIGN's tie-in needle points, 4 per
+   file; `stitches.import` of a DST merges its two colours; the CSD reader misreads a real
+   file; SHV one colour change over), PE-DESIGN's PES of the 350 mm move (PEC encoding
+   beyond 204.7 mm unknown) and of the oversize design (211 x 229 mm read for 129 x 105).
+6. **PES:** turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects
+   (round 4 added programmable-fill, motif-fill and motif-line samples with an owner pattern,
+   and the `.pas` / `.pmf` pattern sources for an importer, #131);
    write editable shapes and text; PES v7–v11 and the hoop and Design Page fields (from the
    owner's own files only, as [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
+6. **PES:** editable shapes are written (`pesVersion` 11 writes `CEmbLine` objects in PE-DESIGN
+   11.50's layout, 2026-10-29; issue #120). Left: PE-DESIGN opening such a file with the shape
+   editable (compat `pes-0110-editable-shapes`, the owner's check); turn the `#PES0110` shapes
+   the reader parses into editable OpenStitch objects; write text (`CEmbNText`/`CTTFLetter`), the
+   other region and line types, hole-sewing pairs and several outlines per object; the hoop
+   fields; PES v7–v10 (from the owner's own files only, as
+   [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
    stroke only) and an exact medial axis instead of the grid approximation.
-8. **Formats:** CSD export (no public writer). PEC moves over 204.7 mm split as PE-DESIGN's
-   DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such a move (parked PES of
-   `long-jump-300`).
+8. **Formats:** CSD export (no public writer); the CSD reader against PE-DESIGN's real file
+   (parked round-4 export: 2 stitches and 51 colour changes read). PEC moves over 204.7 mm
+   split as PE-DESIGN's DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such
+   a move (parked PES of `long-jump-300`). Colour matching is equal-weight squared Euclidean
+   with an "approximate" city-block matcher since 2026-10-29 (#119), checked against the owner's
+   twelve-swatch capture; left: Brother catalogue codes for SVG and hex fills, the sew palette
+   and user-chart CSV schema (#136), per-machine export limits and hoop codes (#125).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo
@@ -159,6 +184,8 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
     `max(4, round(param · 100 / mmPerPx²))` small-region floor at 4-connectivity and the
     centerline-thinness satin-vs-fill test done 2026-10-29 (#127); Cross Stitch shares that
     prepass with documented grid and per-cell defaults since 2026-10-29 (#132). Next: the rotating-line coverage model for
+    centerline-thinness satin-vs-fill test done 2026-10-29 (#127). Next: Cross Stitch sharing
+    that prepass with documented grid and per-cell defaults (#132); the rotating-line coverage model for
     Photo Stitch 2 only if the captures show the zigzag model is the dominant remaining
     difference (#129). Each is compared with pe-refs-4's captures of PE-DESIGN's output at
     defaults when they land.
@@ -219,6 +246,24 @@ US 7996103 for the deferred direction-aware photo stitch, and BriTon Leap's fami
 files from stitch data and for tracing a bitmap of stitch data, which concern
 `object.toShapes`, B12 on stitch blocks and B14's fill fallback; the rest shown expired or
 ceased). Not legal advice: the list for the owner's lawyer.
+
+## Pattern and font files (Phase 6, #130 #131 #134)
+
+Only files the owner makes in PE-DESIGN's own tools (Programmable Stitch Creator, Stitch
+Design Factory, Font Creator) and saves through the normal interface are studied; Brother's
+bundled patterns, motifs and fonts are never read. Done: PMV read (2026-10-29, the documented
+layout, every byte checked). Waiting for the owner-made samples: PE-DESIGN's own PMV files (a
+2- and a 4-point decorative stitch), Programmable Stitch Creator saves (a 2-point line, a
+4-point square, two separate lines; a motif; a decorative-fill row) with a programmable fill
+and a motif fill sewn from them, and a Font Creator font of one and two owner-drawn glyphs
+with text set in it. Each lands as its own PR with the fixtures' provenance in a MANIFEST.
+bundled patterns, motifs and fonts are never read. Done: import of `.pas`/`.pmf`/`.plf` text
+sources in the documented `@DIRECTIVE` layout (2026-10-29). Waiting for the owner-made samples:
+Programmable Stitch Creator saves (a 2-point line, a 4-point square, two separate lines; a
+motif; a decorative-fill row) with a programmable fill and a motif fill sewn from them (to pin
+the physical size and the tiling), PE-DESIGN's own PMV files, and a Font Creator font of one
+and two owner-drawn glyphs with text set in it. Each lands as its own PR with the fixtures'
+provenance in a MANIFEST.
 
 ## Blocked
 

@@ -22,7 +22,7 @@ fn charts_have_expected_sizes_and_entries() {
 }
 
 #[test]
-fn nearest_prefers_later_index_on_ties() {
+fn nearest_is_equal_weight_squared_euclidean_with_later_index_on_ties() {
     let chart = [
         None,
         Some(Thread::rgb(0x000000)),
@@ -30,6 +30,73 @@ fn nearest_prefers_later_index_on_ties() {
     ];
     assert_eq!(nearest_index(&Thread::rgb(0x010101), &chart), Some(2));
     assert_eq!(nearest_index(&Thread::rgb(0xEE1111), &PEC_CHART), Some(5));
+    assert_eq!(nearest_index(&Thread::rgb(0x123456), &[None, None]), None);
+    // No channel weighting: a red step costs the same as a blue step.
+    let a = Thread::rgb(0x000000);
+    assert_eq!(color_distance(&a, &Thread::rgb(0x0A0000)), 100);
+    assert_eq!(color_distance(&a, &Thread::rgb(0x00000A)), 100);
+    assert_eq!(color_distance(&a, &Thread::rgb(0xFFFFFF)), 195075);
+    assert_eq!(city_block_distance(&a, &Thread::rgb(0xFFFFFF)), 765);
+    // Where red-mean and equal weights disagree: (200,0,0) against (0,0,200) for (100,0,100).
+    // Red-mean weights the blue step less for a dark colour and picked blue; equal weights tie
+    // and keep the later entry.
+    let chart = [Some(Thread::rgb(0xC80000)), Some(Thread::rgb(0x0000C8))];
+    assert_eq!(nearest_index(&Thread::rgb(0x640064), &chart), Some(1));
+}
+
+/// PE-DESIGN 11.50's picks for twelve RGB fills imported from an SVG (owner's capture
+/// `compat/reference/pes/thread-match-swatches.pes`, 2026-10-29, issue #119): Brother chart
+/// entry per fill. Equal-weight squared Euclidean against entries 1–61 reproduces all twelve;
+/// red-mean missed blue and cyan, and the whole 64-entry chart would send orange to 62.
+#[test]
+fn pe_design_swatch_picks_are_reproduced() {
+    let picks = [
+        (0xFF0000, 5),  // 800 RED
+        (0x00FF00, 14), // 513 LIME GREEN
+        (0x0000FF, 2),  // 405 BLUE
+        (0xFFFF00, 13), // 205 YELLOW
+        (0x00FFFF, 32), // 019 SKY BLUE
+        (0xFF00FF, 25), // 086 DEEP ROSE
+        (0x808080, 39), // 817 GRAY
+        (0xC89664, 35), // 348 KHAKI
+        (0x326496, 4),  // 070 CORNFLOWER BLUE
+        (0xF0C8DC, 57), // 124 FLESH PINK
+        (0x145028, 38), // 415 PEACOCK BLUE
+        (0xFF8000, 11), // 214 DEEP GOLD
+    ];
+    for (rgb, index) in picks {
+        assert_eq!(
+            nearest_index(&Thread::rgb(rgb), pec_basic_chart()),
+            Some(index),
+            "{rgb:06x}"
+        );
+    }
+    assert_eq!(pec_basic_chart().len(), PEC_BASIC_COLORS + 1);
+    // PE-DESIGN's thread table carries (253, 217, 222) for entry 57.
+    assert_eq!(
+        PEC_CHART[57].as_ref().map(|t| t.hex()),
+        Some("#fdd9de".into())
+    );
+}
+
+#[test]
+fn approximate_match_follows_the_city_block_winner() {
+    // Euclid² prefers one medium step over two smaller ones; L1 prefers the two smaller ones.
+    // (0,0,0) → candidates (30,0,0): sq 900, L1 30; (12,12,12): sq 432, L1 36.
+    let chart = [Some(Thread::rgb(0x0C0C0C)), Some(Thread::rgb(0x1E0000))];
+    let c = Thread::rgb(0x000000);
+    assert_eq!(nearest_index(&c, &chart), Some(0));
+    assert_eq!(approximate_index(&c, &chart), Some(1));
+    // Exact match: both minima are 0, the Euclidean winner is returned (the same entry).
+    assert_eq!(approximate_index(&Thread::rgb(0x1E0000), &chart), Some(1));
+    // Ties go to the later index on both accumulators, as in `nearest_index`.
+    let chart = [
+        None,
+        Some(Thread::rgb(0x101010)),
+        Some(Thread::rgb(0x101010)),
+    ];
+    assert_eq!(approximate_index(&Thread::rgb(0x000000), &chart), Some(2));
+    assert_eq!(approximate_index(&c, &[None]), None);
 }
 
 #[test]

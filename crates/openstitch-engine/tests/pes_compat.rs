@@ -252,3 +252,63 @@ fn design_properties_survive_osd_and_come_back_on_import() {
             .all(|k| !objects.metadata.contains_key(*k))
     );
 }
+
+#[test]
+fn pes_version_11_writes_editable_shapes_and_refuses_what_it_cannot_hold() {
+    // docs/COMPATIBILITY_AUDIT.md item 5: a rectangle with PE-DESIGN's default attributes
+    // becomes one CEmbLine in a #PES0110 file; text is refused with the object named.
+    let dir = temp_dir("v11");
+    let mut s = Session::new(dir.clone());
+    run(
+        &mut s,
+        "design.new",
+        json!({"name": "v11", "width": 100, "height": 100}),
+    );
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 10, "y": 10, "width": 10, "height": 10, "fill": 16, "outline": 5}),
+    );
+    run(
+        &mut s,
+        "object.setLine",
+        json!({"ids": [1], "type": "zigzag", "color": 5}),
+    );
+    run(
+        &mut s,
+        "design.export",
+        json!({"path": "a.pes", "pesVersion": "11", "split": true}),
+    );
+    let bytes = std::fs::read(dir.join("a.pes")).expect("a.pes");
+    let objects = pes::read_objects(&bytes).expect("objects");
+    assert_eq!(objects.version, "0110");
+    assert_eq!(objects.unparsed, None);
+    assert_eq!(objects.page_mm, Some((100, 100)));
+    assert_eq!(objects.shapes.len(), 1);
+    let shape = &objects.shapes[0];
+    assert_eq!(shape.bounds, [600, 600, 700, 700]);
+    assert_eq!(shape.region, openstitch_formats::pes11::RegionSewType::Fill);
+    assert_eq!(
+        shape.line_type,
+        openstitch_formats::pes11::Shape::LINE_ZIGZAG
+    );
+    assert_eq!(objects.threads.len(), 2);
+    // PE-DESIGN's table has no name field: the catalogue number identifies the colour.
+    assert_eq!(objects.threads[0].catalog_number.as_deref(), Some("16"));
+    assert_eq!(objects.threads[1].catalog_number.as_deref(), Some("5"));
+    assert!(pes::read(&bytes).expect("stitches").stitches.len() > 100);
+
+    run(
+        &mut s,
+        "text.add",
+        json!({"text": "A", "x": 40, "y": 50, "size": 10}),
+    );
+    let err = s
+        .execute(
+            "design.export",
+            Some(&json!({"path": "b.pes", "pesVersion": "11"})),
+        )
+        .expect_err("text is not written as editable yet");
+    assert!(err.to_string().contains("text"), "{err}");
+    assert!(!dir.join("b.pes").exists());
+}

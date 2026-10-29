@@ -1814,6 +1814,18 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-1-openstitch.pes",
+      "spec": "text-transform-1-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 1 (arch over (text on the top of a circle)), default level 30 (half-sweep angle, degrees) with radius 38.4 mm: stored value 30.000, radius 38.4 mm; box (57.3, 84.0)-(142.6, 115.6) mm, 1456 stitches.",
+      "sha256": "f9c6241410174cbd7dafcbf23e8ea7012b071c4aee44495d696421a6b259f438",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-1.pes",
       "spec": "text-transform-1",
       "reference": "pe-design",
@@ -1838,6 +1850,30 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-11-agjy.pes",
+      "spec": "text-transform-11-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 11 (taper growing to the right, symmetric), default level 50 (percent of the font size): stored value 50.000; box (71.8, 84.0)-(128.8, 100.0) mm, 948 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "31a4d07a445f7ecfa1e49db31c94d88c5ea1a794c7b27995f480713bf5750ae7",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-11-openstitch.pes",
+      "spec": "text-transform-11-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 11 (taper growing to the right, symmetric), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 100.0) mm, 1173 stitches.",
+      "sha256": "b3ff06bdbabf76e25a50160d39915d5ed523874a2d775105dc7af26fddefe3e5",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-11.pes",
       "spec": "text-transform-11",
       "reference": "pe-design",
@@ -1850,6 +1886,30 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-12-agjy.pes",
+      "spec": "text-transform-12-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 12 (taper shrinking to the right, symmetric), default level 50 (percent of the font size): stored value 50.000; box (71.8, 84.0)-(128.8, 101.4) mm, 962 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "0df74383f86fd32813edc91b52d4274b5f013b210c0adfdb1a9d8f765dcec47c",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-12-openstitch.pes",
+      "spec": "text-transform-12-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 12 (taper shrinking to the right, symmetric), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 101.4) mm, 1202 stitches.",
+      "sha256": "8ab4f71b3670844629f6c14d8e30613d61b305ff8857c2918364971852168731",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-12.pes",
       "spec": "text-transform-12",
       "reference": "pe-design",
@@ -1859,6 +1919,30 @@
       "os": "Windows 11 Pro 10.0.26200",
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 12: taper shrinking to the right, symmetric. 74,60 x 10,20 mm, 1030 st, box (12.7, 40.0)-(87.3, 50.2) mm. Save As PES default type (#PES0110).",
       "sha256": "afdea450e58d55ba8ab78cec760bc7f4964afc923a7c25f7c4fb68e3d9fd0414",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-13-agjy.pes",
+      "spec": "text-transform-13-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 13 (fan out (bottom drawn in)), default level 30 (degrees): stored value 30.000; box (66.7, 84.0)-(133.8, 102.5) mm, 1014 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "665143ca1939298233787fcf971b48250bcdc962bce590a099c80cfb32963143",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-13-openstitch.pes",
+      "spec": "text-transform-13-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 13 (fan out (bottom drawn in)), default level 30 (degrees): stored value 30.000; box (57.4, 84.1)-(142.6, 102.4) mm, 1247 stitches.",
+      "sha256": "c0b0299f662be1dc2093a84d9777ab408f67cd82c9d16614e928e926440947ee",
       "notes": "Header #PES0110."
     },
     {
@@ -1886,6 +1970,30 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-15-agjy.pes",
+      "spec": "text-transform-15-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 15 (bow up), default level 20 (percent of the font size): stored value 20.000; box (71.8, 85.2)-(128.8, 100.8) mm, 996 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "cb97c9fd55b6c0a601c742476ed67a58d4bf4a6b3de0af47b236b0ef08bdc35a",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-15-openstitch.pes",
+      "spec": "text-transform-15-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 15 (bow up), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 100.8) mm, 1228 stitches.",
+      "sha256": "673f29c394a708af87eea764f776bbba165304d0b1fe5b84e5b3d0c097c93b74",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-15.pes",
       "spec": "text-transform-15",
       "reference": "pe-design",
@@ -1895,6 +2003,30 @@
       "os": "Windows 11 Pro 10.0.26200",
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 15: gentle bow up: top and bottom both curve up in the middle, letter height constant. 74,60 x 10,10 mm, 1068 st, box (12.7, 40.2)-(87.3, 50.3) mm. Save As PES default type (#PES0110).",
       "sha256": "d769a5506314aa19f164a601b9e05f95265af5520a3adb37f9bbed0a0c71b03c",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-16-agjy.pes",
+      "spec": "text-transform-16-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 16 (bow down), default level 20 (percent of the font size): stored value 20.000; box (71.8, 85.2)-(128.8, 101.8) mm, 985 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "6e0a5af51267d4284ce1bf66a8b1eeaecf2f7555656af1af13f186ecb04aeda7",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-16-openstitch.pes",
+      "spec": "text-transform-16-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 16 (bow down), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 101.5) mm, 1228 stitches.",
+      "sha256": "dffe64fe50d5e1327e1e027db82b61c21ad1132d62773dde7c91f56b171fdae6",
       "notes": "Header #PES0110."
     },
     {
@@ -1922,6 +2054,18 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-18-openstitch.pes",
+      "spec": "text-transform-18-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 18 (hill (baseline straight, top bulges)), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 102.1) mm, 1270 stitches.",
+      "sha256": "59bcca2bf66fef4f310c62965656f65d97fc7016e7d1ead0425b15134299a797",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-18.pes",
       "spec": "text-transform-18",
       "reference": "pe-design",
@@ -1931,6 +2075,30 @@
       "os": "Windows 11 Pro 10.0.26200",
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 18: hill: baseline straight, top bulges up in the middle. 74,60 x 10,30 mm, 1121 st, box (12.7, 40.0)-(87.3, 50.3) mm. Save As PES default type (#PES0110).",
       "sha256": "df0eb88f996d0e9aada3946dbf998053e5addecea279e86c7cb7386aa18d5a25",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-19-agjy.pes",
+      "spec": "text-transform-19-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 19 (wave rising left), default level 20 (percent of the font size): stored value 20.000; box (71.8, 85.2)-(128.8, 100.8) mm, 1000 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "d92df73aed68e860871bbe7e2aa1f45c08e64743ca745eaca7ddb723f9db7217",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-19-openstitch.pes",
+      "spec": "text-transform-19-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 19 (wave rising left), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 100.1) mm, 1236 stitches.",
+      "sha256": "d9b37f1cdc082a97edddc05e4db0020c5618aa5b9f55db60b8b6e9bd495f6985",
       "notes": "Header #PES0110."
     },
     {
@@ -1946,6 +2114,18 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-2-openstitch.pes",
+      "spec": "text-transform-2-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 2 (arch under), default level 30 degrees, radius 38.4 mm: stored value 30.000, radius 38.4 mm; box (61.4, 70.3)-(138.2, 100.2) mm, 1457 stitches.",
+      "sha256": "9db65e8c16d22ff3ce87b1404fd972e3ed0e81b5b7a34fcf75d5d0f1e2bd8e19",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-2.pes",
       "spec": "text-transform-2",
       "reference": "pe-design",
@@ -1955,6 +2135,30 @@
       "os": "Windows 11 Pro 10.0.26200",
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 2: arch: text along the bottom of a circle (reverse arch). 78,90 x 26,10 mm, 1317 st, box (10.6, 24.0)-(89.4, 50.1) mm. Save As PES default type (#PES0110).",
       "sha256": "ee3c0d76a6d64ed4e2bf552c801136c9d00bdef40ec77ad2aa662a3cbe34373a",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-20-agjy.pes",
+      "spec": "text-transform-20-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 20 (wave rising right), default level 20 (percent of the font size): stored value 20.000; box (71.8, 85.2)-(128.8, 102.0) mm, 986 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "920f9d66ff5efca07b0c02da67b7baec9550c954aa06fdbe22817dd2df98e5d0",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-20-openstitch.pes",
+      "spec": "text-transform-20-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 20 (wave rising right), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 101.9) mm, 1221 stitches.",
+      "sha256": "d6b4ca8074207e23173313c23f8243d496b34b6f12fa233cfc08c84fcf5800f7",
       "notes": "Header #PES0110."
     },
     {
@@ -1970,6 +2174,30 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-21-agjy.pes",
+      "spec": "text-transform-21-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 21 (pinch), default level 50 (percent of the font size): stored value 50.000; box (71.8, 84.0)-(128.8, 100.3) mm, 904 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "57cf9945e0e4b4f2e0c15df1b63d4403cdb600c9ca8caf5048d2afe2c2b11823",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-21-openstitch.pes",
+      "spec": "text-transform-21-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 21 (pinch), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 100.4) mm, 1105 stitches.",
+      "sha256": "0611f3999367eeaa34ddf76b442c1e902b619227cf3139980ee36dee2ff925c2",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-21.pes",
       "spec": "text-transform-21",
       "reference": "pe-design",
@@ -1979,6 +2207,30 @@
       "os": "Windows 11 Pro 10.0.26200",
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 21: pinch: narrow in the middle, top and bottom curve in, symmetric. 74,60 x 10,10 mm, 953 st, box (12.7, 40.2)-(87.3, 50.3) mm. Save As PES default type (#PES0110).",
       "sha256": "a50e595e4d37ec4509f27e8a16bbbf9c6e62e198a3654b440070fd9e8fca2737",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-22-agjy.pes",
+      "spec": "text-transform-22-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 22 (bulge), default level 50 (percent of the font size): stored value 50.000; box (71.8, 84.0)-(128.8, 102.3) mm, 1003 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "c676c41ea533cd81dd6ff7661d9edd66aa7d500a5c696c1d1da24675a270287e",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-22-openstitch.pes",
+      "spec": "text-transform-22-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 22 (bulge), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 101.6) mm, 1265 stitches.",
+      "sha256": "03a85fef9aed9e8c2506520907c5f03cffa72ba1689b75a8a9ea111e206bf610",
       "notes": "Header #PES0110."
     },
     {
@@ -1994,6 +2246,30 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-23-agjy.pes",
+      "spec": "text-transform-23-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 23 (double wave), default level 20 (percent of the font size): stored value 20.000; box (71.8, 85.2)-(128.8, 101.8) mm, 995 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "8b3aa2c92d109df881c963c0ca256519e405f5cb7885057c93a463392de92d24",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-23-openstitch.pes",
+      "spec": "text-transform-23-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 23 (double wave), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 100.3) mm, 1223 stitches.",
+      "sha256": "1dcc4f7992b770e1ff794c048240dfb9db8ec8e4cab229e9aeac976d15683b81",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-23.pes",
       "spec": "text-transform-23",
       "reference": "pe-design",
@@ -2003,6 +2279,30 @@
       "os": "Windows 11 Pro 10.0.26200",
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 23: double wave: two humps, low in the middle and at the ends, letter height constant. 74,60 x 10,30 mm, 1076 st, box (12.7, 40.0)-(87.3, 50.3) mm. Save As PES default type (#PES0110).",
       "sha256": "921833a9e50a12bcb2b6f86f34aa331e68b41d94c885616f8322d432c7c4be6e",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-24-agjy.pes",
+      "spec": "text-transform-24-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 24 (double wave, mirror), default level 20 (percent of the font size): stored value 20.000; box (71.8, 85.2)-(128.8, 102.0) mm, 990 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "c7814de20f68282bf1123becf3152d6623abb95133707fc7a36d49540748c509",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-24-openstitch.pes",
+      "spec": "text-transform-24-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 24 (double wave, mirror), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 101.9) mm, 1230 stitches.",
+      "sha256": "f38ca76c1a905a1caabcd51342e3e1109184d158895b7d45c98e57b01e8e8e3a",
       "notes": "Header #PES0110."
     },
     {
@@ -2018,6 +2318,30 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-25-agjy.pes",
+      "spec": "text-transform-25-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 25 (top straight, baseline curves up), default level 50 (percent of the font size): stored value 50.000; box (71.8, 84.0)-(128.8, 100.0) mm, 907 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "d76094e8970fd1151c99a41f71c8582edf70513cfa7abf8a4d687d43787e50a8",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-25-openstitch.pes",
+      "spec": "text-transform-25-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 25 (top straight, baseline curves up), default level 50 (percent of the font size): stored value 50.000; box (64.1, 84.0)-(136.5, 100.0) mm, 1101 stitches. (Presets 25 and 26: the same 0.15 mm / 0.1 mm offset applies.)",
+      "sha256": "312280facfc9268a62eea3f5b10d528737af8c84d33028fefc1c0957dff0d80f",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-25.pes",
       "spec": "text-transform-25",
       "reference": "pe-design",
@@ -2027,6 +2351,30 @@
       "os": "Windows 11 Pro 10.0.26200",
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 25: top straight, baseline curves up in the middle (short in the middle, tall at the ends; mirror of 17). 74,60 x 10,00 mm, 959 st, box (12.7, 40.3)-(87.3, 50.3) mm. Save As PES default type (#PES0110).",
       "sha256": "566a2c18e0e57ef1a827e9dc5e3c9ec4a5e72888d8131f6c454901b283a919c1",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-26-agjy.pes",
+      "spec": "text-transform-26-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 26 (top straight, baseline sags), default level 50 (percent of the font size): stored value 50.000; box (71.8, 84.0)-(128.8, 102.3) mm, 1012 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "7c37c8c603f3b78f31e365bb33e02c1378f652c934aac0db942d29e2061e3503",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-26-openstitch.pes",
+      "spec": "text-transform-26-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 26 (top straight, baseline sags), default level 50 (percent of the font size): stored value 50.000; box (64.1, 84.0)-(136.5, 101.0) mm, 1280 stitches. (Presets 25 and 26: the same 0.15 mm / 0.1 mm offset applies.)",
+      "sha256": "0936e6c5d9a09049ecd5a281b4007999b30cd0c0d1037403f80da8c1f40570ac",
       "notes": "Header #PES0110."
     },
     {
@@ -2054,6 +2402,30 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-4-agjy.pes",
+      "spec": "text-transform-4-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 4 (taper shrinking to the right), default level 50 (percent of the font size): stored value 50.000; box (71.8, 84.0)-(128.8, 102.3) mm, 971 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "b3f8498f5624aee122bcae798439b110dd549c903e52ff2e00d7115524410fec",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-4-openstitch.pes",
+      "spec": "text-transform-4-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 4 (taper shrinking to the right), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 102.2) mm, 1203 stitches.",
+      "sha256": "9cc666b5219539439d0662852266ac69f409f2e5d020dd1e9387035b2e022ac4",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-4.pes",
       "spec": "text-transform-4",
       "reference": "pe-design",
@@ -2063,6 +2435,30 @@
       "os": "Windows 11 Pro 10.0.26200",
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 4: taper shrinking to the right. 74,60 x 10,20 mm, 1030 st, box (12.7, 40.0)-(87.3, 50.2) mm. Save As PES default type (#PES0110).",
       "sha256": "eacd32f19fbaa7bb80ab62d318290277dc9d206a00d239170596ba881d08a244",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-5-agjy.pes",
+      "spec": "text-transform-5-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 5 (mild taper, top sloping (small at left)), default level 20 (percent of the font size): stored value 20.000; box (71.8, 85.2)-(128.8, 101.6) mm, 992 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "727cc5c7d98acc2c091af77e87a683fa6669425c47b4e9d4890d60e67206c7aa",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-5-openstitch.pes",
+      "spec": "text-transform-5-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 5 (mild taper, top sloping (small at left)), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 101.6) mm, 1233 stitches.",
+      "sha256": "6e34bfe1c436a380718a39ef74a33309399983969f121fb8c7293683422e0e1c",
       "notes": "Header #PES0110."
     },
     {
@@ -2078,6 +2474,30 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-6-agjy.pes",
+      "spec": "text-transform-6-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 6 (mild taper, mirror of 5), default level 20 (percent of the font size): stored value 20.000; box (71.8, 85.2)-(128.8, 100.8) mm, 996 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "d7294ab988a8be343e47ff16456d87474f3c4434850352fb70dd9d229f497385",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-6-openstitch.pes",
+      "spec": "text-transform-6-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 6 (mild taper, mirror of 5), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 100.5) mm, 1228 stitches.",
+      "sha256": "969e5fd0706fc047c7974c1c14c535e80e53b0b5f305dc7dbf6ffa49cb159722",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-6.pes",
       "spec": "text-transform-6",
       "reference": "pe-design",
@@ -2090,6 +2510,30 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "text/text-transform-7-agjy.pes",
+      "spec": "text-transform-7-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 7 (taper, baseline straight, growing to the right), default level 50 (percent of the font size): stored value 50.000; box (71.8, 84.0)-(128.8, 100.5) mm, 944 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "4ca4633078f54195c7ba901d83ad0d0538c922db299c609e1b75ca085e696783",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-7-openstitch.pes",
+      "spec": "text-transform-7-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 7 (taper, baseline straight, growing to the right), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 100.0) mm, 1188 stitches.",
+      "sha256": "e014ae79caa729a8b23ed03e14a4a4560f73b701717aac04e1aa3246f69eb84a",
+      "notes": "Header #PES0110."
+    },
+    {
       "file": "text/text-transform-7.pes",
       "spec": "text-transform-7",
       "reference": "pe-design",
@@ -2099,6 +2543,30 @@
       "os": "Windows 11 Pro 10.0.26200",
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 7: taper with the baseline straight, growing to the right. 74,60 x 10,30 mm, 1045 st, box (12.7, 40.0)-(87.3, 50.3) mm. Save As PES default type (#PES0110).",
       "sha256": "e1fa99891884bfb2b9ca64be1b200238b4daeeee1505c35171b23721c87629a5",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-8-agjy.pes",
+      "spec": "text-transform-8-agjy",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 8 (taper, baseline straight, shrinking to the right), default level 50 (percent of the font size): stored value 50.000; box (71.8, 84.0)-(128.8, 101.8) mm, 975 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
+      "sha256": "feb88e0e2ec190effd644db449d45b53f6fdbeb95a8888e0b35f1297a467d83d",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "text/text-transform-8-openstitch.pes",
+      "spec": "text-transform-8-openstitch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 8 (taper, baseline straight, shrinking to the right), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 101.8) mm, 1202 stitches.",
+      "sha256": "b2a2993ee052ecf32c52c58975e150a97def8fb150b81052bfd26fba7be40445",
       "notes": "Header #PES0110."
     },
     {
@@ -2123,258 +2591,6 @@
       "os": "Windows 11 Pro 10.0.26200",
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 9: slant forward (italic). 75,10 x 10,30 mm, 1250 st, box (12.5, 40.0)-(87.6, 50.3) mm. Save As PES default type (#PES0110).",
       "sha256": "4100bc02fa8a783d55833d88284ecea24ed70f50f6d1065e4203cf54a79eb271",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-1-openstitch.pes",
-      "spec": "text-transform-1-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 1 (arch over (text on the top of a circle)), default level 30 (half-sweep angle, degrees) with radius 38.4 mm: stored value 30.000, radius 38.4 mm; box (57.3, 84.0)-(142.6, 115.6) mm, 1456 stitches.",
-      "sha256": "f9c6241410174cbd7dafcbf23e8ea7012b071c4aee44495d696421a6b259f438",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-2-openstitch.pes",
-      "spec": "text-transform-2-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 2 (arch under), default level 30 degrees, radius 38.4 mm: stored value 30.000, radius 38.4 mm; box (61.4, 70.3)-(138.2, 100.2) mm, 1457 stitches.",
-      "sha256": "9db65e8c16d22ff3ce87b1404fd972e3ed0e81b5b7a34fcf75d5d0f1e2bd8e19",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-4-openstitch.pes",
-      "spec": "text-transform-4-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 4 (taper shrinking to the right), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 102.2) mm, 1203 stitches.",
-      "sha256": "9cc666b5219539439d0662852266ac69f409f2e5d020dd1e9387035b2e022ac4",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-5-openstitch.pes",
-      "spec": "text-transform-5-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 5 (mild taper, top sloping (small at left)), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 101.6) mm, 1233 stitches.",
-      "sha256": "6e34bfe1c436a380718a39ef74a33309399983969f121fb8c7293683422e0e1c",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-6-openstitch.pes",
-      "spec": "text-transform-6-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 6 (mild taper, mirror of 5), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 100.5) mm, 1228 stitches.",
-      "sha256": "969e5fd0706fc047c7974c1c14c535e80e53b0b5f305dc7dbf6ffa49cb159722",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-7-openstitch.pes",
-      "spec": "text-transform-7-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 7 (taper, baseline straight, growing to the right), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 100.0) mm, 1188 stitches.",
-      "sha256": "e014ae79caa729a8b23ed03e14a4a4560f73b701717aac04e1aa3246f69eb84a",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-8-openstitch.pes",
-      "spec": "text-transform-8-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 8 (taper, baseline straight, shrinking to the right), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 101.8) mm, 1202 stitches.",
-      "sha256": "b2a2993ee052ecf32c52c58975e150a97def8fb150b81052bfd26fba7be40445",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-11-openstitch.pes",
-      "spec": "text-transform-11-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 11 (taper growing to the right, symmetric), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 100.0) mm, 1173 stitches.",
-      "sha256": "b3ff06bdbabf76e25a50160d39915d5ed523874a2d775105dc7af26fddefe3e5",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-12-openstitch.pes",
-      "spec": "text-transform-12-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 12 (taper shrinking to the right, symmetric), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 101.4) mm, 1202 stitches.",
-      "sha256": "8ab4f71b3670844629f6c14d8e30613d61b305ff8857c2918364971852168731",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-13-openstitch.pes",
-      "spec": "text-transform-13-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 13 (fan out (bottom drawn in)), default level 30 (degrees): stored value 30.000; box (57.4, 84.1)-(142.6, 102.4) mm, 1247 stitches.",
-      "sha256": "c0b0299f662be1dc2093a84d9777ab408f67cd82c9d16614e928e926440947ee",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-15-openstitch.pes",
-      "spec": "text-transform-15-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 15 (bow up), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 100.8) mm, 1228 stitches.",
-      "sha256": "673f29c394a708af87eea764f776bbba165304d0b1fe5b84e5b3d0c097c93b74",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-16-openstitch.pes",
-      "spec": "text-transform-16-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 16 (bow down), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 101.5) mm, 1228 stitches.",
-      "sha256": "dffe64fe50d5e1327e1e027db82b61c21ad1132d62773dde7c91f56b171fdae6",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-18-openstitch.pes",
-      "spec": "text-transform-18-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 18 (hill (baseline straight, top bulges)), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 102.1) mm, 1270 stitches.",
-      "sha256": "59bcca2bf66fef4f310c62965656f65d97fc7016e7d1ead0425b15134299a797",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-19-openstitch.pes",
-      "spec": "text-transform-19-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 19 (wave rising left), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 100.1) mm, 1236 stitches.",
-      "sha256": "d9b37f1cdc082a97edddc05e4db0020c5618aa5b9f55db60b8b6e9bd495f6985",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-20-openstitch.pes",
-      "spec": "text-transform-20-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 20 (wave rising right), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 101.9) mm, 1221 stitches.",
-      "sha256": "d6b4ca8074207e23173313c23f8243d496b34b6f12fa233cfc08c84fcf5800f7",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-21-openstitch.pes",
-      "spec": "text-transform-21-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 21 (pinch), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 100.4) mm, 1105 stitches.",
-      "sha256": "0611f3999367eeaa34ddf76b442c1e902b619227cf3139980ee36dee2ff925c2",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-22-openstitch.pes",
-      "spec": "text-transform-22-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 22 (bulge), default level 50 (percent of the font size): stored value 50.000; box (63.8, 84.1)-(136.2, 101.6) mm, 1265 stitches.",
-      "sha256": "03a85fef9aed9e8c2506520907c5f03cffa72ba1689b75a8a9ea111e206bf610",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-23-openstitch.pes",
-      "spec": "text-transform-23-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 23 (double wave), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 100.3) mm, 1223 stitches.",
-      "sha256": "1dcc4f7992b770e1ff794c048240dfb9db8ec8e4cab229e9aeac976d15683b81",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-24-openstitch.pes",
-      "spec": "text-transform-24-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 24 (double wave, mirror), default level 20 (percent of the font size): stored value 20.000; box (63.8, 85.3)-(136.2, 101.9) mm, 1230 stitches.",
-      "sha256": "f38ca76c1a905a1caabcd51342e3e1109184d158895b7d45c98e57b01e8e8e3a",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-25-openstitch.pes",
-      "spec": "text-transform-25-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 25 (top straight, baseline curves up), default level 50 (percent of the font size): stored value 50.000; box (64.1, 84.0)-(136.5, 100.0) mm, 1101 stitches. (Presets 25 and 26: the same 0.15 mm / 0.1 mm offset applies.)",
-      "sha256": "312280facfc9268a62eea3f5b10d528737af8c84d33028fefc1c0957dff0d80f",
-      "notes": "Header #PES0110."
-    },
-    {
-      "file": "text/text-transform-26-openstitch.pes",
-      "spec": "text-transform-26-openstitch",
-      "reference": "pe-design",
-      "madeBy": "Cristian Onescu",
-      "peDesignVersion": "11.50",
-      "date": "2026-10-29",
-      "os": "Windows 11 Pro 10.0.26300",
-      "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"OpenStitch\", preset 26 (top straight, baseline sags), default level 50 (percent of the font size): stored value 50.000; box (64.1, 84.0)-(136.5, 101.0) mm, 1280 stitches. (Presets 25 and 26: the same 0.15 mm / 0.1 mm offset applies.)",
-      "sha256": "0936e6c5d9a09049ecd5a281b4007999b30cd0c0d1037403f80da8c1f40570ac",
       "notes": "Header #PES0110."
     },
     {
@@ -2592,6 +2808,186 @@
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1), loaded for the current Windows user through the Fonts shell folder; PE-DESIGN restarted and lists it as \"Lato\". App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on). Home > Text > first tool \"A\"; Text tab: font Lato, size 10.0, line Not Sewn (Line), region Fill Stitch, colour 800 EMBROIDERY RED; Text Attributes: Alignment Center, Kerning 0.0, Vertical Offset 0.0, Rotate 0, Character Spacing 0.0, Line Spacing 100 %, horizontal. Sewing Attributes as PE-DESIGN shows them for the text: Under sewing unticked, Density 5.0 line/mm, Half Stitch unticked, Pull compensation 0.0 mm. Clicked the page at (50, 50) mm (the click sets the baseline), typed the text, Select tool. Text Attributes > Transform ticked, then the preset clicked in the palette (numbered in reading order: the two round icons first, then the 4 x 6 grid row by row). TRANSFORM LEVEL: PE-DESIGN 11.50 has no numeric level; the strength is set by dragging a green diamond handle on the canvas and the value is stored in the file (a float32 0x7E bytes after the last UTF-16 font name in the CEmbDText object; a second float32 4 bytes later is the arch radius in 0.1 mm). This file was saved right after clicking the preset, i.e. at the preset's DEFAULT level, with the handle untouched. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Box positions: the CEmbDText box from the file, 0.1 mm units in page coordinates (origin top-left, y down). This file: text \"Agjy 123\", preset 26 (top straight, baseline sags), default level 50 (percent of the font size): stored value 50.000; box (71.8, 84.0)-(128.8, 102.3) mm, 1012 stitches. The text sits 0.15 mm right of and 0.1 mm below (50, 50): a stray drag moved it before the Agjy files were made.",
       "sha256": "7c37c8c603f3b78f31e365bb33e02c1378f652c934aac0db942d29e2061e3503",
       "notes": "Header #PES0110."
+    },
+    {
+      "file": "pes/obj-progfill-owner-v.pes",
+      "spec": "pes-objects-owner-patterns",
+      "reference": "pe-design-progfill-owner-v",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Owner-drawn patterns made in Programmable Stitch Creator (Option menu): New Fill/Stamp Pattern, Draw Line tool, points (0,0) (512,768) (1024,0) of the 0..1024 cell, Save As pes/owner-v.pas (Fill/Stamp Files, Default Size 7.5 mm); New Motif Pattern, Select Point: a click on the fixed base line adds a point, dragged to (512,768): V, Save As pes/owner-v.pmf (Motif Files, Default Size 7.5 mm). Both are ASCII (@VERSION 10000, @SYSENV 1, @TILE/@TILELINE or @LINE). Layout & Editing: App menu > New (100 x 100 mm), Home > Shapes > Rectangle dragged (20, 20)-(50, 40) mm, line Running Stitch (tool state, pitch 2.0), region as below, colour 007 EMBROIDERY PRUSSIAN BLUE (region) and 800 RED (line), Sewing Attributes region: under sewing off, density 4.5, Direction Manual straight line 45, pull 0.0. Patterns are chosen with the folder button of the Programmable fill / Pattern1 / Motif section (Browse dialog, its folder button opens a folder tree; the owner's folder with the two files). Save As PES default type. This file: region Prog. Fill Stitch with the owner-v pattern at 7.5 x 7.5 mm, Direction 0, Offset row 0 %, Base Sewing off; line Running Stitch red (the 300 x 300 page used earlier was set back to 100 x 100 first). 30.00 x 20.00 mm, 641 st (PE-DESIGN's built-in default pattern gave 1485 and was replaced before saving).",
+      "sha256": "5adffe08327bccf391412e2ecf4264f3ec40258658685f239e7b554b6b7db4b3",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "pes/obj-motif-fill-owner-v.pes",
+      "spec": "pes-objects-owner-patterns",
+      "reference": "pe-design-motif-fill-owner-v",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Owner-drawn patterns made in Programmable Stitch Creator (Option menu): New Fill/Stamp Pattern, Draw Line tool, points (0,0) (512,768) (1024,0) of the 0..1024 cell, Save As pes/owner-v.pas (Fill/Stamp Files, Default Size 7.5 mm); New Motif Pattern, Select Point: a click on the fixed base line adds a point, dragged to (512,768): V, Save As pes/owner-v.pmf (Motif Files, Default Size 7.5 mm). Both are ASCII (@VERSION 10000, @SYSENV 1, @TILE/@TILELINE or @LINE). Layout & Editing: App menu > New (100 x 100 mm), Home > Shapes > Rectangle dragged (20, 20)-(50, 40) mm, line Running Stitch (tool state, pitch 2.0), region as below, colour 007 EMBROIDERY PRUSSIAN BLUE (region) and 800 RED (line), Sewing Attributes region: under sewing off, density 4.5, Direction Manual straight line 45, pull 0.0. Patterns are chosen with the folder button of the Programmable fill / Pattern1 / Motif section (Browse dialog, its folder button opens a folder tree; the owner's folder with the two files). Save As PES default type. This file: region Motif Stitch, Pattern1 = owner-v at 5.0 x 5.0 mm, H/V-Arrange first buttons, H/V-Offset 0.0, H/V-Spacing 0.0, Pattern2 off, Direction 0, Row offset 0.0, Run pitch 5.0; line Running Stitch red. 30.00 x 20.00 mm, 144 st (the built-in default motif gave 237).",
+      "sha256": "d88daafad7dd68b04669a663f940bc3d83fcb2e97da821d2de72f26f25900f07",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "pes/obj-motif-line-owner-v.pes",
+      "spec": "pes-objects-owner-patterns",
+      "reference": "pe-design-motif-line-owner-v",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Owner-drawn patterns made in Programmable Stitch Creator (Option menu): New Fill/Stamp Pattern, Draw Line tool, points (0,0) (512,768) (1024,0) of the 0..1024 cell, Save As pes/owner-v.pas (Fill/Stamp Files, Default Size 7.5 mm); New Motif Pattern, Select Point: a click on the fixed base line adds a point, dragged to (512,768): V, Save As pes/owner-v.pmf (Motif Files, Default Size 7.5 mm). Both are ASCII (@VERSION 10000, @SYSENV 1, @TILE/@TILELINE or @LINE). Layout & Editing: App menu > New (100 x 100 mm), Home > Shapes > Rectangle dragged (20, 20)-(50, 40) mm, line Running Stitch (tool state, pitch 2.0), region as below, colour 007 EMBROIDERY PRUSSIAN BLUE (region) and 800 RED (line), Sewing Attributes region: under sewing off, density 4.5, Direction Manual straight line 45, pull 0.0. Patterns are chosen with the folder button of the Programmable fill / Pattern1 / Motif section (Browse dialog, its folder button opens a folder tree; the owner's folder with the two files). Save As PES default type. This file: region Not Sewn (Region); line Motif Stitch with Motif = owner-v at 5.0 x 5.0 mm, H/V-Arrange first buttons, Offset 0.0, Spacing 0.0, Run pitch 5.0, Start/End Type Feed. 30.00 x 20.00 mm, 47 st (the built-in default motif gave 259 and a 39.5 x 30.8 mm box).",
+      "sha256": "fc5acdc25795d540f46b9b7353b64203420057f69ae41d38129b6611e29f7082",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "pes/owner-v.pas",
+      "spec": "pes-objects-owner-patterns",
+      "reference": "pattern-source",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Owner-drawn patterns made in Programmable Stitch Creator (Option menu): New Fill/Stamp Pattern, Draw Line tool, points (0,0) (512,768) (1024,0) of the 0..1024 cell, Save As pes/owner-v.pas (Fill/Stamp Files, Default Size 7.5 mm); New Motif Pattern, Select Point: a click on the fixed base line adds a point, dragged to (512,768): V, Save As pes/owner-v.pmf (Motif Files, Default Size 7.5 mm). Both are ASCII (@VERSION 10000, @SYSENV 1, @TILE/@TILELINE or @LINE). Layout & Editing: App menu > New (100 x 100 mm), Home > Shapes > Rectangle dragged (20, 20)-(50, 40) mm, line Running Stitch (tool state, pitch 2.0), region as below, colour 007 EMBROIDERY PRUSSIAN BLUE (region) and 800 RED (line), Sewing Attributes region: under sewing off, density 4.5, Direction Manual straight line 45, pull 0.0. Patterns are chosen with the folder button of the Programmable fill / Pattern1 / Motif section (Browse dialog, its folder button opens a folder tree; the owner's folder with the two files). Save As PES default type. This file: the fill/stamp pattern itself, as Programmable Stitch Creator saved it.",
+      "sha256": "8394d46b08618a7b6fd99737c99b51dec76e69859f7b1be907603eb44d2c11f6",
+      "notes": "ASCII pattern source, not a design."
+    },
+    {
+      "file": "pes/owner-v.pmf",
+      "spec": "pes-objects-owner-patterns",
+      "reference": "pattern-source",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Owner-drawn patterns made in Programmable Stitch Creator (Option menu): New Fill/Stamp Pattern, Draw Line tool, points (0,0) (512,768) (1024,0) of the 0..1024 cell, Save As pes/owner-v.pas (Fill/Stamp Files, Default Size 7.5 mm); New Motif Pattern, Select Point: a click on the fixed base line adds a point, dragged to (512,768): V, Save As pes/owner-v.pmf (Motif Files, Default Size 7.5 mm). Both are ASCII (@VERSION 10000, @SYSENV 1, @TILE/@TILELINE or @LINE). Layout & Editing: App menu > New (100 x 100 mm), Home > Shapes > Rectangle dragged (20, 20)-(50, 40) mm, line Running Stitch (tool state, pitch 2.0), region as below, colour 007 EMBROIDERY PRUSSIAN BLUE (region) and 800 RED (line), Sewing Attributes region: under sewing off, density 4.5, Direction Manual straight line 45, pull 0.0. Patterns are chosen with the folder button of the Programmable fill / Pattern1 / Motif section (Browse dialog, its folder button opens a folder tree; the owner's folder with the two files). Save As PES default type. This file: the motif itself, as Programmable Stitch Creator saved it.",
+      "sha256": "2008a77bbe9e98138815e7c81796af04dfdbbc296914266ce16594075c5af7e2",
+      "notes": "ASCII pattern source, not a design."
+    },
+    {
+      "file": "stitches/run-circle-60.pes",
+      "spec": "run-circle-60",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on) unless stated. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Sizes and counts from the status bar. Shapes > Ellipse dragged (10,10)-(70,70) mm (snapped to 59.5 x 60.0); Shapes tab: line Running Stitch, Sewing Attributes Run pitch 2.0 mm, Run time(s) 1; region Not Sewn (Region); 800 EMBROIDERY RED. Home > Size...: Width 60 mm typed (Maintain aspect ratio) gave 59.6 then 59.9 x 60.4 mm (the dialog re-rounds the stitched extent). Status: 59.90 x 60.40 mm, Stitches = 133.",
+      "sha256": "2f3fa70a777ce3859bb3194ae290fd392b731b0d26e8afd28751156a23b68e07",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/satin-col-us-type-1.pes",
+      "spec": "satin-col-us-type-1",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on) unless stated. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Sizes and counts from the status bar. Shapes > Manual Punch > Straight Block: clicks (10,10) (10,16) (50,10), double-click (50,16) mm; PE-DESIGN made a Shapes-tab object: line Not Sewn, region Satin Stitch, Density 4.5, Direction Manual straight line 45 (greyed), Half Stitch ticked, Pull compensation 0.0, colour 007 PRUSSIAN BLUE; 39.50 x 6.00 mm. Sewing Attributes > Region sew > Under sewing ticked; for a Satin region all five type buttons are enabled and exclusive (radio). This file: type 1 = first row, first button (PE-DESIGN's default type), Density Medium (greyed for types 3 and 5). Status: Stitches = 287.",
+      "sha256": "39f00d82426198a4ee46575b2bf3c51de19a69cebdd1699fedd688b442464bf9",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/satin-col-us-type-2.pes",
+      "spec": "satin-col-us-type-2",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on) unless stated. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Sizes and counts from the status bar. Shapes > Manual Punch > Straight Block: clicks (10,10) (10,16) (50,10), double-click (50,16) mm; PE-DESIGN made a Shapes-tab object: line Not Sewn, region Satin Stitch, Density 4.5, Direction Manual straight line 45 (greyed), Half Stitch ticked, Pull compensation 0.0, colour 007 PRUSSIAN BLUE; 39.50 x 6.00 mm. Sewing Attributes > Region sew > Under sewing ticked; for a Satin region all five type buttons are enabled and exclusive (radio). This file: type 2 = first row, second button (double crossing layers icon), Density Medium (greyed for types 3 and 5). Status: Stitches = 287.",
+      "sha256": "4ca9c658b3a2c17d4a6685d68dfb3388e7e491db65a9fce4d5ec529b45736de7",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/satin-col-us-type-3.pes",
+      "spec": "satin-col-us-type-3",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on) unless stated. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Sizes and counts from the status bar. Shapes > Manual Punch > Straight Block: clicks (10,10) (10,16) (50,10), double-click (50,16) mm; PE-DESIGN made a Shapes-tab object: line Not Sewn, region Satin Stitch, Density 4.5, Direction Manual straight line 45 (greyed), Half Stitch ticked, Pull compensation 0.0, colour 007 PRUSSIAN BLUE; 39.50 x 6.00 mm. Sewing Attributes > Region sew > Under sewing ticked; for a Satin region all five type buttons are enabled and exclusive (radio). This file: type 3 = second row, first button (outline icon), Density Medium (greyed for types 3 and 5). Status: Stitches = 226.",
+      "sha256": "158299ce89368173cede4fb24ba21f859880bd82f8315d95798a56749330a110",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/satin-col-us-type-4.pes",
+      "spec": "satin-col-us-type-4",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on) unless stated. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Sizes and counts from the status bar. Shapes > Manual Punch > Straight Block: clicks (10,10) (10,16) (50,10), double-click (50,16) mm; PE-DESIGN made a Shapes-tab object: line Not Sewn, region Satin Stitch, Density 4.5, Direction Manual straight line 45 (greyed), Half Stitch ticked, Pull compensation 0.0, colour 007 PRUSSIAN BLUE; 39.50 x 6.00 mm. Sewing Attributes > Region sew > Under sewing ticked; for a Satin region all five type buttons are enabled and exclusive (radio). This file: type 4 = second row, second button (zigzag icon), Density Medium (greyed for types 3 and 5). Status: Stitches = 250.",
+      "sha256": "dcefe5f4e4074d1ab9de6fe8f0fef6c996d629d2b895a2d8a9b51df5c4e1f252",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "machine/long-jump-300.dst",
+      "spec": "long-jump-300",
+      "reference": "pe-design-dst",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on) unless stated. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Sizes and counts from the status bar. Design Settings > Custom Size 300 x 300 mm (the dialog accepts 100..1000). The satin block of satin-col-us-type-* with Under sewing unticked (39.5 x 6 mm, 186 st) dragged to the top-left corner of the page, Home > Duplicate, the copy dragged to the bottom-right corner; Ctrl+A: 290.00 x 290.00 mm, 372 st. This file: App menu > Export, Tajima (*.DST), no options.",
+      "sha256": "d3fd61f34af27361da1f5a320f9d594a86d16e35f21e76cafe6cdb73dbe3bc18",
+      "notes": "Exported by PE-DESIGN 11.50."
+    },
+    {
+      "file": "stitches/line-e-rect-default.pes",
+      "spec": "line-e-rect-default",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on) unless stated. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Sizes and counts from the status bar. Shapes > Rectangle dragged (20,20)-(50,40) mm; Shapes tab: line E/V Stitch, region Not Sewn (Region), 800 EMBROIDERY RED. Sewing Attributes > Line sew: list E Stitch; fields as the diagram shows them: 5.0 mm (spacing along the line), 2.5 mm (arm), 2.0 mm (width), Run time(s) 1, Stroke time(s) 1, Arrange first button (strokes on the outside). Status: 30.00 x 20.00 mm, Stitches = {count}.",
+      "sha256": "67313dffebae03257eda611649292523a97a39c99573807d7a60fd517a4cede3",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/line-v-rect-default.pes",
+      "spec": "line-v-rect-default",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (Design Page 100 x 100 mm, grid 0.5 mm, Snap to Grid on) unless stated. Save As PES default type (Layout & Editing Ver.11.0, #PES0110). Sizes and counts from the status bar. Shapes > Rectangle dragged (20,20)-(50,40) mm; Shapes tab: line E/V Stitch, region Not Sewn (Region), 800 EMBROIDERY RED. Sewing Attributes > Line sew: list V Stitch; fields as the diagram shows them: 5.0 mm (spacing along the line), 2.5 mm (arm), 2.0 mm (width), Run time(s) 1, Stroke time(s) 1 (greyed for V), Arrange first button (strokes on the outside). Status: 30.00 x 20.00 mm, Stitches = {count}.",
+      "sha256": "cf4ab9af48426d655944a836238d54cef9209e196a02c87f56754085a6f6384b",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "pes/thread-match-swatches.pes",
+      "spec": "thread-match-swatches",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (100 x 100 mm; the Design Page was set back from the 300 x 300 used before). Home > Import Patterns > from Vector Image: an owner-made SVG (100 x 100 mm viewBox) with twelve 20 x 20 mm rect elements at x = 5 + 22 * (i mod 4), y = 10 + 25 * (i div 4), fills rgb(255,0,0) (0,255,0) (0,0,255) (255,255,0) (0,255,255) (255,0,255) (128,128,128) (200,150,100) (50,100,150) (240,200,220) (20,80,40) (255,128,0), stroke none. Imported as 12 Fill Stitch regions (under sewing on, density 4.5, direction 45, step 4.0, frequency 30 %) in SVG order; 86.00 x 70.00 mm, 8488 st, 12 colour blocks. Threads PE-DESIGN picked (Brother Embroidery chart code / PEC index): 800/5, 513/14, 405/2, 205/13, 019/32, 086/25, 817/39, 348/35, 070/4, 124/57, 415/38, 214/11 (the thread table also lists 519/50 for the unsewn outline slot). No thread-list export exists in Layout & Editing 11.50 (Options > Edit User Thread Chart only imports charts; Design Database needs a software key). Save As PES default type.",
+      "sha256": "52bc4c7469ae24a5403da94574007e97bfb034755592d5c29146be1537de9b42",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "machine/hoop-oversize-100.dst",
+      "spec": "hoop-oversize-export",
+      "reference": "pe-design-dst",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "The thread-match-swatches design (12 fill squares, 86 x 70 mm). Design Settings > Page Size = Hoop Size, 100 x 100 mm (multi-needle machine type). Ctrl+A, Home > Size... 150 % (Maintain aspect ratio): 129.00 x 105.00 mm, 17225 st, outside the page. This file: App menu > Export, Tajima (*.DST): written with no warning or option.",
+      "sha256": "b11bbb51914eee862d813ea1a30f6830d439b8be92f494ee4b10ffcf3b1cca22",
+      "notes": "Exported by PE-DESIGN 11.50."
     }
   ]
 }

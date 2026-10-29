@@ -623,8 +623,11 @@ pub enum RegionType {
 }
 
 impl RegionType {
-    /// Accepted density, rows (lines) per mm. Fill and satin take PE-DESIGN 11's range,
-    /// 0.1–14.0 (its Density field clamps there); the other types keep 0.5–10.
+    /// Accepted density, rows (lines) per mm. Fill and satin take PE-DESIGN 11.50's range,
+    /// 0.1–14.0: its Density field clamps there (MANIFEST entries `sweep-fill-density-min`,
+    /// `sweep-satin-density-min`: typing 0 shows 0,1, typing 99 shows 14,0, and both files sew
+    /// at 0.1 lines/mm). Issue #139 asked for a 0.2 floor; the references show 0.1 (the 0.15 →
+    /// 0.2 note there is the field's one-decimal rounding). The other types keep 0.5–10.
     pub fn density_range(self) -> (f64, f64) {
         match self {
             RegionType::Fill | RegionType::Satin => (0.1, 14.0),

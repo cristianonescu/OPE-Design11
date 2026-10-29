@@ -399,6 +399,45 @@ fn bezier_circle(c: crate::Vec2, r: f64) -> Contour {
 }
 
 #[test]
+fn curve_halving_has_no_chord_ceiling_and_keeps_equal_parameters() {
+    use crate::generate::halve_curve;
+    // A quarter arc of an 800 mm circle (0.1 mm units) at a 2 mm pitch: 2^8 chords of 2.45 mm
+    // were the old ceiling; now the halving goes on until every chord fits.
+    let k = 0.552_284_75 * 4000.0;
+    let (a, c1, c2, b) = (
+        v2(4000.0, 0.0),
+        v2(4000.0, k),
+        v2(k, 4000.0),
+        v2(0.0, 4000.0),
+    );
+    let pts = halve_curve(a, c1, c2, b, 20.0);
+    assert_eq!(pts.len(), 512 + 1);
+    assert!(pts.windows(2).all(|w| w[0].distance(w[1]) <= 20.0 + 1e-9));
+    assert!(
+        pts.windows(2).all(|w| w[0].distance(w[1]) > 10.0),
+        "halving, not flattening"
+    );
+    // Equal parameter steps, as PE-DESIGN's circle: point k lies at t = k / n.
+    let at = |t: f64| {
+        let u = 1.0 - t;
+        a * (u * u * u) + c1 * (3.0 * u * u * t) + c2 * (3.0 * u * t * t) + b * (t * t * t)
+    };
+    for (i, p) in pts.iter().enumerate() {
+        assert!(p.distance(at(i as f64 / 512.0)) < 1e-6, "{i}");
+    }
+    // The 60 mm circle of text-fit-default keeps its 4 × 32 chords.
+    let k = 0.552_284_75 * 300.0;
+    let small = halve_curve(
+        v2(300.0, 0.0),
+        v2(300.0, k),
+        v2(k, 300.0),
+        v2(0.0, 300.0),
+        20.0,
+    );
+    assert_eq!(small.len(), 33);
+}
+
+#[test]
 fn bezier_circle_flattens_within_tolerance() {
     let centre = v2(500.0, 500.0);
     let circle = bezier_circle(centre, 200.0);

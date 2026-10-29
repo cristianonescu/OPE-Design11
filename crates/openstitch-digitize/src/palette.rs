@@ -1,10 +1,10 @@
 //! Colour reduction: a 3×3 modal colour pre-filter and a colour census capped at
 //! [`CENSUS_COLORS`] tracked colours (the prepass Auto Punch and Cross Stitch share, #127 #132),
-//! median cut to N colours, each mapped to the nearest Brother PEC chart thread (the distance
-//! is `openstitch-core`'s), plus Floyd–Steinberg dithering.
+//! median cut to N colours, each mapped to the nearest Brother PEC chart thread (equal-weight
+//! squared-Euclidean distance, `openstitch-core`, #119), plus Floyd–Steinberg dithering.
 
 use crate::raster::Raster;
-use openstitch_core::{PEC_CHART, Thread, color_distance, nearest_index};
+use openstitch_core::{PEC_CHART, Thread, color_distance, nearest_index, pec_basic_chart};
 
 pub type Rgb = [u8; 3];
 
@@ -25,7 +25,7 @@ fn thread(c: Rgb) -> Thread {
 
 /// PEC chart number and thread nearest to `c`.
 pub fn nearest_pec(c: Rgb) -> (usize, Thread) {
-    let i = nearest_index(&thread(c), &PEC_CHART).unwrap_or(20);
+    let i = nearest_index(&thread(c), pec_basic_chart()).unwrap_or(20);
     (i, PEC_CHART[i].clone().unwrap_or_else(|| thread(c)))
 }
 
@@ -320,11 +320,11 @@ pub fn dither(
     out
 }
 
-/// Red-mean distance on floating-point colours.
+/// Equal-weight squared Euclidean distance on floating-point colours (the dithering error is
+/// fractional), the same metric as `openstitch_core::color_distance`.
 fn weighted(a: [f64; 3], b: [f64; 3]) -> f64 {
-    let rm = (a[0] + b[0]) / 2.0;
     let (r, g, bl) = (a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-    (2.0 + rm / 256.0) * r * r + 4.0 * g * g + (2.0 + (255.0 - rm) / 256.0) * bl * bl
+    r * r + g * g + bl * bl
 }
 
 pub fn rgb_f(t: &Thread) -> [f64; 3] {
