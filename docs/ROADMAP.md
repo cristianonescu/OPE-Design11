@@ -166,6 +166,12 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    editable (compat `pes-0110-editable-shapes`, the owner's check); turn the `#PES0110` shapes
    the reader parses into editable OpenStitch objects; write text (`CEmbNText`/`CTTFLetter`), the
    other region and line types, hole-sewing pairs and several outlines per object; the hoop
+6. **PES:** editable shapes and Lato Bold text are written (`pesVersion` 11 writes `CEmbLine`
+   and `CEmbNText` objects in PE-DESIGN 11.50's layout, 2026-10-29; issue #120). Left: PE-DESIGN
+   opening such files with the objects editable (compat `pes-0110-editable-shapes`,
+   `pes-0110-editable-text`, the owner's check); turn the `#PES0110` shapes and texts the reader
+   parses into editable OpenStitch objects; text with spaces, vertical, on an outline
+   (`CEmbAText`) and with Text Transforms (`CEmbDText`); the other region and line types, hole-sewing pairs and several outlines per object; the hoop
    fields; PES v7–v10 (from the owner's own files only, as
    [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest

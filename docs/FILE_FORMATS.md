@@ -148,8 +148,8 @@ into a design that has none (`adoptProperties` overrides).
 `pes::read_objects` exposes the parsed objects (transform, size, stitch runs, colour log).
 
 PE-DESIGN's editable objects have no public description. Their mapping, from the owner's own
-PE-DESIGN files, is in "PES 0110 object list" below. The reader reads `CEmbLine` shapes, the
-groups and the page size and stops at the first other class (`ObjectSection::unparsed`);
+PE-DESIGN files, is in "PES 0110 object list" below. The reader reads `CEmbLine` shapes,
+`CEmbNText` texts, the groups and the page size and stops at the first other class (`ObjectSection::unparsed`);
 `pes11::write` writes them back (`pesVersion` 11). Versions 1 and 6 still write the shapes as
 stitches (a `CEmbOne` stitch group). Unverified: whether PE-DESIGN accepts several `CEmbOne`
 objects in one file, so those writers emit one for the whole design.
@@ -267,10 +267,48 @@ the RGB as u24, then a u16 count of preview images (one per block, 8–15 KB eac
 `o-hoop-100x100-s`, so a file without them is one PE-DESIGN writes itself) and, per block, `0D`
 and the catalogue number as u16 (`0D 05 00` 005 SILVER, `0D 20 03` 800 RED).
 
+#### `CEmbNText` (text)
+
+Text from the Text tool is a `CEmbNText` with one `CTTFLetter` per character. Evidence: r12 (`A`,
+Lato, size 10, clicked at (10, 20) mm), r13 (size 20 set afterwards, then dragged 10 mm down), r14
+(`AB`), r15 (a rectangle, then the text), r23 (region Fill), r24 (region colour blue), r25 (`B`),
+r26 (clicked 10 mm further right), o-text-10-letters (size 8), o-text-vertical and the compat
+`text-*` references (sizes 20, line spacing 50/100/150 %, a running line, `Hxg`). PE-DESIGN stores
+**no outlines**: it lays the letters out again from the installed font when it opens the file.
+
+| Part | Content | Evidence |
+|---|---|---|
+| text +0 | bounds `x0 y0 x1 y1` (i16): across the letters, from the font's ascent above the first baseline (1.59 × the size for Lato) down to the baseline or the lowest letter | r12, r14, text-defaults-h, text-size-hg |
+| +8 | the same four again (the extent) | all |
+| +16 | transform, 6 × f32: identity, or the moves applied after the text was placed (r13: tx 1.0, ty 100.0 after a 10 mm drag) | r13 |
+| +40 | u16 letter count | r14 (2), o-text-10-letters (10) |
+| then | per letter: the MFC tag (`CTTFLetter` named the first time), u16 character (UTF-16), 148 attribute bytes, the font name (MFC Unicode string, `Lato`), u16 0 | all |
+| letter +2 | f32 the size × 10 when the text was made (100.0 at size 10, 80.0 at 8, 200.0 at 20) | r12, o-text-10-letters, text-defaults-h |
+| letter +6 | f32 scale applied later (2.0 when size 20 was set on r12's text) | r13 |
+| letter +14 | f32 −0.0 in r12–r26, 0.0 in the later files (meaning unknown) | r12, o-text-* |
+| letter +22 | u16 region density, 0.1 line/mm (the Text tool's 5.0) | all |
+| letter +24 | u16 region colour, a thread-table index | r15 (1: the rectangle's line red) |
+| letter +26 | u16 region sew type: 0 Satin, 1 Fill | r23 |
+| letter +60, +62, +64 | u16 line sewn, line sew type (9 not sewn, 1 running), line colour index | text-sewing-order, r15 |
+| letter +144 | u16 700 in r12–r26, 900 in the later files: likely the font weight (the same Lato Bold) | r12, o-text-* |
+| after the letters | u16 count of line breaks, then per break the u16 index of the letter that starts the new line | text-line-spacing-* (`HH`: 1, 1) |
+| tail +4 | f32 line spacing, % | text-line-spacing-50/100/150 |
+| tail +10 | u16 direction: 0 horizontal, 1 vertical | o-text-vertical |
+| tail +78 | transform again, 6 × f32 | r13 |
+| tail +104 | f32 x, y: the click, the left end of the first baseline (file units) | r12 (600, 700), r26 (700, 700), r15 (900, 1000) |
+
+The tail is 112 bytes; the fields not listed (Text Attributes such as kerning, character spacing,
+alignment, rotation) are zero or constant in every file. The colour of a text is in the thread
+table: r24 changes only the table. In the sewing-order list a text of n letters lists the
+connections into its letters (parts 0, 2 … 2n − 2, the first object's first skipped), then the
+letters (1, 3 … 2n − 1); a sewn line adds no parts (text-sewing-order).
+
 Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
-segment and parameter fields, the Round 3 region type codes, `CEmbNText`/`CTTFLetter` (text, font
-name, scale: partly, in the pes-objects notes), `CEmbSpecialShape`, Manual Punch blocks (a
-`CEmbLine` variant the reader refuses) and the preview images.
+segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
+(kerning, character spacing, alignment, rotation), how a space is stored (no owner file has one),
+the letter's line width and pitch fields, `CEmbDText` (Text Transform), `CEmbAText` (text on an
+outline), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the reader refuses) and
+the preview images.
 
 #### Writer
 
@@ -279,11 +317,16 @@ design) writes the layout above: the header with the metadata strings and the De
 the thread table in sewing order (region thread, then line thread, per object; strings in the
 MFC Unicode form, the PEC chart index of the nearest chart colour, `kind` 10 and the brand and
 chart as the thread has them), one `CEmbLine` per visible shape with every mapped field set, the
-groups, the sewing-order list, the PEC section and the addendum. What it cannot hold fails with
-the object named: text, stitch patterns, several outlines in one object, programmable, motif
-and the other region types, motif, stem, candlewicking, chain and cutting lines. Checks: the
-37 owner files whose list the reader parses completely are rewritten from what it read and read
-back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
+groups, the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
+as `CEmbNText` (letters at the text's size, Satin or Fill, an optional running, triple or
+zigzag line at PE's defaults, line breaks of left-aligned text, the line spacing %, and the
+click point: the first line's start, measured on OpenStitch's layout for centred and
+right-aligned text). What it cannot hold fails with the object named: stitch patterns, several
+outlines in one object, programmable, motif and the other region types, motif, stem,
+candlewicking, chain and cutting lines; text in another font, with a space, vertical, on an
+outline, with a Text Transform, rotated or scaled, with letter spacing, kerning, per-character
+edits or under sewing. Checks: the 55 owner files whose list the reader parses completely (37
+with shapes, 18 with text) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
 
@@ -298,13 +341,21 @@ byte-identical to PE-DESIGN's outside these documented differences
   at the line colour.
 - **Header:** the hoop fields are the baseline's (150 × 150 mm, `nv880e-M`, multi-needle, code
   `10`) whatever the design's machine settings; only the page size is the design's.
+- **Text:** the letter field at +14 (OpenStitch writes r12's −0.0) and the last sewing-order
+  field of the line-spacing files (PE-DESIGN leaves it unset, `08 CE 53 00`; OpenStitch writes
+  1). A text written from the letter defaults gives r12's object section byte for byte
+  (`a_text_built_from_defaults_writes_r12s_object_section`). From a design, the text box's x
+  extent comes from OpenStitch's layout (r14's `AB`: 59.9–78.7 mm against PE-DESIGN's 79.3) and
+  the thread table lists only the colours sewn (PE-DESIGN's also lists the Text tool's unused
+  line colour, 900).
 - **PEC section:** the stitch stream is byte-identical for a file re-written from its own
   stitches; the label, two header fields (PE-DESIGN writes 2900 × 1900 at 0x208 where OpenStitch
   writes the design size, and `0x1F`–`0x2E`), the thumbnails, the icons (blank) and the preview
   images (none) differ.
 
-Done when PE-DESIGN confirms: whether it opens these files with the shapes editable (compat spec
-`pes-0110-editable-shapes`, owner's check pending). Version 6 stays the default export until then.
+Done when PE-DESIGN confirms: whether it opens these files with the shapes and texts editable
+(compat specs `pes-0110-editable-shapes` and `pes-0110-editable-text`, owner's check pending).
+Version 6 stays the default export until then.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
 

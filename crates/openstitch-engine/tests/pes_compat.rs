@@ -254,9 +254,10 @@ fn design_properties_survive_osd_and_come_back_on_import() {
 }
 
 #[test]
-fn pes_version_11_writes_editable_shapes_and_refuses_what_it_cannot_hold() {
+fn pes_version_11_writes_editable_shapes_and_text_and_refuses_what_it_cannot_hold() {
     // docs/COMPATIBILITY_AUDIT.md item 5: a rectangle with PE-DESIGN's default attributes
-    // becomes one CEmbLine in a #PES0110 file; text is refused with the object named.
+    // becomes one CEmbLine in a #PES0110 file, a text one CEmbNText; what is not mapped yet is
+    // refused with the object named.
     let dir = temp_dir("v11");
     let mut s = Session::new(dir.clone());
     run(
@@ -298,17 +299,49 @@ fn pes_version_11_writes_editable_shapes_and_refuses_what_it_cannot_hold() {
     assert_eq!(objects.threads[1].catalog_number.as_deref(), Some("5"));
     assert!(pes::read(&bytes).expect("stitches").stitches.len() > 100);
 
+    // A text in Lato Bold becomes a CEmbNText with one letter per character after the shape.
     run(
         &mut s,
         "text.add",
-        json!({"text": "A", "x": 40, "y": 50, "size": 10}),
+        json!({"text": "AB", "x": 40, "y": 50, "size": 10}),
+    );
+    run(
+        &mut s,
+        "design.export",
+        json!({"path": "b.pes", "pesVersion": "11"}),
+    );
+    let objects =
+        pes::read_objects(&std::fs::read(dir.join("b.pes")).expect("b.pes")).expect("objects");
+    assert_eq!(objects.unparsed, None);
+    assert_eq!((objects.shapes.len(), objects.texts.len()), (1, 1));
+    let text = &objects.texts[0];
+    assert_eq!(text.position, 1);
+    let chars: Vec<u16> = text.letters.iter().map(|l| l.ch).collect();
+    assert_eq!(chars, [65, 66]);
+    assert!(
+        text.letters
+            .iter()
+            .all(|l| l.font == "Lato" && l.size == 10.0)
+    );
+    // text.add centres the text on its point: the click PE-DESIGN stores is the line's start.
+    assert!(
+        text.origin.0 < 900.0 && text.origin.1 == 1000.0,
+        "{:?}",
+        text.origin
+    );
+
+    // A space is refused with the object named, and nothing is written.
+    run(
+        &mut s,
+        "text.add",
+        json!({"text": "A B", "x": 40, "y": 80, "size": 10}),
     );
     let err = s
         .execute(
             "design.export",
-            Some(&json!({"path": "b.pes", "pesVersion": "11"})),
+            Some(&json!({"path": "c.pes", "pesVersion": "11"})),
         )
-        .expect_err("text is not written as editable yet");
-    assert!(err.to_string().contains("text"), "{err}");
-    assert!(!dir.join("b.pes").exists());
+        .expect_err("spaces are not written yet");
+    assert!(err.to_string().contains("space"), "{err}");
+    assert!(!dir.join("c.pes").exists());
 }

@@ -76,7 +76,7 @@ dearest:
 | 2 | Default PES is truncated v1 with no object section (**fixed**, internal regression; open test pending) | PES | 5 | Documented, unverified | Black-box open test |
 | 3 | Trims and jumps inside one fill or satin region; no Running Stitch Path (**fixed**, internal regression) | Stitches | 5 | Documented difference | No |
 | 4 | Trims between underlay, top stitching and outline of one object | Stitches | 4 | Documented, unverified | Single-needle policy |
-| 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes the shapes as `CEmbLine` objects in PE-DESIGN 11's layout; PE-DESIGN open test pending; text pending) | PES | 5 | Documented, unverified | Yes (PE-DESIGN open test; text) |
+| 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes shapes as `CEmbLine` and Lato Bold text as `CEmbNText` in PE-DESIGN 11's layout; PE-DESIGN open test pending) | PES | 5 | Documented, unverified | Yes (PE-DESIGN open test; text with spaces) |
 | 6 | One sewing direction per text instead of per stroke | Fonts | 5 | Documented difference | Angles |
 | 7 | Auto direction is one fixed angle (**fixed**, internal regression) | Stitches | 4 | Documented difference | No |
 | 8 | Underlay model differs; zigzag lines have no underlay | Stitches | 4 | Documented difference | Geometry |
@@ -330,7 +330,15 @@ Line references are relative to `crates/`.
   geometry marks' parameters, the hoop fields). Text, stitch patterns, several outlines per
   object and the other region and line types are refused with the object named; version 6 stays
   the default. Pending: PE-DESIGN opening such a file with the shape editable (spec
-  `pes-0110-editable-shapes`, reference pending; the owner's check), then text.
+  `pes-0110-editable-shapes`, reference pending; the owner's check).
+- **Text (2026-10-29):** Lato Bold text is written as `CEmbNText` with one `CTTFLetter` per
+  character: size, Satin or Fill with density and colour, a running, triple or zigzag line,
+  line breaks and spacing, and the click point PE-DESIGN stores (the first line's start).
+  PE-DESIGN keeps no outlines for text and lays it out again from the font. The 18 owner text
+  files are rewritten byte-identical outside two PE-side quirks (FILE_FORMATS "Writer").
+  Refused for now: spaces (no owner sample), vertical text, text on an outline, Text
+  Transforms, rotation, letter spacing, kerning, per-character edits, other fonts. Pending:
+  PE-DESIGN opening the file with the text retypable (spec `pes-0110-editable-text`).
 - **Object-class samples (2026-10-28):** `crates/openstitch-formats/tests/fixtures/pe11/o-*.pes`
   (PROVENANCE.md "Round 3") hold one owner-drawn example of every object kind PE-DESIGN writes:
   the Outline, Rectangle/Circle/Arc and Manual Punch tools and every region type are `CEmbLine`,
