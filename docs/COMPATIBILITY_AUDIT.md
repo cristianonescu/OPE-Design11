@@ -1115,6 +1115,14 @@ Line references are relative to `crates/`.
   samples (2-point and 4-point stitches, one re-saved) are requested from the reference round;
   the reader refuses any other preamble or table shape until they pin it. PMP and PSF stay
   Blocked.
+- **Programmable Stitch Creator sources (2026-10-29, #131):** OpenStitch imports the user's
+  own `.pas`, `.pmf` and `.plf` text sources (the `@DIRECTIVE` layout: `@SYSENV` arity gives the
+  role, geometry in a 0…1024 cell; docs/FILE_FORMATS.md → Text pattern sources) into
+  `openstitch.pattern` fill, motif and decorative patterns, which sew with the design's own
+  tile and motif sizes. Not yet pinned: the physical size PE-DESIGN gives the `@SYSENV`
+  numbers and how it tiles a programmable fill from such a pattern (owner-made Programmable
+  Stitch Creator files and the fills sewn from them are requested from the reference round).
+  Brother's bundled patterns are never read.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.

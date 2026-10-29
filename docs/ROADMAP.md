@@ -256,6 +256,13 @@ layout, every byte checked). Waiting for the owner-made samples: PE-DESIGN's own
 4-point square, two separate lines; a motif; a decorative-fill row) with a programmable fill
 and a motif fill sewn from them, and a Font Creator font of one and two owner-drawn glyphs
 with text set in it. Each lands as its own PR with the fixtures' provenance in a MANIFEST.
+bundled patterns, motifs and fonts are never read. Done: import of `.pas`/`.pmf`/`.plf` text
+sources in the documented `@DIRECTIVE` layout (2026-10-29). Waiting for the owner-made samples:
+Programmable Stitch Creator saves (a 2-point line, a 4-point square, two separate lines; a
+motif; a decorative-fill row) with a programmable fill and a motif fill sewn from them (to pin
+the physical size and the tiling), PE-DESIGN's own PMV files, and a Font Creator font of one
+and two owner-drawn glyphs with text set in it. Each lands as its own PR with the fixtures'
+provenance in a MANIFEST.
 
 ## Blocked
 
