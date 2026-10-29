@@ -295,8 +295,10 @@ fn pes_version_11_writes_editable_shapes_and_text_and_refuses_what_it_cannot_hol
     );
     assert_eq!(objects.threads.len(), 2);
     // PE-DESIGN's table has no name field: the catalogue number identifies the colour.
-    assert_eq!(objects.threads[0].catalog_number.as_deref(), Some("16"));
-    assert_eq!(objects.threads[1].catalog_number.as_deref(), Some("5"));
+    // Written as PE-DESIGN writes those chart colours: BROTHER EMBROIDERY 005 and 800.
+    assert_eq!(objects.threads[0].catalog_number.as_deref(), Some("005"));
+    assert_eq!(objects.threads[1].catalog_number.as_deref(), Some("800"));
+    assert_eq!(objects.threads[0].brand.as_deref(), Some("EMBROIDERY"));
     assert!(pes::read(&bytes).expect("stitches").stitches.len() > 100);
 
     // A text in Lato Bold becomes a CEmbNText with one letter per character after the shape.

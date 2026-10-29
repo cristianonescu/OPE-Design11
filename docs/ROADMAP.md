@@ -134,9 +134,10 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    design with short moves. The parked references (satin gradation, Text Transform presets 13
    and 14, under sewing type 2, satin density minimum, the trim bound) have all landed.
 6. **PES:** editable shapes and Lato Bold text are written (`pesVersion` 11 writes `CEmbLine`
-   and `CEmbNText` objects in PE-DESIGN 11.50's layout, 2026-10-29; issue #120). Left: PE-DESIGN
-   opening such files with the objects editable (compat `pes-0110-editable-shapes`,
-   `pes-0110-editable-text`, the owner's check); turn the `#PES0110` shapes and texts the reader
+   and `CEmbNText` objects in PE-DESIGN 11.50's layout, 2026-10-29; issue #120; PE-DESIGN opens
+   the shapes editable, reference `pes-0110-editable-shapes`). Left: PE-DESIGN opening the text
+   file editable (`pes-0110-editable-text`, the owner's check); BROTHER EMBROIDERY numbers for
+   the chart colours with no owner sample; turn the `#PES0110` shapes and texts the reader
    parses into editable OpenStitch objects; text with spaces, vertical, on an outline
    (`CEmbAText`) and with Text Transforms (`CEmbDText`); the other region and line types, hole-sewing pairs and several outlines per object; the hoop
    fields; PES v7–v10 (from the owner's own files only, as

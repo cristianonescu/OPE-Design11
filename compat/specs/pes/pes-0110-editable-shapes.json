@@ -3,7 +3,7 @@
   "id": "pes-0110-editable-shapes",
   "area": "pes",
   "title": "PES 0110 writes a rectangle as an editable CEmbLine object",
-  "description": "design.export with pesVersion 11 writes PE-DESIGN 11's #PES0110 layout: the thread table, one CEmbLine per shape with its line and region attributes and outline, the sewing-order list, then the PEC section. The design is the owner's baseline r01 (tests/fixtures/pe11/PROVENANCE.md): a 10 x 10 mm rectangle at (10,10) mm, line Zigzag 2.0 mm / 4.5 line/mm in Red with under sewing, region Fill 4.5 line/mm at 45 degrees in Silver. The reference check is PE-DESIGN opening the file with the rectangle as an editable shape and re-saving it.",
+  "description": "design.export with pesVersion 11 writes PE-DESIGN 11's #PES0110 layout: the thread table, one CEmbLine per shape with its line and region attributes and outline, the sewing-order list, then the PEC section. The design is the owner's baseline r01's rectangle (tests/fixtures/pe11/PROVENANCE.md): 10 x 10 mm at (10,10) mm, line Zigzag 2.0 mm / 4.5 line/mm in Red with under sewing, region Fill 4.5 line/mm in Silver, at OpenStitch's default fill direction (0 degrees; PE-DESIGN's tool default is 45). Reference: PE-DESIGN 11.50 opened the file with no warning and the rectangle editable, showed the direction 0 degrees the file holds, and re-saved it with the object section unchanged except its own pattern block.",
   "covers": {
     "audit": [
       5
@@ -23,6 +23,10 @@
     {
       "kind": "measured",
       "note": "docs/FILE_FORMATS.md, PES 0110 object list: every field is mapped from the owner's PE-DESIGN 11.50 files (crates/openstitch-formats/tests/fixtures/pe11); the writer's rewrite of those files is byte-identical outside the documented differences (pes11.rs, written_object_sections_match_pe_designs_bytes_outside_the_documented_differences)"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 re-save of a.pes (MANIFEST pes-0110-editable-shapes, 2026-10-29): opens with no warning, the rectangle editable; object section unchanged except PE's own pattern block"
     }
   ],
   "script": [
@@ -66,7 +70,7 @@
     {
       "id": "pe-design",
       "file": "pes/pes-0110-editable-shapes.pes",
-      "make": "Run `stitchtool compat --only pes-0110-editable-shapes` and open target/compat/work/pes-0110-editable-shapes/a.pes in PE-DESIGN 11 (App menu > Open). Expected: one rectangle (10,10)-(20,20) mm as an editable shape, not a stitch pattern: selecting it shows the Shapes tab with Sew: line Zigzag Stitch 2.0 mm, density 4.5, under sewing on; region Fill Stitch, density 4.5, direction 45, Frequency 30 %; colours region 005 SILVER and line 800 RED. Record in the MANIFEST notes: whether the file opens and with what warning, whether the object is editable (handles, Sew type and attributes shown and changeable, Sewing Order lists fill then zigzag), and the status-bar size and stitch count against the file's (12,00 x 12,00 mm, the PEC stitch count). Then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md). If PE-DESIGN refuses the file or opens it blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead."
+      "make": "Run `stitchtool compat --only pes-0110-editable-shapes` and open target/compat/work/pes-0110-editable-shapes/a.pes in PE-DESIGN 11 (App menu > Open). Expected: one rectangle (10,10)-(20,20) mm as an editable shape, not a stitch pattern: selecting it shows the Shapes tab with Sew: line Zigzag Stitch 2.0 mm, density 4.5, under sewing on; region Fill Stitch, density 4.5, direction 0 (OpenStitch's default; PE-DESIGN's tool default is 45), Frequency 30 %; colours region 005 SILVER and line 800 RED. Record in the MANIFEST notes: whether the file opens and with what warning, whether the object is editable (handles, Sew type and attributes shown and changeable, Sewing Order lists fill then zigzag), and the status-bar size and stitch count against the file's (12,00 x 12,00 mm, the PEC stitch count). Then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md). If PE-DESIGN refuses the file or opens it blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead."
     }
   ],
   "measurements": [
@@ -79,7 +83,8 @@
         "export": "a.pes"
       },
       "expected": "0110",
-      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature (tests/fixtures/pe11, every file)"
+      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature (tests/fixtures/pe11, every file)",
+      "reference": {}
     },
     {
       "id": "classes",
@@ -92,7 +97,8 @@
       "expected": [
         "CEmbLine"
       ],
-      "evidence": "r01-rect.pes: one CEmbLine; the reader parses the whole list (no unparsed class)"
+      "evidence": "r01-rect.pes: one CEmbLine; the reader parses the whole list (no unparsed class)",
+      "reference": {}
     },
     {
       "id": "stitches-and-colours",
@@ -123,29 +129,48 @@
       ]
     },
     {
-      "id": "reopened-by-pe-design",
+      "id": "colour-blocks",
       "measure": {
-        "kind": "compare",
-        "options": {
-          "origin": "boundsCenter",
-          "positionMm": 1.0,
-          "boundsMm": 1.0,
-          "threads": {
-            "name": false,
-            "catalog": false,
-            "brand": false,
-            "chart": false,
-            "kind": false
-          },
-          "metadata": false,
-          "pesObjects": false
-        }
+        "kind": "colorBlocks"
       },
       "source": {
         "export": "a.pes"
       },
-      "evidence": "PE-DESIGN 11 opens a.pes as an editable rectangle and regenerates its own stitches from the object (the PEC section is replaced on re-save, so only the sewn extent and colours are compared)",
+      "expected": 2,
+      "evidence": "fill in Silver, then the zigzag in Red; PE-DESIGN re-sews the object with the same two blocks",
       "reference": {}
+    },
+    {
+      "id": "width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN re-sews the editable rectangle from the object: the same 12 mm extent (outline plus the 2 mm zigzag)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    },
+    {
+      "id": "height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "as width",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
     }
   ]
 }
