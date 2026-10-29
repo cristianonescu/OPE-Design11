@@ -23,7 +23,9 @@ for macOS, Windows and Linux. CI builds and tests all three.
   - Merge, remove overlap, boolean combine, split, offset lines (`i_overlay`).
   - Paste sewing attributes; entry/exit points with draggable markers.
   - Floral pattern and original decorative frames; embossing, engraving and stamps.
-  - Sewing order (`order.move`, `order.byColor`, `order.optimize`) with per-object jump trimming.
+  - Sewing order (`order.move`, `order.byColor`, `order.optimize`) with per-object jump trimming;
+    `order.optimize` in PE-DESIGN's mode by default, with OpenStitch's shortest-jump (2-opt) mode
+    as a design setting (beyond PE-DESIGN, #137).
   - Sewing direction (round fill, centre and reference points); Manual Punch; Satin Skeleton
     tool and skeletons derived from shapes.
   - User settings: saved attribute sets and user thread charts.
@@ -263,7 +265,7 @@ before any code; the ranking and the proposed tracks are in
 | B8 | Crosshatch, curved crosshatch, lace | A | [research/beyond/crosshatch-and-lace.md](research/beyond/crosshatch-and-lace.md) | Sketched; not started |
 | B9 | Maze and meander fills, fur, randomisation | D | [research/beyond/meander-maze-and-randomisation.md](research/beyond/meander-maze-and-randomisation.md) | Sketched; not started |
 | B10 | Variable-width satin line | B | [research/beyond/variable-width-satin-line.md](research/beyond/variable-width-satin-line.md) | Sketched; not started |
-| B11 | Closest join, auto start/end, continue digitizing, overlap removal | C | [research/beyond/closest-join-and-overlap.md](research/beyond/closest-join-and-overlap.md) | Sketched; not started |
+| B11 | Closest join, auto start/end, continue digitizing, overlap removal | C | [research/beyond/closest-join-and-overlap.md](research/beyond/closest-join-and-overlap.md) | Sketched; not started. Related, shipped 2026-10-29 (#137): `order.optimize` mode `minJump`, a 2-opt shortest-jump order per colour block with every neighbouring pair linked, as a design setting (`optimizeOrder`); PE-DESIGN's order stays the default |
 | B12 | Carving lines, knockdown fill | A | [research/beyond/carving-and-knockdown.md](research/beyond/carving-and-knockdown.md) | Sketched; not started |
 | B13 | Density map, troubleshoot, thread conversion, auto hoop | E | [research/beyond/quality-tools.md](research/beyond/quality-tools.md) | Sketched; not started |
 | B14 | Stitch-file resize with density | E | [research/beyond/stitch-file-resize.md](research/beyond/stitch-file-resize.md) | Sketched; not started |

@@ -837,6 +837,23 @@ Line references are relative to `crates/`.
   `optimize_entry_exit_option_persists_and_applies_to_new_shapes`,
   `optimize_keeps_colour_groups_and_overlap_order`. The squares keep their order 0, 50, 25, and
   the jumps measure 40.0 and 15.0 mm, as in PE-DESIGN (50.0 and 25.0 without linking).
+- **Issue #137 (2026-10-29):** the issue asked for a 2-opt minimum-jump order in place of the
+  greedy chaining. PE-DESIGN 11.50 does neither: every capture (`optimize-entry-exit`,
+  `machine-rbr`, `machine-rbr-far`, `machine-rbgb`) shows colours grouped in order of first
+  use and the drawing order kept within a colour (0, 50, 25 stays 0, 50, 25 with 40 and
+  15 mm jumps, where 0, 25, 50 would jump 15 and 15), so the default mode stays PE-DESIGN's
+  and the specs stay green. The 2-opt optimiser is an explicit option beyond PE-DESIGN:
+  `order.optimize {mode: minJump}` or the design's `optimizeOrder` setting
+  (`design.setProperties`, saved in `.osd`; editor: the mode box beside Optimise). It keeps
+  PE-DESIGN's colour blocks and overlap order, arranges each block by a greedy nearest-free
+  walk from the previous block's last object and then 2-opt reversals of the open path until
+  none shortens the outline-to-outline travel (never longer than the greedy order by
+  construction), and links the entry and exit points of every neighbouring pair, colour
+  changes included. Tests: `openstitch-engine/tests/order_min_jump.rs`. pe-refs-4's capture
+  for the issue (round 4, `order/six-before.pes` and `six-after.pes`: six scattered squares in
+  three colours before and after Optimize Sewing Order) has an identical stitch stream in both
+  files, only four header bytes differ: PE-DESIGN reordered nothing and moved no points, as
+  this item predicts.
 
 ## 17. Hole sewing is not validated or paired
 

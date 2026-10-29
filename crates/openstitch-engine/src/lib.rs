@@ -19,7 +19,7 @@ mod lettering;
 #[cfg(feature = "library")]
 mod library;
 pub mod machine;
-mod order;
+pub mod order;
 mod ornament;
 pub mod params;
 mod pattern_cmds;

@@ -367,17 +367,29 @@ fn design_commands() -> Vec<CommandSpec> {
         ),
         spec(
             "design.setProperties",
-            "Set the Design Property fields written to PES (category, author, keywords, comments)",
+            "Set the Design Property fields written to PES (category, author, keywords, comments) and the design's Optimize Sewing Order mode",
             Effect::Edit,
             vec![
                 opt("category", "string", "Category (\"\" clears)"),
                 opt("author", "string", "Author (\"\" clears)"),
                 opt("keywords", "string", "Keywords (\"\" clears)"),
                 opt("comments", "string", "Comments (\"\" clears)"),
+                opt(
+                    "optimizeOrder",
+                    "peDesign|minJump",
+                    "What order.optimize does by default: PE-DESIGN 11.50's order (default) or the shortest total jump (beyond PE-DESIGN; saved with the design)",
+                ),
             ],
             |s, p| {
                 let mut properties = s.design.properties.clone();
                 let mut given = false;
+                let mut optimize_order = s.design.optimize_order;
+                if p.has("optimizeOrder") {
+                    given = true;
+                    let m = p.string("optimizeOrder", None)?;
+                    optimize_order = openstitch_design::OptimizeOrder::from_id(&m)
+                        .ok_or_else(|| p.invalid("optimizeOrder", "must be peDesign or minJump"))?;
+                }
                 for key in openstitch_design::DesignProperties::KEYS {
                     if !p.has(key) {
                         continue;
@@ -390,12 +402,16 @@ fn design_commands() -> Vec<CommandSpec> {
                     }
                 }
                 if !given {
-                    return Err(
-                        p.invalid("category", "give category, author, keywords or comments")
-                    );
+                    return Err(p.invalid(
+                        "category",
+                        "give category, author, keywords, comments or optimizeOrder",
+                    ));
                 }
                 s.design.properties = properties;
-                Ok(json!(s.design.properties))
+                s.design.optimize_order = optimize_order;
+                let mut out = json!(s.design.properties);
+                out["optimizeOrder"] = json!(optimize_order.id());
+                Ok(out)
             },
         ),
         spec(
@@ -408,6 +424,7 @@ fn design_commands() -> Vec<CommandSpec> {
                 Ok(json!({
                     "name": s.design.name,
                     "properties": s.design.properties,
+                    "optimizeOrder": s.design.optimize_order.id(),
                     "pageWidthMM": s.design.page.width / MM,
                     "pageHeightMM": s.design.page.height / MM,
                     "objects": s.design.objects.len(),

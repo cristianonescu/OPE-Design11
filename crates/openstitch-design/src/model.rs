@@ -43,6 +43,49 @@ pub struct Design {
     /// Design Property: category, author, keywords, comments. Omitted while empty.
     #[serde(default, skip_serializing_if = "DesignProperties::is_empty")]
     pub properties: DesignProperties,
+    /// How Optimize Sewing Order (`order.optimize`) orders the objects. Omitted while it is
+    /// PE-DESIGN's.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub optimize_order: OptimizeOrder,
+}
+
+/// How Optimize Sewing Order arranges the objects.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum OptimizeOrder {
+    /// As PE-DESIGN 11.50 does it (reference `optimize-entry-exit`, `machine-rbr`,
+    /// `machine-rbgb`): same colours together in order of first use, drawing order within a
+    /// colour, overlapping objects keep their order; entry and exit points link same-colour
+    /// neighbours only.
+    #[default]
+    PeDesign,
+    /// Beyond PE-DESIGN: the same colour blocks, but within each the objects are arranged for
+    /// the shortest total travel between outlines (greedy nearest, then 2-opt), and entry and
+    /// exit points link every pair of neighbours.
+    MinJump,
+}
+
+impl OptimizeOrder {
+    pub const ALL: [OptimizeOrder; 2] = [OptimizeOrder::PeDesign, OptimizeOrder::MinJump];
+
+    /// The JSON / command name.
+    pub fn id(self) -> &'static str {
+        match self {
+            OptimizeOrder::PeDesign => "peDesign",
+            OptimizeOrder::MinJump => "minJump",
+        }
+    }
+
+    pub fn from_id(id: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|m| m.id() == id)
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            OptimizeOrder::PeDesign => "PE-DESIGN order",
+            OptimizeOrder::MinJump => "Shortest jumps",
+        }
+    }
 }
 
 /// A raster image placed on the Design Page as a tracing reference (PE-DESIGN's background
@@ -185,6 +228,7 @@ impl Design {
             sewing: Vec::new(),
             guides: Guides::default(),
             properties: DesignProperties::default(),
+            optimize_order: OptimizeOrder::default(),
         }
     }
 
