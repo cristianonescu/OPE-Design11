@@ -17,8 +17,12 @@ use openstitch_formats::pes11::{
 
 /// The `#PES0110` objects of `design`'s visible objects, in design order.
 pub fn objects(design: &Design) -> Result<Objects, String> {
+    let page = (mm(design.page.width).max(1), mm(design.page.height).max(1));
+    // A 100 x 100 mm page is written as PE-DESIGN's own default, a Hoop Size page; other sizes
+    // as a Custom Size page, which PE-DESIGN shows with a Hoop Settings tab and sections.
     let mut out = Objects {
-        page_mm: Some((mm(design.page.width).max(1), mm(design.page.height).max(1))),
+        page_mm: Some(page),
+        hoop_page: page == (100, 100),
         ..Objects::default()
     };
     let mut groups: Vec<(u64, Vec<u16>)> = Vec::new();

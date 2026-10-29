@@ -104,6 +104,10 @@ pub struct Vertex {
 pub struct Objects {
     /// The Design Page size in mm (header), when the header had the mapped layout.
     pub page_mm: Option<(u16, u16)>,
+    /// The page is a Hoop Size page (header page mode 0), not a Custom Size page (1). PE-DESIGN
+    /// shows a Custom Size page with a Hoop Settings tab and section outlines; a new design in
+    /// PE-DESIGN starts on a Hoop Size page.
+    pub hoop_page: bool,
     /// The thread table, in its file order (the shapes' colour indexes point into it).
     pub threads: Vec<Thread>,
     pub shapes: Vec<Shape>,
@@ -360,9 +364,11 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
     };
     let threads = read_threads(data, from, at).unwrap_or_default();
     let page_mm = read_page(data, from);
+    let hoop_page = data.get(from + 2..from + 4) == Some(&[0, 0][..]);
     let done = |shapes, texts, groups, unparsed| {
         Ok(Objects {
             page_mm,
+            hoop_page,
             threads: threads.clone(),
             shapes,
             texts,
@@ -703,7 +709,14 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     for key in crate::pes::METADATA_KEYS {
         crate::pes::write_string8(&mut w, pattern.metadata.get(key).map(String::as_str));
     }
-    write_header(&mut w, objects.page_mm.unwrap_or((100, 100)));
+    let page = objects.page_mm.unwrap_or((100, 100));
+    if objects.hoop_page && page != (100, 100) {
+        return Err(FormatError::ValueOutOfRange(format!(
+            "PES 0110: a Hoop Size page of {} x {} mm (only PE-DESIGN's 100 x 100 mm hoop page is mapped)",
+            page.0, page.1
+        )));
+    }
+    write_header(&mut w, page, objects.hoop_page);
     write_threads(&mut w, &objects.threads);
     w.u16le(total as i64);
     let mut archive = Archive::default();
@@ -725,20 +738,24 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     w.patch32le(pec_placeholder, w.len() as i64);
     let pec_start = w.len();
     let list = pec::write_section(&pattern, &mut w)?;
-    patch_pec_header(&mut w.bytes[pec_start..]);
+    patch_pec_header(&mut w.bytes[pec_start..], objects.hoop_page);
     write_addendum(&mut w, &list, &pattern.threads);
     Ok(w.bytes)
 }
 
-/// The PEC header fields PE-DESIGN 11.50 writes in its own `#PES0110` files with the header
-/// OpenStitch writes (a 150 × 150 mm multi-needle hoop and a custom page: r01, r12, r14,
-/// text-defaults-h): 0x1F `FF`; 0x24–0x2F `20 FF 00 00 64 00 00 00 00 FF 20 20`; and
-/// 2900 × 1900 at 0x208, where the PEC writer puts the design's size. PE-DESIGN opened a text
-/// file with the PEC writer's values with a Hoop Settings tab and a 290 × 190 mm section
-/// outline its own files do not show (pes-0110-editable-text, 2026-10-29). Its Hoop-Size page
-/// files (r27, `nv880e-S`) carry another form, with the design's size at 0x208.
-fn patch_pec_header(pec: &mut [u8]) {
+/// The PEC header fields PE-DESIGN 11.50 writes with each page mode (all of its `#PES0110`
+/// files in compat/reference, tests/fixtures/pe11 and the round-4 captures, 2026-10-29): 0x1F
+/// `FF`; on a multi-needle Custom Size page 0x24–0x2F `20 FF 00 00 64 00 00 00 00 FF 20 20` and
+/// 2900 × 1900 at 0x208 (663 files), on a Hoop Size page `20 20 20 20 64 20 00 20 00 FF 20 20`
+/// and the design's size there, as the PEC writer puts it (46 files).
+fn patch_pec_header(pec: &mut [u8], hoop_page: bool) {
     pec[0x1F] = 0xFF;
+    if hoop_page {
+        pec[0x24..0x30].copy_from_slice(&[
+            0x20, 0x20, 0x20, 0x20, 0x64, 0x20, 0x00, 0x20, 0x00, 0xFF, 0x20, 0x20,
+        ]);
+        return;
+    }
     pec[0x24..0x30].copy_from_slice(&[
         0x20, 0xFF, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x20, 0x20,
     ]);
@@ -827,7 +844,11 @@ fn write_text(w: &mut ByteWriter, archive: &mut Archive, t: &Text) {
 /// The header fields after the metadata strings up to the thread count: the hoop (150 × 150 mm,
 /// `nv880e-M`, multi-needle), the page size in mm, and fields not mapped yet, as the baseline
 /// file has them.
-fn write_header(w: &mut ByteWriter, page_mm: (u16, u16)) {
+fn write_header(w: &mut ByteWriter, page_mm: (u16, u16), hoop_page: bool) {
+    if hoop_page {
+        w.append(&template::HEADER_HOOP_100);
+        return;
+    }
     let mut h = template::HEADER;
     // After 14 hoop bytes and the machine string come a u16, two absent optional fields (u16 0
     // each) and a u32, then the page width and height.
@@ -1194,7 +1215,7 @@ mod tests {
     #[test]
     fn page_size_is_patched_into_the_header() {
         let mut w = ByteWriter::default();
-        write_header(&mut w, (130, 180));
+        write_header(&mut w, (130, 180), false);
         let s = String::from_utf8_lossy(&w.bytes[15..23]).into_owned();
         assert_eq!(s, "nv880e-M");
         assert_eq!(&w.bytes[33..37], &[130, 0, 180, 0]);
