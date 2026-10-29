@@ -41,6 +41,7 @@ policy: docs/LEGAL_AND_LICENSING.md. Each rN file is the baseline B with one pro
 | `r24-text-blue.pes` | `8c8c7fef1f2d2d1a69300b7fb484a9f8c7e431e5c27bd84db96319528dc0914c` | r12's text `A`, region Satin, region colour 007 EMBROIDERY PRUSSIAN BLUE. 155 st. |
 | `r25-text-b.pes` | `e5e0bc6b7e8b545e3bde1944852c661789279882ad5032b7c6f9d399d5203063` | r12 but the letter `B`. 7,70 x 10,30 mm, 207 st. |
 | `r26-text-moved.pes` | `1450b6f8f655ec92a930c10be2afcf489e7cab43e24c9e1adea2a4c083c2861f` | r12 with the click 10 mm further right, at (20,20): box about (20,9.7)-(30.1,20). 155 st. |
+| `r27-text-a-space-b.pes` | `70c2c73817f116c07a28ea3334fce45e64788b74e2fdb497484c70f7529c5ba5` | Round 4 (2026-10-29, session pe-refs-4, PE-DESIGN 11.50, Windows 11 Pro 10.0.26300): New design (page as PE-DESIGN started: Hoop Size 100 x 100 mm `nv880e-S`), Text tool at its defaults (Lato, 10,0, line Not Sewn, Satin Stitch 800 RED), click at (10,20) mm, typed `A B`, Select. 22,30 x 15,90 mm, 364 st; Save As Ver.11.0 (#PES0110). Shows that a space is stored as a letter. |
 
 ## Round 3 (2026-10-28): the remaining object kinds
 

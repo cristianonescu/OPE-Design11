@@ -179,6 +179,11 @@ fn text_letters_and_attributes_read() {
             "{name}"
         );
     }
+    // A space is a letter with the same attributes (r27, `A B`).
+    let spaced = &objects_of(&owner_file("r27-text-a-space-b")).texts[0];
+    let chars: Vec<u16> = spaced.letters.iter().map(|l| l.ch).collect();
+    assert_eq!(chars, [65, 32, 66]);
+    assert_eq!(spaced.letters[1].density, spaced.letters[0].density);
     // A sewn line on text: Running in the letter's line fields.
     let sewn = &objects_of(&owner_file("text-sewing-order")).texts[0].letters[0];
     assert!(sewn.line_sewn);
@@ -348,7 +353,8 @@ fn round_3_object_files_read_their_stitches_and_stop_cleanly() {
 
 /// The owner files whose object list the reader parses completely (every object a `CEmbLine`
 /// or a `CEmbNText`, groups included): the writer's round-trip and byte-comparison set.
-const FULLY_PARSED: [&str; 55] = [
+const FULLY_PARSED: [&str; 56] = [
+    "r27-text-a-space-b",
     "r12-text-a",
     "r13-text-a-20",
     "r14-text-ab",
@@ -572,7 +578,13 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
             assert_eq!(machine(&written), machine(&fixture), "{name}");
             let m = machine(&fixture);
             assert_eq!(&written[12..21], &fixture[12..21], "{name}: header");
-            assert_eq!(&written[m..list], &fixture[m..list], "{name}: header");
+            // r27 was made on a Hoop-Size page: one more hoop field differs (5 for 10).
+            let mut header = fixture[m..list].to_vec();
+            if name == "r27-text-a-space-b" {
+                assert_eq!(header[28..30], [5, 0], "{name}");
+                header[28..30].copy_from_slice(&[10, 0]);
+            }
+            assert_eq!(&written[m..list], &header[..], "{name}: header");
         }
         // The object list and the trailer, compared from the list start.
         let (fixture, written) = (&fixture[list..pec], &written[list_w..pec_w]);
@@ -758,4 +770,27 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
     let written = pes11::write(&objects, &stitches_of(&fixture)).expect("write");
     let pec = u32::from_le_bytes(fixture[8..12].try_into().expect("offset")) as usize;
     assert_eq!(&written[..pec], &fixture[..pec]);
+}
+
+#[test]
+fn the_pec_header_carries_pe_designs_fields() {
+    // PE-DESIGN's own files with OpenStitch's object header (150 × 150 mm hoop, custom page)
+    // carry these PEC header fields; the PEC writer's own values made PE-DESIGN show a Hoop
+    // Settings tab on a written text.
+    for name in ["r01-rect", "r12-text-a", "r14-text-ab", "text-defaults-h"] {
+        let fixture = owner_file(name);
+        let written = pes11::write(&objects_of(&fixture), &stitches_of(&fixture)).expect("write");
+        let pec_of = |b: &[u8]| u32::from_le_bytes(b[8..12].try_into().expect("offset")) as usize;
+        let (p, q) = (pec_of(&fixture), pec_of(&written));
+        assert_eq!(
+            &written[q + 0x13..q + 0x30],
+            &fixture[p + 0x13..p + 0x30],
+            "{name}"
+        );
+        assert_eq!(
+            &written[q + 0x208..q + 0x20C],
+            &fixture[p + 0x208..p + 0x20C],
+            "{name}"
+        );
+    }
 }

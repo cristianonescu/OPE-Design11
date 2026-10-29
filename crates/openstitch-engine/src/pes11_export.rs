@@ -208,8 +208,10 @@ fn text_object(
             breaks.push(letters.len() as u16);
             continue;
         }
-        if c.is_whitespace() {
-            return refuse("a space (no owner file shows how PE-DESIGN stores one)");
+        // A space is a letter like any other in PE-DESIGN's files (r27, `A B`); other white
+        // space has no owner sample.
+        if c.is_whitespace() && c != ' ' {
+            return refuse(&format!("the white-space character {c:?}"));
         }
         let ch = u16::try_from(u32::from(c))
             .map_err(|_| format!("object {id}: character {c:?} is outside UTF-16's first plane"))?;
@@ -498,9 +500,9 @@ mod tests {
         assert!(half > 50.0 && half < 120.0, "{half}");
         assert!((f32::from(c.bounds[0]) - c.origin.0).abs() < 3.0, "{:?}", c);
 
-        // A space, a vertical text and a rotated text are refused with the reason.
+        // A tab, a vertical text and a rotated text are refused with the reason.
         for (text, vertical, rotate) in [
-            ("A B", false, false),
+            ("A	B", false, false),
             ("AB", true, false),
             ("AB", false, true),
         ] {
