@@ -1,10 +1,12 @@
 //! Sewing-order editing (PE-DESIGN's "Checking and Editing the Sewing Order"): move objects
-//! to the start or end or one place earlier or later, and sort by colour so same-colour
-//! objects sew together.
+//! to the start or end or one place earlier or later, sort by colour so same-colour objects
+//! sew together, and Optimize Sewing Order in two modes: PE-DESIGN 11.50's (the default,
+//! pinned by references) and OpenStitch's shortest-jump arrangement (greedy nearest, then
+//! 2-opt), chosen per design (`optimizeOrder`) or per call (`mode`).
 
 use crate::commands::{CommandSpec, Effect, indexes, opt, req, spec};
 use openstitch_design::boolean::{self, BoolOp};
-use openstitch_design::{Design, DesignObject, ObjectKind, Vec2};
+use openstitch_design::{Design, DesignObject, ObjectKind, OptimizeOrder, Vec2};
 use serde_json::json;
 
 pub fn commands() -> Vec<CommandSpec> {
@@ -97,11 +99,22 @@ pub fn commands() -> Vec<CommandSpec> {
         ),
         spec(
             "order.optimize",
-            "Optimise the sewing order: same colours together, in drawing order within a colour, but an object never moves before one it overlaps that was sewn earlier; then each shape's entry and exit points move to where it comes closest to the same-colour shapes sewn before and after it",
+            "Optimise the sewing order. peDesign (PE-DESIGN 11.50): same colours together, in drawing order within a colour, but an object never moves before one it overlaps that was sewn earlier; then each shape's entry and exit points move to where it comes closest to the same-colour shapes sewn before and after it. minJump (beyond PE-DESIGN): the same colour blocks, each arranged for the shortest total travel between outlines (greedy nearest, then 2-opt), and every neighbouring pair linked",
             Effect::Edit,
-            vec![],
-            |s, _| {
-                let order = optimized(&s.design);
+            vec![opt(
+                "mode",
+                "peDesign|minJump",
+                "How to arrange the objects (default: the design's optimizeOrder setting, PE-DESIGN's unless changed with design.setProperties)",
+            )],
+            |s, p| {
+                let mode = if p.has("mode") {
+                    let m = p.string("mode", None)?;
+                    OptimizeOrder::from_id(&m)
+                        .ok_or_else(|| p.invalid("mode", "must be peDesign or minJump"))?
+                } else {
+                    s.design.optimize_order
+                };
+                let order = optimized_with(&s.design, mode);
                 let mut objects = std::mem::take(&mut s.design.objects);
                 let mut slots: Vec<Option<DesignObject>> = objects.drain(..).map(Some).collect();
                 s.design.objects = order
@@ -109,8 +122,8 @@ pub fn commands() -> Vec<CommandSpec> {
                     .map(|&i| slots[i].take().expect("each index once"))
                     .collect();
                 let n = s.design.objects.len();
-                link_entry_exit(&mut s.design, 0..n);
-                Ok(json!({ "order": ids(&s.design) }))
+                link_entry_exit_with(&mut s.design, 0..n, mode == OptimizeOrder::PeDesign);
+                Ok(json!({ "order": ids(&s.design), "mode": mode.id() }))
             },
         ),
         spec(
@@ -202,6 +215,175 @@ pub fn optimized(d: &Design) -> Vec<usize> {
         out.push(next);
     }
     out
+}
+
+/// The order for `mode` (indexes into `d.objects`).
+pub fn optimized_with(d: &Design, mode: OptimizeOrder) -> Vec<usize> {
+    match mode {
+        OptimizeOrder::PeDesign => optimized(d),
+        OptimizeOrder::MinJump => min_jump(d, true),
+    }
+}
+
+/// Above this many objects in one colour block, travel is measured between bounding-box
+/// centres instead of outlines, and 2-opt is skipped (greedy only), to stay fast.
+const MIN_JUMP_EXACT_LIMIT: usize = 400;
+
+/// Sweeps of the 2-opt search before it gives up (each sweep tries every reversal once).
+const MAX_SWEEPS: usize = 500;
+
+/// Shortest-jump order: PE-DESIGN's colour blocks (same colours together in order of first
+/// use), each block arranged for the least total travel between the outlines of consecutive
+/// objects. The block starts next to the previous block's last object; within it a greedy
+/// nearest-free walk gives the first order and, with `two_opt`, 2-opt reversals improve it
+/// until none shortens the travel. Overlapping objects keep their drawing order throughout.
+/// Without `two_opt` the greedy order is returned (the baseline the search never loses to).
+pub fn min_jump(d: &Design, two_opt: bool) -> Vec<usize> {
+    let pe = optimized(d);
+    let colour = |i: usize| crate::drawing::first_colour(&d.objects[i]);
+    let exact = d.objects.len() <= EXACT_OVERLAP_LIMIT;
+    let mut out: Vec<usize> = Vec::with_capacity(pe.len());
+    let mut start = 0;
+    while start < pe.len() {
+        let mut end = start + 1;
+        while end < pe.len() && colour(pe[end]) == colour(pe[start]) {
+            end += 1;
+        }
+        let prev = out.last().copied();
+        out.extend(order_block(d, &pe[start..end], prev, exact, two_opt));
+        start = end;
+    }
+    out
+}
+
+/// Travel between two objects: the shortest distance between their outlines (0 when they
+/// touch or overlap); between bounding-box centres when one has no outline to link, or
+/// when `coarse`.
+fn travel_cost(a: &DesignObject, b: &DesignObject, coarse: bool) -> f64 {
+    if !coarse && let (Some(ea), Some(eb)) = (ends(a), ends(b)) {
+        return closest_pair(&ea.edges, &eb.edges).map_or(0.0, |(p, q)| p.distance(q));
+    }
+    match (a.bounds(), b.bounds()) {
+        (Some(ra), Some(rb)) => ra.center().distance(rb.center()),
+        _ => 0.0,
+    }
+}
+
+/// Total travel of `order` (indexes into `d.objects`) between consecutive objects, 0.1 mm:
+/// the sum of the outline-to-outline distances, colour changes included.
+pub fn total_travel(d: &Design, order: &[usize]) -> f64 {
+    let coarse = order.len() > MIN_JUMP_EXACT_LIMIT;
+    order
+        .windows(2)
+        .map(|w| travel_cost(&d.objects[w[0]], &d.objects[w[1]], coarse))
+        .sum()
+}
+
+/// Symmetric travel costs between the members of a block (the upper triangle, row-major).
+struct Costs {
+    k: usize,
+    upper: Vec<f64>,
+}
+
+impl Costs {
+    fn new(k: usize, cost: impl Fn(usize, usize) -> f64) -> Self {
+        let upper = (0..k)
+            .flat_map(|i| (0..k).map(move |j| (i, j)))
+            .map(|(i, j)| if i < j { cost(i, j) } else { 0.0 })
+            .collect();
+        Costs { k, upper }
+    }
+
+    fn get(&self, i: usize, j: usize) -> f64 {
+        let (a, b) = if i < j { (i, j) } else { (j, i) };
+        self.upper[a * self.k + b]
+    }
+}
+
+/// Arranges one same-colour block (indexes into `d.objects`, in PE-DESIGN order) for the
+/// least travel, starting from object `prev` when there is one.
+fn order_block(
+    d: &Design,
+    block: &[usize],
+    prev: Option<usize>,
+    exact_overlap: bool,
+    two_opt: bool,
+) -> Vec<usize> {
+    let k = block.len();
+    if k <= 1 {
+        return block.to_vec();
+    }
+    let coarse = k > MIN_JUMP_EXACT_LIMIT;
+    let obj = |i: usize| &d.objects[block[i]];
+    let cost = Costs::new(k, |i, j| travel_cost(obj(i), obj(j), coarse));
+    let from_prev: Vec<f64> = match prev {
+        Some(p) => (0..k)
+            .map(|i| travel_cost(&d.objects[p], obj(i), coarse))
+            .collect(),
+        None => vec![0.0; k],
+    };
+    // `before[j]` lists the block members that must sew before member `j` (drawn earlier and
+    // overlapping it); `related[i][j]` says the two may not change their relative order.
+    let mut related = vec![vec![false; k]; k];
+    let mut before: Vec<Vec<usize>> = vec![Vec::new(); k];
+    for i in 0..k {
+        for j in 0..k {
+            if block[i] < block[j] && overlaps(obj(i), obj(j), exact_overlap) {
+                before[j].push(i);
+                related[i][j] = true;
+                related[j][i] = true;
+            }
+        }
+    }
+    // Greedy: from the previous object, the nearest member free to sew.
+    let mut placed = vec![false; k];
+    let mut tour: Vec<usize> = Vec::with_capacity(k);
+    while tour.len() < k {
+        let last = tour.last().copied();
+        let c = |j: usize| last.map_or(from_prev[j], |l| cost.get(l, j));
+        let next = (0..k)
+            .filter(|&j| !placed[j] && before[j].iter().all(|&i| placed[i]))
+            .min_by(|&a, &b| c(a).total_cmp(&c(b)))
+            .expect("a free member exists: constraints follow the drawing order");
+        placed[next] = true;
+        tour.push(next);
+    }
+    if two_opt && !coarse {
+        two_opt_improve(&mut tour, &cost, &from_prev, &related);
+    }
+    tour.into_iter().map(|i| block[i]).collect()
+}
+
+/// 2-opt on an open path with a fixed start: reversing `tour[i..=j]` replaces the travel into
+/// `tour[i]` and out of `tour[j]`; the first reversal that shortens the total is taken and
+/// the sweep restarts, until a whole sweep finds none (or `MAX_SWEEPS` pass). A reversal is
+/// allowed only when no two members of the segment must keep their order.
+fn two_opt_improve(tour: &mut [usize], cost: &Costs, from_prev: &[f64], related: &[Vec<bool>]) {
+    let k = tour.len();
+    let into = |prev: Option<usize>, j: usize| prev.map_or(from_prev[j], |p| cost.get(p, j));
+    for _ in 0..MAX_SWEEPS {
+        let mut improved = false;
+        'sweep: for i in 0..k - 1 {
+            let prev = (i > 0).then(|| tour[i - 1]);
+            for j in i + 1..k {
+                if (i..j).any(|m| related[tour[m]][tour[j]]) {
+                    // Nothing longer starting at `i` can be reversed either.
+                    break;
+                }
+                let after = tour.get(j + 1).copied();
+                let old = into(prev, tour[i]) + after.map_or(0.0, |a| cost.get(tour[j], a));
+                let new = into(prev, tour[j]) + after.map_or(0.0, |a| cost.get(tour[i], a));
+                if new < old - 1e-9 {
+                    tour[i..=j].reverse();
+                    improved = true;
+                    break 'sweep;
+                }
+            }
+        }
+        if !improved {
+            return;
+        }
+    }
 }
 
 /// Where a shape can be entered and left: outline segments (each a pair of points), and
@@ -347,13 +529,20 @@ fn set_exit(o: &mut DesignObject, p: Vec2) {
 /// outlines. A colour change between them leaves both points alone, as in PE-DESIGN 11. Text,
 /// stitch patterns and hidden objects are left alone.
 pub fn link_entry_exit(d: &mut Design, pairs: std::ops::Range<usize>) {
+    link_entry_exit_with(d, pairs, true);
+}
+
+/// [`link_entry_exit`], linking across colour changes too when `same_colour_only` is off
+/// (the shortest-jump mode).
+pub fn link_entry_exit_with(d: &mut Design, pairs: std::ops::Range<usize>, same_colour_only: bool) {
     let n = d.objects.len();
     for k in pairs {
         if k + 1 >= n {
             break;
         }
-        if crate::drawing::first_colour(&d.objects[k])
-            != crate::drawing::first_colour(&d.objects[k + 1])
+        if same_colour_only
+            && crate::drawing::first_colour(&d.objects[k])
+                != crate::drawing::first_colour(&d.objects[k + 1])
         {
             continue;
         }
