@@ -464,7 +464,11 @@ fn commands_documented_and_unique() {
 /// order (halves from the start point, brick row ends, straight 2 mm travel, Frequency 30 %,
 /// tie-in and lock), and when the ellipse became four Bézier quarter arcs whose outline is
 /// sampled by halving the parameter until the chords fit the pitch, as PE-DESIGN's Ellipse
-/// tool and running stitch do (2026-10-28; 5893 stitches). The same design
+/// tool and running stitch do (2026-10-28; 5893 stitches), and when the fill under sewing's rows
+/// took PE-DESIGN's placement, on both inset edges with the whole number of gaps nearest to the
+/// inset width over the Density's spacing (2026-10-29, #124, sweep-fill-us-density-*: the
+/// ellipse's under sewing rows and their travel move, 7 stitches fewer, every other record
+/// identical). The same design
 /// exported as `1t`
 /// must keep writing the identical bytes; the
 /// script's default export is now version 6 with objects and sews the same stitches.

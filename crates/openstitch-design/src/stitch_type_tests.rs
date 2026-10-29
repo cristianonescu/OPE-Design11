@@ -633,32 +633,299 @@ fn underlay_styles_layer_inside_the_region() {
     let c = vec![circle()];
     let mut r = region(RegionType::Fill);
     r.underlay = true;
-    for (style, layers) in [
-        (UnderlayStyle::Edge, 2),
-        (UnderlayStyle::Zigzag, 2),
-        (UnderlayStyle::EdgeZigzag, 3),
-        (UnderlayStyle::Double, 3),
+    // Every style is a combination of the under sewing's parts; each sews inside the region,
+    // 1 mm inside the outline, before the top stitching.
+    for (style, parts) in [
+        (UnderlayStyle::Edge, "edge"),
+        (UnderlayStyle::Zigzag, "zigzag"),
+        (UnderlayStyle::EdgeZigzag, "edge, zigzag"),
+        (UnderlayStyle::EdgeFill, "edge, zigzag"),
+        (UnderlayStyle::Double, "lattice"),
+        (UnderlayStyle::Cross, "edge, lattice"),
     ] {
         r.underlay_style = style;
+        assert_eq!(r.underlay_parts().names().join(", "), parts, "{style:?}");
         let out = crate::region::layers(&c, &r, &[]);
-        assert_eq!(out.len(), layers, "{style:?}");
+        assert!(out.len() >= 2, "{style:?}");
         for l in &out {
             assert_inside(l, &c, &format!("{style:?}"));
         }
-        if style != UnderlayStyle::Edge {
-            // Rows are inset from the outline.
-            let rows = &out[out.len() - 2];
+        // PE-DESIGN's types: entered from the start point on the outline, the rest 1 mm
+        // inside (OpenStitch's older styles keep their own insets, see `legacy_underlay`).
+        if r.legacy_underlay() {
+            continue;
+        }
+        for l in &out[..out.len() - 1] {
             assert!(
-                rows.iter()
-                    .flatten()
-                    .all(|p| p.distance(v2(200.0, 200.0)) <= 150.0 - 1.0),
-                "{style:?}"
+                l.iter()
+                    .flat_map(|run| run.iter().skip(1))
+                    .all(|p| p.distance(v2(200.0, 200.0)) <= 150.0 - 9.0),
+                "{style:?}: under sewing on the outline"
             );
         }
     }
-    r.underlay_style = UnderlayStyle::Edge;
-    let edge = crate::region::layers(&c, &r, &[]);
-    assert_eq!(edge[0], vec![crate::generate::running(&c[0], 25.0, 1)]);
+}
+
+/// Distinct positions (0.01 mm) with at least two stitches of `runs` longer than `min` along
+/// `axis` (0 = x, 1 = y) that run straight along the other axis (a lone travel stitch is not
+/// a line).
+fn straight_lines(runs: &[Run], axis: usize, min: f64) -> Vec<i64> {
+    let mut at: Vec<i64> = runs
+        .iter()
+        .flat_map(|r| r.windows(2))
+        .filter(|w| {
+            let d = w[1] - w[0];
+            let (along, across) = if axis == 0 { (d.y, d.x) } else { (d.x, d.y) };
+            across.abs() < 0.05 && along.abs() >= min
+        })
+        .map(|w| {
+            let p = w[0];
+            ((if axis == 0 { p.x } else { p.y }) * 10.0).round() as i64
+        })
+        .collect();
+    at.sort_unstable();
+    let mut lines: Vec<i64> = at
+        .windows(2)
+        .filter(|w| w[0] == w[1])
+        .map(|w| w[0])
+        .collect();
+    lines.dedup();
+    lines
+}
+
+#[test]
+fn under_sewing_density_sets_the_row_count_with_rows_on_the_inset_edges() {
+    // The 40 x 40 mm square of compat sweep-fill-us-density-*: PE-DESIGN's rows lie 1 mm
+    // inside the outline, on both inset edges, 19 gaps of 2.0 mm at Medium, 27 of 1.407 at
+    // Dense and 11 of 3.455 at Light.
+    let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 400.0)];
+    let mut r = region(RegionType::Fill);
+    r.underlay = true;
+    for (density, rows) in [
+        (crate::UnderlayDensity::Medium, 20),
+        (crate::UnderlayDensity::Dense, 28),
+        (crate::UnderlayDensity::Light, 12),
+    ] {
+        r.underlay_density = density;
+        let out = crate::region::layers(&c, &r, &[]);
+        let xs = straight_lines(&out[0], 0, 20.0);
+        assert_eq!(xs.len(), rows, "{density:?}: {xs:?}");
+        assert_eq!((xs[0], xs[xs.len() - 1]), (1100, 4900), "{density:?}");
+        let gap = (xs[xs.len() - 1] - xs[0]) as f64 / (rows - 1) as f64;
+        assert!(
+            xs.windows(2)
+                .all(|w| ((w[1] - w[0]) as f64 - gap).abs() <= 1.0),
+            "{density:?}: {xs:?}"
+        );
+    }
+    // An explicit spacing overrides the Density.
+    r.underlay_spacing = Some(4.0);
+    let out = crate::region::layers(&c, &r, &[]);
+    assert_eq!(straight_lines(&out[0], 0, 20.0).len(), 11);
+    // Satin rows across the column take the same rule inside the 1 mm inset: the 40 x 6 mm
+    // satin of sweep-satin-us-* has rows at 11, 13 and 15 mm at Medium.
+    let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 60.0)];
+    let mut r = region(RegionType::Satin);
+    r.angle = 90.0;
+    r.underlay = true;
+    r.entry = Some(v2(300.0, 160.0));
+    for (density, ys) in [
+        (crate::UnderlayDensity::Medium, vec![1100, 1300, 1500]),
+        (crate::UnderlayDensity::Dense, vec![1100, 1233, 1367, 1500]),
+        (crate::UnderlayDensity::Light, vec![1100, 1500]),
+    ] {
+        r.underlay_density = density;
+        let out = crate::region::layers(&c, &r, &[]);
+        let rows = &out[out.len() - 2];
+        assert_eq!(straight_lines(rows, 1, 20.0), ys, "{density:?}");
+    }
+}
+
+#[test]
+fn under_sewing_parts_combine_and_name_themselves() {
+    use crate::UnderlayParts;
+    assert_eq!(
+        UnderlayParts::from_names(["lattice", "edge"]),
+        Some(UnderlayParts {
+            edge: true,
+            lattice: true,
+            ..UnderlayParts::default()
+        })
+    );
+    assert_eq!(UnderlayParts::from_names(["edge", "net"]), None);
+    assert_eq!(
+        UnderlayParts::from_names(["center", "zigzag", "lattice", "edge"])
+            .expect("parts")
+            .names(),
+        ["edge", "zigzag", "lattice", "center"]
+    );
+    assert!(!UnderlayParts::default().any());
+    let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 400.0)];
+    let mut r = region(RegionType::Fill);
+    r.underlay = true;
+    let with = |names: &[&str]| {
+        let mut r = r.clone();
+        r.underlay_parts = UnderlayParts::from_names(names.iter().copied());
+        crate::region::layers(&c, &r, &[])
+    };
+    // Nothing on: the top stitching alone.
+    assert_eq!(with(&[]).len(), 1);
+    // Edge, rows and piping are one sequence; the lattice follows as its own.
+    let all = with(&["edge", "zigzag", "lattice", "center"]);
+    assert_eq!(all.len(), 3);
+    let first = &all[0];
+    // 20 rows across the sewing direction and the piping down the middle, along them.
+    let xs = straight_lines(first, 0, 20.0);
+    assert_eq!(xs.len(), 21, "rows and piping: {xs:?}");
+    assert!(xs.contains(&3000), "piping along the middle");
+    assert!(!straight_lines(&with(&["edge", "zigzag"])[0], 0, 20.0).contains(&3000));
+    let edge = with(&["edge"]);
+    assert_eq!(edge.len(), 2);
+    assert_eq!(straight_lines(&edge[0], 0, 20.0), [1100, 4900], "no rows");
+    let lattice = with(&["lattice"]);
+    assert_eq!(lattice.len(), 2);
+    let diagonal = lattice[0]
+        .iter()
+        .flat_map(|run| run.windows(2))
+        .filter(|w| {
+            let d = w[1] - w[0];
+            (d.x.abs() - d.y.abs()).abs() < 0.5 && d.x.abs() > 20.0
+        })
+        .count();
+    assert!(diagonal > 50, "{diagonal} lattice stitches");
+    // Without the edge run the lattice only walks the inset outline between its lines and
+    // back to the start point; the edge run adds a whole side of points along x = 11 mm.
+    let on_left = |layer: &[Run]| {
+        layer
+            .iter()
+            .flatten()
+            .filter(|p| (p.x - 110.0).abs() < 0.01)
+            .count()
+    };
+    let with_edge = with(&["edge", "lattice"]);
+    assert!(
+        on_left(&with_edge[0]) >= on_left(&lattice[0]) + 10,
+        "{} with the edge run, {} without",
+        on_left(&with_edge[0]),
+        on_left(&lattice[0])
+    );
+    // OpenStitch's own pre-PE styles keep their geometry unless parts are set: `edge` runs on
+    // the outline itself, `double` sews two plain crossing layers (no edge, no halves).
+    let mut old = r.clone();
+    old.underlay_style = UnderlayStyle::Edge;
+    assert!(old.legacy_underlay());
+    let layers = crate::region::layers(&c, &old, &[]);
+    assert_eq!(layers[0], vec![crate::generate::running(&c[0], 25.0, 1)]);
+    old.underlay_style = UnderlayStyle::Double;
+    assert_eq!(crate::region::layers(&c, &old, &[]).len(), 3);
+    old.underlay_style = UnderlayStyle::EdgeFill;
+    assert!(!old.legacy_underlay());
+    old.underlay_style = UnderlayStyle::Edge;
+    old.underlay_parts = Some(UnderlayParts {
+        edge: true,
+        ..UnderlayParts::default()
+    });
+    assert!(
+        !old.legacy_underlay(),
+        "explicit parts take the new generators"
+    );
+    // Explicit parts win over the style.
+    let mut both = r.clone();
+    both.underlay_style = UnderlayStyle::Cross;
+    both.underlay_parts = Some(UnderlayParts {
+        edge: true,
+        ..UnderlayParts::default()
+    });
+    assert_eq!(both.underlay_parts().names(), ["edge"]);
+}
+
+#[test]
+fn column_under_sewing_sews_the_edge_the_piping_and_the_zigzag_as_pe_design() {
+    // PE-DESIGN 11.50's Manual Punch column of the round-4 captures (satin-col-us-*): a
+    // 39.5 x 6 mm straight satin column from (10.5, 10) mm, 4.5 lines/mm, Density Medium:
+    // 186 stitches with under sewing off, 286 with the edge run, the piping and the zigzag
+    // (edge 39 stitches, piping 17, zigzag 42 plus the travel), 225 with the edge alone, 249
+    // with the piping and zigzag.
+    let rungs = vec![
+        [v2(105.0, 100.0), v2(105.0, 160.0)],
+        [v2(500.0, 100.0), v2(500.0, 160.0)],
+    ];
+    let mut r = region(RegionType::Satin);
+    r.direction_lines = rungs.clone();
+    r.underlay = true;
+    let outline = crate::column::outline(&rungs);
+    let count = |names: &[&str]| {
+        let mut r = r.clone();
+        r.underlay_parts = crate::UnderlayParts::from_names(names.iter().copied());
+        let layers = crate::region::layers(std::slice::from_ref(&outline), &r, &[]);
+        assert_eq!(layers.len(), 2, "{names:?}");
+        let under = &layers[0];
+        assert_eq!(under.len(), 1, "{names:?}: one run");
+        let run = &under[0];
+        assert_eq!(
+            (run[0], run[run.len() - 1]),
+            (v2(105.0, 100.0), v2(105.0, 100.0))
+        );
+        // Everything lies within the 0.5 mm inset but the travel from the start point.
+        let outside = run[1..run.len() - 1]
+            .iter()
+            .filter(|p| !((109.0..=496.0).contains(&p.x) && (104.0..=156.0).contains(&p.y)))
+            .count();
+        assert!(
+            outside <= 2,
+            "{names:?}: {outside} points outside the 0.5 mm inset"
+        );
+        for w in run.windows(2) {
+            assert!(w[0].distance(w[1]) <= 40.0 + 1e-6, "{names:?}: {w:?}");
+        }
+        run.len() - 1
+    };
+    // PE-DESIGN's exclusive buttons map onto the parts: the default style sews all three.
+    assert_eq!(r.underlay_parts().names(), ["edge", "zigzag", "center"]);
+    let mut by_style = r.clone();
+    by_style.underlay_style = UnderlayStyle::Edge;
+    assert_eq!(by_style.underlay_parts().names(), ["edge"]);
+    by_style.underlay_style = UnderlayStyle::Zigzag;
+    assert_eq!(by_style.underlay_parts().names(), ["zigzag", "center"]);
+    let within = |n: usize, pe: usize| (n as f64 - pe as f64).abs() <= pe as f64 * 0.1;
+    let all = count(&["edge", "center", "zigzag"]);
+    assert!(
+        within(all, 100),
+        "edge + piping + zigzag: {all} stitches to PE-DESIGN's 100"
+    );
+    let edge = count(&["edge"]);
+    assert!(within(edge, 39), "edge: {edge} to PE-DESIGN's 39");
+    let inner = count(&["center", "zigzag"]);
+    assert!(
+        within(inner, 63),
+        "piping + zigzag: {inner} to PE-DESIGN's 63"
+    );
+    // The zigzag's needle points lie on the inset rails, a whole number of gaps apart (19 of
+    // 2.03 mm over 38.5 mm at Medium).
+    let mut r = r.clone();
+    r.underlay_parts = crate::UnderlayParts::from_names(["zigzag"]);
+    let layers = crate::region::layers(std::slice::from_ref(&outline), &r, &[]);
+    let rails: Vec<Vec2> = layers[0][0]
+        .iter()
+        .copied()
+        .filter(|p| (p.y - 105.0).abs() < 0.01 || (p.y - 155.0).abs() < 0.01)
+        .collect();
+    assert_eq!(rails.len(), 20, "{rails:?}");
+    assert!(
+        rails
+            .windows(2)
+            .all(|w| ((w[0].x - w[1].x).abs() - 20.263).abs() < 0.05)
+    );
+    assert!(
+        rails.windows(2).all(|w| (w[0].y - w[1].y).abs() > 49.0),
+        "alternating rails"
+    );
+    // No under sewing, no layer.
+    r.underlay = false;
+    assert_eq!(
+        crate::region::layers(std::slice::from_ref(&outline), &r, &[]).len(),
+        1
+    );
 }
 
 #[test]

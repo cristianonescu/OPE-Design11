@@ -79,7 +79,7 @@ dearest:
 | 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes shapes as `CEmbLine`, which PE-DESIGN 11.50 opens editable, and Lato Bold text as `CEmbNText`, which it opens editable and retypable (both reference)) | PES | 5 | Reference | Yes (the Hoop Size page check; Text Transform and text on an outline) |
 | 6 | One sewing direction per text instead of per stroke | Fonts | 5 | Documented difference | Angles |
 | 7 | Auto direction is one fixed angle (**fixed**, internal regression) | Stitches | 4 | Documented difference | No |
-| 8 | Underlay model differs; zigzag lines have no underlay | Stitches | 4 | Documented difference | Geometry |
+| 8 | Underlay model differs (**partly fixed**: PE's two region types, Density Dense / Medium / Light, the Manual Punch column's edge / piping / zigzag); zigzag lines have no underlay | Stitches | 4 | Documented difference | Geometry |
 | 9 | PE-DESIGN-made PES files lose objects, properties and colours on re-save | PES | 4 | Documented difference | Pass-through only |
 | 10 | Hoop and Design Page fields hard-coded in PES | PES | 4 | Documented, unverified | Field encoding |
 | 11 | No Connection Points (Default / Closest / Farther) for text | Fonts | 4 | Documented difference | Geometry |
@@ -487,8 +487,35 @@ Line references are relative to `crates/`.
   outline from the start point first), straight travel to the corner at 2.5 mm, walks along
   the inset outline at 2 mm, back to the start point at the end; specs sweep-satin-us-type-2
   (395 stitches to PE's 404) and sweep-fill-us-type-2 (2650 to 2651) at the reference tier.
-  Still open: Density Dense / Light (PE: row spacing 1.41 / 3.45 mm against Medium's 2.0,
-  `sweep-fill-us-density-*`), and which of the two types PE applies to the other region kinds.
+  **Density (2026-10-29, #124):** Dense / Medium / Light are 1.4 / 2.0 / 3.5 mm nominal; PE's
+  rows lie on both inset edges with the whole number of gaps nearest to the inset width over the
+  nominal (38 mm: 27 gaps of 1.407, 19 of 2.0, 11 of 3.455), modelled as `underlayDensity`
+  (`region::inset_rows`; specs sweep-fill-us-density-dense/-light at the reference tier). PE's
+  type buttons are exclusive radio buttons (pe-refs-4, round 4: a Satin region enables all five,
+  Fill the first row only), so the PE-compatible attribute stays the exclusive `underlayStyle`
+  (plus `underlayDensity`); underneath, each style is a set of parts (`underlayParts`: edge,
+  zigzag = rows across the direction, lattice, center = piping), and setting the parts
+  directly, in any combination, is OpenStitch's own extension with no PE reference.
+  OpenStitch's styles from before PE's types were measured (`edge`, `double`, and `zigzag` /
+  `edgeZigzag` on fill) keep their original geometry unless parts are set, so saved designs
+  sew as before (the badge golden is unchanged). **Manual Punch columns (round-4 captures `satin-col-us-off/-type-1..5`, a
+  39.5 × 6 mm straight satin column at 4.5 lines/mm, Medium):** PE sews the column's under
+  sewing 0.5 mm inside the rails and the end rungs: the edge run in equal stitches ≤ 2.5 mm
+  (39 stitches with the travel from the start point), the piping down the middle (16 × 2.41 mm)
+  and a zigzag between the inset rails from the far end back, its stations 38.5 / 19 = 2.03 mm
+  apart and every 5.4 mm diagonal split into stitches ≤ 4 mm (42 stitches); the captures show
+  edge + piping + zigzag for the first row's two buttons (type 1, the default, and type 2:
+  286 stitches, the parts in either order), the edge alone for the second row's outline and
+  lines buttons (types 3 and 5: 225) and piping + zigzag for its zigzag button (type 4: 249).
+  Modelled in `column::underlay` for a column with several direction lines, the styles mapped
+  by `UnderlayStyle::column_parts` (edgeZigzag / double → types 1-2, edge → 3 and 5, zigzag →
+  4): 275 / 219 / 239 stitches, IoU ≥ 0.999 against the captures. Specs `satin-col-us-type-1..5`
+  and `satin-col-us-off` draw the column with `shape.column` (lines (10,10)-(10,16) and
+  (49.5,10)-(49.5,16)), as PE's files are Manual Punch blocks (until 2026-10-29 they drew a
+  Rectangle-tool shape, a region with a split satin PE does not sew here); type 5 and the
+  plain column, parked by pe-refs-4 at 292 and 207 stitches, landed at 219 / 225 and 186 / 186.
+  Still open: which of the two types PE applies to the other region kinds; the zigzag's exact split
+  points (PE's follow a 12-diagonal cycle, OpenStitch splits each diagonal evenly).
 - **Module:**
   - `openstitch-design/src/model.rs:613-625,822`: the styles and a 2 mm spacing.
   - `openstitch-design/src/region.rs:15,120-156`: satin underlay runs parallel to the top

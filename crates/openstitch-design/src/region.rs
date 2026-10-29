@@ -7,7 +7,8 @@ use crate::direction;
 use crate::generate::{self, RegionParams, RowSpan, Run, Stagger, subdivide};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, subtract, v2};
 use crate::model::{
-    Feather, FeatherSide, Gradation, RegionSewing, RegionType, RunningStitchPath, UnderlayStyle,
+    Feather, FeatherSide, Gradation, RegionSewing, RegionType, RunningStitchPath, UnderlayParts,
+    UnderlayStyle,
 };
 use crate::paths::{OutlineTravel, Rng, TravelGraph, join};
 use crate::patterns::Pattern;
@@ -158,10 +159,6 @@ fn layers_inner(
     }
     // Several direction lines: the top stitching follows the column they make.
     if r.direction_lines.len() >= 2 && matches!(r.kind, RegionType::Satin | RegionType::Fill) {
-        let mut plain = r.clone();
-        plain.direction_lines.clear();
-        let mut out = layers_inner(closed, &plain, holes, &[]);
-        out.pop();
         let spacing = 10.0 / r.density.max(0.1);
         let pull = r.pull_compensation * 10.0;
         let lines = if r.curved_lines {
@@ -169,6 +166,21 @@ fn layers_inner(
         } else {
             r.direction_lines.clone()
         };
+        let mut out = Vec::new();
+        if r.underlay {
+            // PE-DESIGN's under sewing of a Manual Punch column (see `column::underlay`).
+            let start = r.entry.unwrap_or(lines[0][0]);
+            let run = crate::column::underlay(
+                &lines,
+                r.underlay_parts(),
+                r.underlay_spacing_mm() * 10.0,
+                r.stitch_length * 10.0,
+                start,
+            );
+            if run.len() > 1 {
+                out.push(vec![run]);
+            }
+        }
         out.push(vec![match r.kind {
             RegionType::Satin => crate::column::satin(&lines, spacing, pull),
             _ => crate::column::fill(&lines, spacing, r.stitch_length * 10.0, pull),
@@ -227,11 +239,6 @@ fn layers_inner(
             };
             generate::satin(closed, &p, holes)
         };
-        let across = if r.kind == RegionType::Satin {
-            angle
-        } else {
-            angle + 90.0
-        };
         // Satin as PE-DESIGN 11 sews it: the outline 1 mm in, then rows across the satin
         // (perpendicular to its stitches) 2 mm apart with stitches of the fill length.
         // PE-DESIGN starts satin at its start point, by default the outline's first point.
@@ -260,32 +267,74 @@ fn layers_inner(
                 })
                 .collect()
         };
-        match r.underlay_style {
-            UnderlayStyle::Zigzag if r.kind == RegionType::Satin => out.push(satin_rows()),
-            UnderlayStyle::EdgeZigzag if r.kind == RegionType::Satin => {
-                let rows = satin_rows();
-                out.push(satin_edge(rows.first().and_then(|r| r.first().copied())));
-                out.push(rows);
-            }
-            UnderlayStyle::Edge => out.push(edge()),
-            UnderlayStyle::Zigzag => out.push(rows(across)),
-            UnderlayStyle::EdgeZigzag => {
-                out.push(edge());
-                out.push(rows(across));
-            }
-            UnderlayStyle::Double => {
-                out.push(rows(angle + 45.0));
-                out.push(rows(angle - 45.0));
-            }
-            UnderlayStyle::EdgeFill => out.extend(fill_underlay(closed, r, angle, holes)),
-            UnderlayStyle::Cross => match cross_underlay(closed, r, angle, holes) {
-                Some(layers) => out.extend(layers),
-                None => {
+        // OpenStitch's own styles from before PE-DESIGN's types were measured sew as they
+        // always did (see `RegionSewing::legacy_underlay`).
+        let legacy = r.legacy_underlay();
+        if legacy {
+            let across = angle + 90.0;
+            match r.underlay_style {
+                UnderlayStyle::Edge => out.push(edge()),
+                UnderlayStyle::Zigzag => out.push(rows(across)),
+                UnderlayStyle::EdgeZigzag => {
                     out.push(edge());
+                    out.push(rows(across));
+                }
+                _ => {
                     out.push(rows(angle + 45.0));
                     out.push(rows(angle - 45.0));
                 }
-            },
+            }
+        }
+        // The components combine (PE-DESIGN's types are combinations of them, see
+        // `UnderlayParts`): the edge run first, then the piping, the rows, and the lattice.
+        let parts = if legacy {
+            UnderlayParts::default()
+        } else {
+            r.underlay_parts()
+        };
+        // The edge run belongs to the lattice's own sequence when nothing comes between them
+        // (PE-DESIGN's second type: the edge run, then the two layers).
+        let edge_with_lattice = parts.edge && parts.lattice && !parts.zigzag && !parts.center;
+        let lattice = |with_edge: bool| -> Vec<Vec<Run>> {
+            match cross_underlay(closed, r, angle, holes, with_edge) {
+                Some(layers) => layers,
+                None => {
+                    let mut out = Vec::new();
+                    if with_edge {
+                        out.push(edge());
+                    }
+                    out.push(rows(angle + 45.0));
+                    out.push(rows(angle - 45.0));
+                    out
+                }
+            }
+        };
+        if r.kind == RegionType::Satin {
+            let rows = parts.zigzag.then(satin_rows);
+            if parts.edge && !edge_with_lattice {
+                out.push(satin_edge(
+                    rows.as_ref()
+                        .and_then(|r| r.first().and_then(|r| r.first().copied())),
+                ));
+            }
+            if parts.center
+                && let Some(run) = center_row(closed, holes, angle, SATIN_UNDERLAY_INSETS[0])
+            {
+                out.push(vec![run]);
+            }
+            if let Some(rows) = rows {
+                out.push(rows);
+            }
+            if parts.lattice {
+                out.extend(lattice(edge_with_lattice));
+            }
+        } else {
+            if (parts.edge && !edge_with_lattice) || parts.zigzag || parts.center {
+                out.extend(fill_underlay(closed, r, angle, holes, parts));
+            }
+            if parts.lattice {
+                out.extend(lattice(edge_with_lattice));
+            }
         }
     }
     let shaped =
@@ -354,19 +403,24 @@ fn fill_underlay(
     r: &RegionSewing,
     angle: f64,
     holes: &[Contour],
+    parts: UnderlayParts,
 ) -> Vec<Vec<Run>> {
     let mut shape: Vec<Contour> = closed.to_vec();
     shape.extend(holes.iter().cloned());
     let inset =
         crate::boolean::contours(&crate::boolean::offset(&shape, -FILL_UNDERLAY_INSET, false));
-    let mut edge: Vec<Run> = inset
-        .iter()
-        .filter(|c| c.closed && c.points.len() >= 3)
-        .map(|c| match r.entry {
-            Some(p) => generate::running(&c.starting_at(p), FILL_UNDERLAY_PITCH, 1),
-            None => generate::running(c, FILL_UNDERLAY_PITCH, 1),
-        })
-        .collect();
+    let mut edge: Vec<Run> = if parts.edge {
+        inset
+            .iter()
+            .filter(|c| c.closed && c.points.len() >= 3)
+            .map(|c| match r.entry {
+                Some(p) => generate::running(&c.starting_at(p), FILL_UNDERLAY_PITCH, 1),
+                None => generate::running(c, FILL_UNDERLAY_PITCH, 1),
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
     // With an entry point the region starts there: the edge run nearest to it goes first and
     // is entered from the entry on the outline.
     if let Some(p) = r.entry {
@@ -382,11 +436,27 @@ fn fill_underlay(
         angle: angle + 90.0,
         row_spacing: r.underlay_spacing_mm() * 10.0,
         stitch_length: r.stitch_length * 10.0,
-        pull_compensation: -FILL_UNDERLAY_INSET,
+        pull_compensation: 0.0,
     };
-    let rows = generate::fill_shifted(closed, &p, holes, Stagger::Regular(FILL_UNDERLAY_SHIFT));
+    let center = parts
+        .center
+        .then(|| center_row(closed, holes, angle, FILL_UNDERLAY_INSET))
+        .flatten();
+    let rows = if parts.zigzag {
+        let l = p.stitch_length;
+        generate::chain_spans(&inset_row_spans(&inset, &p), &p, |span, row, forward| {
+            let mut xs = tatami_points(span, row, l, Stagger::Regular(FILL_UNDERLAY_SHIFT));
+            if !forward {
+                xs.reverse();
+            }
+            xs
+        })
+    } else {
+        Vec::new()
+    };
     let pieces: Vec<Run> = edge
         .into_iter()
+        .chain(center)
         .chain(rows)
         .flat_map(|run| split_outside(run, closed, holes))
         .collect();
@@ -424,6 +494,7 @@ fn cross_underlay(
     r: &RegionSewing,
     angle: f64,
     holes: &[Contour],
+    with_edge: bool,
 ) -> Option<Vec<Vec<Run>>> {
     let inset: Vec<Contour> = if r.kind == RegionType::Satin {
         satin_inset(closed, holes)?
@@ -443,12 +514,15 @@ fn cross_underlay(
         .entry
         .or_else(|| closed.first().and_then(|c| c.points.first().copied()))?;
     let start = crate::route::snap(std::slice::from_ref(outline), entry);
-    let mut edge = generate::running(&outline.starting_at(start), FILL_UNDERLAY_PITCH, 1);
-    if r.kind != RegionType::Satin {
-        // The fill's edge run is entered from the start point on the outline.
-        edge.insert(0, crate::route::snap(closed, entry));
+    let mut pieces = Vec::new();
+    if with_edge {
+        let mut edge = generate::running(&outline.starting_at(start), FILL_UNDERLAY_PITCH, 1);
+        if r.kind != RegionType::Satin {
+            // The fill's edge run is entered from the start point on the outline.
+            edge.insert(0, crate::route::snap(closed, entry));
+        }
+        pieces.push(edge);
     }
-    let mut pieces = vec![edge];
     let spacing = r.underlay_spacing_mm() * 10.0;
     let stitch = r.stitch_length * 10.0;
     for a in [angle + 45.0, angle - 45.0] {
@@ -769,7 +843,7 @@ fn satin_underlay_rows(
     let Some(inner) = satin_inset(closed, holes) else {
         return generate::fill(closed, p, holes);
     };
-    let rows: Vec<(usize, f64, Vec<Span>)> = row_positions(closed, p.angle, p.row_spacing, None)
+    let rows: Vec<(usize, f64, Vec<Span>)> = inset_rows(&inner, p.angle, p.row_spacing)
         .into_iter()
         .enumerate()
         .map(|(i, y)| {
@@ -839,6 +913,59 @@ fn satin_underlay_rows(
 /// Rows of a sawtooth satin lie this far (0.1 mm) inside the region's first and last edge, so
 /// a row is never cut along an edge.
 const EDGE_ROW_INSET: f64 = 0.01;
+
+/// Row positions (rotated space) of PE-DESIGN's under sewing across the inset region
+/// `inner`: a row on each inset edge and a whole number of equal gaps between them, the count
+/// nearest to the height over `spacing` (its 11.50 output, sweep-fill-us-density-*: 38 mm of
+/// inset square hold 19 gaps of 2.0 mm at Medium, 27 of 1.407 at Dense (1.4 nominal) and 11
+/// of 3.455 at Light (3.5 nominal)). The edge rows are sampled just inside the edges.
+fn inset_rows(inner: &[Contour], angle: f64, spacing: f64) -> Vec<f64> {
+    let Some(b) = rotated_bounds(inner, angle) else {
+        return Vec::new();
+    };
+    let h = b.height();
+    if !(h > 0.0 && spacing > 0.0 && spacing.is_finite()) {
+        return Vec::new();
+    }
+    let n = (h / spacing).round().clamp(1.0, 100_000.0) as usize;
+    let inside = EDGE_ROW_INSET.min(h / 4.0);
+    (0..=n)
+        .map(|k| (b.min_y + h * k as f64 / n as f64).clamp(b.min_y + inside, b.max_y - inside))
+        .collect()
+}
+
+/// The spans of [`inset_rows`] across `inner`, as rows for [`generate::chain_spans`].
+fn inset_row_spans(inner: &[Contour], p: &RegionParams) -> Vec<RowSpan> {
+    inset_rows(inner, p.angle, p.row_spacing)
+        .into_iter()
+        .enumerate()
+        .flat_map(|(row, y)| {
+            spans_at(inner, &[], p.angle, y)
+                .into_iter()
+                .map(move |range| RowSpan { row, y, range })
+        })
+        .collect()
+}
+
+/// The piping of an under sewing: a running stitch along the region's middle row (rotated
+/// space, across the sewing direction) `inset` inside the outline, in stitches up to 2.5 mm
+/// (PE-DESIGN 11.50 sews a Manual Punch column's piping in equal stitches of at most 2.5 mm).
+/// `None` where the inset leaves no row.
+fn center_row(closed: &[Contour], holes: &[Contour], angle: f64, inset: f64) -> Option<Run> {
+    let mut shape: Vec<Contour> = closed.to_vec();
+    shape.extend(holes.iter().cloned());
+    let inner = crate::boolean::contours(&crate::boolean::offset(&shape, -inset, false));
+    let b = rotated_bounds(&inner, angle + 90.0)?;
+    let y = (b.min_y + b.max_y) / 2.0;
+    let span = spans_at(&inner, &[], angle + 90.0, y)
+        .into_iter()
+        .max_by(|a, b| (a.end() - a.start()).total_cmp(&(b.end() - b.start())))?;
+    let ends = [
+        unrotate(*span.start(), y, angle + 90.0),
+        unrotate(*span.end(), y, angle + 90.0),
+    ];
+    Some(subdivide(&ends, FILL_UNDERLAY_PITCH))
+}
 
 /// Running stitch of the travel along the edge to each half of a split satin (0.1 mm).
 const SPLIT_TRAVEL_PITCH: f64 = 20.0;

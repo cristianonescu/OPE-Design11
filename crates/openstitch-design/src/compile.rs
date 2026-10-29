@@ -364,11 +364,13 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
                 *top = route::route_region(runs, &closed, region.entry, region.exit, 25.0);
             }
             // PE-DESIGN's fill under sewing runs straight on into the top stitching.
+            let parts = region.underlay_parts();
             if region.underlay
-                && matches!(
-                    region.underlay_style,
-                    crate::model::UnderlayStyle::EdgeFill | crate::model::UnderlayStyle::Cross
-                )
+                && region.direction_lines.len() < 2
+                && !region.legacy_underlay()
+                && (parts.lattice
+                    || (matches!(region.kind, RegionType::Fill | RegionType::ProgrammableFill)
+                        && parts.any()))
                 && let Some(path) = region.travel_path()
             {
                 layers = vec![region::join_layers(layers, &closed, holes, path)];
