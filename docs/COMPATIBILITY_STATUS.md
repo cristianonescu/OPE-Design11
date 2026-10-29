@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 193 · pass 193 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 211 · pass 211 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -26,7 +26,7 @@ Specs: 193 · pass 193 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Files | VIP read and write (HUS streams, obfuscated RGB colour table)… | reference; reference pending | `machine-formats` |
 | Files | XXX read/write… | reference; reference pending | `machine-formats` |
 | Lettering | Fit text to outline (text on a path)… | reference | `text-fit-ahhhh`, `text-fit-default`, `text-fit-halign-left`, `text-fit-halign-right`, `text-fit-halign-spaced`, `text-fit-orient-upright`, `text-fit-otherside`, `text-fit-satin-ahhhh`, `text-fit-size-12`, `text-fit-size-6`, `text-fit-spacing-m1`, `text-fit-spacing-p2`, `text-fit-valign-below`, `text-fit-valign-center` |
-| Lettering | Text Transform… | reference | `text-transform-1-openstitch`, `text-transform-1`, `text-transform-10`, `text-transform-11-openstitch`, `text-transform-11`, `text-transform-12-openstitch`, `text-transform-12`, `text-transform-13-openstitch`, `text-transform-13`, `text-transform-14`, `text-transform-15-openstitch`, `text-transform-15`, `text-transform-16-openstitch`, `text-transform-16`, `text-transform-17`, `text-transform-18-openstitch`, `text-transform-18`, `text-transform-19-openstitch`, `text-transform-19`, `text-transform-2-openstitch`, `text-transform-2`, `text-transform-20-openstitch`, `text-transform-20`, `text-transform-21-openstitch`, `text-transform-21`, `text-transform-22-openstitch`, `text-transform-22`, `text-transform-23-openstitch`, `text-transform-23`, `text-transform-24-openstitch`, `text-transform-24`, `text-transform-25-openstitch`, `text-transform-25`, `text-transform-26-openstitch`, `text-transform-26`, `text-transform-3`, `text-transform-4-openstitch`, `text-transform-4`, `text-transform-5-openstitch`, `text-transform-5`, `text-transform-6-openstitch`, `text-transform-6`, `text-transform-7-openstitch`, `text-transform-7`, `text-transform-8-openstitch`, `text-transform-8`, `text-transform-9` |
+| Lettering | Text Transform… | reference | `text-transform-1-openstitch`, `text-transform-1`, `text-transform-10`, `text-transform-11-agjy`, `text-transform-11-openstitch`, `text-transform-11`, `text-transform-12-agjy`, `text-transform-12-openstitch`, `text-transform-12`, `text-transform-13-agjy`, `text-transform-13-openstitch`, `text-transform-13`, `text-transform-14`, `text-transform-15-agjy`, `text-transform-15-openstitch`, `text-transform-15`, `text-transform-16-agjy`, `text-transform-16-openstitch`, `text-transform-16`, `text-transform-17`, `text-transform-18-openstitch`, `text-transform-18`, `text-transform-19-agjy`, `text-transform-19-openstitch`, `text-transform-19`, `text-transform-2-openstitch`, `text-transform-2`, `text-transform-20-agjy`, `text-transform-20-openstitch`, `text-transform-20`, `text-transform-21-agjy`, `text-transform-21-openstitch`, `text-transform-21`, `text-transform-22-agjy`, `text-transform-22-openstitch`, `text-transform-22`, `text-transform-23-agjy`, `text-transform-23-openstitch`, `text-transform-23`, `text-transform-24-agjy`, `text-transform-24-openstitch`, `text-transform-24`, `text-transform-25-agjy`, `text-transform-25-openstitch`, `text-transform-25`, `text-transform-26-agjy`, `text-transform-26-openstitch`, `text-transform-26`, `text-transform-3`, `text-transform-4-agjy`, `text-transform-4-openstitch`, `text-transform-4`, `text-transform-5-agjy`, `text-transform-5-openstitch`, `text-transform-5`, `text-transform-6-agjy`, `text-transform-6-openstitch`, `text-transform-6`, `text-transform-7-agjy`, `text-transform-7-openstitch`, `text-transform-7`, `text-transform-8-agjy`, `text-transform-8-openstitch`, `text-transform-8`, `text-transform-9` |
 | Lettering | Text entry and attributes… | reference | `text-defaults-fill`, `text-defaults-h`, `text-line-spacing-100`, `text-line-spacing-150`, `text-line-spacing-50`, `text-sewing-order`, `text-size-h`, `text-size-hg` |
 | Line sew types | Motif (OpenStitch's own motif library… | reference | `line-candlewick-default`, `line-candlewick-startend-feed`, `line-candlewick-startend-run`, `line-chain-default`, `line-chain-startend-feed`, `line-chain-startend-l2side-feed`, `line-chain-startend-l2side-run`, `line-chain-startend-mid-feed`, `line-chain-startend-mid-run`, `line-chain-startend-run`, `line-e-default`, `line-stem-default`, `line-stem-startend-feed`, `line-stem-startend-run`, `line-v-default` |
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
@@ -205,47 +205,65 @@ Specs: 193 · pass 193 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `text/text-transform-1-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-1` | pass | reference | — | — | pass | — |
 | `text/text-transform-10` | pass | reference | — | — | pass | — |
+| `text/text-transform-11-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-11-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-11` | pass | reference | — | — | pass | — |
+| `text/text-transform-12-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-12-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-12` | pass | reference | — | — | pass | — |
+| `text/text-transform-13-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-13-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-13` | pass | reference | — | — | pass | — |
 | `text/text-transform-14` | pass | reference | — | — | pass | — |
+| `text/text-transform-15-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-15-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-15` | pass | reference | — | — | pass | — |
+| `text/text-transform-16-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-16-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-16` | pass | reference | — | — | pass | — |
 | `text/text-transform-17` | pass | reference | — | — | pass | — |
 | `text/text-transform-18-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-18` | pass | reference | — | — | pass | — |
+| `text/text-transform-19-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-19-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-19` | pass | reference | — | — | pass | — |
 | `text/text-transform-2-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-2` | pass | reference | — | — | pass | — |
+| `text/text-transform-20-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-20-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-20` | pass | reference | — | — | pass | — |
+| `text/text-transform-21-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-21-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-21` | pass | reference | — | — | pass | — |
+| `text/text-transform-22-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-22-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-22` | pass | reference | — | — | pass | — |
+| `text/text-transform-23-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-23-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-23` | pass | reference | — | — | pass | — |
+| `text/text-transform-24-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-24-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-24` | pass | reference | — | — | pass | — |
+| `text/text-transform-25-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-25-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-25` | pass | reference | — | — | pass | — |
+| `text/text-transform-26-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-26-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-26` | pass | reference | — | — | pass | — |
 | `text/text-transform-3` | pass | reference | — | — | pass | — |
+| `text/text-transform-4-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-4-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-4` | pass | reference | — | — | pass | — |
+| `text/text-transform-5-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-5-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-5` | pass | reference | — | — | pass | — |
+| `text/text-transform-6-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-6-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-6` | pass | reference | — | — | pass | — |
+| `text/text-transform-7-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-7-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-7` | pass | reference | — | — | pass | — |
+| `text/text-transform-8-agjy` | pass | reference | — | — | pass | — |
 | `text/text-transform-8-openstitch` | pass | reference | — | — | pass | — |
 | `text/text-transform-8` | pass | reference | — | — | pass | — |
 | `text/text-transform-9` | pass | reference | — | — | pass | — |
