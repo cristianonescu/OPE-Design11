@@ -1545,6 +1545,8 @@ Line references are relative to `crates/`.
   - *Not recorded:* Font Creator and Stitch Design Factory output (#134, `.pef`, `.pmv`); the
     owner declined screen-control access to both programs.
 
+- **Platform-dependent arched text (found 2026-10-29, open):** the same build measures the PES 0110 Text Transform spec's arch height as 26.0 mm on Windows and macOS and 25.8 mm on Linux CI (PE-DESIGN 11.50: 26.5 mm). The bundled Lato is used on every platform, so the difference comes from the arch layout's arithmetic, not a font. Until it is deterministic, PE-DESIGN's re-save (`pes-0110-editable-text-transform.pes`, owner's notes `round4\pr164\`) stays out of the repository and the spec waits for its reference; no tolerance was widened.
+
 ## Order of work
 
 1. **Fix without a reference:** items 1, 3, 7, 14, 15 (ranges), 16 and 17, plus the

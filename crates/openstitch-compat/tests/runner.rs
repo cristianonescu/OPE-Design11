@@ -59,7 +59,8 @@ const RAILS: &str = r#"[[[9, 10], [16, 10]], [[9, 12], [16, 12]]]"#;
 fn satin(id: &str) -> Value {
     let rails: Value = serde_json::from_str(RAILS).expect("rails");
     // Without the tie-in and end lock: from the first corner, the opening row along the start
-    // edge and back, then the sawtooth's 9 rows 2/3 mm apart (20 stitches).
+    // edge and back, then the sawtooth stretched to length x density (PE-DESIGN's lattice, #122,
+    // 22 stitches).
     let src = json!({"export": "satin.pes", "align": {"anchor": "boundsMin", "to": [10, 10]},
                      "exclude": {"first": 2, "last": 2}});
     json!({
@@ -81,10 +82,10 @@ fn satin(id: &str) -> Value {
         "exports": [{"path": "satin.pes"}],
         "references": [{"id": "pe-design", "file": format!("stitches/{id}.pes"), "make": "Draw the column."}],
         "measurements": [
-            {"id": "stitches", "measure": {"kind": "stitchSegments"}, "source": src, "expected": 20,
+            {"id": "stitches", "measure": {"kind": "stitchSegments"}, "source": src, "expected": 22,
              "tolerance": {"count": 1}, "evidence": "audit", "reference": {"tolerance": {"percent": 10}}},
             {"id": "alternation", "measure": {"kind": "sideAlternation", "rails": rails}, "source": src,
-             "expected": 0.9474, "tolerance": {"percent": 1}, "evidence": "audit", "reference": {}},
+             "expected": 0.8636, "tolerance": {"percent": 1}, "evidence": "audit", "reference": {}},
             {"id": "versus-reference", "measure": {"kind": "compare", "options": {"origin": "boundsMin"}},
              "source": {"export": "satin.pes"}, "evidence": "PE-DESIGN output", "reference": {}}
         ]
