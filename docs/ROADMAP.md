@@ -43,7 +43,7 @@ for macOS, Windows and Linux. CI builds and tests all three.
 - **Wizards:** background fill (echo, stippling, decorative, crosshatch, stripes), appliqué,
   embroidered patch, cutwork.
 - **Suite programs:** Programmable Stitch Creator (`openstitch.pattern`), Stitch Design Factory
-  (`openstitch.sewing`, SVG and experimental PMV export), Design Database (`openstitch-library`:
+  (`openstitch.sewing`, SVG and experimental PMV export and import), Design Database (`openstitch-library`:
   browse, search, organise, convert, catalogues; `library.*` commands).
 - **Machine and workspace:** machine types, Brother and user hoops, sewing area, thread length
   and sewing time, measure tool, rulers, grid, Reference window, realistic preview; split
@@ -245,6 +245,17 @@ US 7996103 for the deferred direction-aware photo stitch, and BriTon Leap's fami
 files from stitch data and for tracing a bitmap of stitch data, which concern
 `object.toShapes`, B12 on stitch blocks and B14's fill fallback; the rest shown expired or
 ceased). Not legal advice: the list for the owner's lawyer.
+
+## Pattern and font files (Phase 6, #130 #131 #134)
+
+Only files the owner makes in PE-DESIGN's own tools (Programmable Stitch Creator, Stitch
+Design Factory, Font Creator) and saves through the normal interface are studied; Brother's
+bundled patterns, motifs and fonts are never read. Done: PMV read (2026-10-29, the documented
+layout, every byte checked). Waiting for the owner-made samples: PE-DESIGN's own PMV files (a
+2- and a 4-point decorative stitch), Programmable Stitch Creator saves (a 2-point line, a
+4-point square, two separate lines; a motif; a decorative-fill row) with a programmable fill
+and a motif fill sewn from them, and a Font Creator font of one and two owner-drawn glyphs
+with text set in it. Each lands as its own PR with the fixtures' provenance in a MANIFEST.
 
 ## Blocked
 

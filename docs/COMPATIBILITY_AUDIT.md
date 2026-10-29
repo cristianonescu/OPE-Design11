@@ -1106,6 +1106,15 @@ Line references are relative to `crates/`.
   what changes is the palette's weighting. Left for #132: PE-DESIGN's recorded defaults from
   the capture, which may move the cell size or the times.
   optional graph-cut foreground step. #132 follows in its own PR.
+  land; #127 and #132 follow in their own PRs.
+- **Sewing-machine stitch files (PMV, 2026-10-29, #130):** OpenStitch now reads the PMV layout
+  it writes (pyembroidery's description: 8-byte magic, 36-byte banner, 56-byte preamble, needle
+  count and its double, 6-bit relative x / 5-bit absolute y pairs in 0.25 mm, the length and
+  width tables, an 18-byte trailer; docs/FILE_FORMATS.md → PMV) and imports it as a decorative
+  stitch. Not yet compared with files PE-DESIGN's Stitch Design Factory writes: the owner-made
+  samples (2-point and 4-point stitches, one re-saved) are requested from the reference round;
+  the reader refuses any other preamble or table shape until they pin it. PMP and PSF stay
+  Blocked.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.

@@ -766,6 +766,36 @@ fit, at most 100 needle points, then pyembroidery's fixed length table (which it
 understood) and a width table. Experimental: no machine has been tested. **PMP** (large
 patterns) and **PSF** (PE-DESIGN's editable sewing-stitch file) are Blocked: the guide names
 them, nothing describes them.
+
+PMV is also read (`sewing::pmv_read`, `sewing.import` of a `.pmv` file, since 2026-10-29,
+#130): the same layout, every byte checked, all little-endian:
+
+| Offset | Bytes | Content |
+|---|---|---|
+| 0x00 | 8 | magic `#PMV0001` |
+| 0x08 | 36 | banner (pyembroidery writes `.` × 36; any bytes are accepted and returned) |
+| 0x2C | 56 | fixed preamble, `01` at 0x2C, 0x39, 0x4F, 0x63, zeros elsewhere; refused if different |
+| 0x64 | 2 | needle count *n* (at most 4096 on read; the writer stops at 100) |
+| 0x66 | 2 | 2 *n* |
+| 0x68 | 2 *n* | one byte pair per needle point: x as a 6-bit two's-complement move from the previous point (0–31 forward, 32–63 = −32…−1), y as a 5-bit two's-complement position (16–31 = −16…−1), both in 0.25 mm; a byte ≥ 64 or ≥ 32 is refused |
+| | 2 + 2 | `0000`, `0001` (256) |
+| | 16 | `00 00 00 00 05 00 00 00 00 00 00 00 00 00 02 00` |
+| | 2 + 2 | `0001` (256), `0000` |
+| | 2 + 4 *k* | length table: `k − 1`, `k`, then *k* pairs of u16 (the writer's 18 fixed pairs 0/0 … 500/2000) |
+| | 2 + 4 *m* | width table: `m − 1`, `m`, then *m* pairs of u16 (1 pair 8192/1000 when every point has the same y, else 15 pairs 50 i / (28000 ⁄ span) i) |
+| | 2 + 16 | `0x12`, 16 zero bytes; nothing may follow |
+
+The reader returns the needle points in 0.1 mm (x as the running sum of the moves, y as
+stored and negated back, so re-encoding them with the writer gives the file back byte for byte:
+`pmv_reads_back_what_it_writes` over the four fixtures). The y centre the writer subtracted and
+the scale it applied to patterns wider than 7 mm are not in the file; an import centres the
+points across the feed, starts them at x = 0 and takes the width from their span (1–9 mm). Any
+truncation, a count that disagrees with its doubled copy, a byte pair out of range, a table
+header whose two bytes are not *k* − 1 and *k*, a changed fixed block or trailing bytes are
+refused without reading further. Files PE-DESIGN's Stitch Design Factory writes have not been
+compared yet: the owner-made samples requested from the reference round (a 2-point and a 4-point
+decorative stitch, one re-saved) will pin whether PE-DESIGN's banner, preamble and tables match
+this layout; until then the reader accepts only the layout above.
 ## OpenStitch font (`.osfont`)
 
 OpenStitch's own embroidery font format, written by `fonts.save` and read by `fonts.open`

@@ -29,6 +29,23 @@ fn define(s: &mut EngineState, p: &Params, stitch: SewingStitch) -> Result<Value
     Ok(json!({ "id": id, "replaced": existing.is_some() }))
 }
 
+/// A pattern id from a PMV file's stem: lower-case letters, digits and dashes, `pmv` if
+/// nothing usable is left.
+fn pmv_id(stem: &str) -> String {
+    let mut id: String = stem
+        .chars()
+        .map(|c| match c.to_ascii_lowercase() {
+            c if c.is_ascii_lowercase() || c.is_ascii_digit() => c,
+            _ => '-',
+        })
+        .take(64)
+        .collect();
+    while id.ends_with('-') {
+        id.pop();
+    }
+    if id.is_empty() { "pmv".into() } else { id }
+}
+
 fn find<'a>(s: &'a EngineState, p: &Params) -> Result<&'a SewingStitch, CommandError> {
     let id = p.string("id", None)?;
     s.design
@@ -134,14 +151,43 @@ pub fn commands() -> Vec<CommandSpec> {
         ),
         spec(
             "sewing.import",
-            "Read an openstitch.sewing file into the project",
+            "Read an openstitch.sewing file, or a PMV file (experimental: the documented layout, as a decorative stitch), into the project",
             Effect::Edit,
-            vec![req("path", "string", "Sewing stitch file (.json)")],
+            vec![
+                req("path", "string", "Sewing stitch file (.json or .pmv)"),
+                opt(
+                    "id",
+                    "string",
+                    "PMV: id of the new pattern (default from the file name)",
+                ),
+                opt(
+                    "name",
+                    "string",
+                    "PMV: name of the new pattern (default the file name)",
+                ),
+            ],
             |s, p| {
-                let (_, data) = read_file(s, p, MAX_DOCUMENT)?;
-                let text =
-                    String::from_utf8(data).map_err(|_| p.failed("the file is not UTF-8 text"))?;
-                let stitch = sewing::parse(&text).map_err(|e| p.failed(e))?;
+                let (path, data) = read_file(s, p, MAX_DOCUMENT)?;
+                let stitch = if data.starts_with(sewing::PMV_MAGIC) {
+                    let stem = path
+                        .file_stem()
+                        .and_then(|f| f.to_str())
+                        .unwrap_or("pmv")
+                        .to_string();
+                    let id = match p.get("id") {
+                        Some(_) => p.string("id", None)?,
+                        None => pmv_id(&stem),
+                    };
+                    let name = match p.get("name") {
+                        Some(_) => p.string("name", None)?,
+                        None => stem,
+                    };
+                    sewing::pmv_import(&data, &id, &name).map_err(|e| p.failed(e))?
+                } else {
+                    let text = String::from_utf8(data)
+                        .map_err(|_| p.failed("the file is not UTF-8 text"))?;
+                    sewing::parse(&text).map_err(|e| p.failed(e))?
+                };
                 define(s, p, stitch)
             },
         ),
