@@ -155,6 +155,63 @@ impl Raster {
         ]
     }
 
+    /// Copy whose longer side is at most `max_side` (never enlarged), each pixel the most
+    /// common colour of the source box it covers, so no blended colour appears that the image
+    /// does not hold (a black bar on white stays black and white). The box is sampled on an
+    /// even grid of at most 8 × 8 pixels; ties go to the colour met first in scan order.
+    pub fn fit_mode(&self, max_side: u32) -> Raster {
+        let max_side = max_side.max(1);
+        let long = self.width.max(self.height);
+        if long <= max_side {
+            return self.clone();
+        }
+        let scale =
+            |v: u32| ((u64::from(v) * u64::from(max_side)).div_ceil(u64::from(long))) as u32;
+        let (w, h) = (scale(self.width).max(1), scale(self.height).max(1));
+        let span = |i: u32, out: u32, src: u32| {
+            let a = (u64::from(i) * u64::from(src) / u64::from(out)) as u32;
+            let b = (u64::from(i + 1) * u64::from(src) / u64::from(out)) as u32;
+            (a.min(src - 1), b.max(a + 1).min(src))
+        };
+        let samples = |a: u32, b: u32| -> Vec<u32> {
+            let n = (b - a).min(8);
+            (0..n)
+                .map(|k| a + (2 * k + 1) * (b - a) / (2 * n))
+                .collect()
+        };
+        let mut rgba = Vec::with_capacity(w as usize * h as usize * 4);
+        let mut seen: Vec<([u8; 4], u32)> = Vec::with_capacity(64);
+        for y in 0..h {
+            let (y0, y1) = span(y, h, self.height);
+            let ys = samples(y0, y1);
+            for x in 0..w {
+                let (x0, x1) = span(x, w, self.width);
+                seen.clear();
+                for &sy in &ys {
+                    for sx in samples(x0, x1) {
+                        let px = self.pixel(sx, sy);
+                        match seen.iter_mut().find(|s| s.0 == px) {
+                            Some(s) => s.1 += 1,
+                            None => seen.push((px, 1)),
+                        }
+                    }
+                }
+                let mut best = seen[0];
+                for &s in &seen[1..] {
+                    if s.1 > best.1 {
+                        best = s;
+                    }
+                }
+                rgba.extend_from_slice(&best.0);
+            }
+        }
+        Raster {
+            width: w,
+            height: h,
+            rgba,
+        }
+    }
+
     /// Area-averaged copy whose longer side is at most `max_side` (never enlarged).
     pub fn fit(&self, max_side: u32) -> Raster {
         let max_side = max_side.max(1);

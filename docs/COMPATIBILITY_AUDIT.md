@@ -1193,23 +1193,6 @@ Line references are relative to `crates/`.
   the capture, which may move the cell size or the times.
   optional graph-cut foreground step. #132 follows in its own PR.
   land; #127 and #132 follow in their own PRs.
-- **Sewing-machine stitch files (PMV, 2026-10-29, #130):** OpenStitch now reads the PMV layout
-  it writes (pyembroidery's description: 8-byte magic, 36-byte banner, 56-byte preamble, needle
-  count and its double, 6-bit relative x / 5-bit absolute y pairs in 0.25 mm, the length and
-  width tables, an 18-byte trailer; docs/FILE_FORMATS.md → PMV) and imports it as a decorative
-  stitch. Not yet compared with files PE-DESIGN's Stitch Design Factory writes: the owner-made
-  samples (2-point and 4-point stitches, one re-saved) are requested from the reference round;
-  the reader refuses any other preamble or table shape until they pin it. PMP and PSF stay
-  Blocked.
-- **Programmable Stitch Creator sources (2026-10-29, #131):** OpenStitch imports the user's
-  own `.pas`, `.pmf` and `.plf` text sources (the `@DIRECTIVE` layout: `@SYSENV` arity gives the
-  role, geometry in a 0…1024 cell; docs/FILE_FORMATS.md → Text pattern sources) into
-  `openstitch.pattern` fill, motif and decorative patterns, which sew with the design's own
-  tile and motif sizes. Not yet pinned: the physical size PE-DESIGN gives the `@SYSENV`
-  numbers and how it tiles a programmable fill from such a pattern (owner-made Programmable
-  Stitch Creator files and the fills sewn from them are requested from the reference round).
-  Brother's bundled patterns are never read.
-  what changes is the palette's weighting.
   Compared with PE-DESIGN 11.50 on 2026-10-29 (round-4 captures from the owner's
   four-shape image `owner-shapes.bmp`, 240 × 240 px placed at 84.7 mm: a red disc, a green
   triangle, a yellow rectangle and a blue square on white, every wizard at its defaults):
@@ -1233,8 +1216,9 @@ Line references are relative to `crates/`.
     needle points per cm². PE's path is not row-based: contour-following meanders of ~3.2 mm
     runs, 1–5 jumps per colour. OpenStitch had 5235 stitches with the white bare (14 per cm²,
     stray dither tints) and 2 mm stitches; with Sew Page Color on by default, 3.0 mm stitches,
-    10 colours and 0.25 mm rows it has 12 767 (+4 %): white 157 / 162, yellow 185 / 170, green
-    245 / 211, red 176 / 175, blue 211 / 176 needle points per cm² (OpenStitch / PE). Open:
+    10 colours and 0.25 mm rows it has 12 860 (+5 %, with #119's colour metric): white 157 / 162,
+    yellow 181 / 170, green 234 / 211, red 173 / 175, blue 237 / 176 needle points per cm²
+    (OpenStitch / PE). Open:
     the path (OpenStitch trims at every run end, about 1100 times here) and PE's thread choice
     (it mixes two or three threads per colour area); both are the stitch-path model of #129,
     which the patent note in docs/research/beyond/patents.md bears on.
@@ -1256,6 +1240,55 @@ Line references are relative to `crates/`.
   curved direction (both fixed). Left: the motif fill's travel between rows (PE-DESIGN walks the
   outline at 2 mm: 130 needle points against 103) and the motif line's tie stitches (23
   against 16).
+  Second round of captures, 2026-10-29 (pe-refs-4, inputs drawn by its `wizimg.py`):
+  - **Auto Punch bars** (`autopunch-thin-strokes.pes`, nine black 40 mm bars 0.5–4 mm wide;
+    `autopunch-thin-strokes-wide.pes`, seven 30 mm bars 5–14 mm; Max. Number of Colors filled
+    in as 2): PE makes satin from 0.75 to 6.1 mm (Auto direction, no under sewing, 200–214
+    stitches per 40 mm bar whatever the width) and fill for 0.5 mm and from 7.1 mm (under
+    sewing on; 90° across the bar up to 12 mm, 45° at 14 mm), widest bar first. OpenStitch now
+    satins 0.7–6.5 mm strokes with Auto direction and no under sewing, fills across the stroke
+    up to 13 mm and at 45° beyond, and sews each colour's regions largest first: the same
+    choices on all 16 bars, 2011 / 3100 stitches against 2018 / 3197. Before, its working copy
+    averaged the bar edges into greys that became extra threads and thin grey regions (3446 /
+    4639 stitches, 2 and 4 threads). The working copy now keeps each box's most common colour,
+    and the colour count is automatic as PE's is (2 for the bars, 5 for the shapes).
+  - **Colour order** (`autopunch-owner-shapes-moved.pes`, the same four colours with every
+    shape moved and recoloured): PE sews yellow, blue, red, green again, so the order is a
+    property of the colours. It is the reduced colour's R + G + B, highest first (yellow 480,
+    blue 290, red 280, green 250; thread R + G + B would give yellow, red, blue, green).
+    OpenStitch now sews colours in that order in Auto Punch and Cross Stitch: 4361 stitches
+    against 4436.
+  - **Photo Stitch 1 Mono** (`photostitch1-mono-grey-tonal.pes`, a grey gradient with soft
+    blobs, values 0–234): no Sew Page Color, light areas unsewn, 2917 stitches, density falling
+    about linearly with lightness from 154 needle points per cm² in the darkest band to none
+    above grey 210. OpenStitch's Sew Page Color now applies to Color mode only. Its mono gives
+    4068 stitches: 143 per cm² in the darkest band, 37 at 180–209 and 2 above 210 as PE, but
+    132–181 in the mid-tones where PE has 87–142, because the dithered rows break into short
+    runs there (426 trims; PE 2). That is the stitch-path model again.
+  - **Photo Stitch 2** (`photostitch2-color-owner-shapes.pes`, Line interval 2.0 mm, Max.
+    Density 4.5 lines/mm, Direction 0°, Color Set Auto Select): a halftone screen. Each of four
+    threads (blue, red, yellow, purple) sews parallel lines 2 mm apart at its own screen angle
+    (0°, 45°, 90°, 135°) over the whole mask, with zigzag excursions where its colour is
+    needed (white areas 88 needle points per cm², coloured areas 355–426), 14 133 stitches.
+    OpenStitch's Lines style sews every colour along horizontal rows (7035 stitches). This is
+    #129's model; noted on #129.
+- **Sewing-machine stitch files (PMV, 2026-10-29, #130):** OpenStitch now reads the PMV layout
+  it writes (pyembroidery's description: 8-byte magic, 36-byte banner, 56-byte preamble, needle
+  count and its double, 6-bit relative x / 5-bit absolute y pairs in 0.25 mm, the length and
+  width tables, an 18-byte trailer; docs/FILE_FORMATS.md → PMV) and imports it as a decorative
+  stitch. Not yet compared with files PE-DESIGN's Stitch Design Factory writes: the owner-made
+  samples (2-point and 4-point stitches, one re-saved) are requested from the reference round;
+  the reader refuses any other preamble or table shape until they pin it. PMP and PSF stay
+  Blocked.
+- **Programmable Stitch Creator sources (2026-10-29, #131):** OpenStitch imports the user's
+  own `.pas`, `.pmf` and `.plf` text sources (the `@DIRECTIVE` layout: `@SYSENV` arity gives the
+  role, geometry in a 0…1024 cell; docs/FILE_FORMATS.md → Text pattern sources) into
+  `openstitch.pattern` fill, motif and decorative patterns, which sew with the design's own
+  tile and motif sizes. Not yet pinned: the physical size PE-DESIGN gives the `@SYSENV`
+  numbers and how it tiles a programmable fill from such a pattern (owner-made Programmable
+  Stitch Creator files and the fills sewn from them are requested from the reference round).
+  Brother's bundled patterns are never read.
+  what changes is the palette's weighting.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.

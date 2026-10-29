@@ -102,8 +102,8 @@ pub fn commands() -> Vec<CommandSpec> {
             placement_docs(vec![
                 opt(
                     "colors",
-                    "int 1-64",
-                    "Thread colours to reduce to (default 5, PE-DESIGN's Max. Number of Colors)",
+                    "int 0-64",
+                    "Thread colours to reduce to; 0 = automatic from the image, as PE-DESIGN fills in Max. Number of Colors (default 0)",
                 ),
                 opt(
                     "resolution",
@@ -133,7 +133,12 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt(
                     "satinMaxWidth",
                     "mm",
-                    "Regions whose stroke width is at most this become satin across the stroke (default 6)",
+                    "Regions whose stroke width is at most this become satin across the stroke (default 6.5; PE-DESIGN keeps 6.1 mm satin, fills 7.1 mm)",
+                ),
+                opt(
+                    "satinMinWidth",
+                    "mm",
+                    "Strokes narrower than this are fill, not satin (default 0.7; PE-DESIGN fills 0.5 mm, satins 0.75 mm)",
                 ),
                 opt(
                     "skipBackground",
@@ -144,12 +149,13 @@ pub fn commands() -> Vec<CommandSpec> {
             |s, p| {
                 let (image, frame) = load(s, p)?;
                 let options = AutoPunch {
-                    colors: count(p, "colors", AutoPunch::default().colors as i64, 1, 64)?,
+                    colors: count(p, "colors", AutoPunch::default().colors as i64, 0, 64)?,
                     resolution: count(p, "resolution", 400, 64, 2048)? as u32,
                     min_area_mm2: p.opt("minArea", 1.0, 0.0, 1000.0)?,
                     smooth: count(p, "smooth", 0, 0, 5)? as u32,
                     trace: trace_options(p, 0.7)?,
-                    satin_max_mm: p.opt("satinMaxWidth", 6.0, 1.0, 12.0)?,
+                    satin_max_mm: p.opt("satinMaxWidth", 6.5, 1.0, 12.0)?,
+                    satin_min_mm: p.opt("satinMinWidth", 0.7, 0.0, 6.0)?,
                     skip_background: p.bool("skipBackground", Some(true))?,
                 };
                 let out = autopunch::convert(&image, &frame, &options).map_err(|e| failed(p, e))?;
@@ -170,8 +176,8 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt("cellSize", "mm", "Grid cell side, 1-10 (default 2.5)"),
                 opt(
                     "colors",
-                    "int 1-64",
-                    "Thread colours (default 5, PE-DESIGN's Max. Number of Colors)",
+                    "int 0-64",
+                    "Thread colours; 0 = automatic from the image, as PE-DESIGN fills in Max. Number of Colors (default 0)",
                 ),
                 opt(
                     "type",
@@ -193,7 +199,7 @@ pub fn commands() -> Vec<CommandSpec> {
                 let (image, frame) = load(s, p)?;
                 let options = CrossStitch {
                     cell_mm: p.opt("cellSize", CrossStitch::CELL_MM, 1.0, 10.0)?,
-                    colors: count(p, "colors", CrossStitch::COLORS as i64, 1, 64)?,
+                    colors: count(p, "colors", CrossStitch::COLORS as i64, 0, 64)?,
                     kind: match choice(p, "type", "full", &["full", "half"])? {
                         "half" => CrossType::Half,
                         _ => CrossType::Full,
