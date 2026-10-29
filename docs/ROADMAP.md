@@ -127,6 +127,8 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    `text.add`, fit each preset's envelope as a function of the value from the parked
    level files, and re-fit the cap-height box (presets 3, 9, 10, 14, 17 miss by up to 2 mm
    on descender letters).
+   distance 0.27 → 0.20 mm; #121 kept it and lifted the 256-chord ceiling, 2026-10-29); Text
+   Transform presets 13 and 14 (fan out / in) done 2026-10-28.
    Left: per-character colour and
    multi-character selection; Connection Points; minimum font sizes and small-text fonts;
    kerning that reflows the line; editing several characters at once on the canvas; shaping for

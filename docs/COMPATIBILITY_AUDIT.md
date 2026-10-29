@@ -971,7 +971,10 @@ Line references are relative to `crates/`.
   Read stitch by stitch on 2026-10-28 (text-fit-* and the round-3 size/spacing/AHHHH sweeps):
   the circle's running stitch is PE's Bézier sampling (each quarter arc halved until the chord
   fits the 2 mm pitch: 4 × 32 chords; OpenStitch now matches it point for point, 0.04 mm mean,
-  text-fit-default's mean needle distance 0.27 → 0.20 mm); the letters sit where the font's
+  text-fit-default's mean needle distance 0.27 → 0.20 mm; #121, 2026-10-29: the halving stays
+  where this reference pins it, a flatness-tolerance polyline resampled at the pitch would move
+  every needle point; what changed is the 256-chord ceiling, now 2^16, so long or tight curves
+  never keep a chord over the pitch; outlines are flattened adaptively to 0.05 mm as before); the letters sit where the font's
   advance box (no kerning) centred on the path's middle puts them (the A's ink starts at 75.04 mm
   from the circle's start in both), character spacing spreading symmetrically. Still different:
   PE sews every letter stroke by stroke with the rows across each stroke (see Text below), the
