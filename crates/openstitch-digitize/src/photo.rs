@@ -58,7 +58,7 @@ impl PhotoStitch {
         let (row_spacing_mm, stitch_mm) = match style {
             // Run Pitch 3.0 mm is PE-DESIGN 11.50's default; 0.25 mm rows give its density
             // (160-210 needle points per cm² in the tone bands of the round-4 capture
-            // `photostitch1-default-plus-cross.pes`; 12 767 needle points against its 12 255).
+            // `photostitch1-default-plus-cross.pes`; 12 860 needle points against its 12 255).
             PhotoStyle::Fill => (FILL_ROW_SPACING_MM, RUN_PITCH_MM),
             PhotoStyle::Lines => (1.2, 0.8),
         };

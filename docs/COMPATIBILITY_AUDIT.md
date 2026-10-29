@@ -1138,8 +1138,9 @@ Line references are relative to `crates/`.
     needle points per cm². PE's path is not row-based: contour-following meanders of ~3.2 mm
     runs, 1–5 jumps per colour. OpenStitch had 5235 stitches with the white bare (14 per cm²,
     stray dither tints) and 2 mm stitches; with Sew Page Color on by default, 3.0 mm stitches,
-    10 colours and 0.25 mm rows it has 12 767 (+4 %): white 157 / 162, yellow 185 / 170, green
-    245 / 211, red 176 / 175, blue 211 / 176 needle points per cm² (OpenStitch / PE). Open:
+    10 colours and 0.25 mm rows it has 12 860 (+5 %, with #119's colour metric): white 157 / 162,
+    yellow 181 / 170, green 234 / 211, red 173 / 175, blue 237 / 176 needle points per cm²
+    (OpenStitch / PE). Open:
     the path (OpenStitch trims at every run end, about 1100 times here) and PE's thread choice
     (it mixes two or three threads per colour area); both are the stitch-path model of #129,
     which the patent note in docs/research/beyond/patents.md bears on.
