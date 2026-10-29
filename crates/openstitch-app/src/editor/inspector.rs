@@ -1,7 +1,7 @@
 //! Inspector model for the selection and the commands its controls issue.
 
 use super::request::CommandRequest;
-use openstitch_core::{PEC_CHART, Thread, nearest_index};
+use openstitch_core::{PEC_CHART, Thread, nearest_index, pec_basic_chart};
 use openstitch_design::patterns::{self, Pattern, PatternKind};
 use openstitch_design::{
     Arrange, ChainShape, Design, Feather, FeatherSide, LineSewing, LineType, RegionSewing,
@@ -938,5 +938,5 @@ pub fn pec_palette() -> Vec<(usize, &'static Thread)> {
 
 /// The PEC chart number closest to `t`.
 pub fn pec_index(t: &Thread) -> Option<usize> {
-    nearest_index(t, &PEC_CHART)
+    nearest_index(t, pec_basic_chart())
 }

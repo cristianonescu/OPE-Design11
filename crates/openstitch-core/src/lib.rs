@@ -13,6 +13,18 @@ mod trims;
 
 pub use charts::{HUS_CHART, JEF_CHART, PEC_CHART, SEW_CHART, SHV_CHART};
 
+/// Brother chart entries a colour is matched against: 1–61. PE-DESIGN 11.50 never picked 62–64
+/// in the owner's swatch capture (`compat/reference/pes/thread-match-swatches.pes`:
+/// rgb(255, 128, 0) went to 11 Deep Gold, 2210 away, not to 62 Orange, 625 away), so those
+/// three are kept for files that name them but are not candidates (#119, #136).
+pub const PEC_BASIC_COLORS: usize = 61;
+
+/// The Brother chart entries a colour may be matched to: `PEC_CHART[..=PEC_BASIC_COLORS]`
+/// (index 0 is unused). Use with [`nearest_index`] instead of the whole `PEC_CHART`.
+pub fn pec_basic_chart() -> &'static [Option<Thread>] {
+    &PEC_CHART[..=PEC_BASIC_COLORS]
+}
+
 /// Machine command attached to a needle position.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -128,16 +140,31 @@ impl Thread {
     }
 }
 
-/// "Red-mean" weighted RGB distance (<https://www.compuphase.com/cmetric.htm>), integer form.
+/// Equal-weight squared Euclidean distance on 8-bit sRGB: ΔR² + ΔG² + ΔB² (0–195075).
+///
+/// Chart matching uses no channel weighting, red-mean term or CIE/Lab conversion (#119). An
+/// earlier red-mean metric picked a different thread on image and foreign-file imports.
 pub fn color_distance(a: &Thread, b: &Thread) -> i64 {
-    let red_mean = ((i64::from(a.red) + i64::from(b.red)) as f64 / 2.0).round_ties_even() as i64;
     let r = i64::from(a.red) - i64::from(b.red);
     let g = i64::from(a.green) - i64::from(b.green);
     let bl = i64::from(a.blue) - i64::from(b.blue);
-    (((512 + red_mean) * r * r) >> 8) + 4 * g * g + (((767 - red_mean) * bl * bl) >> 8)
+    r * r + g * g + bl * bl
 }
 
-/// Index of the closest `Some` entry; ties go to the later index.
+/// City-block (L1) distance on 8-bit sRGB: |ΔR| + |ΔG| + |ΔB| (0–765).
+pub fn city_block_distance(a: &Thread, b: &Thread) -> i64 {
+    (i64::from(a.red) - i64::from(b.red)).abs()
+        + (i64::from(a.green) - i64::from(b.green)).abs()
+        + (i64::from(a.blue) - i64::from(b.blue)).abs()
+}
+
+/// Index of the closest `Some` entry by [`color_distance`]; ties go to the later index.
+///
+/// Charts whose index is the entry's ID (`PEC_CHART`: index 1–64 is Brother's chart number)
+/// return that ID; `None` slots are skipped and never matched. The tie rule is PE-DESIGN
+/// 11.50's as far as the owner's swatch capture shows it (`thread-match-swatches.pes`:
+/// rgb(240, 200, 220) went to chart entry 57, not to 42, which holds the same RGB in the
+/// chart table); issue #119 asked for the earlier index, and the reference wins.
 pub fn nearest_index(color: &Thread, chart: &[Option<Thread>]) -> Option<usize> {
     let mut best = None;
     let mut best_distance = i64::MAX;
@@ -151,6 +178,31 @@ pub fn nearest_index(color: &Thread, chart: &[Option<Thread>]) -> Option<usize> 
         }
     }
     best
+}
+
+/// "Approximate" sew-palette match (#119): two running minima are kept at once, squared
+/// Euclidean (initial 3·255² + 1 = 195076) and city block (initial 3·255 + 1 = 766), each with
+/// the later index on ties, as [`nearest_index`]. The result is the Euclidean winner unless
+/// the city-block minimum is numerically smaller than the Euclidean minimum, which it is in
+/// essentially every real case (L1 ≤ 765 while Euclid² reaches 195075), so this is the L1
+/// winner with Euclid² as the fallback when the two minima are equal (both 0 or both 1: an
+/// exact or one-unit match).
+pub fn approximate_index(color: &Thread, chart: &[Option<Thread>]) -> Option<usize> {
+    let mut sq = (3 * 255 * 255 + 1, None);
+    let mut city = (3 * 255 + 1, None);
+    for (i, candidate) in chart.iter().enumerate() {
+        if let Some(c) = candidate {
+            let d = color_distance(color, c);
+            if d <= sq.0 {
+                sq = (d, Some(i));
+            }
+            let d = city_block_distance(color, c);
+            if d <= city.0 {
+                city = (d, Some(i));
+            }
+        }
+    }
+    if city.0 < sq.0 { city.1 } else { sq.1 }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
