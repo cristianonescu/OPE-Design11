@@ -9,13 +9,15 @@
 //! - then (colours + 1) 48×38 1-bit icons: whole design first, then one per colour block.
 
 use crate::io::{ByteReader, ByteWriter, trim_horizontal};
-use crate::{FormatError, Result};
+use crate::{FormatError, Result, layout};
 use openstitch_core::{
     Bounds, Command, PEC_CHART, Stitch, StitchPattern, Thread, nearest_index, round_coordinate,
 };
 
 pub const ICON_STRIDE: usize = 6;
 pub const ICON_HEIGHT: usize = 38;
+/// Largest coordinate delta the 12-bit long form holds (±2047 units = 204.7 mm). A longer
+/// move is split by [`split_long_moves`] before encoding.
 pub const MAX_DELTA: f64 = 2047.0;
 
 const FLAG_LONG: u8 = 0x80;
@@ -142,6 +144,42 @@ pub fn write(pattern: &StitchPattern) -> Result<Vec<u8>> {
     Ok(w.bytes)
 }
 
+/// Splits every stitch or jump whose rounded delta exceeds ±`max` units on an axis into
+/// pieces of the same command, as PE-DESIGN 11.50 splits an over-long move in its DST
+/// (`compat/reference/machine/long-jump-300.dst`, issue #126): each piece but the last takes
+/// the maximum along the longer axis and the proportional share of the other, the last piece is
+/// the remainder (a 211 × 278 mm move became 23 records of (92, −121) and one of (90, −118);
+/// never halves). The pieces are computed on the rounded coordinates the encoder writes, so no
+/// encoded delta exceeds `max` whatever the input's fractions (0.5 → 2047.5 rounds to 0 → 2048
+/// otherwise). PE-DESIGN's own PEC encoding of a move over 204.7 mm is not yet understood
+/// (its parked PES writes one long-form jump then 39 × 7.0 mm jumps that do not sum to the
+/// DST's vector), so the DST rule is applied at the PEC limit.
+pub(crate) fn split_long_moves(input: &StitchPattern, max: i64) -> StitchPattern {
+    let mut out = StitchPattern {
+        stitches: Vec::with_capacity(input.stitches.len()),
+        ..input.clone()
+    };
+    let (mut px, mut py) = (0_i64, 0_i64);
+    for s in &input.stitches {
+        if matches!(s.command, Command::Stitch | Command::Jump) {
+            let (x, y) = (round_coordinate(s.x), round_coordinate(s.y));
+            let pieces = layout::split_proportional(x - px, y - py, max);
+            if pieces.len() > 1 {
+                let (mut cx, mut cy) = (px, py);
+                for &(dx, dy) in &pieces[..pieces.len() - 1] {
+                    cx += dx;
+                    cy += dy;
+                    out.stitches
+                        .push(Stitch::new(cx as f64, cy as f64, s.command));
+                }
+            }
+            (px, py) = (x, y);
+        }
+        out.stitches.push(*s);
+    }
+    out
+}
+
 /// Converts stops to colour changes with a repeated thread, fixes the thread count and
 /// splits over-long moves: the shape every PEC writer needs.
 pub(crate) fn prepare(input: &StitchPattern) -> StitchPattern {
@@ -167,7 +205,7 @@ pub(crate) fn prepare(input: &StitchPattern) -> StitchPattern {
     }
     p.threads = threads;
     p.fix_thread_count(None);
-    p.interpolating_long_moves(MAX_DELTA, MAX_DELTA)
+    split_long_moves(&p, MAX_DELTA as i64)
 }
 
 /// Metadata key for the PEC label when it differs from the design name. PE-DESIGN 11 labels the
@@ -309,6 +347,10 @@ fn encode_stitches(stitches: &[Stitch], w: &mut ByteWriter) {
     let mut color_two = true;
     let mut first = true;
     let value = |w: &mut ByteWriter, v: i64, long: bool, flag: u8| {
+        debug_assert!(
+            v.abs() <= MAX_DELTA as i64,
+            "PEC delta {v} exceeds the 12-bit long form; `prepare` splits long moves"
+        );
         if !long && -64 < v && v < 63 {
             w.u8(v & 0x7F);
         } else {
