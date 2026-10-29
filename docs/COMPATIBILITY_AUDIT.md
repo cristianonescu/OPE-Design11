@@ -1133,6 +1133,35 @@ Line references are relative to `crates/`.
   depend on that cut (1685 at 3 mm); likely PE's grid keeping points down to 0.3 mm from a row end
   in narrow strokes, or letters at 45° (the grid anchor of angled fills, sweep-fill-dir-30/45/135).
 
+- **Round-4 batch 4 (2026-10-29, PE-DESIGN 11.50 black-box):**
+  - *Tatami stagger (#123):* PE-DESIGN has no random stagger. Its only stagger controls are
+    Frequency (0-50 %, default 30) and the two Stitch Type buttons; on a 40 mm square at the
+    defaults they give 2068 and 2054 stitches (tatami-40-stitch-type-1/-2, reference tier).
+  - *Density floor (#139):* the Density field accepts 0.1 lines/mm; 0.05 and 0 become 0.1,
+    0.15 rounds to 0.2, 20 becomes 14.0. The floor is 0.1 lines/mm with one decimal.
+  - *Satin length sweep (#122):* twelve 3 mm wide satin columns 0.5-15 mm long at 4.5, 1.0
+    and 0.2 lines/mm. 4.5 and 1.0 pass at the reference tier (satin-length-sweep-d4p5/-d1p0);
+    0.2 is parked (OpenStitch 145 stitches against PE-DESIGN's 184). PE-DESIGN's needle points
+    per column are in the MANIFEST entries for the satin track.
+  - *Optimize Sewing Order (#137):* on six scattered squares in three colours it changed
+    nothing (identical stitch streams before and after); PE-DESIGN groups same-colour
+    objects into one block in first-occurrence order (sew-order-six-objects).
+  - *Concentric and spiral fills (#138):* the Region sew pane offers no Direction field for
+    Concentric Circle or Spiral Stitch, only Density (default 2.0 lines/mm), Run pitch (2.0 mm)
+    and a two-button Start Point choice (the winding).
+  - *Pattern sources (#130, #131):* Programmable Stitch Creator writes one type per mode:
+    `.pas` (Fill/Stamp, Default Size 7.5 mm), `.pmf` (Motif, 5.0 mm), `.plf` (Decorative Fill,
+    100.0 mm, `@SYSENV 10000 10000 1`). A closed square is written with its closing point; two
+    separate lines are two `@TILELINE` records with nothing marking the jump. Six minimal
+    sources and four designs that use them read and write back (pes-objects-psc-patterns).
+  - *Thread charts (#136):* a user chart is stored as `MyChart\<name>.btc2` in PE-DESIGN's
+    program folder, 89 bytes of high-entropy binary for one colour: no CSV.
+  - *Image wizards (#127, #128, #132):* Auto Punch, Cross Stitch and Photo Stitch 1 at their
+    defaults on an owner-made image are fixtures in
+    `crates/openstitch-digitize/tests/fixtures/pe11-wizards` with every default recorded.
+  - *Not recorded:* Font Creator and Stitch Design Factory output (#134, `.pef`, `.pmv`); the
+    owner declined screen-control access to both programs.
+
 ## Order of work
 
 1. **Fix without a reference:** items 1, 3, 7, 14, 15 (ranges), 16 and 17, plus the
