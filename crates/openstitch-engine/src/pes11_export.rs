@@ -279,23 +279,31 @@ fn text_object(
     // PE-DESIGN's text box runs from the font's ascent above the first baseline (1.59 × the size
     // for Lato: r12 at size 10, text-defaults-h at size 20) down to the lowest letter or the
     // baseline, and across the letters. A transformed text's box is its letters' extent.
-    let top = if spec.envelope.is_some() {
-        b.min_y
-    } else {
-        t.ty - ASCENT_PER_SIZE * spec.size * 10.0
-    };
+    let ascent_line = t.ty - ASCENT_PER_SIZE * spec.size * 10.0;
     let envelope = match spec.envelope {
         Some(preset) => Some(envelope(spec, preset).map_err(|e| format!("object {id}: {e}"))?),
         None => None,
     };
+    let bounds = match (spec.envelope, &envelope) {
+        // The arches: PE-DESIGN's straight box bent round the arch's circle.
+        (Some(preset @ (1 | 2)), Some(e)) => {
+            let [r, cx, _, _] = e.geometry.map(f64::from);
+            let o = f64::from(PAGE_ORIGIN);
+            bent_box(preset, r, cx - o, t.ty, spec.size * 10.0)
+        }
+        // A transformed text: its letters, its top at most the ascent line (presets 3, 13 …).
+        (Some(_), _) => [
+            b.min_x,
+            b.min_y.min(ascent_line),
+            b.max_x,
+            b.max_y.max(t.ty),
+        ],
+        // A straight text: from the ascent line down to the baseline or the lowest letter.
+        _ => [b.min_x, ascent_line, b.max_x, b.max_y.max(t.ty)],
+    };
     Ok(Text {
         position,
-        bounds: [
-            page(b.min_x),
-            page(top),
-            page(b.max_x),
-            page(b.max_y.max(t.ty)),
-        ],
+        bounds: bounds.map(page),
         letters,
         breaks,
         line_spacing: spec.line_spacing_percent as f32,
@@ -310,6 +318,37 @@ fn text_object(
 
 /// How far above the baseline PE-DESIGN's text box starts, per mm of Lato text size.
 const ASCENT_PER_SIZE: f64 = 1.59;
+
+/// The box PE-DESIGN stores for an arched text (preset 1 over, 2 under; 0.1 mm, page
+/// coordinates without the file offset): its straight box, from the ascent line down to the
+/// baseline across the text's width (2 × r × [`ARCH_RADIANS`] / 2), bent round the arch's circle
+/// of radius `r` centred on `cx`. It matches PE-DESIGN's own boxes to 1–2 mm (HHHHHHH and
+/// OpenStitch, compat text-transform-1 and -2 and the round-4 captures); PE-DESIGN recomputes
+/// the box when it opens the file (its re-save of pes-0110-editable-text-transform changed only
+/// the box).
+fn bent_box(preset: u8, r: f64, cx: f64, baseline: f64, size: f64) -> [f64; 4] {
+    let ascent = ASCENT_PER_SIZE * size;
+    let half = ARCH_RADIANS / 2.0;
+    let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+    for k in 0..=32 {
+        let a = -half + 2.0 * half * f64::from(k) / 32.0;
+        // Over: the baseline on the circle, the box outside it. Under: the size's top on the
+        // circle, the box hanging below it.
+        let (radii, centre_y, sign) = if preset == 1 {
+            ([r, r + ascent], baseline + r, -1.0)
+        } else {
+            ([r - (ascent - size), r + size], baseline - size - r, 1.0)
+        };
+        for rho in radii {
+            let (x, y) = (cx + rho * a.sin(), centre_y + sign * rho * a.cos());
+            x0 = x0.min(x);
+            x1 = x1.max(x);
+            y0 = y0.min(y);
+            y1 = y1.max(y);
+        }
+    }
+    [x0, y0, x1, y1]
+}
 
 /// PE-DESIGN's code and default-level strength of Text Transform presets 1–26 (its palette
 /// order, as [`TextSpec::envelope`] numbers them): the same in every owner file
@@ -575,6 +614,9 @@ mod tests {
         assert_eq!((e.code, e.strength), (24, 30.0));
         assert!(e.geometry[0] > 50.0, "{:?}", e.geometry);
         assert!((e.geometry[2] - (700.0 + e.geometry[0])).abs() < 0.01);
+        // The arch's box: its apex at the ascent line above the baseline, its ends below it.
+        assert_eq!(a.bounds[1], 541);
+        assert!(a.bounds[3] > 700, "{:?}", a.bounds);
         spec.envelope = None;
 
         // A tab, a vertical text and a rotated text are refused with the reason.
