@@ -340,8 +340,11 @@ Line references are relative to `crates/`.
   line breaks and spacing, and the click point PE-DESIGN stores (the first line's start).
   PE-DESIGN keeps no outlines for text and lays it out again from the font. The 18 owner text
   files are rewritten byte-identical outside two PE-side quirks (FILE_FORMATS "Writer").
-  Spaces are letters (r27). Refused for now: vertical text, text on an outline, Text
-  Transforms, rotation, letter spacing, kerning, per-character edits, other fonts.
+  Spaces are letters (r27). Centred text is written as PE-DESIGN writes it (alignment field
+  and click point), and Text Transform text as `CEmbDText` with PE-DESIGN's preset code and
+  default strength (FILE_FORMATS "`CEmbDText`"; spec `pes-0110-editable-text-transform`,
+  reference pending). Refused for now: right-aligned and vertical text, text on an outline,
+  rotation, letter spacing, kerning, per-character edits, other fonts.
   **PE-DESIGN's check (reference tier, `pes-0110-editable-text`):** it opens the file as
   editable text with every attribute as written and retyping works. Two differences came with
   it: a Hoop Settings tab with no stitch count in the status bar, from the Custom Size page

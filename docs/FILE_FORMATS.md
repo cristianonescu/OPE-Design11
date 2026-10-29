@@ -277,9 +277,10 @@ r26 (clicked 10 mm further right), o-text-10-letters (size 8), o-text-vertical a
 | letter +144 | u16 700 in r12–r26, 900 in the later files: likely the font weight (the same Lato Bold) | r12, o-text-* |
 | after the letters | u16 count of line breaks, then per break the u16 index of the letter that starts the new line | text-line-spacing-* (`HH`: 1, 1) |
 | tail +4 | f32 line spacing, % | text-line-spacing-50/100/150 |
+| tail +8 | u16 alignment: 0 left, 1 centre (right not sampled) | r12, o-text-transform-1 (0); the round-4 and text-transform-N centred texts (1) |
 | tail +10 | u16 direction: 0 horizontal, 1 vertical | o-text-vertical |
 | tail +78 | transform again, 6 × f32 | r13 |
-| tail +104 | f32 x, y: the click, the left end of the first baseline (file units) | r12 (600, 700), r26 (700, 700), r15 (900, 1000) |
+| tail +104 | f32 x, y: the click, the first baseline's alignment point (its left end for left-aligned text, its middle for centred text; file units) | r12 (600, 700), r26 (700, 700), r15 (900, 1000), text-transform-N (1000, 1000) |
 
 A space is a letter like any other, with the same attributes (r27, `A B`), and is listed in the
 sewing order. The tail is 112 bytes; the fields not listed (Text Attributes such as kerning, character spacing,
@@ -288,9 +289,24 @@ table: r24 changes only the table. In the sewing-order list a text of n letters 
 connections into its letters (parts 0, 2 … 2n − 2, the first object's first skipped), then the
 letters (1, 3 … 2n − 1); a sewn line adds no parts (text-sewing-order).
 
+#### `CEmbDText` (Text Transform)
+
+A text with a Text Transform is a `CEmbDText`: the `CEmbNText` record unchanged (letters, line
+breaks, 112-byte tail), then 22 bytes. Evidence: compat/reference/text/text-transform-1 … 26
+(HHHHHHH, each preset at the default level), o-text-transform-1, and the owner's round-4 captures
+of every preset at levels 0, 25, 50, 75 and 100 on `OpenStitch` and of every preset at the default
+level on `Agjy 123`.
+
+| Offset | Content |
+|---|---|
+| +0 | u16 PE-DESIGN's code of the preset. By palette place 1–26: 24, 25, 0, 1, 8, 9, 4, 5, 10, 11, 3, 2, 7, 6, 18, 19, 12, 14, 20, 21, 17, 16, 22, 23, 13, 15 (the same on all three texts) |
+| +2 | f32 strength from the level slider. Default level: 30 (presets 1, 2, 13, 14), 50 (3, 4, 7, 8, 11, 12, 17, 18, 21, 22, 25, 26), 20 (5, 6, 15, 16, 19, 20, 23, 24), 10 (9, 10). Preset 3 reads 0 at level 0 and 100 at level 100; preset 1 falls from 41.2 at level 0 to 1.15 at 100 |
+| +6 | 4 × f32. For the arches (presets 1 and 2): the circle's radius, the straight text's centre x, and the circle's centre y, a radius below the baseline for 1 and a radius above the size's top for 2. The radius is the straight text's width over 1.887 on all three texts, and grows with the level (10000 at level 100: flat). For the fans (13, 14): 1000 and zeros in the file made before any arch. For every other preset: the last arch's numbers, carried over from file to file in one session, so not read by PE-DESIGN |
+
 Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
 segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
-(kerning, character spacing, alignment, rotation), the letter's line width and pitch fields, `CEmbDText` (Text Transform), `CEmbAText` (text on an
+(kerning, character spacing, rotation, right alignment), the letter's line width and pitch fields,
+the Text Transform levels other than the default (OpenStitch has none), `CEmbAText` (text on an
 outline), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the reader refuses) and
 the preview images.
 
@@ -306,14 +322,16 @@ OpenStitch's Brother PEC chart gets the BROTHER EMBROIDERY catalogue number and 
 catalogue number, brand and chart), one `CEmbLine` per visible shape with every mapped field set, the
 groups, the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
 as `CEmbNText` (letters at the text's size, Satin or Fill, an optional running, triple or
-zigzag line at PE's defaults, line breaks of left-aligned text, the line spacing %, and the
-click point: the first line's start, measured on OpenStitch's layout for centred and
-right-aligned text). What it cannot hold fails with the object named: stitch patterns, several
+zigzag line at PE's defaults, line breaks, the line spacing %, left or centre alignment and the
+click point at the alignment point), and with a Text Transform as `CEmbDText` (the preset's code,
+the default level's strength and, for the arches, the circle measured on OpenStitch's straight
+layout; zeros where PE-DESIGN leaves stale numbers). What it cannot hold fails with the object named: stitch patterns, several
 outlines in one object, programmable, motif and the other region types, motif, stem,
 candlewicking, chain and cutting lines; text in another font, with white space other than
-spaces and line breaks, vertical, on an outline, with a Text Transform, rotated or scaled, with letter spacing, kerning, per-character
-edits or under sewing. Checks: the 55 owner files whose list the reader parses completely (37
-with shapes, 18 with text) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
+spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
+lines, rotated or scaled, with letter spacing, kerning, per-character
+edits or under sewing. Checks: the 83 owner files whose list the reader parses completely (37
+with shapes, 19 with plain text, 27 with a Text Transform) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
 
@@ -333,6 +351,9 @@ byte-identical to PE-DESIGN's outside these documented differences
   Hoop Settings tab, 290 × 190 mm section outlines and no stitch count in the status bar until
   something is selected; its own Hoop Size page file (r27) shows none of them. The machine type
   and hoop of the design's machine settings are not mapped yet.
+- **Text Transform:** from a design, the arch circle comes from OpenStitch's straight layout:
+  HHHHHHH's radius is 39.6 mm where PE-DESIGN, measuring its own box, stores 40.8; the other
+  presets carry zeros where PE-DESIGN leaves its last arch's numbers.
 - **Text:** the letter field at +14 (OpenStitch writes r12's −0.0) and the last sewing-order
   field of the line-spacing files (PE-DESIGN leaves it unset, `08 CE 53 00`; OpenStitch writes
   1). A text written from the letter defaults gives r12's object section byte for byte
