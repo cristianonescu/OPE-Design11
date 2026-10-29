@@ -8,6 +8,7 @@ use crate::generate::{self, RegionParams, RowSpan, Run, Stagger, subdivide};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, subtract, v2};
 use crate::model::{
     Feather, FeatherSide, Gradation, RegionSewing, RegionType, RunningStitchPath, UnderlayParts,
+    UnderlayStyle,
 };
 use crate::paths::{OutlineTravel, Rng, TravelGraph, join};
 use crate::patterns::Pattern;
@@ -266,9 +267,31 @@ fn layers_inner(
                 })
                 .collect()
         };
+        // OpenStitch's own styles from before PE-DESIGN's types were measured sew as they
+        // always did (see `RegionSewing::legacy_underlay`).
+        let legacy = r.legacy_underlay();
+        if legacy {
+            let across = angle + 90.0;
+            match r.underlay_style {
+                UnderlayStyle::Edge => out.push(edge()),
+                UnderlayStyle::Zigzag => out.push(rows(across)),
+                UnderlayStyle::EdgeZigzag => {
+                    out.push(edge());
+                    out.push(rows(across));
+                }
+                _ => {
+                    out.push(rows(angle + 45.0));
+                    out.push(rows(angle - 45.0));
+                }
+            }
+        }
         // The components combine (PE-DESIGN's types are combinations of them, see
         // `UnderlayParts`): the edge run first, then the piping, the rows, and the lattice.
-        let parts = r.underlay_parts();
+        let parts = if legacy {
+            UnderlayParts::default()
+        } else {
+            r.underlay_parts()
+        };
         // The edge run belongs to the lattice's own sequence when nothing comes between them
         // (PE-DESIGN's second type: the edge run, then the two layers).
         let edge_with_lattice = parts.edge && parts.lattice && !parts.zigzag && !parts.center;

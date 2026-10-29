@@ -367,6 +367,7 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
             let parts = region.underlay_parts();
             if region.underlay
                 && region.direction_lines.len() < 2
+                && !region.legacy_underlay()
                 && (parts.lattice
                     || (matches!(region.kind, RegionType::Fill | RegionType::ProgrammableFill)
                         && parts.any()))

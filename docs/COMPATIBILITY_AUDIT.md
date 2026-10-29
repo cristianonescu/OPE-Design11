@@ -495,7 +495,10 @@ Line references are relative to `crates/`.
   Fill the first row only), so the PE-compatible attribute stays the exclusive `underlayStyle`
   (plus `underlayDensity`); underneath, each style is a set of parts (`underlayParts`: edge,
   zigzag = rows across the direction, lattice, center = piping), and setting the parts
-  directly, in any combination, is OpenStitch's own extension with no PE reference. **Manual Punch columns (round-4 captures `satin-col-us-off/-type-1..5`, a
+  directly, in any combination, is OpenStitch's own extension with no PE reference.
+  OpenStitch's styles from before PE's types were measured (`edge`, `double`, and `zigzag` /
+  `edgeZigzag` on fill) keep their original geometry unless parts are set, so saved designs
+  sew as before (the badge golden is unchanged). **Manual Punch columns (round-4 captures `satin-col-us-off/-type-1..5`, a
   39.5 × 6 mm straight satin column at 4.5 lines/mm, Medium):** PE sews the column's under
   sewing 0.5 mm inside the rails and the end rungs: the edge run in equal stitches ≤ 2.5 mm
   (39 stitches with the travel from the start point), the piping down the middle (16 × 2.41 mm)

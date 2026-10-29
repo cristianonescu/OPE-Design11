@@ -650,7 +650,11 @@ fn underlay_styles_layer_inside_the_region() {
         for l in &out {
             assert_inside(l, &c, &format!("{style:?}"));
         }
-        // Entered from the start point on the outline, the rest 1 mm inside.
+        // PE-DESIGN's types: entered from the start point on the outline, the rest 1 mm
+        // inside (OpenStitch's older styles keep their own insets, see `legacy_underlay`).
+        if r.legacy_underlay() {
+            continue;
+        }
         for l in &out[..out.len() - 1] {
             assert!(
                 l.iter()
@@ -804,6 +808,26 @@ fn under_sewing_parts_combine_and_name_themselves() {
         "{} with the edge run, {} without",
         on_left(&with_edge[0]),
         on_left(&lattice[0])
+    );
+    // OpenStitch's own pre-PE styles keep their geometry unless parts are set: `edge` runs on
+    // the outline itself, `double` sews two plain crossing layers (no edge, no halves).
+    let mut old = r.clone();
+    old.underlay_style = UnderlayStyle::Edge;
+    assert!(old.legacy_underlay());
+    let layers = crate::region::layers(&c, &old, &[]);
+    assert_eq!(layers[0], vec![crate::generate::running(&c[0], 25.0, 1)]);
+    old.underlay_style = UnderlayStyle::Double;
+    assert_eq!(crate::region::layers(&c, &old, &[]).len(), 3);
+    old.underlay_style = UnderlayStyle::EdgeFill;
+    assert!(!old.legacy_underlay());
+    old.underlay_style = UnderlayStyle::Edge;
+    old.underlay_parts = Some(UnderlayParts {
+        edge: true,
+        ..UnderlayParts::default()
+    });
+    assert!(
+        !old.legacy_underlay(),
+        "explicit parts take the new generators"
     );
     // Explicit parts win over the style.
     let mut both = r.clone();

@@ -1332,6 +1332,21 @@ impl RegionSewing {
             .unwrap_or_else(|| self.underlay_density.spacing_mm())
     }
 
+    /// Whether the under sewing is one of OpenStitch's own styles from before PE-DESIGN's
+    /// types were measured (`edge`, `double` on any region; `zigzag`, `edgeZigzag` on fill
+    /// kinds) with no explicit `underlay_parts`, on a region without direction lines: those
+    /// keep their original geometry (the edge run on the outline itself, rows 0.5 mm in, the
+    /// two crossing layers without halves), so designs saved with them sew as before.
+    pub fn legacy_underlay(&self) -> bool {
+        self.underlay_parts.is_none()
+            && self.direction_lines.len() < 2
+            && match self.underlay_style {
+                UnderlayStyle::Edge | UnderlayStyle::Double => true,
+                UnderlayStyle::Zigzag | UnderlayStyle::EdgeZigzag => self.kind != RegionType::Satin,
+                UnderlayStyle::EdgeFill | UnderlayStyle::Cross => false,
+            }
+    }
+
     /// The under sewing's components: `underlay_parts` when set, else those of
     /// `underlay_style` (on a column with several direction lines, PE-DESIGN's column
     /// under sewing for that style: [`UnderlayStyle::column_parts`]).
