@@ -986,6 +986,7 @@ Line references are relative to `crates/`.
   0.5 mm on 21 of the 26 presets for "OpenStitch" (specs text-transform-N-openstitch)
   and 18 of 26 for "Agjy 123" (text-transform-N-agjy; the arches 1 and 2 and 18 fail
   there as well, by 0.6-1.3 mm);
+  0.5 mm on 21 of the 26 presets for "OpenStitch" (specs text-transform-N-openstitch);
   parked (owner's round-4 notes, numbers there): 3 (maxY 0.8 mm low), 9 (minX 1.1 mm), 10
   (maxX 1.4 mm), 14 (minX 1.7, maxX 2.1 mm: the fan-in fit from HHHHHHH does not hold for
   descender letters) and 17 (maxY 0.7 mm): the envelopes were fitted on the HHHHHHH box and
