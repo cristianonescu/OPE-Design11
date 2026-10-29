@@ -208,6 +208,10 @@ below is pinned by a test in `tests/pes11.rs`.
   locates the table as the one that parses to exactly where the object list starts.
 - **Coordinates** are 0.1 mm with the page's top-left corner at (500, 500), y down, in every
   file so far (all on a 100 × 100 mm page).
+- `CEmbSpecialShape` (a Shapes-gallery shape: o-gallery-heart, the five gallery shapes of
+  shape-start-points, the appliqué's heart) is a `CEmbLine` record byte for byte under its own
+  class name: the same 4432-byte body, geometry header and vertices, and no gallery id. The
+  reader reads it as a shape (`Shape::gallery`) and the writer writes it back under its class.
 - Classes seen: `CEmbLine` (Shape tools: rectangle, ellipse, open and closed lines), `CEmbNText`
   with one `CTTFLetter` per letter (text), `CEmbSpecialShape` (Shapes gallery presets).
 
@@ -352,7 +356,9 @@ Not mapped yet: the fields that differ between E and V, the line's run times, th
 segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
 (kerning, rotation, right alignment; character spacing on plain text), the letter's line width
 and pitch fields, the Text Transform levels other than the default (OpenStitch has none), the
-fit's fifth alignment (stretched), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the reader refuses) and
+fit's fifth alignment (stretched), Manual Punch blocks (a `CEmbLine` body whose geometry header
+is a block list: a u32 count, 3 in o-manual-straight and o-manual-curve, then per-block entries;
+owner files with 1, 2 and 3 blocks requested), the appliqué's fifth object and
 the preview images.
 
 #### Writer
@@ -377,8 +383,8 @@ outlines in one object, programmable, motif and the other region types, motif, s
 candlewicking, chain and cutting lines; text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character
-edits or under sewing. Checks: the 97 owner files whose list the reader parses completely (37
-with shapes, 19 with plain text, 27 with a Text Transform, 14 with text fitted to an outline) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
+edits or under sewing. Checks: the 99 owner files whose list the reader parses completely (37
+with shapes, 19 with plain text, 27 with a Text Transform, 14 with text fitted to an outline; two of them with gallery shapes) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
 

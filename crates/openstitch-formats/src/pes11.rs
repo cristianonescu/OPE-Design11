@@ -26,6 +26,8 @@ use std::borrow::Cow;
 mod template;
 
 const EMB_LINE: &str = "CEmbLine";
+/// A shape from the Shapes gallery: a `CEmbLine` record under its own class name (o-gallery-heart).
+const EMB_SPECIAL: &str = "CEmbSpecialShape";
 const GROUP_OBJECT: &str = "CGroupObject";
 const EMB_TEXT: &str = "CEmbNText";
 /// Text with a Text Transform: a `CEmbNText` with the transform after its tail.
@@ -158,6 +160,8 @@ pub struct Shape {
     pub under_sewing: bool,
     /// Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline.
     pub running_path: u16,
+    /// From the Shapes gallery (`CEmbSpecialShape`): the same record, kept under that class.
+    pub gallery: bool,
     pub vertices: Vec<Vertex>,
 }
 
@@ -191,6 +195,7 @@ impl Shape {
             frequency: 30,
             under_sewing: true,
             running_path: 0,
+            gallery: false,
             vertices: Vec::new(),
         }
     }
@@ -460,11 +465,14 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             }
             continue;
         }
-        if class != EMB_LINE {
+        if class != EMB_LINE && class != EMB_SPECIAL {
             return done(shapes, texts, Vec::new(), Some(class));
         }
         match read_line(&mut r)? {
-            Some(shape) => shapes.push(shape),
+            Some(shape) => shapes.push(Shape {
+                gallery: class == EMB_SPECIAL,
+                ..shape
+            }),
             None => {
                 return done(
                     shapes,
@@ -703,6 +711,7 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         frequency: u16_at(body, 174),
         under_sewing: u16_at(body, 180) != 0,
         running_path: u16_at(body, 186),
+        gallery: false,
         vertices,
     }))
 }
@@ -831,7 +840,7 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
             }
             None => {
                 let shape = shapes.next().expect("one shape per free position");
-                archive.tag(&mut w, EMB_LINE);
+                archive.tag(&mut w, if shape.gallery { EMB_SPECIAL } else { EMB_LINE });
                 archive.objects.push(archive.next);
                 write_line(&mut w, shape);
             }
