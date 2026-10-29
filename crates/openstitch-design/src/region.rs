@@ -990,11 +990,10 @@ const SPLIT_TRAVEL_PITCH: f64 = 20.0;
 /// first half hops to the line before it (see [`split_satin`]).
 const START_LINE_SLACK: f64 = 0.5;
 
-/// The shortest single-line gap a split satin crosses next to its far end (0.1 mm): 1 mm.
-/// PE-DESIGN 11.50 crosses a 2 mm one (the round-3 column at 0.5 lines/mm: lines 0 and 1,
-/// then every other line) and not a 0.33 mm one (satin-feather at 3 lines/mm: the crossings
-/// spread evenly instead); the bound lies between, pinned by nothing closer (the 40 x 6 mm
-/// column at 1, 1.5 and 2 lines/mm would).
+/// The shortest single-line gap a feathered split satin crosses next to its far end (0.1 mm):
+/// 1 mm. PE-DESIGN 11.50 does not cross a 0.33 mm one on satin-feather (3 lines/mm: the
+/// crossings spread evenly instead). Plain satin crosses that gap at every size (pe-refs-4's
+/// satin-length-sweep: 0.22, 0.33, 1 and 5 mm, #122), so this applies to feathered satin only.
 const CROSSING_MERGE_GAP: f64 = 10.0;
 
 /// Fixed-direction satin as PE-DESIGN 11 sews it: rows two crossings apart from the region's
@@ -1014,14 +1013,21 @@ fn sawtooth_satin(
     {
         return vec![run];
     }
-    let rows: Vec<(f64, Vec<Span>)> = edge_rows(closed, p.angle, pitch)
-        .into_iter()
-        .map(|y| (y, pulled_spans(closed, holes, p, y)))
-        .collect();
     // PE-DESIGN starts (and ends) a region at its start point, by default the outline's first
     // point: the sections are sewn from there and travel to the first one.
     let first = closed.first().and_then(|c| c.points.first().copied());
     let start = r.entry.or(first);
+    let from_high = start.and_then(|s| {
+        let b = rotated_bounds(closed, p.angle)?;
+        let y = crate::route::snap(closed, s)
+            .rotated(-p.angle.to_radians())
+            .y;
+        Some((y - b.min_y) > (b.max_y - y))
+    });
+    let rows: Vec<(f64, Vec<Span>)> = edge_rows(closed, p.angle, pitch, from_high.unwrap_or(false))
+        .into_iter()
+        .map(|y| (y, pulled_spans(closed, holes, p, y)))
+        .collect();
     let exit = r.exit.or(start);
     let rad = p.angle.to_radians();
     let mut runs: Vec<Run> = Vec::new();
@@ -1062,6 +1068,10 @@ fn sawtooth_satin(
             exit.map(|e| e.rotated(-rad)),
             &corners,
             pitch,
+            // A feathered edge moves the rows' starting ends, so their direction stays; a region
+            // without a Running Stitch Path (files saved before it existed) would jump to the
+            // far end, so it keeps sewing from the start point's side as it always did.
+            r.sewn_feather().is_none() && r.travel_path().is_some(),
         )
         .into_iter()
         .map(|rows| {
@@ -1147,6 +1157,7 @@ fn sections_in_order(
     exit: Option<Vec2>,
     corners: &[Vec2],
     pitch: f64,
+    toward_exit: bool,
 ) -> Vec<Vec<(f64, f64, f64)>> {
     let all = sections(rows);
     if all.is_empty() {
@@ -1170,8 +1181,9 @@ fn sections_in_order(
                 .iter()
                 .any(|(_, r)| e.x >= r.start() - pad && e.x <= r.end() + pad)
     };
-    // (A region of one section is simply sewn from the start point's side.)
-    let last = exit.filter(|_| all.len() > 1).and_then(|e| {
+    // A region of one section ends at the exit too: PE-DESIGN runs along the edge to the far
+    // end and sews the column back to its start point (satin-length-sweep-*, #122).
+    let last = exit.filter(|_| all.len() > 1 || toward_exit).and_then(|e| {
         (0..all.len())
             .filter(|&i| holds(&all[i], e))
             .min_by(|&a, &b| {
@@ -1221,6 +1233,13 @@ fn sections_in_order(
         let leg = s.before.is_empty() != s.after.is_empty() && Some(i) != last;
         let from_start = match (leg, corner(*first.start()), corner(*first.end())) {
             (true, Some(a), Some(b)) => a < b,
+            // A region of one section: every crossing runs towards the exit's side, so the
+            // column ends on the exit (PE-DESIGN, satin-length-sweep-*: the travel goes
+            // diagonally to the far end's other corner and the last crossing lands on the start
+            // point).
+            _ if toward_exit && all.len() == 1 && exit.is_some() => {
+                exit.is_some_and(|e| (e.x - first.start()).abs() > (e.x - first.end()).abs())
+            }
             _ => match at {
                 Some(a) => (a.x - first.start()).abs() <= (a.x - first.end()).abs(),
                 None => false,
@@ -1271,9 +1290,15 @@ fn feathered(from: f64, to: f64, k: usize, last: bool, feather: Option<Feather>)
     }
 }
 
-/// Row positions (rotated space) `pitch` apart from just inside the region's first edge, and
-/// one more just inside its last edge.
-fn edge_rows(contours: &[Contour], angle: f64, pitch: f64) -> Vec<f64> {
+/// The lattice of a sawtooth satin (rotated space): `height / line` rounded half down equal gaps
+/// stretched to fill the region from its first edge to its last, `line` = half of `pitch`
+/// (PE-DESIGN 11.50, satin-length-sweep-*: a 15 mm column at 4.5 lines/mm has 67 gaps of
+/// 0.2239 mm, a 1.5 mm one 7 of 0.214 mm, a 10 mm one at 0.2 lines/mm two of 5 mm). Rows lie on the far end's line and on
+/// every other line counted back from the start point's end (`from_high`: the start point is on
+/// the high side), as PE-DESIGN sews a column from its far end back to its start point: on a
+/// 3 mm column at 1 line/mm the rows are 3, 2 and 0 mm from the start. Every earlier satin
+/// reference has a whole `height × density`, where the stretched lattice is the plain one.
+fn edge_rows(contours: &[Contour], angle: f64, pitch: f64, from_high: bool) -> Vec<f64> {
     let Some(b) = rotated_bounds(contours, angle) else {
         return Vec::new();
     };
@@ -1281,13 +1306,30 @@ fn edge_rows(contours: &[Contour], angle: f64, pitch: f64) -> Vec<f64> {
     if pitch.is_nan() || pitch <= 0.0 || hi.is_nan() || hi <= lo {
         return Vec::new();
     }
-    let mut ys = Vec::new();
-    let mut y = lo;
-    while y < hi - pitch * 0.25 && ys.len() < 100_000 {
-        ys.push(y);
-        y += pitch;
+    // PE-DESIGN rounds `height × density` half down (pe-refs-4's satin-length-sweep-noopt: a
+    // 1.5 mm column at 4.5 lines/mm, 6.75 lines, has 7 gaps; 11 mm, 49.5 lines, has 49).
+    let n = (b.height() / (pitch / 2.0) - 0.5 - 1e-6)
+        .ceil()
+        .clamp(1.0, 200_000.0) as usize;
+    // The gap on the full height, so a whole `height × density` keeps the plain lattice.
+    let line = b.height() / n as f64;
+    // Every other line counted from the start point's end, plus the far end's line.
+    let mut ks: Vec<usize> = (0..=n).step_by(2).collect();
+    if ks.last() != Some(&n) {
+        ks.push(n);
     }
-    ys.push(hi);
+    let mut ys: Vec<f64> = ks
+        .into_iter()
+        .map(|k| {
+            let y = if from_high {
+                hi - line * k as f64
+            } else {
+                lo + line * k as f64
+            };
+            y.clamp(lo, hi)
+        })
+        .collect();
+    ys.sort_by(f64::total_cmp);
     ys
 }
 
@@ -1336,7 +1378,8 @@ fn split_satin(
     let at = e.rotated(-p.angle.to_radians());
     let b = rotated_bounds(closed, p.angle)?;
     let (lo, hi) = (b.min_y + EDGE_ROW_INSET, b.max_y - EDGE_ROW_INSET);
-    let line = p.row_spacing;
+    // The lattice stretched to a whole number of gaps (see [`edge_rows`]).
+    let line = b.height() / (b.height() / p.row_spacing - 0.5 - 1e-6).ceil().max(1.0);
     let one = |y: f64| -> Option<Span> {
         match pulled_spans(closed, holes, p, y).as_slice() {
             [s] => Some(s.clone()),
@@ -1406,7 +1449,11 @@ fn split_satin(
         // [`CROSSING_MERGE_GAP`], is not crossed: the crossings before the hop spread evenly
         // from the far end's line to the last one instead (satin-feather at 3 lines/mm: 15
         // crossings 0.69 mm apart over 29 lines, then the 0.33 mm hop).
-        if idx.get(1) == Some(&1) && ys.len() >= 3 && (ys[1] - ys[0]).abs() < CROSSING_MERGE_GAP {
+        if feather.is_some()
+            && idx.get(1) == Some(&1)
+            && ys.len() >= 3
+            && (ys[1] - ys[0]).abs() < CROSSING_MERGE_GAP
+        {
             let (first, last, n) = (ys[0], ys[ys.len() - 1], ys.len() - 2);
             ys = (0..=n)
                 .map(|k| first + (last - first) * k as f64 / n as f64)
@@ -1451,13 +1498,16 @@ fn split_satin(
     Some(run)
 }
 
+/// A first stitch longer than this (0.1 mm) gets PE-DESIGN's three-step tie-in.
+const TIE_IN_THREE_STEPS: f64 = 26.5;
+
 /// Tie-in and end lock of a satin object, as PE-DESIGN 11.50 sews them. From the start point
 /// the needle steps 0.3 mm along the first stitch (at most its length) and back, then sews on
-/// over that stitch; after a first stitch longer than 3 mm it steps out three times (0.9 mm)
+/// over that stitch; after a first stitch over 2.65 mm it steps out three times (0.9 mm)
 /// and comes back in stitches of at most 0.5 mm. At the end it steps back along the last
 /// stitch, 0.3 mm at a time, and returns the same way: twice after a last stitch longer than
 /// 4.25 mm, once otherwise. (PE: one tie-in step after 1.2–2.3 mm first stitches, three after
-/// 3.5 mm; one lock step after 0.2–3.5 mm last stitches, two after 5 and 30 mm ones.)
+/// 3.0 and 3.5 mm; one lock step after 0.2–3.5 mm last stitches, two after 5 and 30 mm ones.)
 pub fn tie_and_lock(layers: &mut [Vec<Run>]) {
     const STEP: f64 = 3.0;
     if let Some(run) = layers.iter_mut().flatten().find(|r| r.len() >= 2) {
@@ -1465,7 +1515,9 @@ pub fn tie_and_lock(layers: &mut [Vec<Run>]) {
         let len = a.distance(b);
         if len > 1e-9 {
             let unit = (b - a) * (1.0 / len);
-            let steps = if len > 30.0 { 3 } else { 1 };
+            // Three steps from a first stitch of 3.0 mm (satin-length-sweep-d1p0's 3 mm column),
+            // one up to 2.3 mm: the bound is set halfway, at 2.65 mm.
+            let steps = if len > TIE_IN_THREE_STEPS { 3 } else { 1 };
             let out = (STEP * steps as f64).min(len);
             let mut tie: Vec<Vec2> = (1..=steps)
                 .map(|k| a + unit * (out * k as f64 / steps as f64))

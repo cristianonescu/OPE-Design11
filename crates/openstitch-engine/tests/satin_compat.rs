@@ -100,9 +100,16 @@ fn region_satin_sews_a_zigzag_across_the_column() {
         json!({"id": 1, "regionEntry": null, "regionExit": null}),
     );
     let pts = needle_points(&mut s, 1);
-    // From the first corner: the opening row across and back, then the sawtooth with rows
-    // 2/3 mm apart from edge to edge, the last (1/3 mm on) reached along the edge.
-    assert_zigzag_column(body(&pts), 2.0 / 3.0, 1, 19, "region satin");
+    // From the first corner: the opening row across and back, a straight travel inside to the
+    // far end's other corner, then the sawtooth back to the start point: the far end's row,
+    // the single line next to it (1/3 mm), every other line after that (2/3 mm apart) and the
+    // start point's row, as PE-DESIGN sews a column started at one end (satin-length-sweep-*,
+    // #122). The travel is left out, as the tie-in and lock are.
+    let far = pts
+        .iter()
+        .position(|&(x, _)| x >= 14.95)
+        .expect("reaches the far end");
+    assert_zigzag_column(&body(&pts)[far - 1..], 2.0 / 3.0, 0, 17, "region satin");
 }
 
 #[test]

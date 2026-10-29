@@ -1105,10 +1105,11 @@ fn satin_at_the_minimum_density_crosses_on_every_line() {
         .map(|w| w[0].distance(w[1]))
         .fold(0.0_f64, f64::max);
     assert!((longest - 116.6).abs() < 0.5, "{longest}");
-    // At 3 lines/mm the start point lies on line 60 and the single line next to the far end
-    // (0.33 mm) is not crossed: the 30 crossings of the left half spread evenly over the 59
-    // lines before the hop (0.678 mm apart, as satin-feather's 0.69 mm over 29 lines), then
-    // the hop of one line (0.33 mm) to the start point's line.
+    // At 3 lines/mm the start point lies on line 60: the left half crosses the far end's line
+    // (0) and every other line counted back from the hop (59, 57, ..., 1), then the hop at the
+    // start point; the single line next to the far end (0.33 mm) is crossed, as plain satin
+    // crosses it at every size (pe-refs-4's satin-length-sweep: 0.22, 0.33, 1 and 5 mm, #122).
+    // Only a feathered satin spreads those crossings evenly (satin-feather).
     r.density = 3.0;
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     let mut xs: Vec<f64> = runs[0]
@@ -1119,15 +1120,118 @@ fn satin_at_the_minimum_density_crosses_on_every_line() {
         .collect();
     xs.sort_by(f64::total_cmp);
     xs.dedup_by(|a, b| (*a - *b).abs() < 0.01);
-    assert_eq!(xs.len(), 31, "{xs:?}");
-    for w in xs[..30].windows(2) {
-        assert!(
-            (w[1] - w[0] - 59.0 * (100.0 / 30.0) / 29.0).abs() < 0.01,
-            "{xs:?}"
-        );
+    assert_eq!(xs.len(), 32, "{xs:?}");
+    let line = 200.0 / 60.0;
+    assert!((xs[0] - 100.0).abs() < 0.05, "{xs:?}");
+    for (k, x) in xs[1..31].iter().enumerate() {
+        let want = 100.0 + line * (1.0 + 2.0 * k as f64);
+        assert!((x - want).abs() < 0.05, "{k}: {x} vs {want}");
     }
-    assert!((xs[30] - xs[29] - 10.0 / 3.0).abs() < 0.05, "{xs:?}");
-    assert!((xs[30] - 300.0).abs() < 1e-6, "{xs:?}");
+    assert!((xs[31] - 300.0).abs() < 1e-6, "{xs:?}");
+}
+
+/// A 3 mm wide satin column `length` mm long at direction 0 (rows along x, so the crossings
+/// run across the 3 mm), started at its top-left corner as an imported SVG rectangle is, as
+/// pe-refs-4's satin-length-sweep columns: its top stitching.
+fn sweep_column(length: f64, density: f64) -> Run {
+    let c = vec![Contour::new(
+        vec![
+            v2(0.0, 0.0),
+            v2(30.0, 0.0),
+            v2(30.0, length * 10.0),
+            v2(0.0, length * 10.0),
+        ],
+        true,
+    )];
+    let mut r = region(RegionType::Satin);
+    r.angle = 0.0;
+    r.density = density;
+    r.underlay = false;
+    let mut layers = crate::region::layers(&c, &r, &[]);
+    crate::region::tie_and_lock(&mut layers);
+    layers.concat().concat()
+}
+
+/// The rows (0.1 mm, from the top) crossed by full-width stitches of `run`, in sewing order.
+fn crossings(run: &Run) -> Vec<i64> {
+    run.windows(2)
+        .filter(|w| (w[0].x - w[1].x).abs() > 29.0)
+        .map(|w| w[1].y.round() as i64)
+        .collect()
+}
+
+#[test]
+fn satin_lattice_stretches_to_whole_gaps_and_crosses_every_far_end_gap() {
+    // PE-DESIGN 11.50 (satin-length-sweep-d1p0 / -d0p2 / -d4p5, #122): from the start point
+    // (top-left) along the edge to the far end, then crossings on the far end's line and on
+    // every other line counted back from the start, on a lattice of floor(length x density)
+    // equal gaps; the single-line gap next to the far end is always crossed.
+    let rows = |len: f64, d: f64| {
+        let mut ys = crossings(&sweep_column(len, d));
+        ys.dedup();
+        ys
+    };
+    assert_eq!(rows(3.0, 1.0), [0, 30, 20, 0]);
+    assert_eq!(rows(5.0, 1.0), [0, 50, 40, 20, 0]);
+    assert_eq!(rows(10.0, 1.0), [0, 100, 80, 60, 40, 20, 0]);
+    assert_eq!(rows(15.0, 0.2), [0, 150, 100, 0]);
+    assert_eq!(rows(10.0, 0.2), [0, 100, 0]);
+    // 15 mm at 4.5 lines/mm: 67 gaps of 0.2239 mm, not 0.2222 (PE: 15.0, 14.8, 14.3 ...).
+    let ys = rows(15.0, 4.5);
+    assert_eq!(&ys[..4], [0, 150, 148, 143]);
+    let gap = 150.0 / 67.0;
+    for (k, &y) in ys[2..ys.len() - 1].iter().enumerate() {
+        let line = 1.0 + 2.0 * k as f64;
+        assert!((y as f64 - (150.0 - gap * line)).abs() <= 0.5, "{k}: {y}");
+    }
+    // 6.75 lines round half down to 7 gaps of 0.214 mm (PE: 1.5, 1.3, 0.9, 0.4, 0;
+    // satin-length-sweep-noopt-d4p5), 49.5 to 49 (PE's 11 mm column: 11.0, 10.8, 10.3 ...).
+    assert_eq!(rows(1.5, 4.5), [0, 15, 13, 9, 4, 0]);
+    assert_eq!(&rows(11.0, 4.5)[..4], [0, 110, 108, 103]);
+    // The column ends on its start point, its last crossing towards it.
+    let run = sweep_column(3.0, 1.0);
+    let n = run.len();
+    assert!(
+        run[n - 3..]
+            .iter()
+            .all(|p| p.y.abs() < 0.05 && p.x <= 3.0 + 1e-6),
+        "{:?}",
+        &run[n - 6..]
+    );
+}
+
+#[test]
+fn satin_ties_in_three_steps_after_a_three_millimetre_first_stitch() {
+    // PE-DESIGN: one 0.3 mm step after a first stitch of up to 2.3 mm, three (0.3, 0.6,
+    // 0.9 mm) after 3.0 mm (the 3 mm wide sweep column) and 3.5 mm.
+    // (Rows on an edge lie 0.001 mm inside it.)
+    let near = |a: &[Vec2], b: &[Vec2]| {
+        a.len() == b.len() && a.iter().zip(b).all(|(p, q)| p.distance(*q) < 0.05)
+    };
+    let three = sweep_column(3.0, 1.0);
+    assert!(
+        near(
+            &three[..4],
+            &[v2(0.0, 0.0), v2(3.0, 0.0), v2(6.0, 0.0), v2(9.0, 0.0)]
+        ),
+        "{:?}",
+        &three[..4]
+    );
+    let mut r = region(RegionType::Satin);
+    r.angle = 0.0;
+    r.underlay = false;
+    let narrow = vec![Contour::new(
+        vec![v2(0.0, 0.0), v2(20.0, 0.0), v2(20.0, 50.0), v2(0.0, 50.0)],
+        true,
+    )];
+    let mut layers = crate::region::layers(&narrow, &r, &[]);
+    crate::region::tie_and_lock(&mut layers);
+    let run = layers.concat().concat();
+    assert!(
+        near(&run[..3], &[v2(0.0, 0.0), v2(3.0, 0.0), v2(0.0, 0.0)]),
+        "{:?}",
+        &run[..3]
+    );
 }
 
 #[test]
@@ -1228,7 +1332,7 @@ fn feathered_edges_shorten_row_ends_deterministically() {
     assert!(xs.iter().all(|&x| (0.0..=200.0).contains(&x)));
     // Start ends vary across 0…3 mm; far ends stay on the outline.
     let starts: Vec<f64> = xs.iter().copied().filter(|&x| x < 100.0).collect();
-    assert!(starts.iter().all(|&x| x <= 30.0));
+    assert!(starts.iter().all(|&x| x <= 30.0), "{starts:?}");
     assert!(starts.iter().copied().fold(0.0, f64::max) > 20.0);
     assert!(xs.iter().filter(|&&x| x > 100.0).all(|&x| x == 200.0));
     r.feather = Some(Feather {

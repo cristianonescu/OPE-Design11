@@ -1332,11 +1332,28 @@ Line references are relative to `crates/`.
   limit exists. Two edges of the rule: a gradation row within 0.05 mm of the start point
   (satin-gradation's row 12, 0.02 mm before it in OpenStitch's lattice, on it in PE-DESIGN's
   0.1 mm file) is the second half's hop only, the first half hops to the row before it, as
-  PE-DESIGN's file shows; and a single-line gap next to the far end shorter than 1 mm is not
-  crossed, the crossings before the hop spread evenly instead (satin-feather at 3 lines/mm:
-  15 crossings 0.69 mm apart over 29 lines, then the 0.33 mm hop; the round-3 column at 0.5
-  lines/mm keeps its 2 mm single-line gap). Open: the merge bound lies between 0.33 and 2 mm
-  (the 40 x 6 mm column at 1, 1.5 and 2 lines/mm, start point at the middle, would pin it).
+  PE-DESIGN's file shows; and on a feathered satin a single-line gap next to the far end
+  shorter than 1 mm is not crossed, the crossings before the hop spread evenly instead
+  (satin-feather at 3 lines/mm: 15 crossings 0.69 mm apart over 29 lines, then the 0.33 mm
+  hop). **Settled 2026-10-29 (#122, pe-refs-4's `satin-length-sweep-d4p5/-d1p0/-d0p2`: twelve
+  3 mm wide columns 0.5–15 mm long at 4.5, 1.0 and 0.2 lines/mm, read column by column):** plain
+  satin has no minimum-crossing threshold, the single-line gap next to the far end is crossed
+  at every size measured (0.22, 0.33, 1 and 5 mm), so the spread is a feathered-edge rule
+  only. The lattice is stretched to `length × density` rounded half down equal gaps (15 mm at
+  4.5 lines/mm: 67 gaps of 0.2239 mm, PE's 14.8 / 14.3 where a nominal lattice gives 14.7 / 14.2;
+  1.5 mm: 7 gaps of 0.214 mm in pe-refs-4's `satin-length-sweep-noopt-d4p5`; every earlier satin
+  reference has a whole `length × density`). A column whose start point is at one end is
+  sewn from its far end back to the start point: the opening row across and back, a straight
+  travel inside to the far end's other corner, then the far end's row and every other line
+  counted back from the start point's line, every crossing towards the start point's side
+  (a 3 mm column at 1 line/mm, needle for needle: rows 3, 2, 0 mm); regions without a Running
+  Stitch Path (files saved before it existed) keep their old order, as their travel would be a
+  jump. A first stitch of 3.0 mm already takes the three-step tie-in (bound 2.65 mm, between
+  PE's 2.3 and 3.0 mm). pescmp on the three sweep files (stitches ours / PE, coverage IoU) before
+  → after: 4.5 lines/mm 358 → 438 / 424, 0.919 → 0.965; 1.0: 150 → 232 / 216, 0.693 → 0.779;
+  0.2: 98 → 190 / 184, 0.444 → 0.690; `satin-length-sweep-noopt-d4p5` 205 / 202, 0.952 (the
+  residue: PE starts the 12 mm column 0.5 mm down its edge, a split satin, and sews columns under
+  1 mm differently from one file to the next).
   region-travel-u-gradation passes at the reference tier; all 40 of its rows lie within
   0.12 mm of PE-DESIGN's (0.04 mm on average; the earlier midpoint-density placement drifted
   to 0.4 mm by the far edge), and the round-3 Max/Min sweeps (80/20, 95/50, 50/50, pattern 2)
