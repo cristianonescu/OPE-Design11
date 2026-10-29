@@ -23,6 +23,10 @@
     {
       "kind": "measured",
       "note": "docs/FILE_FORMATS.md, CEmbDText: the 26 compat/reference/text/text-transform-N files and the owner's round-4 captures of every preset at levels 0-100 on two other texts; the writer rewrites the 27 text-transform owner files byte-identical outside the documented differences (pes11.rs)"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 opening a.pes (MANIFEST pes-0110-editable-text-transform, 2026-10-29): editable text, Transform preset 1 at the default level, retypable; the PES section re-saved unchanged but for the text box"
     }
   ],
   "script": [
@@ -79,7 +83,8 @@
         "export": "a.pes"
       },
       "expected": "0110",
-      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature"
+      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature",
+      "reference": {}
     },
     {
       "id": "classes",
@@ -92,7 +97,8 @@
       "expected": [
         "CEmbNText"
       ],
-      "evidence": "text-transform-1.pes: one text object, written as CEmbDText (the reader reports texts of both classes as CEmbNText)"
+      "evidence": "text-transform-1.pes: one text object, written as CEmbDText (the reader reports texts of both classes as CEmbNText)",
+      "reference": {}
     },
     {
       "id": "width",
@@ -103,12 +109,40 @@
       "source": {
         "export": "a.pes"
       },
-      "evidence": "PE-DESIGN re-sews the arched text from the object: the same width as its own text-transform-1",
+      "evidence": "PE-DESIGN re-sews the arched text from the object (79.20 mm; its own text-transform-1 79.30). OpenStitch's arch layout sews 79.8 mm: it bends the text round a 39.6 mm circle measured on the letters, where PE-DESIGN measures its 40.8 mm circle on its own text box (FILE_FORMATS, CEmbDText)",
       "reference": {
         "tolerance": {
-          "mm": 1.0
+          "mm": 0.7
         }
       }
+    },
+    {
+      "id": "height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN re-sews the arched text from the object: 26.50 mm",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "colour-blocks",
+      "measure": {
+        "kind": "colorBlocks"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 1,
+      "evidence": "one red block",
+      "reference": {}
     }
   ]
 }

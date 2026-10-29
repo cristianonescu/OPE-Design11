@@ -353,7 +353,11 @@ byte-identical to PE-DESIGN's outside these documented differences
   and hoop of the design's machine settings are not mapped yet.
 - **Text Transform:** from a design, the arch circle comes from OpenStitch's straight layout:
   HHHHHHH's radius is 39.6 mm where PE-DESIGN, measuring its own box, stores 40.8; the other
-  presets carry zeros where PE-DESIGN leaves its last arch's numbers.
+  presets carry zeros where PE-DESIGN leaves its last arch's numbers. The text box of an arch is
+  PE-DESIGN's straight box (ascent line to baseline) bent round the arch's circle: for HHHHHHH
+  OpenStitch writes 551..1449 × 841..1164 where PE-DESIGN writes 552..1441 × 841..1170 (it
+  recomputes the box when it opens the file). Other presets: the letters' extent, the top at most
+  the ascent line.
 - **Text:** the letter field at +14 (OpenStitch writes r12's −0.0) and the last sewing-order
   field of the line-spacing files (PE-DESIGN leaves it unset, `08 CE 53 00`; OpenStitch writes
   1). A text written from the letter defaults gives r12's object section byte for byte
@@ -381,8 +385,12 @@ box's right edge, which it takes from its own layout (787 → 793). It showed a 
 stitch count in the status bar: the file was on a Custom Size page (with PE-DESIGN's own PEC
 stitches too, probe p2), so a 100 × 100 mm design is now written on PE-DESIGN's default Hoop Size
 page (probe p3 asks PE-DESIGN to confirm). A plain click on a stroke selects the text, as for
-PE-DESIGN's own text (a click inside the A's counter selects neither). Version 6 stays the default export until the
-coordinator decides otherwise.
+PE-DESIGN's own text (a click inside the A's counter selects neither). **Text Transform (2026-10-29,
+`pes-0110-editable-text-transform`, reference tier):** PE-DESIGN opens HHHHHHH with preset 1 as
+editable text with Transform ticked, preset 1 at its default level (re-selecting the preset gives
+the same 79.20 × 26.50 mm and 1307 stitches), centred, Lato 10, and the text can be retyped on
+the arc. Its re-save keeps the object section but for the text box. Version 6 stays the default
+export until the coordinator decides otherwise.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
 

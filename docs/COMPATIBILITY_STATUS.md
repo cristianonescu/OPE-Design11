@@ -20,7 +20,7 @@ Specs: 175 · pass 175 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Files | HUS read and write (LZ77 + Huffman streams, HUS chart)… | reference; reference pending | `machine-formats` |
 | Files | JEF read/write (Janome chart, stops, hoop code)… | reference; reference pending | `machine-formats` |
 | Files | PCS read/write (1/6 mm grid, hoop byte)… | reference; reference pending | `machine-formats` |
-| Files | PES 0110 (PE-DESIGN 11) editable shapes write… | internal-regression; reference pending | `pes-0110-editable-shapes`, `pes-0110-editable-text-transform`, `pes-0110-editable-text` |
+| Files | PES 0110 (PE-DESIGN 11) editable shapes write… | reference | `pes-0110-editable-shapes`, `pes-0110-editable-text-transform`, `pes-0110-editable-text` |
 | Files | PES v6 thread table… | oracle | `pes-thread-chart-roundtrip` |
 | Files | PES write v1 and v6… | oracle; reference pending | `machine-jumps`, `machine-rbgb`, `machine-rbr-far`, `machine-rbr`, `machine-trim-bound`, `machine-trim-fine`, `pes-csewseg-trims`, `pes-default-v6`, `pes-library-convert-v6` |
 | Files | SEW read/write (Janome SEW chart)… | reference; reference pending | `machine-formats` |
@@ -45,7 +45,7 @@ Specs: 175 · pass 175 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | 2 | oracle; reference pending | `pes-default-v6`, `pes-library-convert-v6` |
 | 3 | internal-regression | `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `region-travel-u-satin`, `running-stitch-path-exclusions`, `satin-sections-h`, `u-gradation-50-50`, `u-gradation-80-20`, `u-gradation-95-50`, `u-gradation-blend-blue`, `u-gradation-dir-90`, `u-gradation-pattern-2`, `u-gradation-pattern-3`, `u-gradation-pattern-4`, `u-gradation-pattern-5`, `u-gradation-pattern-6`, `u-gradation-pattern-7`, `u-gradation-pattern-8` |
 | 4 | reference | `machine-jumps`, `machine-trim-bound`, `machine-trim-fine` |
-| 5 | internal-regression; reference pending | `pes-0110-editable-shapes`, `pes-0110-editable-text-transform`, `pes-0110-editable-text` |
+| 5 | reference | `pes-0110-editable-shapes`, `pes-0110-editable-text-transform`, `pes-0110-editable-text` |
 | 7 | reference | `auto-satin-bent-band`, `satin-auto-bend-30-nohalf`, `satin-auto-bend-30`, `satin-auto-bend-45-nohalf`, `satin-auto-bend-45`, `satin-auto-bend-60`, `satin-auto-bend-75-nohalf`, `satin-auto-bend-75`, `satin-auto-bend-90-nohalf`, `satin-auto-bend-90` |
 | 14 | reference | `programmable-fill-45` |
 | 15 | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `square-gradation-30-10`, `square-gradation-default`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5-h33`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-density-min`, `sweep-fill-dir-135`, `sweep-fill-dir-30`, `sweep-fill-dir-45`, `sweep-fill-dir-90`, `sweep-fill-freq-10`, `sweep-fill-freq-40`, `sweep-fill-pitch-2p0`, `sweep-fill-pitch-3p0`, `sweep-fill-pitch-6p0`, `sweep-fill-pitch-max`, `sweep-fill-pitch-min`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max`, `sweep-fill-us-default`, `sweep-fill-us-density-dense`, `sweep-fill-us-density-light`, `sweep-fill-us-type-2` |
@@ -72,7 +72,7 @@ Specs: 175 · pass 175 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `machine/machine-trim-bound` | pass | reference | pass | — | pass | — |
 | `machine/machine-trim-fine` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-shapes` | pass | reference | pass | — | pass | — |
-| `pes/pes-0110-editable-text-transform` | pass | internal-regression | pass | — | pending | — |
+| `pes/pes-0110-editable-text-transform` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text` | pass | reference | pass | — | pass | — |
 | `pes/pes-csewseg-trims` | pass | reference | pass | — | pass | — |
 | `pes/pes-default-v6` | pass | reference | pass | — | pass | pending |
