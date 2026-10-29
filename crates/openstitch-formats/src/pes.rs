@@ -502,6 +502,7 @@ impl WriteOptions {
             return Some(Self {
                 version: Version::V11,
                 truncated: false,
+                hoop_mm: None,
             });
         }
         let (v, truncated) = match s.strip_suffix('t') {
