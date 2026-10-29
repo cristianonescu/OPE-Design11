@@ -1,0 +1,4 @@
+# PE-DESIGN reference files are compared by SHA-256: keep their bytes (CRLF) exactly as PE-DESIGN wrote them.
+compat/reference/**/*.pas -text
+compat/reference/**/*.pmf -text
+compat/reference/**/*.plf -text
