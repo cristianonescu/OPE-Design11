@@ -1,0 +1,138 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "text-transform-4-openstitch",
+  "area": "text",
+  "title": "Text Transform preset 4 (taper shrinking to the right) on \"OpenStitch\" at the default level",
+  "description": "\"OpenStitch\" in Lato Bold, 10 mm, centred at (50, 50) mm, with Text Transform preset 4 (taper shrinking to the right) at the level PE-DESIGN 11.50 applies when the preset is clicked (stored value 50.000). A second string next to text-transform-4's HHHHHHH: this one has round letters, ascenders, descenders and digits, so the envelope is checked on letters of unequal height. The box of the transformed text is compared; the stitch count is not (text fill rows, audit 'Text fill rows').",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Lettering",
+        "feature": "Text Transform"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md: Text Transform (envelope presets); issue #133"
+    },
+    {
+      "kind": "measured",
+      "note": "compat/reference/text/text-transform-4-openstitch.pes, PE-DESIGN 11.50 (pe-refs-4, 2026-10-29): box 63.8..136.2 x 84.1..102.2 mm, 1203 stitches, transform value 50.000."
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 has no numeric Transform level: the strength is a green diamond handle dragged on the canvas, and the value stored in the file is a percentage of the font size for the straight-edged presets (default 50, or 20 for the bows and waves), an angle in degrees for the slants (10) and fans (30), and for the arches the half-sweep angle (30) with the radius that keeps the text length. Files at four other handle positions per preset are parked in the owner's round-4 notes for the text track."
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "OpenStitch",
+        "font": "lato-bold",
+        "size": 10,
+        "x": 50,
+        "y": 50,
+        "fill": "Red",
+        "envelope": 4
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "underlay": false,
+        "density": 5
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "text.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "text/text-transform-4-openstitch.pes",
+      "make": "As text-transform-4, with the text \"OpenStitch\" instead of HHHHHHH: Lato Bold 10 mm, Fill Stitch 800 RED, under sewing off, density 5.0, Alignment Center, clicked at (50, 50) mm; Text Attributes > Transform on, preset 4 in reading order, the handle left where the preset put it. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "bounds-minx",
+      "measure": {
+        "kind": "bounds",
+        "property": "minX"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the transformed text's box",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "bounds-maxx",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxX"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the transformed text's box",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "bounds-miny",
+      "measure": {
+        "kind": "bounds",
+        "property": "minY"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the transformed text's box",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "bounds-maxy",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxY"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference: the transformed text's box",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    }
+  ]
+}

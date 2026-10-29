@@ -118,7 +118,12 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    text alike; the 'H' references match only because an H's stems are vertical) — the structural
    gap behind text-fit-*, text-transform-* and text-sewing-order; the fitted circle's running
    stitch follows PE-DESIGN's Bézier halving since 2026-10-28 (text-fit-default mean needle
-   distance 0.27 → 0.20 mm); Text Transform presets 13 and 14 (fan out / in) done 2026-10-28.
+   distance 0.27 → 0.20 mm); Text Transform presets 13 and 14 (fan out / in) done 2026-10-28; round 4 (2026-10-29)
+   showed PE-DESIGN's transform level is a dragged handle whose value is stored per file
+   (percent of the font size, degrees for slants, fans and arches): add a level parameter to
+   `text.add`, fit each preset's envelope as a function of the value from the parked
+   level files, and re-fit the cap-height box (presets 3, 9, 10, 14, 17 miss by up to 2 mm
+   on descender letters).
    Left: per-character colour and
    multi-character selection; Connection Points; minimum font sizes and small-text fonts;
    kerning that reflows the line; editing several characters at once on the canvas; shaping for
