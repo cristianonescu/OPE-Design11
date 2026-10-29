@@ -278,9 +278,12 @@ Verified Compatible).
   stroke: its width at its deepest point (twice the chamfer distance to the outside) is at most
   `satinMaxWidth`; a region keeping area beyond that is fill along the axis (#127's
   centerline-thinness test). Colours sew largest area first.
-- **Cross Stitch.** The image's colours are reduced first; each cell of a square grid
-  (1–10 mm) takes the thread most of its pixels have (transparent cells stay empty). Each colour is one stitch object; each run of cells in a row is sewn "/"
-  going right and "\" coming back, stepping along the shared cell sides.
+- **Cross Stitch.** The image's colours are reduced through the same census prepass; each
+  cell of a square grid (`round(width / cell) × round(height / cell)`, cells 1–10 mm, default
+  2.5 mm) takes the thread most of its modal pixels have (ties to the lower thread; cells
+  mostly transparent stay empty). Each colour is one stitch object; each run of cells in a row
+  is sewn "/" going right and "\" coming back, stepping along the shared cell sides, every
+  diagonal once or, with Triple, there, back and there again (#132).
 - **Photo Stitch.** *Fill* (after Photo Stitch 1): a grid of row spacing × stitch length is
   error-diffused onto the threads plus the fabric colour; fabric cells stay unsewn, so tone
   becomes coverage; rows are staggered by thirds. *Lines* (after Photo Stitch 2): zigzag rows

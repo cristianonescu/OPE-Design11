@@ -175,6 +175,11 @@ pub fn commands() -> Vec<CommandSpec> {
                     "Full crosses or half crosses (default full)",
                 ),
                 opt(
+                    "times",
+                    "single|triple",
+                    "Each diagonal sewn once or three times (default single)",
+                ),
+                opt(
                     "skipBackground",
                     "bool",
                     "Leave out the colour covering most of the border (default true)",
@@ -183,12 +188,13 @@ pub fn commands() -> Vec<CommandSpec> {
             |s, p| {
                 let (image, frame) = load(s, p)?;
                 let options = CrossStitch {
-                    cell_mm: p.opt("cellSize", 2.5, 1.0, 10.0)?,
-                    colors: count(p, "colors", 8, 1, 64)?,
+                    cell_mm: p.opt("cellSize", CrossStitch::CELL_MM, 1.0, 10.0)?,
+                    colors: count(p, "colors", CrossStitch::COLORS as i64, 1, 64)?,
                     kind: match choice(p, "type", "full", &["full", "half"])? {
                         "half" => CrossType::Half,
                         _ => CrossType::Full,
                     },
+                    triple: choice(p, "times", "single", &["single", "triple"])? == "triple",
                     skip_background: p.bool("skipBackground", Some(true))?,
                 };
                 let out = cross::convert(&image, &frame, &options).map_err(|e| failed(p, e))?;

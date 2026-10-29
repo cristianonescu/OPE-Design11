@@ -1,6 +1,15 @@
-//! Cross Stitch from an image: the image's colours are reduced to N PEC threads, each cell of
-//! a square grid takes the thread most of its pixels have, and each thread becomes one stitch
-//! object of crosses.
+//! Cross Stitch from an image: the image's colours are reduced to N PEC threads through the
+//! colour-reduction prepass Auto Punch uses (3×3 modal colours, census capped at 100 tracked
+//! colours, median cut; #127 #132), each cell of a square grid takes the thread most of its
+//! modal pixels have, and each thread becomes one stitch object of crosses.
+//!
+//! Defaults, documented and configurable (#132): grid cell 2.5 mm (0.4 cells per mm), 8
+//! colours, full crosses, each diagonal sewn once (`triple` sews it three times, as the Cross
+//! Stitch region type's Triple does), the border-majority colour left out. The grid is
+//! `round(width / cell) × round(height / cell)` cells over the placed image. Colour → cell:
+//! the cell's pixels (about 8 per cell side on the working raster) vote with their modal
+//! colour's thread; most votes wins, ties go to the lower thread, a cell most of whose pixels
+//! are transparent stays empty. PE-DESIGN's own defaults are not yet confirmed from a capture.
 //!
 //! Specified from PE-DESIGN 11's public guide (Cross Stitch converts an image into cross
 //! stitches on a grid with a chosen cell size and colour count); the sewing order is this
@@ -9,7 +18,7 @@
 
 use crate::DigitizeError;
 use crate::autopunch::border_majority;
-use crate::palette::Palette;
+use crate::palette::{self, Palette};
 use crate::raster::{Frame, Raster};
 use crate::regions::NONE;
 use openstitch_core::{Command, Stitch, Thread};
@@ -25,19 +34,40 @@ pub enum CrossType {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CrossStitch {
-    /// Grid cell side, mm.
+    /// Grid cell side, mm (1–10); the grid has `1 / cell_mm` cells per mm.
     pub cell_mm: f64,
+    /// Thread colours to reduce to (1–64).
     pub colors: usize,
     pub kind: CrossType,
+    /// Each diagonal sewn three times instead of once (3 or 1 stitches per diagonal).
+    pub triple: bool,
+    /// Leave out the colour covering most of the grid's border.
     pub skip_background: bool,
+}
+
+impl CrossStitch {
+    /// Default grid cell, mm.
+    pub const CELL_MM: f64 = 2.5;
+    /// Default thread colours.
+    pub const COLORS: usize = 8;
+
+    /// Needle points per cell for these settings: 1 or 3 per diagonal, 1 or 2 diagonals.
+    pub fn stitches_per_cell(&self) -> usize {
+        let diagonals = match self.kind {
+            CrossType::Full => 2,
+            CrossType::Half => 1,
+        };
+        diagonals * if self.triple { 3 } else { 1 }
+    }
 }
 
 impl Default for CrossStitch {
     fn default() -> Self {
         CrossStitch {
-            cell_mm: 2.5,
-            colors: 8,
+            cell_mm: Self::CELL_MM,
+            colors: Self::COLORS,
             kind: CrossType::Full,
+            triple: false,
             skip_background: true,
         }
     }
@@ -76,22 +106,20 @@ pub fn convert(image: &Raster, frame: &Frame, p: &CrossStitch) -> Result<Convert
     // pixels are transparent.
     let side = (cols.max(rows) * 8).clamp(64, 1024) as u32;
     let work = image.fit(side);
-    let mut colors = Vec::new();
-    for y in 0..work.height() {
-        for x in 0..work.width() {
-            let [r, g, b, a] = work.pixel(x, y);
-            if a >= 128 {
-                colors.push([r, g, b]);
-            }
-        }
-    }
-    if colors.is_empty() {
+    let census = palette::census(&work);
+    if census.colors.is_empty() {
         return Err(DigitizeError::Empty(
             "the image is fully transparent".into(),
         ));
     }
-    let palette = Palette::build(&colors, p.colors.clamp(1, 64));
+    let palette = Palette::from_census(&census, p.colors.clamp(1, 64));
     let (ww, wh) = (work.width() as usize, work.height() as usize);
+    // Thread of every working pixel from its modal colour; the transparent ones vote "empty".
+    let pixel_thread: Vec<usize> = census
+        .modal
+        .iter()
+        .map(|m| m.map_or(palette.threads.len(), |c| palette.classify(c)))
+        .collect();
     let mut labels: Vec<u16> = Vec::with_capacity(cols * rows);
     let mut votes = vec![0usize; palette.threads.len() + 1];
     for y in 0..rows {
@@ -107,13 +135,7 @@ pub fn convert(image: &Raster, frame: &Frame, p: &CrossStitch) -> Result<Convert
             votes.iter_mut().for_each(|v| *v = 0);
             for py in y0..y1 {
                 for px in x0..x1 {
-                    let [r, g, b, a] = work.pixel(px as u32, py as u32);
-                    let k = if a >= 128 {
-                        palette.classify([r, g, b])
-                    } else {
-                        palette.threads.len()
-                    };
-                    votes[k] += 1;
+                    votes[pixel_thread[py * ww + px]] += 1;
                 }
             }
             // Most votes; ties to the lower thread, transparency last.
@@ -159,7 +181,7 @@ pub fn convert(image: &Raster, frame: &Frame, p: &CrossStitch) -> Result<Convert
                 while x < cols && labels[y * cols + x] as usize == t {
                     x += 1;
                 }
-                sew_run(&mut stitches, frame, cell, y, start, x, p.kind);
+                sew_run(&mut stitches, frame, cell, y, start, x, p.kind, p.triple);
             }
         }
         let thread = palette.threads[t].clone();
@@ -184,7 +206,9 @@ pub fn convert(image: &Raster, frame: &Frame, p: &CrossStitch) -> Result<Convert
 }
 
 /// Cells `a..b` of grid row `row`: jump to the run's bottom-left corner, "/" diagonals
-/// left to right, then (full crosses) "\" diagonals right to left.
+/// left to right, then (full crosses) "\\" diagonals right to left. With `triple` every
+/// diagonal is sewn there, back and there again before moving on.
+#[allow(clippy::too_many_arguments)]
 fn sew_run(
     out: &mut Vec<Stitch>,
     frame: &Frame,
@@ -193,26 +217,37 @@ fn sew_run(
     a: usize,
     b: usize,
     kind: CrossType,
+    triple: bool,
 ) {
     let at = |col: usize, r: usize| {
         let x = frame.origin.x + col as f64 * cell;
         let y = frame.origin.y + r as f64 * cell;
         (x, y)
     };
-    let mut put = |(x, y): (f64, f64), command| out.push(Stitch::new(x, y, command));
     let (top, bottom) = (row, row + 1);
-    put(at(a, bottom), Command::Jump);
-    put(at(a, bottom), Command::Stitch);
+    let put = |out: &mut Vec<Stitch>, (x, y): (f64, f64), command| {
+        out.push(Stitch::new(x, y, command));
+    };
+    // A diagonal from the needle's current point `from` to `to`, sewn once or three times.
+    let diagonal = |out: &mut Vec<Stitch>, from: (f64, f64), to: (f64, f64)| {
+        put(out, to, Command::Stitch);
+        if triple {
+            put(out, from, Command::Stitch);
+            put(out, to, Command::Stitch);
+        }
+    };
+    put(out, at(a, bottom), Command::Jump);
+    put(out, at(a, bottom), Command::Stitch);
     for i in a..b {
-        put(at(i + 1, top), Command::Stitch);
+        diagonal(out, at(i, bottom), at(i + 1, top));
         if i + 1 < b || kind == CrossType::Full {
-            put(at(i + 1, bottom), Command::Stitch);
+            put(out, at(i + 1, bottom), Command::Stitch);
         }
     }
     if kind == CrossType::Full {
         for i in (a..b).rev() {
-            put(at(i, top), Command::Stitch);
-            put(at(i, bottom), Command::Stitch);
+            diagonal(out, at(i + 1, bottom), at(i, top));
+            put(out, at(i, bottom), Command::Stitch);
         }
     }
 }

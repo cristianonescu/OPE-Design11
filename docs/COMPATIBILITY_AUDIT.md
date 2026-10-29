@@ -1019,7 +1019,13 @@ Line references are relative to `crates/`.
   `satinMaxWidth`, default 6 mm) instead of the longest scan span across the principal axis:
   a bent 4 mm stroke is now satin, a 10 mm blob fill. Left for #127: the recorded defaults
   and the region, satin and stitch counts against pe-refs-4's Auto Punch captures; the
-  optional graph-cut foreground step. #132 follows in its own PR.
+  optional graph-cut foreground step. Done 2026-10-29 (#132): Cross Stitch reduces colours
+  through the same census prepass (one implementation, two callers), its cells vote with their
+  modal colours, and its defaults are explicit: 2.5 mm cells (0.4 per mm), 8 colours, full
+  crosses, each diagonal once (`times: triple` sews it three times), border colour left out.
+  On the synthetic grids the cells are the same as before (8 × 4 cells, 6 + 1 coloured);
+  what changes is the palette's weighting. Left for #132: PE-DESIGN's recorded defaults from
+  the capture, which may move the cell size or the times.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.
