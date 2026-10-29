@@ -10,7 +10,7 @@ use crate::params::{CommandError, Params};
 use crate::sandbox::Access;
 use crate::session::EngineState;
 use openstitch_core::{
-    HUS_CHART, JEF_CHART, PEC_CHART, SEW_CHART, SHV_CHART, Thread, color_distance,
+    HUS_CHART, JEF_CHART, PEC_CHART, SEW_CHART, SHV_CHART, Thread, color_distance, pec_basic_chart,
 };
 use openstitch_design::{LineSewing, RegionSewing};
 use serde::{Deserialize, Serialize};
@@ -283,10 +283,6 @@ pub fn chart_csv<'a>(name: &str, threads: impl IntoIterator<Item = &'a Thread>) 
     }
     out
 }
-
-/// Brother chart entries PE-DESIGN 11.50 matches a colour to: 1–61 (the owner's swatch capture
-/// never picked 62–64; see `openstitch_core` and issue #119).
-const BROTHER_BASIC: usize = 61;
 
 /// Thread charts built into OpenStitch: id, display name, entries. The index of an entry is the
 /// format's colour number; `None` marks a number the format leaves unused.
@@ -729,8 +725,9 @@ fn chart_commands() -> Vec<CommandSpec> {
                                     let mut v = describe_thread(t);
                                     v["index"] = json!(i);
                                     if *id == "brother" {
-                                        // Matched to (1–61) or only kept from files (62–64).
-                                        v["basic"] = json!(i <= BROTHER_BASIC);
+                                        // Matched to (1–61, `pec_basic_chart`) or only
+                                        // kept from files (62–64).
+                                        v["basic"] = json!(i < pec_basic_chart().len());
                                     }
                                     Some(v)
                                 })
