@@ -1111,6 +1111,15 @@ Line references are relative to `crates/`.
   difference in the gradation rows themselves. Still missing: per-step editing, Blend, the
   gradation direction arrow, and programmable fill (PE offers it; OpenStitch refuses it until it
   sews it).
+- **Over-long moves in PEC (2026-10-29, #126):** the PEC writer split a move over ±2047 units
+  into equal pieces computed on unrounded coordinates, so a half-unit fraction could still
+  encode a 2048 delta (masked to 12 bits). It now splits on the rounded coordinates with the
+  rule PE-DESIGN 11.50 shows in its DST for the 211 × 278 mm move of `long-jump-300.dst`
+  (pe-refs-4): the maximum along the longer axis, the proportional share on the other,
+  remainder last, never halved (the issue proposed halving). PE-DESIGN's PEC bytes for that
+  move (`9e 39 96 95` then 39 × `80 46 00`) do not decode to the DST's vector with the 12-bit
+  rule, so its PEC encoding over 204.7 mm stays open and the DST rule is applied at the PEC
+  limit; internal regression tier (`pec_splits_moves_over_2047_units_like_pe_design_dst`).
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 - **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,

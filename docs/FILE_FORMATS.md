@@ -64,7 +64,13 @@ Design Database converts between `.pes .dst .exp .pcs .hus .vip .shv .jef .sew .
 
 Stitch stream: each axis value is either one byte (7-bit two's complement, used when
 −64 < d < 63) or two bytes `1 f f f v v v v  v v v v v v v v` (bit 7 set; bit 5 = trim,
-bit 4 = jump; 12-bit two's complement). Colour change: `FE B0` then `02`/`01` alternating.
+bit 4 = jump; 12-bit two's complement). Colour change: `FE B0` then `02`/`01` alternating. A move over ±2047 units (204.7 mm) is
+split before encoding as PE-DESIGN 11.50 splits an over-long DST move (`long-jump-300.dst`:
+maximum along the longer axis, proportional share on the other, remainder last; never halved),
+so no written delta exceeds the 12-bit form (`pec_splits_moves_over_2047_units_like_pe_design_dst`,
+#126). PE-DESIGN's own PEC bytes for such a move are not yet understood (owner's parked PES:
+`9e 39 96 95` then 39 × `80 46 00`, which a plain 12-bit decode does not sum to the DST's
+vector); the issue's halving proposal matches neither format.
 
 Colour mapping: PEC stores indexes into Brother's fixed 64-entry chart, not RGB. Writer
 assigns each distinct design colour the nearest still-unused chart entry ("red-mean"
