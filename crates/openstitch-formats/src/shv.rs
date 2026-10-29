@@ -1,8 +1,11 @@
 //! Husqvarna Viking SHV (read only). Big-endian. A 0x56-byte text header, a length-prefixed
 //! design name, a 1-bit preview (`width` bytes × ⌈`height` / 2⌉ rows plus 4 bytes), a colour
 //! count and 18 unknown bytes, then 14 bytes per colour: u32 BE number of 2-byte record words
-//! in the block, a SHV chart index and 9 unknown bytes. The stitch records start 2 bytes before
-//! the end of that table. Records: signed byte `(dx, dy)` with y down; `80 01 dx(i16) dy(i16)`
+//! in the block, a SHV chart index and 9 unknown bytes. The stitch records follow the table:
+//! PE-DESIGN 11.50's own SHV export (`tests/fixtures/pe11/sample-basic.shv`) starts them at the
+//! table's end with exactly as many words as the counts add up to. pyembroidery's reader starts
+//! 2 bytes before the end; a file with one word fewer than the counts (as pyembroidery's layout
+//! implies) is read that way. Records: signed byte `(dx, dy)` with y down; `80 01 dx(i16) dy(i16)`
 //! moves and starts jump mode (later short records are jumps), `80 02` ends jump mode, `80 03`
 //! is skipped. A colour block ends after its word count; there is no explicit colour change.
 //!
@@ -39,10 +42,18 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
         );
         reader.skip(9)?;
     }
-    reader.offset = reader
-        .offset
-        .checked_sub(2)
-        .ok_or_else(|| FormatError::Truncated("SHV colour table".into()))?;
+    // PE-DESIGN's layout: the records start at the table's end and fill exactly the counted
+    // words. pyembroidery's: they start 2 bytes earlier, so one word fewer follows the table.
+    // Reading PE's file the pyembroidery way adds a stitch at the origin and, one word short at
+    // the end, an extra colour change (issue #135).
+    let counted: u64 = words_per_color.iter().map(|&w| u64::from(w)).sum();
+    let following = (data.len() - reader.offset) as u64 / 2;
+    if following < counted {
+        reader.offset = reader
+            .offset
+            .checked_sub(2)
+            .ok_or_else(|| FormatError::Truncated("SHV colour table".into()))?;
+    }
 
     let signed16 = |b: &[u8]| f64::from(i16::from_be_bytes([b[0], b[1]]));
     let (mut x, mut y) = (0.0_f64, 0.0_f64);

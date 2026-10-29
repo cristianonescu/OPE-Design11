@@ -84,3 +84,17 @@ Made by the owner's PE-DESIGN 11.50 (Layout & Editing) on Windows 11 Pro 10.0.26
 | `obj-progfill-owner-v.pes` | `5adffe08327bccf391412e2ecf4264f3ec40258658685f239e7b554b6b7db4b3` | Rectangle tool dragged (20,20)-(50,40) mm, line Running Stitch (red, pitch 2.0), region Prog. Fill Stitch with the owner-drawn pattern owner-v.pas (compat/reference/pes; a V across the 8 x 8 cell, made in Programmable Stitch Creator), 7.5 x 7.5 mm, Direction 0, Offset row 0 %, Base Sewing off; region density 4.5, direction 45, under sewing off, 007 PRUSSIAN BLUE. 30,00 x 20,00 mm, 641 st. |
 | `obj-motif-fill-owner-v.pes` | `d88daafad7dd68b04669a663f940bc3d83fcb2e97da821d2de72f26f25900f07` | The same rectangle, region Motif Stitch with the owner-drawn motif owner-v.pmf (compat/reference/pes; a V), Pattern1 5.0 x 5.0 mm, H/V-Arrange first buttons, offsets and spacing 0.0, Pattern2 off, Direction 0, Row offset 0.0, Run pitch 5.0. 30,00 x 20,00 mm, 144 st. |
 | `obj-motif-line-owner-v.pes` | `fc5acdc25795d540f46b9b7353b64203420057f69ae41d38129b6611e29f7082` | The same rectangle, region Not Sewn, line Motif Stitch with owner-v.pmf, 5.0 x 5.0 mm, H/V-Arrange first buttons, Offset 0.0, Spacing 0.0, Run pitch 5.0, Start/End Type Feed. 30,00 x 20,00 mm, 47 st. |
+
+**Round 4 machine exports (#135):** made by the owner's PE-DESIGN 11.50 (Layout & Editing) on
+Windows 11 Pro 10.0.26300, 2026-10-29 11:43-11:47, by black-box GUI use only (track
+pe-refs-4). Design Page 100 x 100 mm. Text tool "S", size 20.0, region Satin Stitch, 800
+EMBROIDERY RED (14,00 x 21,10 mm, 278 st); Rectangle (60,60)-(70,68) mm, line Not Sewn,
+region Fill Stitch, 007 EMBROIDERY PRUSSIAN BLUE (10,00 x 8,00 mm, 197 st). Sewing order: the
+S, then the rectangle. Save As PES, then App menu > Export... to each type, no options dialog,
+no warning. Three of the eleven files are kept here for the readers' tests:
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `sample-basic.csd` | `b405685a744df0dd4395279c561822aea4010d8460c7887404aaa9b7e52b841b` | Export, type Singer (*.CSD). |
+| `sample-basic.dst` | `c29378ba32fda42d1b5e5499cdec5c4594ab70ac49dc5fa69ee710000c8b855b` | Export, type Tajima (*.DST). |
+| `sample-basic.shv` | `508c945b5a4e9047da8cda1fd69240a6add83cd9183d1460bffdb3ba0c9dc727` | Export, type Husqvarna/Viking (*.SHV). |

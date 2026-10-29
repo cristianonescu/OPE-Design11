@@ -879,3 +879,36 @@ fn exports_over_a_format_limit_fail_or_split_into_numbered_files() {
     assert_eq!(out["paths"].as_array().map(Vec::len), Some(1));
     assert!(dir.join("small.dst").exists());
 }
+
+/// A DST carries no colours. Each colour block of an imported DST gets its own Brother chart
+/// colour, so the blocks stay apart; without threads they shared one colour and were merged
+/// into one block (issue #135, PE-DESIGN's DST of `machine-sample-basic`).
+#[test]
+fn imported_dst_blocks_keep_distinct_colours() {
+    use openstitch_core::{Command, StitchPattern};
+    let dir = temp_dir();
+    let mut p = StitchPattern::new();
+    for (x, y) in [(0.0, 0.0), (30.0, 0.0), (30.0, 30.0)] {
+        p.stitch_to(x, y);
+    }
+    p.push(Command::ColorChange);
+    for (x, y) in [(60.0, 30.0), (60.0, 60.0), (90.0, 60.0)] {
+        p.stitch_to(x, y);
+    }
+    p.push(Command::End);
+    std::fs::write(
+        dir.join("two.dst"),
+        openstitch_formats::dst::write(&p).expect("dst"),
+    )
+    .expect("write");
+    let mut s = Session::new(&dir);
+    run(&mut s, "stitches.import", json!({"path": "two.dst"}));
+    let block = s.design().objects[0]
+        .stitch_block
+        .as_ref()
+        .expect("stitch block");
+    assert_eq!(block.threads.len(), 2);
+    assert_ne!(block.threads[0].rgb_value(), block.threads[1].rgb_value());
+    let compiled = openstitch_design::Compiler::for_design(s.design()).compile(s.design());
+    assert_eq!(compiled.color_block_count(), 2);
+}

@@ -1240,6 +1240,22 @@ Line references are relative to `crates/`.
   Brother entries 1–61 as the ones PE matches to (#119). Charts cannot be exchanged with
   PE-DESIGN through files; `.btc2` is not decoded (obfuscated, kept in the program folder).
   The 94-entry sew palette of the issue is not implemented: no PE-DESIGN capture shows it.
+- **Readers against PE-DESIGN's ten-format export (2026-10-29, #135):** pe-refs-4's
+  `sample-basic` (a satin S and a fill, exported to every type) found four reader problems.
+  (1) PES "drops PE's tie-in records" (471 needle points against PE's 475): not a reader
+  bug. PE-DESIGN's PEC section has no zero-length stitch at all; its DST has the same 471
+  points plus 4 zero-length ones (2 jump landings, 2 repeats), and its status bar counts 1–9
+  more than the PEC in 99 of 114 references. The points are not in the file. (2) CSD read as
+  2 stitches and 51 colour changes: the mask index was the byte offset minus one; with the
+  offset itself PE's CSD equals its DST needle for needle, with PE's colours and colour order
+  (fixture `sample-basic.csd`, reference-checked). (3) SHV read an extra colour change at the
+  end: pyembroidery starts the records 2 bytes before the colour table's end, PE-DESIGN at the
+  end; the reader now follows the word counts (fixture `sample-basic.shv`). (4) Importing PE's
+  DST merged its two colour blocks: a DST has no colours, so the stitch block got none and the
+  blocks were merged as one colour; each block now gets its own Brother chart colour on import.
+  Left for the parked `machine-sample-basic` spec: the writers' compare must skip PE's
+  zero-length stitches, and OpenStitch's DST/EXP/HUS/VIP write a trim where PE writes only the
+  colour change.
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 - **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,

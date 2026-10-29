@@ -2544,9 +2544,15 @@ fn codec_commands() -> Vec<CommandSpec> {
             ],
             |s, p| {
                 let (path, data) = read_file(s, p, 64 << 20)?;
-                let pattern = file_type(p, &path)?
+                let mut pattern = file_type(p, &path)?
                     .read(&data)
                     .map_err(|e| p.failed(e.to_string()))?;
+                // DST, EXP and other formats without colours: one Brother chart colour per
+                // block, so the blocks stay apart (without threads the blocks shared one colour
+                // and were merged, issue #135).
+                if pattern.threads.len() < pattern.color_block_count() {
+                    pattern.fix_thread_count(None);
+                }
                 let found = openstitch_design::DesignProperties::from_metadata(&pattern.metadata);
                 let adopt = p.bool("adoptProperties", Some(s.design.properties.is_empty()))?
                     && !found.is_empty();
