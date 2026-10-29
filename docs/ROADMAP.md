@@ -114,9 +114,11 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    satin (satin-gradation, needle for needle). Also done 2026-10-28: the minimum-density
    sawtooth (sweep-satin-density-min, needle for needle: the crossings count back from the
    start point's line, which the round-3 column at 0.2, 0.3 and 0.5 lines/mm confirmed record
-   for record; left: the bound under which a single-line gap next to the far end is not
-   crossed, between 0.33 and 2 mm). Next on this
-   track: the second under sewing type (sweep-satin-us-type-2).
+   for record). Done 2026-10-29 (#122): plain satin has no minimum-crossing threshold (the
+   far end's single-line gap is crossed at 0.22–5 mm, pe-refs-4's satin-length-sweep), its
+   lattice stretches to whole gaps, and a column started at one end is sewn from its far end
+   back to the start point; left: PE's entry/exit optimisation between objects (it moves start
+   points) and the Auto satin fan on sharp bends (satin-auto-bend-120: PE 161 stitches, ours 273).
 3. **Lines:** Start/End Type Feed/Run for stem, candlewicking and chain, with the L2 marker and
    the Feed/Run choice in the editor; open lines and chain diamonds; candlewicking Low and
    High. The motif line cannot be compared: PE-DESIGN's default motif is Brother's own artwork.

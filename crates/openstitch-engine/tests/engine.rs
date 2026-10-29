@@ -468,7 +468,10 @@ fn commands_documented_and_unique() {
 /// took PE-DESIGN's placement, on both inset edges with the whole number of gaps nearest to the
 /// inset width over the Density's spacing (2026-10-29, #124, sweep-fill-us-density-*: the
 /// ellipse's under sewing rows and their travel move, 7 stitches fewer, every other record
-/// identical). The same design
+/// identical), and when plain satin crossed the single-line gap next to its far end instead of
+/// spreading its crossings, as PE-DESIGN does at every gap size (2026-10-29, #122, pe-refs-4's
+/// satin-length-sweep; the satin's first crossings at 30.0, 30.2, 30.7 mm instead of 30.0,
+/// 30.5, 30.9; 4 stitches more, 5888). The same design
 /// exported as `1t`
 /// must keep writing the identical bytes; the
 /// script's default export is now version 6 with objects and sews the same stitches.
