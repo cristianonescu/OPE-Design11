@@ -316,7 +316,12 @@ fn thread_chart_csv_exports_and_imports_back() {
     );
     assert_eq!(r["colors"], json!(64));
     let text = std::fs::read_to_string(dir.join("brother.csv")).expect("csv");
-    assert!(text.starts_with("# OpenStitch thread chart: Brother (PEC / PES chart)\r\ncode,brand,description,R,G,B\r\n1,Brother,Prussian Blue,14,31,124\r\n"));
+    assert!(text.starts_with("# OpenStitch thread chart: Brother (PEC / PES chart)\r\ncode,brand,description,R,G,B\r\n007,EMBROIDERY,Prussian Blue,14,31,124\r\n"));
+    // Brother entries 1–61 carry PE-DESIGN's BROTHER EMBROIDERY codes; 62–64 keep their number.
+    assert_eq!(brother[4]["code"], json!("800"));
+    assert_eq!(brother[4]["brand"], json!("EMBROIDERY"));
+    assert_eq!(brother[61]["code"], json!("62"));
+    assert_eq!(brother[61]["brand"], json!("Brother"));
     run(&mut s, "threads.createChart", json!({"name": "Copy"}));
     let r = run(
         &mut s,

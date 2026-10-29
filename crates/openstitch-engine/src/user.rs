@@ -10,7 +10,8 @@ use crate::params::{CommandError, Params};
 use crate::sandbox::Access;
 use crate::session::EngineState;
 use openstitch_core::{
-    HUS_CHART, JEF_CHART, PEC_CHART, SEW_CHART, SHV_CHART, Thread, color_distance, pec_basic_chart,
+    BROTHER_EMBROIDERY_BRAND, HUS_CHART, JEF_CHART, PEC_CHART, SEW_CHART, SHV_CHART, Thread,
+    brother_embroidery_code, color_distance, pec_basic_chart,
 };
 use openstitch_design::{LineSewing, RegionSewing};
 use serde::{Deserialize, Serialize};
@@ -294,6 +295,27 @@ pub fn builtin_charts() -> [(&'static str, &'static str, &'static [Option<Thread
         ("husqvarnaHus", "Husqvarna Viking (HUS chart)", &HUS_CHART),
         ("husqvarnaShv", "Husqvarna Viking (SHV chart)", &SHV_CHART),
     ]
+}
+
+/// The entries of built-in chart `id` with their numbers. Brother entries 1–61 carry PE-DESIGN's
+/// BROTHER EMBROIDERY catalogue code and brand (`openstitch_core::BROTHER_EMBROIDERY`: 800 for
+/// Red), as PE-DESIGN shows and writes them; 62–64, which PE's chart does not have, keep their
+/// chart number and brand `Brother`.
+fn builtin_entries(id: &str, chart: &[Option<Thread>]) -> Vec<(usize, Thread)> {
+    chart
+        .iter()
+        .enumerate()
+        .filter_map(|(i, t)| {
+            let mut t = t.clone()?;
+            if id == "brother"
+                && let Some(code) = brother_embroidery_code(i)
+            {
+                t.catalog_number = Some(Cow::Borrowed(code));
+                t.brand = Some(Cow::Borrowed(BROTHER_EMBROIDERY_BRAND));
+            }
+            Some((i, t))
+        })
+        .collect()
 }
 
 /// One CSV line `code,brand,description,R,G,B` (OpenStitch's thread-chart CSV, [`CSV_COLUMNS`]).
@@ -717,19 +739,17 @@ fn chart_commands() -> Vec<CommandSpec> {
                     builtin_charts()
                         .iter()
                         .map(|(id, name, chart)| {
-                            let threads: Vec<Value> = chart
+                            let threads: Vec<Value> = builtin_entries(id, chart)
                                 .iter()
-                                .enumerate()
-                                .filter_map(|(i, t)| {
-                                    let t = t.as_ref()?;
+                                .map(|(i, t)| {
                                     let mut v = describe_thread(t);
                                     v["index"] = json!(i);
                                     if *id == "brother" {
                                         // Matched to (1–61, `pec_basic_chart`) or only
                                         // kept from files (62–64).
-                                        v["basic"] = json!(i < pec_basic_chart().len());
+                                        v["basic"] = json!(*i < pec_basic_chart().len());
                                     }
-                                    Some(v)
+                                    v
                                 })
                                 .collect();
                             json!({ "id": id, "name": name, "threads": threads })
@@ -773,7 +793,11 @@ fn chart_commands() -> Vec<CommandSpec> {
                                         builtin_charts().iter().map(|c| c.0).collect();
                                     p.invalid("builtin", format!("use one of {}", ids.join(", ")))
                                 })?;
-                            (name.to_string(), chart.iter().flatten().cloned().collect())
+                            let threads = builtin_entries(&id, chart)
+                                .into_iter()
+                                .map(|(_, t)| t)
+                                .collect();
+                            (name.to_string(), threads)
                         }
                         _ => return Err(p.invalid("chart", "give either chart or builtin")),
                     };
