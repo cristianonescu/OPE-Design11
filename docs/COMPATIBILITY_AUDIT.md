@@ -698,7 +698,14 @@ Line references are relative to `crates/`.
   - `object.setRegion` refuses Frequency outside 0–50 (all types that use it);
     `object.setLine` limits run times to 1–5 for E/V and every other type, 1–6 for chain.
   - Fill and satin Density take PE-DESIGN 11.50's 0.1–14.0 lines/mm (was 0.5–10), and Pull
-    compensation stays 0–2.0 mm, as PE's fields clamp (sweep references, 2026-10-27). The
+    compensation stays 0–2.0 mm, as PE's fields clamp (sweep references, 2026-10-27). Issue
+    #139 (2026-10-29) asked for a 0.2 floor; the references contradict it: the MANIFEST entries
+    for `sweep-fill-density-min.pes` and `sweep-satin-density-min.pes` record "typing 0 shows
+    0,1 (min 0.1)", both files sew at 0.1 lines/mm and pass at the reference tier, and the
+    "0,15 rounds to 0,2" note of `sweep-satin-density-0p2` is the field's one-decimal rounding.
+    The floor stays 0.1; `attribute-ranges` now checks 0.1 and 14.0 accepted, 0.09 and 14.1
+    refused, for fill and satin (0.4 refused for the 0.5–10 types). OpenStitch accepts finer
+    values than PE's one-decimal field (0.15 is sewn as 0.15, not rounded to 0.2). The
     `sweep-fill-density-*` and `sweep-fill-pull-*` specs check rows 1/density apart from edge to
     edge and each row end moved out by the pull compensation (the under sewing is not), against
     PE-DESIGN's files.

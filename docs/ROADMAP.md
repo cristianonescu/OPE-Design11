@@ -98,6 +98,9 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    several parts (right leg, left leg, then the top bar ending at the first vertex); under
    sewing Density Dense / Light (the second under sewing type, `cross`, is done for fill and
    satin since 2026-10-28, specs sweep-fill-us-type-2 and sweep-satin-us-type-2).
+   Density floor: 0.1 lines/mm for fill and satin, as PE-DESIGN 11.50's field and the
+   `sweep-*-density-min` references (#139's 0.2 floor was checked against them on 2026-10-29
+   and not adopted; `attribute-ranges` covers the boundaries).
 2. **Satin:** Half Stitch for Auto satin (the corner fan now produces the crowding it acts
    on); Miter limit. Auto satin's needle lattice (whole spacings from the far end, the
    remainder at the start point), its forward start travel and its end on the start point
