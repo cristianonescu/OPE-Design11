@@ -262,6 +262,9 @@ fn round_3_object_files_read_their_stitches_and_stop_cleanly() {
         "o-text-transform-1",
         "o-text-vertical",
         "o-text-10-letters",
+        "obj-progfill-owner-v",
+        "obj-motif-fill-owner-v",
+        "obj-motif-line-owner-v",
     ] {
         let bytes = data(&format!("pe11/{name}.pes"));
         let p = pes::read(&bytes).expect(name);

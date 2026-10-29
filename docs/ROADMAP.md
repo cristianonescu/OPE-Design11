@@ -138,7 +138,16 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    (fill track) and the multi-needle minimum-length field's value; the same compares on a
    design with short moves. The parked references (satin gradation, Text Transform presets 13
    and 14, under sewing type 2, satin density minimum, the trim bound) have all landed.
-6. **PES:** turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
+   Round 4 (2026-10-29): PE-DESIGN's DST divides an over-long move evenly into
+   121-unit records (long-jump-300, reference tier) and its oversize export carries no
+   hoop check (hoop-oversize-export). Parked with their numbers: the ten-format export of
+   a two-colour design (the PES reader drops PE-DESIGN's tie-in needle points, 4 per
+   file; `stitches.import` of a DST merges its two colours; the CSD reader misreads a real
+   file; SHV one colour change over), PE-DESIGN's PES of the 350 mm move (PEC encoding
+   beyond 204.7 mm unknown) and of the oversize design (211 x 229 mm read for 129 x 105).
+6. **PES:** turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects
+   (round 4 added programmable-fill, motif-fill and motif-line samples with an owner pattern,
+   and the `.pas` / `.pmf` pattern sources for an importer, #131);
    write editable shapes and text; PES v7–v11 and the hoop and Design Page fields (from the
    owner's own files only, as [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
@@ -146,6 +155,9 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
 8. **Formats:** CSD export (no public writer). PEC moves over 204.7 mm split as PE-DESIGN's
    DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such a move (parked PES of
    `long-jump-300`).
+8. **Formats:** CSD export (no public writer); the CSD reader against PE-DESIGN's real file
+   (parked round-4 export: 2 stitches and 51 colour changes read); the nearest-thread rule
+   for RGB fills (#119, thread-match-swatches records PE-DESIGN's picks).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo

@@ -993,6 +993,31 @@ Line references are relative to `crates/`.
   PE-DESIGN applies them to the cap-height box, so letters below the baseline (p, g, j, y)
   and round tops land differently. The other-level files wait for a level parameter on
   `text.add` (none today) and the per-preset fit as a function of the stored value.
+- **Text Transform level (round 4, 2026-10-29):** PE-DESIGN 11.50 has no numeric
+  "Transform level": ticking Transform puts one or two green diamond handles on the canvas
+  and the strength is set by dragging one (the status bar shows nothing). The value is
+  stored in the saved file (a float32 0x7E bytes after the last UTF-16 font name of the
+  `CEmbDText` object, with the arch radius in 0.1 mm as the float32 4 bytes later): a
+  percentage of the font size for the straight-edged presets (default 50; 20 for the bows
+  and waves 5, 6, 15, 16, 19, 20, 23, 24), an angle in degrees for the slants (9, 10:
+  default 10) and the fans (13, 14: default 30, the handle moving horizontally), and for
+  the arches (1, 2) the half-sweep angle (default 30) with the radius that keeps the text
+  length (38.4 mm for "OpenStitch", 30.2 mm for "Agjy 123"); the end-of-arc handle moves
+  horizontally (41.2 deg / 27.9 mm to 1.15 deg / 1000 mm = straight), while the two arrows
+  at the top scale the letters, not the transform. Clicking a preset resets its value to
+  the default. Round 4 recorded every preset on the string "OpenStitch" (round letters,
+  ascenders, descenders) and "Agjy 123" (descenders and digits) at the default level, and
+  at four other handle positions per preset (OpenStitch only; values per file in the owner's
+  notes and the MANIFEST). At the default level OpenStitch's envelopes keep the box within
+  0.5 mm on 21 of the 26 presets for "OpenStitch" (specs text-transform-N-openstitch)
+  and 18 of 26 for "Agjy 123" (text-transform-N-agjy; the arches 1 and 2 and 18 fail
+  there as well, by 0.6-1.3 mm);
+  parked (owner's round-4 notes, numbers there): 3 (maxY 0.8 mm low), 9 (minX 1.1 mm), 10
+  (maxX 1.4 mm), 14 (minX 1.7, maxX 2.1 mm: the fan-in fit from HHHHHHH does not hold for
+  descender letters) and 17 (maxY 0.7 mm): the envelopes were fitted on the HHHHHHH box and
+  PE-DESIGN applies them to the cap-height box, so letters below the baseline (p, g, j, y)
+  and round tops land differently. The other-level files wait for a level parameter on
+  `text.add` (none today) and the per-preset fit as a function of the stored value.
 - **Sewing order inside a text (checked 2026-10-27):** not a gap. PE-DESIGN 11.50 also sews
   every letter's region first, then every letter's outline, one colour block each (spec
   text-sewing-order, reference tier). Still open: the guide disables "some editing of
@@ -1135,6 +1160,69 @@ Line references are relative to `crates/`.
   depend on that cut (1685 at 3 mm); likely PE's grid keeping points down to 0.3 mm from a row end
   in narrow strokes, or letters at 45° (the grid anchor of angled fills, sweep-fill-dir-30/45/135).
 
+- **Round-4 references (2026-10-29, PE-DESIGN 11.50 driven black-box; owner's notes folder
+  `round4/` holds every file, log and the parked ones):**
+  - *Under sewing types (#124):* for a Satin region all five type buttons are enabled (Fill
+    enables the first row only) and they are exclusive radio buttons: PE-DESIGN cannot
+    combine under sewing types. On a 39.5 x 6 mm Manual Punch column: type 1 287 stitches,
+    2 287, 3 226, 4 250, 5 226, off 186. OpenStitch's `edgeZigzag`, `double`, `edge` and
+    `zigzag` match types 1-4 within 8 % (specs satin-col-us-type-1..4, reference tier);
+    parked: type 5 (OpenStitch `edgeFill` 292 vs 226) and the column without under sewing
+    (207 vs 186: the plain column is 11 % over, the under sewing itself is close).
+  - *Running stitch on a circle (#121):* a 59.9 x 60.4 mm Ellipse-tool circle at run pitch
+    2.0 sews 133 stitches; OpenStitch's Bezier halving matches (run-circle-60, reference
+    tier, count, mean and longest stitch).
+  - *E and V stitch defaults:* list "E Stitch" / "V Stitch", stroke spacing 5.0 mm, arm
+    2.5 mm, width 2.0 mm, Run time(s) 1, Stroke time(s) 1 (greyed for V), Arrange two
+    buttons; a closed 30 x 20 mm rectangle sews 105 (E) and 87 (V) stitches (specs
+    line-e-rect-default, line-v-rect-default, reference tier). Tatami defaults as before:
+    step pitch 4.0 mm, Frequency 30 %, density 4.5, direction 45.
+  - *Over-long move (#126):* two satin blocks in opposite corners of a 300 x 300 mm page
+    (Custom Size accepts 100-1000 mm). PE-DESIGN's DST writes the 211 x 278 mm move as 23
+    jump records of (92, -121) units plus one of (90, -118): the vector divided evenly into
+    records whose longer axis is the 121-unit maximum, never halved; the runs from and to
+    the origin are 11 x (-121, 121) + (-119, 119). OpenStitch's DST agrees on the total
+    jump length and the bounds (long-jump-300, reference tier). Its PES is parked: the PEC
+    writes the move as one trim-flagged long-form jump of (-45.5, +168.5) mm followed by 39
+    jump records of (+7.0, 0) mm, which a plain 12-bit decode (OpenStitch's reader included)
+    sums to (227.5, 168.5) mm, not the DST's (211.6, 278.3): the PEC encoding of a move
+    longer than 204.7 mm is open (raw bytes `9e 39 96 95` then 39 x `80 46 00`).
+  - *Hoop limits (#125):* a design scaled to 129 x 105 mm on a 100 x 100 mm Hoop-Size page
+    is neither rejected nor promoted to a larger hoop. Save As warns "Please keep all designs
+    within the Design Page. Saved data cannot be sent to the original card or the embroidery
+    machine. Do you want to save the data anyway?" and saves on Yes; Export to DST writes
+    the file with no warning (hoop-oversize-export, reference tier on the DST bounds). Its
+    PES is parked: OpenStitch reads 211 x 229 mm bounds from it where the DST and the status
+    bar say 129 x 105 (a sectioned layout for the hoop is the suspicion).
+  - *Thread picks (#119, #136):* twelve 20 x 20 mm squares with chosen RGB fills imported
+    from an owner SVG. PE-DESIGN mapped rgb(255,0,0) 800, (0,255,0) 513, (0,0,255) 405,
+    (255,255,0) 205, (0,255,255) 019, (255,0,255) 086, (128,128,128) 817, (200,150,100)
+    348, (50,100,150) 070, (240,200,220) 124, (20,80,40) 415, (255,128,0) 214 (Brother
+    Embroidery codes; PEC indices 5, 14, 2, 13, 32, 25, 39, 35, 4, 57, 38, 11). OpenStitch
+    keeps an `#rrggbb` fill as a custom thread with the exact RGB and no chart name, so the
+    thread table is not compared yet (thread-match-swatches checks the twelve blocks at the
+    reference tier and records the picks for the matcher). Thread list to CSV: Layout &
+    Editing 11.50 has none (Options > Edit User Thread Chart only imports charts; Design
+    Database asks for a software key).
+  - *Machine formats (#135), parked:* a two-colour design (20 mm satin S in Red, 10 x 8 mm
+    Prussian Blue fill) exported to all ten types PE-DESIGN offers (DST, EXP, PCS, HUS,
+    VIP, SHV, JEF, SEW, CSD, XXX; no PHC, PHX, PEN or PEC; no options, no warnings). Every
+    writer compare fails by the same needle points: OpenStitch's PES reader drops the
+    tie-in records at a block's start (PE-DESIGN's stream starts with a plain 0.2 mm
+    stitch out and back, 475 needle points against 471 read; 1 in the first block, 3 in the
+    second), so the exports are 4 stitches short of PE-DESIGN's and a trim stands where
+    its colour change is. Importing PE-DESIGN's DST instead keeps 475 points but merges the
+    two colours into one block (`stitches.import` of a DST). PE-DESIGN's CSD read by
+    OpenStitch's spec-derived reader gives 2 stitches and 51 colour changes (the reader is
+    wrong against a real file); its SHV reads with one extra colour change at the end. All
+    eleven files wait in the notes folder for the reader fixes.
+  - *PES object kinds (#120, #131):* programmable fill, motif fill and motif line with an
+    owner-drawn V pattern from Programmable Stitch Creator (`.pas` / `.pmf`: ASCII,
+    `@VERSION 10000`, `@SYSENV 1`, `@TILE 1` + `@TILELINE 0 3 ...` or `@LINE 3 ...` in a
+    0-1024 cell, Default Size 7.5 mm) read and written back with their stitches
+    (pes-objects-owner-patterns, reference tier; the files are also `pe11` fixtures). With
+    round 3's satin, fill, running, text and applique files every editable kind has a
+    sample.
 ## Order of work
 
 1. **Fix without a reference:** items 1, 3, 7, 14, 15 (ranges), 16 and 17, plus the

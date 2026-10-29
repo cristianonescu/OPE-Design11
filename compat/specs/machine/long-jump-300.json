@@ -1,0 +1,141 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "long-jump-300",
+  "area": "machine",
+  "title": "A 350 mm frame move between two satin blocks on a 300 x 300 mm page, as PE-DESIGN 11 writes it to DST",
+  "description": "Two 39.5 x 6 mm satin blocks (under sewing off) in opposite corners of a 300 x 300 mm Design Page: the move between them is about 211 x 278 mm, longer than one PEC long-form coordinate (204.7 mm) and far longer than a DST record (12.1 mm). Issue #126: how PE-DESIGN splits an over-long move. In its DST the move is 23 jump records of (92, -121) units plus one of (90, -118), i.e. the vector divided evenly into records whose longer axis is the 121-unit maximum; the moves from and to the origin are runs of (-121, 121) records; it never halves. OpenStitch's DST of the same two blocks is compared on the total jump length and the bounds. PE-DESIGN's PES of this design is parked (owner's notes): its PEC writes the move as one trim-flagged long-form jump (-45.5, +168.5 mm) followed by 39 jump records of 7.0 mm in x, which OpenStitch's reader (and a plain 12-bit decode) sums to a different vector from the DST's, so the PEC encoding of a move longer than 204.7 mm is still open.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "DST read/write, configurable jumps-for-trim"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/machine/long-jump-300.dst (PE-DESIGN 11.50, 2026-10-29): 422 records; the inter-block move = 23 jumps of (92,-121) + one of (90,-118); origin runs of 11 x (-121,121) + (-119,119); header +X/-X 1450, +Y/-Y 1450"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN's status bar for the design: 290.00 x 290.00 mm, 372 stitches; Design Settings > Custom Size accepts 100..1000 mm"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 300,
+        "height": 300
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 5,
+        "y": 5,
+        "width": 39.5,
+        "height": 6
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 255.5,
+        "y": 289,
+        "width": 39.5,
+        "height": 6
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          1,
+          2
+        ],
+        "type": "satin",
+        "angle": 90,
+        "density": 4.5,
+        "underlay": false,
+        "color": "Blue"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "ids": [
+          1,
+          2
+        ],
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.dst"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design-dst",
+      "file": "machine/long-jump-300.dst",
+      "make": "Design Settings > Custom Size 300 x 300 mm; a 39.5 x 6 mm satin block (Manual Punch straight block, under sewing off) dragged to the page's top-left corner, Home > Duplicate, the copy dragged to the bottom-right corner (total 290 x 290 mm); App menu > Export, Tajima (*.DST)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "jump-length-dst",
+      "measure": {
+        "kind": "totalJumpLength"
+      },
+      "source": {
+        "export": "a.dst"
+      },
+      "evidence": "PE-DESIGN's DST: the same move as jump records of at most 121 units per axis, plus the runs from and to the origin",
+      "reference": {
+        "id": "pe-design-dst",
+        "tolerance": {
+          "mm": 5
+        }
+      }
+    },
+    {
+      "id": "dst-bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "a.dst"
+      },
+      "evidence": "PE-DESIGN's DST of the same blocks",
+      "reference": {
+        "id": "pe-design-dst",
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "dst-bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "a.dst"
+      },
+      "evidence": "PE-DESIGN's DST of the same blocks",
+      "reference": {
+        "id": "pe-design-dst",
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    }
+  ]
+}
