@@ -509,10 +509,12 @@ Line references are relative to `crates/`.
   lines buttons (types 3 and 5: 225) and piping + zigzag for its zigzag button (type 4: 249).
   Modelled in `column::underlay` for a column with several direction lines, the styles mapped
   by `UnderlayStyle::column_parts` (edgeZigzag / double → types 1-2, edge → 3 and 5, zigzag →
-  4): 275 / 219 / 239 stitches, IoU ≥ 0.999 against the captures. pe-refs-4's specs
-  `satin-col-us-type-1..5` (PR #147) draw the column with `shape.rectangle`, so they reach the
-  region path (edge + rows, 1 mm inset) and pass on count; drawing it with `shape.column`
-  (lines (10,10)-(10,16) and (50,10)-(50,16)) reaches the column path. Still open: which of the two types PE applies to the other region kinds; the zigzag's exact split
+  4): 275 / 219 / 239 stitches, IoU ≥ 0.999 against the captures. Specs `satin-col-us-type-1..5`
+  and `satin-col-us-off` draw the column with `shape.column` (lines (10,10)-(10,16) and
+  (49.5,10)-(49.5,16)), as PE's files are Manual Punch blocks (until 2026-10-29 they drew a
+  Rectangle-tool shape, a region with a split satin PE does not sew here); type 5 and the
+  plain column, parked by pe-refs-4 at 292 and 207 stitches, landed at 219 / 225 and 186 / 186.
+  Still open: which of the two types PE applies to the other region kinds; the zigzag's exact split
   points (PE's follow a 12-diagonal cycle, OpenStitch splits each diagonal evenly).
 - **Module:**
   - `openstitch-design/src/model.rs:613-625,822`: the styles and a 2 mm spacing.

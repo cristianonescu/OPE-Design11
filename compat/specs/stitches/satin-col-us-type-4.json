@@ -3,7 +3,7 @@
   "id": "satin-col-us-type-4",
   "area": "stitches",
   "title": "Satin column under sewing type 4 (second row, second button (zigzag icon))",
-  "description": "A 39.5 x 6 mm satin column (density 4.5) with PE-DESIGN's under sewing type 4: second row, second button (zigzag icon). One of six files that differ only in the under sewing button (types 1-5 and off); OpenStitch maps the button to its underlay style 'zigzag'. Issue #124.",
+  "description": "A 39.5 x 6 mm satin column (density 4.5) with PE-DESIGN's under sewing type 4: second row, second button (zigzag icon). One of six files that differ only in the under sewing button (types 1-5 and off); OpenStitch maps the button to its underlay style 'zigzag'. Issue #124. Drawn with shape.column (Manual Punch, lines (10,10)-(10,16) and (49.5,10)-(49.5,16)), as PE-DESIGN's file is a Manual Punch Straight Block: OpenStitch sews a column's under sewing 0.5 mm inside its rails (edge run, piping, zigzag), the buttons mapped onto the styles (edgeZigzag / double = types 1-2, edge = types 3 and 5, zigzag = type 4). Until 2026-10-29 the spec drew a Rectangle-tool shape, whose region under sewing and split satin PE does not sew here.",
   "covers": {
     "audit": [
       1
@@ -34,12 +34,30 @@
       }
     },
     {
-      "command": "shape.rectangle",
+      "command": "shape.column",
       "params": {
-        "x": 10,
-        "y": 10,
-        "width": 39.5,
-        "height": 6
+        "lines": [
+          [
+            [
+              10,
+              10
+            ],
+            [
+              10,
+              16
+            ]
+          ],
+          [
+            [
+              49.5,
+              10
+            ],
+            [
+              49.5,
+              16
+            ]
+          ]
+        ]
       }
     },
     {
