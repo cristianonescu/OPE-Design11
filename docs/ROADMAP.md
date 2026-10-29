@@ -146,6 +146,15 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
     Apple-Event file opening (winit 0.30/eframe 0.37 deliver no file-open event; a delegate
     needs objc2 `define_class!` with `unsafe` blocks, see DISTRIBUTION.md "macOS double-click")
     and PES thumbnails on macOS and Windows.
+11. **Image digitizing (Phase 6, #127 #128 #132, #129 optional):** Photo Stitch mono tone
+    pipeline done 2026-10-29 (#128: integer 30/59/11 luminance, full-range min/max stretch
+    with the (1, 255) guard). Next: Auto Punch's 3×3 modal colour census capped at 100
+    colours, the `max(4, round(param · 100 / mmPerPx²))` small-region floor at 4-connectivity
+    and a centerline-thinness satin-vs-fill test (#127); Cross Stitch sharing that prepass
+    with documented grid and per-cell defaults (#132); the rotating-line coverage model for
+    Photo Stitch 2 only if the captures show the zigzag model is the dominant remaining
+    difference (#129). Each is compared with pe-refs-4's captures of PE-DESIGN's output at
+    defaults when they land.
 
 ## Beyond PE-DESIGN
 

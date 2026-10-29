@@ -8,7 +8,10 @@
 //!   the tone (mono: darkness; colour: how much of each thread the dithered image holds
 //!   locally). Light areas break the line.
 //!
-//! Mono mode first stretches the image's contrast (2nd–98th luminance percentile to black–white).
+//! Mono mode works on integer Rec. 601 luminance (`(30 R + 59 G + 11 B) / 100`) and first
+//! stretches the image's contrast over the full 0–255 range from its darkest to its lightest
+//! grey (plain min/max auto-levels; left alone when the range is 1 level or less, or already
+//! full), as PE-DESIGN's mono Photo Stitch does (#128).
 //!
 //! Specified from PE-DESIGN 11's public guide (Photo Stitch 1/2 create stitching from photos
 //! in colour, sepia/grey or mono); the algorithms are this project's own.
@@ -73,8 +76,9 @@ pub struct Converted {
     pub stitches: Vec<usize>,
 }
 
-fn luma(c: [f64; 3]) -> f64 {
-    0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+/// Integer Rec. 601 luminance, 0–255: `(30 R + 59 G + 11 B) / 100`, truncated.
+pub fn luma(c: [f64; 3]) -> f64 {
+    f64::from(crate::raster::luma601(c[0] as u8, c[1] as u8, c[2] as u8))
 }
 
 pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Converted, DigitizeError> {
@@ -207,18 +211,30 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
     })
 }
 
-/// Mono contrast stretch: every opaque cell becomes grey, its luminance mapped so the 2nd
-/// percentile is black and the 98th white (left alone when that range is under 8 levels).
+/// Mono contrast stretch: every opaque cell becomes its grey `g = (30 R + 59 G + 11 B) / 100`;
+/// when the greys span more than one level and less than the whole range, each is mapped
+/// linearly so the darkest becomes 0 and the lightest 255: `g' = (g − min) · 255 / (max − min)`,
+/// in integers. A flat image (range 0 or 1) and one already spanning 0–255 are left as they are.
 fn stretch(cells: &mut [Option<[f64; 3]>]) {
-    let mut l: Vec<f64> = cells.iter().flatten().map(|c| luma(*c)).collect();
-    l.sort_by(f64::total_cmp);
-    let (lo, hi) = match (l.get(l.len() / 50), l.get(l.len() - 1 - l.len() / 50)) {
-        (Some(&lo), Some(&hi)) if hi - lo >= 8.0 => (lo, hi),
-        _ => (0.0, 255.0),
-    };
-    for c in cells.iter_mut().flatten() {
-        let g = ((luma(*c) - lo) / (hi - lo) * 255.0).clamp(0.0, 255.0);
-        *c = [g; 3];
+    let mut greys: Vec<u8> = cells.iter().flatten().map(|c| luma(*c) as u8).collect();
+    auto_levels(&mut greys);
+    for (c, g) in cells.iter_mut().flatten().zip(greys) {
+        *c = [f64::from(g); 3];
+    }
+}
+
+/// Full-range auto-levels on 8-bit greys: when `max − min` is in `(1, 255)`, every grey becomes
+/// `(g − min) · 255 / (max − min)` (integer division); otherwise the greys are left alone.
+pub fn auto_levels(greys: &mut [u8]) {
+    let (lo, hi) = greys
+        .iter()
+        .fold((255u8, 0u8), |(lo, hi), &g| (lo.min(g), hi.max(g)));
+    let range = u32::from(hi.saturating_sub(lo));
+    if !(1 < range && range < 255) {
+        return;
+    }
+    for g in greys {
+        *g = (u32::from(*g - lo) * 255 / range) as u8;
     }
 }
 
