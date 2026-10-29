@@ -353,7 +353,21 @@ fn round_3_object_files_read_their_stitches_and_stop_cleanly() {
 
 /// The owner files whose object list the reader parses completely (every object a `CEmbLine`
 /// or a `CEmbNText`, groups included): the writer's round-trip and byte-comparison set.
-const FULLY_PARSED: [&str; 83] = [
+const FULLY_PARSED: [&str; 97] = [
+    "text-fit-ahhhh",
+    "text-fit-default",
+    "text-fit-halign-left",
+    "text-fit-halign-right",
+    "text-fit-halign-spaced",
+    "text-fit-orient-upright",
+    "text-fit-otherside",
+    "text-fit-satin-ahhhh",
+    "text-fit-size-12",
+    "text-fit-size-6",
+    "text-fit-spacing-m1",
+    "text-fit-spacing-p2",
+    "text-fit-valign-below",
+    "text-fit-valign-center",
     "o-text-transform-1",
     "text-transform-1",
     "text-transform-2",
@@ -559,8 +573,8 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
     // docs/FILE_FORMATS.md, "Writer": the pattern block inside every body is OpenStitch's own;
     // the two parameters of the geometry header's first marks vary between files of the same
     // shape (r02, r08), and the marks' coordinates follow the closed-shape rule, which the open
-    // and curved owner files do not all share. Everything else in the object section is
-    // identical.
+    // and curved owner files do not all share (the circles the text-fit files' texts follow
+    // too). Everything else in the object section is identical.
     let marks_differ = [
         "r10-circle",
         "r11-line",
@@ -626,7 +640,9 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
                     || (extent_differs && b + 8 <= from && to <= b + 16)
                     || (gh + 8 <= from && to <= gh + 16)
                     || (gh + 24 <= from && to <= gh + 32)
-                    || (marks_differ.contains(&name) && gh <= from && to <= gh + 84)
+                    || ((marks_differ.contains(&name) || name.starts_with("text-fit"))
+                        && gh <= from
+                        && to <= gh + 84)
             })
         };
         // Text: a letter field that is f32 -0.0 in r12–r26 and 0.0 in the later owner files
@@ -634,6 +650,8 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
         // line-spacing files (OpenStitch writes 1).
         let text_quirk = |from: usize, to: usize| {
             (to - from <= 4 && written[from..to].iter().all(|&b| b == 0 || b == 0x80))
+                // A sewing-order entry's last field, 1, that PE-DESIGN sometimes leaves unset.
+                || (to - from <= 4 && from + 200 > written.len() && written[from..to].iter().all(|&b| b <= 1))
                 || (name.starts_with("text-line-spacing") && from >= written.len() - 4)
         };
         let unexplained: Vec<(usize, usize)> = diff_ranges(written, fixture)
@@ -793,6 +811,8 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
             align: 0,
             origin: (600.0, 700.0),
             envelope: None,
+            char_spacing: 0.0,
+            fit: None,
         }],
         groups: Vec::new(),
         unparsed: None,
@@ -886,4 +906,41 @@ fn text_transform_presets_read() {
     }
     let plain = &objects_of(&owner_file("o-text-transform-1")).texts[0];
     assert_eq!(plain.align, 0, "left aligned");
+}
+
+#[test]
+fn fit_text_to_outline_reads() {
+    // compat/reference/text/text-fit-*: ABCDE (or AHHHH) fitted to a 60 mm circle, one Fit
+    // Text to Outline option changed per file.
+    let fit = |name: &str| {
+        let o = objects_of(&owner_file(name));
+        assert_eq!((o.shapes.len(), o.texts.len()), (1, 1), "{name}");
+        o.texts[0].fit.expect("CEmbAText")
+    };
+    let default = fit("text-fit-default");
+    assert_eq!(default.path, 0, "the circle, written first");
+    assert_eq!(
+        (
+            default.halign,
+            default.valign,
+            default.upright,
+            default.other_side
+        ),
+        (1, 0, false, false)
+    );
+    assert_eq!(fit("text-fit-halign-left").halign, 0);
+    assert_eq!(fit("text-fit-halign-right").halign, 2);
+    assert_eq!(fit("text-fit-halign-spaced").halign, 4);
+    assert_eq!(fit("text-fit-valign-center").valign, 1);
+    assert_eq!(fit("text-fit-valign-below").valign, 2);
+    assert!(fit("text-fit-orient-upright").upright);
+    assert!(fit("text-fit-otherside").other_side);
+    let spacing = |name: &str| objects_of(&owner_file(name)).texts[0].char_spacing;
+    assert_eq!(
+        (
+            spacing("text-fit-spacing-m1"),
+            spacing("text-fit-spacing-p2")
+        ),
+        (-10.0, 20.0)
+    );
 }
