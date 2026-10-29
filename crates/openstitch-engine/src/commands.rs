@@ -2541,8 +2541,8 @@ fn codec_commands() -> Vec<CommandSpec> {
                 opt("format", "pes|pec|dst|...", "Override the extension"),
                 opt(
                     "pesVersion",
-                    "1t|1|6|6t",
-                    "PES only: version 1 or 6, `t` = no objects (default 6: RGB threads, names, stitch group; 1t = machine only, smallest)",
+                    "1t|1|6|6t|11",
+                    "PES only: version 1 or 6, `t` = no objects (default 6: RGB threads, names, stitch group; 1t = machine only, smallest); 11 = PE-DESIGN 11 `#PES0110` with the shapes as editable objects (fill and satin regions, running, zigzag, triple, E and V lines; text and stitch patterns are refused)",
                 ),
                 opt(
                     "split",
@@ -2559,7 +2559,12 @@ fn codec_commands() -> Vec<CommandSpec> {
                     "pesVersion",
                     Some(openstitch_formats::pes::WriteOptions::DEFAULT_NAME),
                 )?)
-                .ok_or_else(|| p.invalid("pesVersion", "use 1t, 1, 6 or 6t"))?;
+                .ok_or_else(|| {
+                    p.invalid(
+                        "pesVersion",
+                        format!("use {}", openstitch_formats::pes::WriteOptions::NAMES),
+                    )
+                })?;
                 if !ty.can_write() {
                     let names: Vec<_> = FileType::writable().map(|t| t.extension()).collect();
                     return Err(p.invalid(
@@ -2578,11 +2583,25 @@ fn codec_commands() -> Vec<CommandSpec> {
                         stem.to_string_lossy().into_owned(),
                     );
                 }
-                let write = |part: &openstitch_core::StitchPattern| match ty {
-                    FileType::Pes => openstitch_formats::pes::write_with(part, &pes_options),
+                // PE-DESIGN 11 editable objects: the design's shapes, never split.
+                let editable = ty == FileType::Pes
+                    && pes_options.version == openstitch_formats::pes::Version::V11;
+                let objects = if editable {
+                    Some(
+                        crate::pes11_export::objects(&s.design)
+                            .map_err(|e| p.invalid("pesVersion", format!("11 (PES 0110): {e}")))?,
+                    )
+                } else {
+                    None
+                };
+                let write = |part: &openstitch_core::StitchPattern| match (&objects, ty) {
+                    (Some(o), _) => openstitch_formats::pes11::write(o, part),
+                    (None, FileType::Pes) => {
+                        openstitch_formats::pes::write_with(part, &pes_options)
+                    }
                     _ => ty.write(part),
                 };
-                let parts = if split {
+                let parts = if split && !editable {
                     openstitch_formats::split::split_for(ty, &pattern)
                         .map_err(|e| p.failed(e.to_string()))?
                 } else {

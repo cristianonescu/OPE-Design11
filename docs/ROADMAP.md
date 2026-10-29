@@ -5,7 +5,7 @@
 | 1 Tooling | Rust workspace, CI on three OSes, fixture generators | Done. |
 | 2 Reference research | Guide-based feature inventory; reference files from a licensed PE-DESIGN 11 | Done: inventory from the public guide; reference files made in a licensed PE-DESIGN 11.50 since 2026-10-27 (`compat/reference/`, provenance in `MANIFEST.json`). |
 | 3 Core engine | Stitch model, threads, document operations, stitch generation | Done: design model, all guide sew types, compiler, command registry, undo, `.osd` projects, CLI and JSON control, MCP. |
-| 4 File interoperability | Every format PE-DESIGN 11 reads or writes; round-trip tests | DST, EXP, JEF, PCS, SEW, XXX, HUS and VIP written record for record as PE-DESIGN 11.50 exports them (reference tier, 2026-10-28); PES, PEC and the readers at oracle tier with fuzzing; SHV, PHC, CSD read-only; PES v1/v6 object section; PE-DESIGN 11 (`#PES0110`) metadata, thread table and editable shapes read; SVG and image import; split exports. |
+| 4 File interoperability | Every format PE-DESIGN 11 reads or writes; round-trip tests | DST, EXP, JEF, PCS, SEW, XXX, HUS and VIP written record for record as PE-DESIGN 11.50 exports them (reference tier, 2026-10-28); PES, PEC and the readers at oracle tier with fuzzing; SHV, PHC, CSD read-only; PES v1/v6 object section; PE-DESIGN 11 (`#PES0110`) metadata, thread table and editable shapes read, and shapes written as editable objects (`pesVersion` 11, 2026-10-29, unverified in PE-DESIGN); SVG and image import; split exports. |
 | 5 Desktop interface | Cross-platform editor (egui) | Done: drawing, Bézier pen and point editing, selection, inspector, object list, undo, simulator, wizards, Design Database mode, Stitch Creator, Stitch Design Factory, printing, USB transfer, self-update, unsaved-changes prompt on close/new/open (macOS: Cmd+Q and Cmd+W too, no system menu). |
 | 6 Advanced | Digitizing, lettering, complex fills, suite programs | Done as independent approximations: Auto Punch, Cross Stitch, Photo Stitch, Design Center; full lettering suite and Font Creator. |
 | 7 Validation | Reference suite, gap closing | In progress: the compatibility harness (`stitchtool compat`) compares OpenStitch's output with PE-DESIGN 11.50's files spec by spec; [COMPATIBILITY_STATUS.md](COMPATIBILITY_STATUS.md) shows the tier each row has reached. No sew-out on a machine yet. |
@@ -133,9 +133,13 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    (fill track) and the multi-needle minimum-length field's value; the same compares on a
    design with short moves. The parked references (satin gradation, Text Transform presets 13
    and 14, under sewing type 2, satin density minimum, the trim bound) have all landed.
-6. **PES:** turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
-   write editable shapes and text; PES v7–v11 and the hoop and Design Page fields (from the
-   owner's own files only, as [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
+6. **PES:** editable shapes are written (`pesVersion` 11 writes `CEmbLine` objects in PE-DESIGN
+   11.50's layout, 2026-10-29; issue #120). Left: PE-DESIGN opening such a file with the shape
+   editable (compat `pes-0110-editable-shapes`, the owner's check); turn the `#PES0110` shapes
+   the reader parses into editable OpenStitch objects; write text (`CEmbNText`/`CTTFLetter`), the
+   other region and line types, hole-sewing pairs and several outlines per object; the hoop
+   fields; PES v7–v10 (from the owner's own files only, as
+   [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
    stroke only) and an exact medial axis instead of the grid approximation.
 8. **Formats:** CSD export (no public writer).

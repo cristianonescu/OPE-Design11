@@ -121,7 +121,7 @@ pub struct Input {
 pub struct Export {
     /// File name in the work directory; the extension picks the format.
     pub path: String,
-    /// PES only: `1t`, `1`, `6` or `6t` (default 6).
+    /// PES only: `1t`, `1`, `6`, `6t` or `11` (default 6).
     #[serde(default)]
     pub pes_version: Option<String>,
     /// Write the named input file again through the codecs (read, then write) instead of
@@ -361,7 +361,11 @@ impl Spec {
             if let Some(v) = &x.pes_version
                 && openstitch_formats::pes::WriteOptions::parse(v).is_none()
             {
-                err(format!("export {}: pesVersion 1t, 1, 6 or 6t", x.path));
+                err(format!(
+                    "export {}: pesVersion {}",
+                    x.path,
+                    openstitch_formats::pes::WriteOptions::NAMES
+                ));
             }
             if let Some(i) = &x.from_input
                 && !self.inputs.iter().any(|n| &n.name == i)
