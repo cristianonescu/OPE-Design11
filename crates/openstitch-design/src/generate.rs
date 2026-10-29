@@ -132,28 +132,70 @@ pub struct RegionParams {
 /// Tatami fill: rows at `angle`, needle points on a `stitch_length` grid shifted a third of a
 /// stitch per row so penetrations do not line up.
 pub fn fill(contours: &[Contour], p: &RegionParams, holes: &[Contour]) -> Vec<Run> {
-    fill_shifted(contours, p, holes, None)
+    fill_shifted(contours, p, holes, Stagger::Third)
 }
 
-/// Offset of row `row`'s needle grid, fraction of a stitch: `shift` per row (Fill Frequency),
-/// or a third of a stitch when unset.
-pub fn row_phase(row: usize, shift: Option<f64>) -> f64 {
-    match shift {
-        None => (row % 3) as f64 / 3.0,
-        Some(s) => (row as f64 * s).fract(),
+/// How the needle grid of a tatami fill moves from row to row (the stagger that keeps the
+/// penetrations from lining up).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Stagger {
+    /// A third of a stitch per row, anchored at the origin: OpenStitch's placement before
+    /// Fill Frequency existed, kept for `.osd` files without a Frequency.
+    Third,
+    /// PE-DESIGN's Frequency: the grid moves this fraction of a stitch per row; row k's grid
+    /// lies (k + 1) times it from the first row's start (regular brick).
+    Regular(f64),
+    /// OpenStitch's own random stagger: row k's grid lies at a pseudo-random fraction of a
+    /// stitch, drawn from this seed and k, so the output is reproducible and no two rows of
+    /// a region line up by rule. PE-DESIGN offers nothing like it (its Fill pane has the
+    /// Frequency field only).
+    Random(u64),
+}
+
+impl Stagger {
+    /// Offset of row `row`'s needle grid, fraction of a stitch, from the page origin.
+    pub fn phase(self, row: usize) -> f64 {
+        match self {
+            Stagger::Third => (row % 3) as f64 / 3.0,
+            Stagger::Regular(s) => (row as f64 * s).fract(),
+            Stagger::Random(seed) => random_fraction(seed, row),
+        }
+    }
+
+    /// Offset of row `k`'s grid from the first row's start (PE-DESIGN's anchor, see
+    /// [`grid_anchor`]), fraction of a stitch; `None` for the origin-anchored [`Stagger::Third`].
+    pub fn anchored(self, k: usize) -> Option<f64> {
+        match self {
+            Stagger::Third => None,
+            Stagger::Regular(f) => Some(((k as f64 + 1.0) * f).fract()),
+            Stagger::Random(seed) => Some(random_fraction(seed, k)),
+        }
     }
 }
 
-/// [`fill`] whose needle grid moves `shift` of a stitch from row to row (see [`row_phase`]).
+/// A pseudo-random fraction in [0, 1) for row `row` of a fill seeded with `seed`: one
+/// SplitMix64 step (see [`crate::paths::Rng`]) of the seed mixed with the row number, so
+/// every row draws its own value and the same seed always gives the same rows.
+fn random_fraction(seed: u64, row: usize) -> f64 {
+    let mixed = seed ^ (row as u64 + 1).wrapping_mul(0x9E37_79B9_7F4A_7C15);
+    crate::paths::Rng::new(mixed).next_f64()
+}
+
+/// Offset of row `row`'s needle grid, fraction of a stitch (see [`Stagger::phase`]).
+pub fn row_phase(row: usize, stagger: Stagger) -> f64 {
+    stagger.phase(row)
+}
+
+/// [`fill`] whose needle grid moves from row to row as `stagger` says (see [`Stagger`]).
 pub fn fill_shifted(
     contours: &[Contour],
     p: &RegionParams,
     holes: &[Contour],
-    shift: Option<f64>,
+    stagger: Stagger,
 ) -> Vec<Run> {
     let l = p.stitch_length;
     sew_rows(contours, p, holes, |span, row, forward| {
-        let mut xs = tatami_xs(span, row_phase(row, shift) * l, l);
+        let mut xs = tatami_xs(span, stagger.phase(row) * l, l);
         if !forward {
             xs.reverse();
         }
@@ -173,21 +215,21 @@ pub fn fill_edge_to_edge(
     contours: &[Contour],
     p: &RegionParams,
     holes: &[Contour],
-    shift: Option<f64>,
+    stagger: Stagger,
     entry: Option<Vec2>,
 ) -> Vec<Run> {
     let l = p.stitch_length;
     let start = entry.map(|e| e.rotated(-p.angle.to_radians()));
     let anchor = grid_anchor(contours, p, holes);
     if let (Some(s), Some(a)) = (start, anchor)
-        && let Some(run) = pe_halves(&edge_row_spans(contours, p, holes, true), p, shift, s, a)
+        && let Some(run) = pe_halves(&edge_row_spans(contours, p, holes, true), p, stagger, s, a)
     {
         return vec![run];
     }
     // Regions with several spans per row keep the older order; with a Frequency their rows
     // take PE-DESIGN's spacing (stretched to the far edge, as in its pentagon) and grid (row k
     // at (k + 1)·shift from the rotated bounds' minimum, points down to 0.3 mm from the ends).
-    let spans = edge_row_spans(contours, p, holes, shift.is_some());
+    let spans = edge_row_spans(contours, p, holes, stagger.anchored(0).is_some());
     let min_x = anchor;
     // The needle grid moves on in sewing order, as in PE-DESIGN 11: a fill sewn from its last
     // row (an entry at the bottom of a rectangle) counts the rows from there.
@@ -200,9 +242,9 @@ pub fn fill_edge_to_edge(
         &spans,
         p,
         |span, row, forward| {
-            let mut xs = match (shift, min_x) {
+            let mut xs = match (stagger.anchored(row), min_x) {
                 (Some(f), Some(min_x)) => {
-                    let phase = min_x + ((row as f64 + 1.0) * f).fract() * l;
+                    let phase = min_x + f * l;
                     let mut xs = vec![*span.start()];
                     xs.extend(pe_grid(span, phase, l));
                     xs.push(*span.end());
@@ -210,7 +252,7 @@ pub fn fill_edge_to_edge(
                 }
                 _ => {
                     let row = if from_last { last - row } else { row };
-                    tatami_xs(span, row_phase(row, shift) * l, l)
+                    tatami_xs(span, stagger.phase(row) * l, l)
                 }
             };
             if !forward {
@@ -271,13 +313,13 @@ fn pe_grid(span: &Span, phase: f64, l: f64) -> Vec<f64> {
 /// keeps its ends and the needle walks from row to row in stitches up to that length. Straight
 /// runs of stitches up to [`FILL_TRAVEL`] go from `s` to each half's first row and from the last
 /// row back to `s`. Row k's needle grid lies `(k + 1)·shift` of a stitch from `min_x` (see
-/// [`grid_anchor`]), k counted from the minimum side (PE's Frequency); without a shift the old
-/// ⅓ stagger stays.
+/// [`grid_anchor`]), k counted from the minimum side (PE's Frequency, or the seeded random
+/// stagger); with [`Stagger::Third`] the old ⅓ stagger stays.
 /// `None` when a row has more than one span or there are no rows.
 fn pe_halves(
     spans: &[RowSpan],
     p: &RegionParams,
-    shift: Option<f64>,
+    stagger: Stagger,
     s: Vec2,
     min_x: f64,
 ) -> Option<Run> {
@@ -318,9 +360,9 @@ fn pe_halves(
     let pull = p.pull_compensation.max(0.0);
     let grid = |r: &RowSpan| -> Vec<f64> {
         let k = (r.row - first.row) as f64;
-        let phase = match shift {
-            Some(f) => min_x + ((k + 1.0) * f).fract() * l,
-            None => row_phase(r.row, None) * l,
+        let phase = match stagger.anchored(k as usize) {
+            Some(f) => min_x + f * l,
+            None => stagger.phase(r.row) * l,
         };
         pe_grid(&r.range, phase, l)
     };

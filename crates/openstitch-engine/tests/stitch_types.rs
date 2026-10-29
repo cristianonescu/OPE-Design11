@@ -161,11 +161,16 @@ fn satin_and_fill_options_are_set_and_undone() {
         "object.setRegion",
         json!({
             "id": 1, "type": "satin", "underlay": true, "underlayStyle": "double",
-            "underlaySpacing": 3, "gradation": 40, "splitLength": 4, "travel": true
+            "underlaySpacing": 3, "gradation": 40, "splitLength": 4, "travel": true,
+            "stagger": "random", "staggerSeed": 42
         }),
     );
     let r = s.design().objects[0].region.clone().expect("region");
     assert_eq!(r.kind, RegionType::Satin);
+    assert_eq!(
+        (r.stagger, r.stagger_seed),
+        (openstitch_design::StaggerKind::Random, Some(42))
+    );
     assert!(r.running_stitch_path.is_some() && r.underlay);
     assert_eq!(r.underlay_style, UnderlayStyle::Double);
     assert_eq!(

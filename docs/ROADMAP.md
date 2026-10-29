@@ -173,6 +173,10 @@ backlog. Every item lands as a new attribute or command that is off unless chose
 PE-DESIGN reference specs stay green. The rows are listed as "Planned (beyond PE-DESIGN)" in
 [FEATURE_MATRIX.md](FEATURE_MATRIX.md).
 
+Done beyond PE-DESIGN so far: the seeded random tatami stagger (#123, 2026-10-29: `stagger:
+random` with `staggerSeed`, reproducible; PE-DESIGN's Fill pane offers the regular Frequency
+brick only, which stays the default).
+
 | Phase | Backlog items | Scope |
 |---|---|---|
 | A Fill library | B1 contour/spiral fill · B6 density profiles and two-colour blend · B7 3D puff mode · B8 crosshatch and lace · B12 carving lines and knockdown fill | `openstitch-design` generators and inspector rows |

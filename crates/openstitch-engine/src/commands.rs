@@ -12,7 +12,7 @@ use openstitch_design::text::{self, TextAlign, TextDirection, TextSpec};
 use openstitch_design::{
     Arrange, Bezier, ChainShape, Compiler, Contour, Design, DesignObject, DesignPage, Feather,
     FeatherSide, Gradation, Layout, LineSewing, LineType, ObjectKind, Rect, RegionSewing,
-    RegionType, RunningStitchPath, StartEnd, Transform, UnderlayStyle, Vec2, v2,
+    RegionType, RunningStitchPath, StaggerKind, StartEnd, Transform, UnderlayStyle, Vec2, v2,
 };
 use serde_json::{Value, json};
 
@@ -1184,6 +1184,16 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     "Fill, piping, programmable fill: needle shift per row, % of a stitch, 0-50 (fill default 33)",
                 ),
                 opt(
+                    "stagger",
+                    "regular|random",
+                    "Fill: the row-to-row needle stagger, the regular Frequency brick (PE-DESIGN) or OpenStitch's seeded random stagger",
+                ),
+                opt(
+                    "staggerSeed",
+                    "integer",
+                    "Seed of the random stagger (0 to 2^53; the same seed always sews the same rows)",
+                ),
+                opt(
                     "rowOffset",
                     "percent",
                     "Shift of every other pattern row, 0-100",
@@ -1418,6 +1428,23 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     }
                     if p.has("frequency") {
                         r.frequency = Some(p.req("frequency", 0.0, 50.0)?);
+                    }
+                    if let Some(k) = choice(
+                        p,
+                        "stagger",
+                        &[
+                            ("regular", StaggerKind::Regular),
+                            ("random", StaggerKind::Random),
+                        ],
+                    )? {
+                        r.stagger = k;
+                    }
+                    if p.has("staggerSeed") {
+                        let seed = p.req("staggerSeed", 0.0, 9_007_199_254_740_992.0)?;
+                        if seed.fract() != 0.0 {
+                            return Err(p.invalid("staggerSeed", "must be a whole number"));
+                        }
+                        r.stagger_seed = Some(seed as u64);
                     }
                     if p.has("rowOffset") {
                         r.row_offset = Some(p.req("rowOffset", 0.0, 100.0)?);

@@ -4,7 +4,7 @@
 //! unchanged. Lengths are 0.1 mm.
 
 use crate::direction;
-use crate::generate::{self, RegionParams, RowSpan, Run, subdivide};
+use crate::generate::{self, RegionParams, RowSpan, Run, Stagger, subdivide};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, subtract, v2};
 use crate::model::{
     Feather, FeatherSide, Gradation, RegionSewing, RegionType, RunningStitchPath, UnderlayStyle,
@@ -296,7 +296,7 @@ fn layers_inner(
     }
     let mut runs = match r.kind {
         RegionType::Fill if !shaped => {
-            generate::fill_edge_to_edge(closed, &params, holes, r.fill_shift(), r.entry)
+            generate::fill_edge_to_edge(closed, &params, holes, r.fill_stagger(), r.entry)
         }
         // A feathered edge alone keeps the sawtooth (PE-DESIGN 11.50, satin-feather); so does
         // a pattern gradation on a satin split at its start point (satin-gradation).
@@ -384,7 +384,7 @@ fn fill_underlay(
         stitch_length: r.stitch_length * 10.0,
         pull_compensation: -FILL_UNDERLAY_INSET,
     };
-    let rows = generate::fill_shifted(closed, &p, holes, Some(FILL_UNDERLAY_SHIFT));
+    let rows = generate::fill_shifted(closed, &p, holes, Stagger::Regular(FILL_UNDERLAY_SHIFT));
     let pieces: Vec<Run> = edge
         .into_iter()
         .chain(rows)
@@ -818,7 +818,7 @@ fn satin_underlay_rows(
         let Some(span) = spans.first() else {
             continue;
         };
-        let mut xs = tatami_points(span, i, p.stitch_length, None);
+        let mut xs = tatami_points(span, i, p.stitch_length, Stagger::Third);
         let run: Run = xs.iter().map(|&x| unrotate(x, y, p.angle)).collect();
         let reverse = at.is_some_and(|a| a.distance(run[run.len() - 1]) < a.distance(run[0]));
         if reverse {
@@ -1707,7 +1707,7 @@ fn shaped_rows(
     let split = r.split_length.map(|s| s * 10.0);
     let satin = r.kind == RegionType::Satin;
     let feather = r.sewn_feather();
-    let shift = r.fill_shift();
+    let stagger = r.fill_stagger();
     // Rows are ordered on their full spans; feathering then shortens the ends, so the
     // sewing order does not depend on the random ends.
     let chain = if satin {
@@ -1732,7 +1732,7 @@ fn shaped_rows(
         let mut xs = if satin {
             satin_points(&span, row, split)
         } else {
-            tatami_points(&span, row, l, shift)
+            tatami_points(&span, row, l, stagger)
         };
         if !forward {
             xs.reverse();
@@ -1762,8 +1762,8 @@ fn satin_points(span: &Span, row: usize, split: Option<f64>) -> Vec<f64> {
 }
 
 /// Tatami needle positions, as [`generate::fill`] places them.
-fn tatami_points(span: &Span, row: usize, l: f64, shift: Option<f64>) -> Vec<f64> {
-    let phase = generate::row_phase(row, shift) * l;
+fn tatami_points(span: &Span, row: usize, l: f64, stagger: Stagger) -> Vec<f64> {
+    let phase = generate::row_phase(row, stagger) * l;
     let mut xs = vec![*span.start()];
     let mut k = ((span.start() - phase) / l).floor() + 1.0;
     while phase + k * l < *span.end() {
