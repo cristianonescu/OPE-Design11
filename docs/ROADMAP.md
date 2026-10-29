@@ -143,7 +143,10 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    owner's own files only, as [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
    stroke only) and an exact medial axis instead of the grid approximation.
-8. **Formats:** CSD export (no public writer). PEC moves over 204.7 mm split as PE-DESIGN's
+8. **Formats:** CSD export (no public writer). The CSD and SHV readers match PE-DESIGN's own
+   exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart; left: the
+   `machine-sample-basic` compares (skip PE's zero-length stitches; no trim before a colour
+   change in DST/EXP/HUS/VIP). PEC moves over 204.7 mm split as PE-DESIGN's
    DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such a move (parked PES of
    `long-jump-300`).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded

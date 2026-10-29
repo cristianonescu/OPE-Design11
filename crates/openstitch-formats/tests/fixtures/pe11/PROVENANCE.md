@@ -74,3 +74,17 @@ Made by the owner's PE-DESIGN 11.50 (Layout & Editing, restarted at 14:26) on Wi
 | `o-text-transform-1.pes` | `4e7d824f7dc8840d27bd32f6db2074d571ac9d1cc15ac3df8c6e5688c8c7600e` | that text, Text Attributes > Transform ticked, first preset (row 1 left, the arched "ABC"). 23,00 x 8,00 mm, 348 st. |
 | `o-text-vertical.pes` | `f72efd958c8b031c44fd3314fbafd62669abb41fcec2d56511fcc7fe0a6b2e45` | the same text, Transform unticked again, Direction = vertical button (second). 8,00 x 24,40 mm, 407 st. |
 | `o-text-10-letters.pes` | `b873248689736452a1a09915048a5635c38c7d1feb329cb0c607a691853a2e3b` | Home > Text > first tool "A" (Lato, size 8.0, line Not Sewn, region Satin Stitch, 800 RED), click (10,50) mm, ABCDEFGHIJ, Direction horizontal; ten letter records in one text. 69,30 x 8,40 mm, 1141 st. |
+
+**Round 4 machine exports (#135):** made by the owner's PE-DESIGN 11.50 (Layout & Editing) on
+Windows 11 Pro 10.0.26300, 2026-10-29 11:43-11:47, by black-box GUI use only (track
+pe-refs-4). Design Page 100 x 100 mm. Text tool "S", size 20.0, region Satin Stitch, 800
+EMBROIDERY RED (14,00 x 21,10 mm, 278 st); Rectangle (60,60)-(70,68) mm, line Not Sewn,
+region Fill Stitch, 007 EMBROIDERY PRUSSIAN BLUE (10,00 x 8,00 mm, 197 st). Sewing order: the
+S, then the rectangle. Save As PES, then App menu > Export... to each type, no options dialog,
+no warning. Three of the eleven files are kept here for the readers' tests:
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `sample-basic.csd` | `b405685a744df0dd4395279c561822aea4010d8460c7887404aaa9b7e52b841b` | Export, type Singer (*.CSD). |
+| `sample-basic.dst` | `c29378ba32fda42d1b5e5499cdec5c4594ab70ac49dc5fa69ee710000c8b855b` | Export, type Tajima (*.DST). |
+| `sample-basic.shv` | `508c945b5a4e9047da8cda1fd69240a6add83cd9183d1460bffdb3ba0c9dc727` | Export, type Husqvarna/Viking (*.SHV). |

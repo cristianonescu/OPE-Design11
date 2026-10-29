@@ -1343,3 +1343,63 @@ fn pe_design_exports_read_back_with_one_colour_change_and_their_entry_stitches()
         assert_eq!((b.width(), b.height()), (400.0, 400.0), "{ext}");
     }
 }
+
+/// PE-DESIGN 11.50's own CSD and DST exports of one design (round 4, issue #135;
+/// `tests/fixtures/pe11/PROVENANCE.md`): the CSD reader gives the DST's needle points in the
+/// same order, PE's 800 RED and Prussian Blue, and one colour change. PE's DST adds two
+/// zero-length stitches the CSD (and its PEC) do not have, so repeats are folded first.
+#[test]
+fn csd_reads_pe_design_export_like_its_dst() {
+    use openstitch_formats::{csd, dst};
+    let c = csd::read(&common::data("pe11/sample-basic.csd")).expect("csd");
+    let d = dst::read(&common::data("pe11/sample-basic.dst")).expect("dst");
+    assert_eq!(c.count(Command::Stitch), 473);
+    assert_eq!(c.count(Command::ColorChange), 1);
+    assert_eq!(c.count(Command::Trim), 2);
+    let rgb: Vec<u32> = c.threads.iter().map(Thread::rgb_value).collect();
+    assert_eq!(rgb, [0xE3_311F, 0x0D_217E]);
+    let fold = |p: &StitchPattern| {
+        let mut v = sewn(p);
+        v.dedup();
+        let (x0, y0) = (v[0][0], v[0][1]);
+        v.iter().map(|q| [q[0] - x0, q[1] - y0]).collect::<Vec<_>>()
+    };
+    let (cs, ds) = (fold(&c), fold(&d));
+    assert_eq!(cs.len(), 473);
+    assert_eq!(cs, ds);
+}
+
+/// PE-DESIGN 11.50's SHV export of the same design (#135): the records start at the end of the
+/// colour table, so the needle points are PE's PEC stitches with no stitch at the origin and
+/// no colour change after the last block. SHV marks a jump's landing with the jump itself,
+/// where PE's DST adds a zero-length stitch, so those are dropped from the DST side.
+#[test]
+fn shv_reads_pe_design_export_like_its_dst() {
+    use openstitch_formats::dst;
+    let h = shv::read(&common::data("pe11/sample-basic.shv")).expect("shv");
+    let d = dst::read(&common::data("pe11/sample-basic.dst")).expect("dst");
+    assert_eq!(h.count(Command::Stitch), 471);
+    assert_eq!(h.count(Command::ColorChange), 1);
+    assert_eq!(h.color_block_count(), 2);
+    assert_eq!(h.threads.len(), 2);
+    let points = |p: &StitchPattern, drop_landings: bool| {
+        let mut v: Vec<[f64; 2]> = Vec::new();
+        let mut after_jump = false;
+        for s in &p.stitches {
+            match s.command {
+                Command::Jump => after_jump = true,
+                Command::Stitch => {
+                    let landing = after_jump && drop_landings;
+                    after_jump = false;
+                    if !landing && v.last() != Some(&[s.x, s.y]) {
+                        v.push([s.x, s.y]);
+                    }
+                }
+                _ => {}
+            }
+        }
+        let (x0, y0) = (v[0][0], v[0][1]);
+        v.iter().map(|q| [q[0] - x0, q[1] - y0]).collect::<Vec<_>>()
+    };
+    assert_eq!(points(&h, false), points(&d, true));
+}

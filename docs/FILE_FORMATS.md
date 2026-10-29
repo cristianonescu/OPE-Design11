@@ -62,6 +62,13 @@ Design Database converts between `.pes .dst .exp .pcs .hus .vip .shv .jef .sew .
 | 0x210 | … | stitch stream, terminated by `FF` |
 | end | 228 × (n+1) | 1-bit icons: whole design, then one per colour block |
 
+PE-DESIGN 11.50 writes no zero-length stitch to the PEC section: its status bar and its DST
+export count needle points that the PEC section leaves out (a zero-length stitch at each jump
+landing and where a stitch repeats its predecessor; e.g. 475 in the DST of `sample-basic`,
+471 in its PEC, the DST's other 4 all zero-length; 99 of 114 references show 1–9 more in the
+status bar than in their PEC). So reading a PE-DESIGN PES gives fewer needle points than PE
+reports, by design of the file, not of the reader (#135).
+
 Stitch stream: each axis value is either one byte (7-bit two's complement, used when
 −64 < d < 63) or two bytes `1 f f f v v v v  v v v v v v v v` (bit 7 set; bit 5 = trim,
 bit 4 = jump; 12-bit two's complement). Colour change: `FE B0` then `02`/`01` alternating. A move over ±2047 units (204.7 mm) is
@@ -457,6 +464,13 @@ Records, y down: `dx dy` signed bytes (a jump while in jump mode); `80 01 dx(i16
 moves and enters jump mode (3 words); `80 02` leaves jump mode; `80 03` is skipped (1 word).
 A colour block ends after its word count: the colour change is implicit. No trim record.
 
+Where the records start: PE-DESIGN 11.50's own SHV (`tests/fixtures/pe11/sample-basic.shv`)
+starts them at the end of the colour table, followed by exactly the counted words.
+pyembroidery's reader starts 2 bytes before the end, which on PE's file adds a stitch at the
+origin and, one word short at the end, an extra colour change (#135). OpenStitch starts at
+the table's end unless fewer words follow than the counts add up to (pyembroidery's layout,
+as in `oracle.shv`), and then 2 bytes earlier (`shv_reads_pe_design_export_like_its_dst`).
+
 Evidence: `oracle.shv` is assembled by `tools/genfixtures.py` from that layout (trims as
 `80 03`); pyembroidery's read is the oracle (`shv_reads_oracle_file_like_reference`). Neither
 pyembroidery nor libembroidery (`writeShv` is a stub) writes SHV, and nothing public explains
@@ -501,14 +515,21 @@ bytes. Byte at offset `o` decodes as `(b ^ xor[k % 501]) − sub[k % 479]`:
   byte 0 at `k mod 0x300 = 0x200` and low bytes 0–1 at 0x100.
 
 Decoded: 16 × RGB, 2 unknown bytes, 14 colour-order bytes (palette index per colour block),
-then 3-byte records `flags dy dx` (0.1 mm): bit 0x20 / 0x40 negate x / y; low five bits 0 =
-stitch, any of 0x0C = colour stop, others = trim with a move; `F8`, `87`, `91` end.
+then 3-byte records `flags dy dx` (0.1 mm, magnitudes 0–255): bit 0x20 / 0x40 negate x / y;
+low five bits 0 = stitch, any of 0x0C = colour stop (its bytes do not move the needle), others
+= trim with a move; `F8`, `87`, `91` end. The mask index `k` is the byte's own file offset
+(libembroidery takes the stream position after the read, minus one); OpenStitch read
+`o − 1` until 2026-10-29, which turned PE-DESIGN's CSD into noise (#135).
 
 Source: libembroidery `src/formats/singer.c` (zlib; the same code was published under MIT in
-Embroidermodder in 2013). pyembroidery has no CSD module. Evidence is spec-derived only:
-synthetic files built by the inverse transform in `csd::tests` decode as intended for both
-mask types. **Unverified** (no reference files): y up, the colour-order mapping (libembroidery
-indexes it off by one), a leading stop selecting the first colour, and the trim move. Wilcom
+Embroidermodder in 2013). pyembroidery has no CSD module. **Verified for type 0** against
+PE-DESIGN 11.50's own CSD export (`tests/fixtures/pe11/sample-basic.csd`,
+`csd_reads_pe_design_export_like_its_dst`): every needle point equals PE's DST of the same
+design, y is up, a leading stop selects the first colour, the colour order is 0, 1, … into the
+palette (no off-by-one), the palette holds PE's RGB (800 RED is E3 31 1F, as in its XXX and
+VIP), and a trim's move ends at the next block's first needle point. Type 1 (other
+identifiers) is checked only by synthetic files built by the inverse transform in
+`csd::tests`. Wilcom
 documentation mentions "Type I" and "Type II" CSD (Type II with RGB and an icon); which one
 this is, is unknown. CSD export: no public writer, the unknown bytes are undocumented, so
 OpenStitch does not write CSD (Documented, needs reference files).
