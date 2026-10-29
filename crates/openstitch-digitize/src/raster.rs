@@ -329,6 +329,12 @@ impl Raster {
     }
 }
 
+/// Integer Rec. 601 luminance of an opaque colour, 0–255: `(30 R + 59 G + 11 B) / 100`,
+/// truncated (the weights PE-DESIGN's image conversions use, #128).
+pub fn luma601(r: u8, g: u8, b: u8) -> u8 {
+    ((30 * u32::from(r) + 59 * u32::from(g) + 11 * u32::from(b)) / 100) as u8
+}
+
 /// Where an image lands in the design: top-left corner and size of one pixel, 0.1 mm.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Frame {

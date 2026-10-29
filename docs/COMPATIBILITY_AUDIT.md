@@ -1000,6 +1000,18 @@ Line references are relative to `crates/`.
   than one record; VIP's exact piece length (7.5–7.9 mm); JEF's `-1` hoop block; XXX's header
   tables and palette filler; SEW's 340 header bytes; DST's `AX`/`AY`; PE-DESIGN's RGB for chart
   colour 800 RED (`E3 31 1F`) against the PEC chart table's `ED 17 1F`.
+- **Image digitizing (Phase 6, issues #127, #128, #132, #129):** the Auto Punch, Cross Stitch
+  and Photo Stitch pipelines were this project's own approximations; the Phase 6 gap analysis
+  pins their arithmetic. Done 2026-10-29 (#128): mono Photo Stitch uses integer Rec. 601
+  luminance `(30 R + 59 G + 11 B) / 100` and a full-range min/max contrast stretch
+  `g' = (g − min) · 255 / (max − min)`, applied only when `max − min` is in (1, 255), instead of
+  the 2nd–98th percentile stretch. On a linear grey ramp the two stretches agree (576 against
+  573 needle points for the 50 mm Fill ramp, 464 against 456 for Lines); they differ on images
+  with a few outlying dark or light pixels, which the percentile stretch ignored and the
+  min/max stretch anchors on. Left: the colour mode's thread snap through the equal-weight
+  metric (#119), the sepia re-tone, and the capture comparison (stitch density per tone band
+  and total counts against pe-refs-4's Photo Stitch files at defaults) once those captures
+  land; #127 and #132 follow in their own PRs.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.
