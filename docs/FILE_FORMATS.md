@@ -728,6 +728,41 @@ OpenStitch's own embroidery font format, written by `fonts.save` and read by `fo
 - `.osd` files carry the same font objects under `design.fonts`, next to TrueType fonts, which
   are stored as `{"trueType": {"face": 0, "bytes": "<base64>"}}`.
 
+## Thread chart CSV (OpenStitch)
+
+OpenStitch's own format for user thread charts (`threads.importCsv`, `threads.exportCsv`;
+editor: Edit ▸ User Thread Charts… ▸ Import CSV… / Export CSV…). PE-DESIGN 11.50 has no
+thread-chart CSV: its user charts are binary `.btc2` files in its program folder (`MyChart\`),
+made and imported only through Options ▸ Edit User Thread Chart, so charts cannot be exchanged
+with PE-DESIGN through files (round-4 check, issue #136). The `.btc2` format is not decoded.
+
+- UTF-8; a leading BOM is ignored. Lines end in CR LF when written; LF is read too.
+- Lines starting with `#` are comments. The writer puts `# OpenStitch thread chart: <name>` first.
+- An optional column row `code,brand,description,R,G,B` (any case) is skipped; the writer
+  always writes it.
+- One colour per line, six fields in this order:
+
+| Field | Content |
+|---|---|
+| `code` | catalogue number, digits only, may be empty |
+| `brand` | text, may be empty; at most 100 characters kept |
+| `description` | colour name, may be empty; at most 100 characters kept |
+| `R`, `G`, `B` | 0–255 |
+
+- A field in double quotes may hold commas; `""` in it is one quote (RFC 4180). The writer
+  quotes a field only when it holds a comma, a quote or leading or trailing spaces. A record
+  stays on one line: control characters are dropped. Spaces around fields are ignored.
+- At most 2,000 colours per chart and 100 charts; files over 4 MiB are refused.
+
+Earlier OpenStitch versions read the same six columns without quoting or a column row, so
+their files still import. The built-in charts (`threads.builtinCharts`: `brother` = the
+64-entry PEC chart, entries 1–61 marked `basic` as the ones PE-DESIGN matches to;
+`janomeJef`, `janomeSew`, `husqvarnaHus`, `husqvarnaShv`) export in the same schema
+(`threads.exportCsv {builtin}`), so any of them can be copied into a user chart and edited.
+Not adopted from #136, for want of any PE-DESIGN reference: the `#userchart` header with a
+chart code, the `id,R,G,B,attr,code,description` column order, the 6-character code and the
+1,499-colour cap, and the 94-entry "sew palette".
+
 ## OpenStitch template (`.ostemplate`)
 
 Written by `template.save` and read by `template.list` / `template.open`. It is JSON:
