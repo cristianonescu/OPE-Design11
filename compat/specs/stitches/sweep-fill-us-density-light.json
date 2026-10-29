@@ -3,7 +3,7 @@
   "id": "sweep-fill-us-density-light",
   "area": "stitches",
   "title": "Fill under sewing Density Light",
-  "description": "The 40 × 40 mm fill at 0°, density 4.5, Under sewing first type with Density Light (PE-DESIGN's rows 3.5 mm apart, stitch-rules U1). OpenStitch has one under sewing density (Medium); the reference pins PE-DESIGN's count for when Dense/Light exist.",
+  "description": "The 40 × 40 mm fill at 0°, density 4.5, Under sewing first type with Density Light (PE-DESIGN's rows 3.5 mm apart, stitch-rules U1). OpenStitch: underlayDensity light, rows on both inset edges with the whole number of gaps nearest to the inset width over 3.5 mm.",
   "covers": {
     "audit": [
       15
@@ -50,7 +50,8 @@
         "type": "fill",
         "angle": 0,
         "density": 4.5,
-        "underlay": true
+        "underlay": true,
+        "underlayDensity": "light"
       }
     },
     {
