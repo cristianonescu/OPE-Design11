@@ -215,9 +215,12 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
     prepass with documented grid and per-cell defaults since 2026-10-29 (#132). Compared with
     PE-DESIGN 11.50's round-4 captures on 2026-10-29: Auto Punch fills at 45° and 5 colours
     (−2.1 % stitches), Cross Stitch's six diagonal stitches per cell (−0.9 %), Photo Stitch 1's
-    Sew Page Color, 3.0 mm Run Pitch and 10 colours (+4 %). Next: PE's colour order and run-to-
-    run travel in Auto Punch and Cross Stitch; PE's meander stitch path and thread mixing in
-    Photo Stitch 1, which is #129's model (Photo Stitch 2 was not captured).
+    Sew Page Color, 3.0 mm Run Pitch and 10 colours (+4 %). Second round (bars, moved shapes,
+    mono, Photo Stitch 2): Auto Punch's satin/fill bounds 0.7–6.5 mm, Auto-direction satin
+    without under sewing, fill across strokes up to 13 mm, automatic colour count, PE's colour
+    order (R + G + B, highest first, also in Cross Stitch), Sew Page Color in Color mode only.
+    Next: run-to-run travel in Cross Stitch; PE's meander path for Photo Stitch 1 (mono +39 %
+    stitches from short runs) and the per-colour screen angles of Photo Stitch 2, both #129.
 
 ## Beyond PE-DESIGN
 

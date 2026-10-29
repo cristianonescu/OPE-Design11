@@ -289,3 +289,17 @@ fn page_colour_is_sewn_first_by_default() {
     let bare_out = photo::convert(&img, &frame, &off).expect("converts");
     assert!(bare_out.threads.iter().all(|t| t.hex() != "#f0f0f0"));
 }
+
+/// PE-DESIGN 11.50's Photo Stitch 1 Mono has no Sew Page Color: light areas stay unsewn
+/// (round-4 `photostitch1-mono-grey-tonal.pes`).
+#[test]
+fn mono_leaves_light_areas_unsewn_by_default() {
+    let p = PhotoStitch::new(PhotoStyle::Fill, PhotoMode::Mono(black()));
+    assert!(!p.sew_page);
+    let out = photo::convert(&gradient(), &Frame::new(0.0, 0.0, 50.0, 100), &p).expect("converts");
+    assert_eq!(out.threads.len(), 1);
+    assert!(
+        needles(&out.objects[0]).iter().all(|p| p.0 < 495.0),
+        "light edge bare"
+    );
+}

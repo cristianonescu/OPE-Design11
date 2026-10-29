@@ -61,11 +61,12 @@ impl Method {
 
 impl Method {
     /// PE-DESIGN 11.50's Max. Number of Colors default for the method's wizard (round-4
-    /// captures): Auto Punch 5, Cross Stitch 5, Photo Stitch 10.
+    /// captures): Auto Punch and Cross Stitch count the image's colours (0 = automatic), Photo
+    /// Stitch 10.
     pub fn default_colors(self) -> u32 {
         match self {
             Method::PhotoFill | Method::PhotoLines => 10,
-            _ => 5,
+            _ => 0,
         }
     }
 }
@@ -131,7 +132,8 @@ impl ImageWizard {
         if let Some(w) = self.width_mm {
             p.insert("width".into(), json!(w));
         }
-        let colors = json!(self.colors.clamp(1, 64));
+        // 0 asks Auto Punch and Cross Stitch for the automatic count.
+        let colors = json!(self.colors.min(64));
         let command = match self.method {
             Method::AutoPunch => {
                 p.insert("colors".into(), colors);

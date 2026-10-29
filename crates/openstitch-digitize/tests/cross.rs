@@ -82,7 +82,13 @@ fn half_crosses_and_determinism() {
     };
     let a = cross::convert(&img, &frame, &p).expect("converts");
     assert_eq!(a, cross::convert(&img, &frame, &p).expect("converts"));
-    let b = a.objects[0].stitch_block.as_ref().expect("block");
+    // Colours sew brightest first (PE-DESIGN's order): the black row is the dark thread's.
+    let black = a
+        .threads
+        .iter()
+        .position(|t| t.red < 64)
+        .expect("black thread");
+    let b = a.objects[black].stitch_block.as_ref().expect("block");
     let pts: Vec<(f64, f64)> = b.stitches.iter().map(|s| (s.x, s.y)).collect();
     assert_eq!(
         pts,
@@ -147,7 +153,10 @@ fn defaults_are_documented_and_configurable() {
     let d = CrossStitch::default();
     assert_eq!(d.cell_mm, 2.5);
     assert_eq!(d.cell_mm, CrossStitch::CELL_MM);
-    assert_eq!(d.colors, 5, "PE-DESIGN's Max. Number of Colors");
+    assert_eq!(
+        d.colors, 0,
+        "automatic, as PE-DESIGN fills in Max. Number of Colors"
+    );
     assert_eq!(d.colors, CrossStitch::COLORS);
     assert_eq!(d.kind, CrossType::Full);
     assert!(!d.triple);

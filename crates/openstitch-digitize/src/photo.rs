@@ -43,8 +43,9 @@ pub struct PhotoStitch {
     /// Fabric (page) colour: what unsewn areas show.
     pub fabric: Rgb,
     /// Fill style: sew the page colour too (PE-DESIGN 11.50's "Sew Page Color", ticked by
-    /// default), as a thread of its own that sews first, so every opaque cell is sewn and the
-    /// image's light areas get the page thread instead of bare fabric. Lines ignore it.
+    /// default in Color mode), as a thread of its own that sews first, so every opaque cell is
+    /// sewn and the image's light areas get the page thread instead of bare fabric. Mono and
+    /// Lines ignore it (PE-DESIGN's Mono has no such option).
     pub sew_page: bool,
     /// Distance between rows, mm.
     pub row_spacing_mm: f64,
@@ -61,11 +62,14 @@ impl PhotoStitch {
             PhotoStyle::Fill => (FILL_ROW_SPACING_MM, RUN_PITCH_MM),
             PhotoStyle::Lines => (1.2, 0.8),
         };
+        let sew_page = style == PhotoStyle::Fill && matches!(mode, PhotoMode::Color(_));
         PhotoStitch {
             style,
             mode,
             fabric: [255, 255, 255],
-            sew_page: style == PhotoStyle::Fill,
+            // PE-DESIGN's Mono mode has no Sew Page Color and leaves light areas unsewn
+            // (round-4 `photostitch1-mono-grey-tonal.pes`).
+            sew_page,
             row_spacing_mm,
             stitch_mm,
         }
@@ -162,7 +166,7 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
     // Sew Page Color: the fabric target becomes a thread of its own (the nearest chart thread),
     // so the cells dithered to it are sewn too.
     let mut threads = threads;
-    if p.sew_page && p.style == PhotoStyle::Fill {
+    if p.sew_page && p.style == PhotoStyle::Fill && !mono {
         threads.push(palette::nearest_pec(p.fabric).1);
     }
     let dithered = palette::dither(&cells, cols, rows, &targets);
