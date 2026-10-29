@@ -717,6 +717,144 @@ pub enum UnderlayStyle {
     Cross,
 }
 
+impl UnderlayStyle {
+    /// The components this style sews on a Manual Punch column (several direction lines), as
+    /// PE-DESIGN 11.50's five exclusive under sewing buttons do on its own column (round-4
+    /// captures satin-col-us-type-1..5): its first-row buttons (type 1, the default, and
+    /// type 2) sew the edge run, the piping and the zigzag; the second row's outline button
+    /// (type 3) and lines button (type 5) the edge run alone; its zigzag button (type 4) the
+    /// piping and the zigzag. `edge` stands for types 3 and 5, `zigzag` for type 4, every
+    /// other style for types 1 and 2.
+    pub fn column_parts(self) -> UnderlayParts {
+        match self {
+            UnderlayStyle::Edge => UnderlayParts {
+                edge: true,
+                ..UnderlayParts::default()
+            },
+            UnderlayStyle::Zigzag => UnderlayParts {
+                zigzag: true,
+                center: true,
+                ..UnderlayParts::default()
+            },
+            _ => UnderlayParts {
+                edge: true,
+                zigzag: true,
+                center: true,
+                lattice: false,
+            },
+        }
+    }
+
+    /// The components this style stands for (see [`UnderlayParts`]).
+    pub fn parts(self) -> UnderlayParts {
+        let p = |edge, zigzag, lattice| UnderlayParts {
+            edge,
+            zigzag,
+            lattice,
+            center: false,
+        };
+        match self {
+            UnderlayStyle::Edge => p(true, false, false),
+            UnderlayStyle::Zigzag => p(false, true, false),
+            UnderlayStyle::EdgeZigzag | UnderlayStyle::EdgeFill => p(true, true, false),
+            UnderlayStyle::Double => p(false, false, true),
+            UnderlayStyle::Cross => p(true, false, true),
+        }
+    }
+}
+
+/// The components of a region's under sewing, each on or off, combinable (OpenStitch's own
+/// extension: PE-DESIGN's under sewing types are exclusive radio buttons, and `UnderlayStyle`
+/// is that exclusive choice). PE-DESIGN 11.50's types are combinations of them: its first type for fill and satin regions is
+/// the edge run with rows across the sewing direction (`edge` + `zigzag`), its second type the
+/// edge run with the two crossing layers of lines at ±45° (`edge` + `lattice`); a Manual Punch
+/// column offers "Edge only", "Region only (single layer of zigzag shaped stitches)",
+/// "Region only (single layer of piping stitches)", "Edge and region (single layer of zigzag
+/// shaped stitches)" and "Region only (double layer of zigzag shaped and piping stitches)"
+/// (the guide's names; piping = `center`, the running stitch down the middle of the column).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnderlayParts {
+    /// Running stitch along the outline, inset.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub edge: bool,
+    /// Sparse rows across the sewing direction (fill, satin regions), or the zigzag between the
+    /// inset rails of a column.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub zigzag: bool,
+    /// The lattice: two crossing layers of lines at the sewing direction ∓ 45°.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub lattice: bool,
+    /// Piping: a running stitch along the middle of the column (or the region's middle row).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub center: bool,
+}
+
+impl UnderlayParts {
+    /// The part names: `edge`, `zigzag`, `lattice`, `center`.
+    pub const NAMES: [&'static str; 4] = ["edge", "zigzag", "lattice", "center"];
+
+    /// The parts from their names; `None` on an unknown name.
+    pub fn from_names<'a>(names: impl IntoIterator<Item = &'a str>) -> Option<Self> {
+        let mut parts = UnderlayParts::default();
+        for n in names {
+            match n {
+                "edge" => parts.edge = true,
+                "zigzag" => parts.zigzag = true,
+                "lattice" => parts.lattice = true,
+                "center" => parts.center = true,
+                _ => return None,
+            }
+        }
+        Some(parts)
+    }
+
+    /// The names of the parts that are on, in [`Self::NAMES`] order.
+    pub fn names(self) -> Vec<&'static str> {
+        [self.edge, self.zigzag, self.lattice, self.center]
+            .into_iter()
+            .zip(Self::NAMES)
+            .filter_map(|(on, name)| on.then_some(name))
+            .collect()
+    }
+
+    pub fn any(self) -> bool {
+        self.edge || self.zigzag || self.lattice || self.center
+    }
+}
+
+/// PE-DESIGN's under sewing Density: how far apart the rows, lines and zigzag of the under
+/// sewing lie (measured in its 11.50 output, sweep-fill-us-density-*: Dense 1.4 mm, Medium
+/// 2.0 mm, Light 3.5 mm nominal; the rows lie on both inset edges, the gaps stretched or
+/// squeezed to the nearest whole count).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum UnderlayDensity {
+    Dense,
+    #[default]
+    Medium,
+    Light,
+}
+
+impl UnderlayDensity {
+    /// Nominal spacing, mm.
+    pub fn spacing_mm(self) -> f64 {
+        match self {
+            UnderlayDensity::Dense => 1.4,
+            UnderlayDensity::Medium => 2.0,
+            UnderlayDensity::Light => 3.5,
+        }
+    }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            UnderlayDensity::Dense => "dense",
+            UnderlayDensity::Medium => "medium",
+            UnderlayDensity::Light => "light",
+        }
+    }
+}
+
 /// Which row ends a feathered edge roughens.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -878,11 +1016,19 @@ pub struct RegionSewing {
     pub stitch_length: f64,
     /// Row end extension, mm.
     pub pull_compensation: f64,
-    /// Underlay (style in `underlay_style`).
+    /// Underlay (style in `underlay_style`, or its components in `underlay_parts`).
     pub underlay: bool,
     #[serde(default, skip_serializing_if = "is_default")]
     pub underlay_style: UnderlayStyle,
-    /// Distance between underlay rows, mm (default 2).
+    /// The under sewing's components when set explicitly (see [`UnderlayParts`]); otherwise
+    /// `underlay_style` says which (see [`RegionSewing::underlay_parts`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub underlay_parts: Option<UnderlayParts>,
+    /// PE-DESIGN's under sewing Density (Dense / Medium / Light), the nominal spacing of the
+    /// under sewing's rows unless `underlay_spacing` sets it.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub underlay_density: UnderlayDensity,
+    /// Distance between underlay rows, mm (default: the Density's spacing, Medium 2 mm).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub underlay_spacing: Option<f64>,
     /// Satin and fill: choose the direction from the region's shape (stitches across its
@@ -1009,6 +1155,8 @@ impl RegionSewing {
                 RegionType::Satin => UnderlayStyle::EdgeZigzag,
                 _ => UnderlayStyle::Edge,
             },
+            underlay_parts: None,
+            underlay_density: UnderlayDensity::Medium,
             underlay_spacing: None,
             auto_direction: false,
             gradation: None,
@@ -1138,8 +1286,24 @@ impl RegionSewing {
         self.run_pitch.unwrap_or(2.0)
     }
 
+    /// Spacing of the under sewing's rows, lines and zigzag in mm: `underlay_spacing` when
+    /// set, else the Density's nominal spacing.
     pub fn underlay_spacing_mm(&self) -> f64 {
-        self.underlay_spacing.unwrap_or(2.0)
+        self.underlay_spacing
+            .unwrap_or_else(|| self.underlay_density.spacing_mm())
+    }
+
+    /// The under sewing's components: `underlay_parts` when set, else those of
+    /// `underlay_style` (on a column with several direction lines, PE-DESIGN's column
+    /// under sewing for that style: [`UnderlayStyle::column_parts`]).
+    pub fn underlay_parts(&self) -> UnderlayParts {
+        self.underlay_parts.unwrap_or_else(|| {
+            if self.direction_lines.len() >= 2 {
+                self.underlay_style.column_parts()
+            } else {
+                self.underlay_style.parts()
+            }
+        })
     }
 
     /// Pattern size in mm (width, height), defaults per type.

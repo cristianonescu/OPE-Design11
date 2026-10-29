@@ -95,9 +95,12 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
    rows follow PE-DESIGN's cumulative-density placement since 2026-10-28 (#95: every row of
    the U within 0.12 mm, overlap 0.83 → 0.89); left for the U: PE's section order for fills in
-   several parts (right leg, left leg, then the top bar ending at the first vertex); under
-   sewing Density Dense / Light (the second under sewing type, `cross`, is done for fill and
-   satin since 2026-10-28, specs sweep-fill-us-type-2 and sweep-satin-us-type-2).
+   several parts (right leg, left leg, then the top bar ending at the first vertex). Under
+   sewing Density Dense / Medium / Light and the combinable under sewing parts (edge, rows,
+   lattice, piping) are done since 2026-10-29 (#124: sweep-fill-us-density-dense/-light at the
+   reference tier; the second type, `cross`, since 2026-10-28, specs sweep-fill-us-type-2 and
+   sweep-satin-us-type-2); left: the button-to-capture mapping of a Manual Punch column's five
+   under sewing types once pe-refs-4 notes it, and the zigzag's exact split points.
 2. **Satin:** Half Stitch for Auto satin (the corner fan now produces the crowding it acts
    on); Miter limit. Auto satin's needle lattice (whole spacings from the far end, the
    remainder at the start point), its forward start travel and its end on the start point

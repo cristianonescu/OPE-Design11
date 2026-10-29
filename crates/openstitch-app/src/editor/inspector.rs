@@ -315,6 +315,12 @@ pub fn region_controls_with(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> 
                     ("cross", "Edge and cross-hatch (PE-DESIGN type 2)"),
                 ],
             ));
+            v.push(choice(
+                "Underlay density",
+                "underlayDensity",
+                r.underlay_density.name(),
+                &[("dense", "Dense"), ("medium", "Medium"), ("light", "Light")],
+            ));
             if r.underlay_style != UnderlayStyle::Edge {
                 v.push(num(
                     "Underlay spacing",

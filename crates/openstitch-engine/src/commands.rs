@@ -12,7 +12,8 @@ use openstitch_design::text::{self, TextAlign, TextDirection, TextSpec};
 use openstitch_design::{
     Arrange, Bezier, ChainShape, Compiler, Contour, Design, DesignObject, DesignPage, Feather,
     FeatherSide, Gradation, Layout, LineSewing, LineType, ObjectKind, Rect, RegionSewing,
-    RegionType, RunningStitchPath, StartEnd, Transform, UnderlayStyle, Vec2, v2,
+    RegionType, RunningStitchPath, StartEnd, Transform, UnderlayDensity, UnderlayParts,
+    UnderlayStyle, Vec2, v2,
 };
 use serde_json::{Value, json};
 
@@ -1094,13 +1095,23 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 opt("underlay", "bool", "Underlay (style in underlayStyle)"),
                 opt(
                     "underlayStyle",
-                    "edge|zigzag|edgeZigzag|double",
-                    "Underlay: edge run, inset rows, both, or two crossing layers",
+                    "edge|zigzag|edgeZigzag|double|edgeFill|cross",
+                    "Underlay: edge run, inset rows, both, two crossing layers, PE-DESIGN's first type (edge and rows) or its second (edge and lattice); shorthand for underlayParts",
+                ),
+                opt(
+                    "underlayParts",
+                    "[edge|zigzag|lattice|center]",
+                    "Underlay components, combinable: the inset edge run, rows across the direction (a column's zigzag), the lattice of two crossing layers at +-45 degrees, the piping down the middle; an empty list sews none",
+                ),
+                opt(
+                    "underlayDensity",
+                    "dense|medium|light",
+                    "PE-DESIGN's under sewing Density: rows 1.4, 2.0 or 3.5 mm apart",
                 ),
                 opt(
                     "underlaySpacing",
                     "mm",
-                    "Distance between underlay rows, 1-10",
+                    "Distance between underlay rows, 1-10 (overrides underlayDensity)",
                 ),
                 opt(
                     "autoDirection",
@@ -1289,6 +1300,36 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         ],
                     )? {
                         r.underlay_style = u;
+                        r.underlay_parts = None;
+                    }
+                    if p.has("underlayParts") {
+                        let names: Vec<&str> = p
+                            .array("underlayParts")?
+                            .iter()
+                            .map(|v| {
+                                v.as_str().ok_or_else(|| {
+                                    p.invalid("underlayParts", "must be an array of strings")
+                                })
+                            })
+                            .collect::<Result<_, _>>()?;
+                        r.underlay_parts =
+                            Some(UnderlayParts::from_names(names).ok_or_else(|| {
+                                p.invalid(
+                                    "underlayParts",
+                                    format!("expected {}", UnderlayParts::NAMES.join(", ")),
+                                )
+                            })?);
+                    }
+                    if let Some(d) = choice(
+                        p,
+                        "underlayDensity",
+                        &[
+                            ("dense", UnderlayDensity::Dense),
+                            ("medium", UnderlayDensity::Medium),
+                            ("light", UnderlayDensity::Light),
+                        ],
+                    )? {
+                        r.underlay_density = d;
                     }
                     if p.has("underlaySpacing") {
                         r.underlay_spacing = Some(p.req("underlaySpacing", 1.0, 10.0)?);
