@@ -119,7 +119,7 @@ Object section as pyembroidery 1.5.1 reads and writes it (little-endian):
 |---|---|
 | v1 header | u16 scale-to-fit (1), u16 hoop (1), u16 object count |
 | v4+ header | u16 hoop, 2 ASCII digits, then five u8-length strings: name, category, author, keywords, comments. Strings are Windows-1252 with CR LF line breaks, as PE-DESIGN 11 writes them; OpenStitch reads valid UTF-8 (its earlier files, pyembroidery) as UTF-8 |
-| v5–v10 | fixed fields (36 bytes in v6: hoop/page/grid settings, written with pyembroidery's values), u8-length image file name, six f32 (identity transform), u16 counts of programmable fills, motifs, feather patterns, u16 thread count, threads |
+| v5–v10 | fixed fields (36 bytes in v6: hoop/page/grid settings; OpenStitch writes the selected hoop's width and height in mm as the third and fourth u16 (`WriteOptions::hoop_mm`, from `design.export`; 100 × 100 without one) and pyembroidery's values for the rest; PE-DESIGN 11.50's `#PES0110` files store the hoop the same way, u16 mm width and height followed by the hoop name, e.g. 100, 100, "nv880e-S"), u8-length image file name, six f32 (identity transform), u16 counts of programmable fills, motifs, feather patterns, u16 thread count, threads |
 | thread (v5+) | u8-string catalogue no., R G B, u8 0, u32 colour type (`0x0A` custom colour), u8-strings name, brand, chart |
 | objects | u16 object count, `FFFF 0000`, then objects named by u16-length class strings, separated by `FFFF 0000`, ended by `0000 0000` |
 | `CEmbOne` | 16 zero bytes, six f32 transform (a b c d tx ty; pyembroidery places the group at `tx = 1000 − w/2`, `ty = 1000 + h/2`), u16 1, 0, 0, width, height, 8 zero bytes, u16 section count |

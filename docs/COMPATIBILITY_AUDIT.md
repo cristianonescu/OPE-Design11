@@ -533,6 +533,22 @@ Line references are relative to `crates/`.
 
 ## 10. Hoop and Design Page fields are hard-coded in PES
 
+- **Partly fixed (2026-10-29, #125):** `design.export` writes the selected hoop's width and
+  height (rotation applied; the custom page when no hoop is chosen) in mm as the v6 header's
+  hoop fields, where pyembroidery's constant 100 × 100 stood. PE-DESIGN 11.50 stores the hoop
+  the same way in its own `#PES0110` files (u16 100, u16 100, then the hoop name "nv880e-S"
+  for a 100 × 100 mm page, in all 163 owner-drawn reference files). The page, grid and flag
+  fields keep pyembroidery's values, and v1 still writes its fixed hoop. Over-size designs
+  (round-4 capture `hoop-oversize-100.dst`): PE-DESIGN neither rejects a 129 × 105 mm design
+  on a 100 × 100 mm page nor promotes it to a larger hoop; Save As warns and saves on Yes,
+  Export writes silently. OpenStitch writes it and returns a warning, `fitsPage: false` and
+  the smallest Brother hoop it fits (`smallestHoop`); the editor shows the warning. Not
+  implemented from #125, against the reference: per-machine colour-change and data-size caps
+  that reject an export, and automatic hoop promotion. Also against the issue: the two ASCII
+  characters after the header's u16 are "10" in PE's own 0110 files and "01" in files it
+  re-saved from OpenStitch exports, all on 100 × 100 mm pages, so they are not the
+  "01"/"02"/"10" size code the issue describes; OpenStitch keeps pyembroidery's "02".
+
 - **Impact:** severity 4. Every v6 file claims a 100×100 hoop and a fixed page, whatever hoop
   the user chose. Every v1 file claims 130×180. Imported files never set the hoop.
   - The guide ([Design Page settings](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/03_1245955.html))

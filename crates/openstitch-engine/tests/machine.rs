@@ -274,3 +274,142 @@ fn machine_bad_parameters_fail_cleanly() {
         assert_eq!(s.design(), &before, "{id} changed the design");
     }
 }
+
+fn fresh_dir(name: &str) -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join(format!("openstitch-{name}-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    dir
+}
+
+/// PE-DESIGN 11.50 writes a design larger than its Design Page (Export silently, Save As after
+/// a warning) and never promotes it to another hoop (`hoop-oversize-100.dst`, issue #125).
+/// OpenStitch writes it too, reports a warning and the smallest Brother hoop it fits, and
+/// leaves the hoop as chosen.
+#[test]
+fn oversize_designs_are_written_with_a_warning_not_rejected_or_promoted() {
+    let dir = fresh_dir("oversize");
+    let mut s = Session::new(&dir);
+    run(&mut s, "machine.set", json!({"hoop": "100x100"}));
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": -15, "y": 0, "width": 129, "height": 105}),
+    );
+    let r = run(&mut s, "design.export", json!({"path": "big.dst"}));
+    assert!(dir.join("big.dst").exists());
+    assert_eq!(r["fitsPage"], json!(false), "{r}");
+    assert_eq!(r["smallestHoop"], json!("130x180"), "{r}");
+    let warnings = r["warnings"].as_array().expect("warnings");
+    assert_eq!(warnings.len(), 1, "{r}");
+    assert!(
+        warnings[0]
+            .as_str()
+            .is_some_and(|w| w.contains("Design Page") && w.contains("130 × 180")),
+        "{r}"
+    );
+    let hoops = run(&mut s, "machine.hoops", json!({}));
+    assert_eq!(hoops["current"]["hoop"], json!("100x100"));
+
+    // A design inside the page: no warning.
+    let mut small = Session::new(&dir);
+    run(&mut small, "machine.set", json!({"hoop": "100x100"}));
+    run(
+        &mut small,
+        "shape.rectangle",
+        json!({"x": 10, "y": 10, "width": 40, "height": 40}),
+    );
+    let r = run(&mut small, "design.export", json!({"path": "small.dst"}));
+    assert_eq!(r["fitsPage"], json!(true), "{r}");
+    assert_eq!(r["warnings"], json!([]), "{r}");
+    assert_eq!(r["smallestHoop"], json!("100x100"), "{r}");
+}
+
+/// The PES v6 header's hoop width and height carry the selected hoop (rotation applied), or
+/// the custom page, in mm.
+#[test]
+fn pes_export_writes_the_selected_hoop() {
+    let dir = fresh_dir("pes-hoop");
+    let mut s = session_with_square();
+    let at = 8 + 4 + 2 + 2;
+    let hoop = |path: &std::path::Path| {
+        let b = std::fs::read(path).expect("read");
+        // Skip the five u8-length metadata strings, then the two u16 flags.
+        let mut i = at;
+        for _ in 0..5 {
+            i += 1 + usize::from(b[i]);
+        }
+        i += 4;
+        (
+            u16::from_le_bytes([b[i], b[i + 1]]),
+            u16::from_le_bytes([b[i + 2], b[i + 3]]),
+        )
+    };
+    for (settings, expected) in [
+        (json!({"hoop": "130x180"}), (130, 180)),
+        (json!({"rotate90": true}), (180, 130)),
+        (
+            json!({"hoop": "custom", "width": 300, "height": 200}),
+            (300, 200),
+        ),
+    ] {
+        run(&mut s, "machine.set", settings);
+        let path = dir.join("hoop.pes");
+        run(
+            &mut s,
+            "design.export",
+            json!({"path": path.display().to_string()}),
+        );
+        assert_eq!(hoop(&path), expected);
+    }
+}
+
+#[test]
+fn user_hoop_tables_import_the_mm_pair() {
+    let dir = fresh_dir("user-hoops");
+    std::fs::write(
+        dir.join("hoops.csv"),
+        "\u{feff}150,240,59,94,\nMy big hoop\n\n120,120,47,47,\n200,200\nSquare\n",
+    )
+    .expect("write");
+    let mut s = Session::new(&dir);
+    let r = run(
+        &mut s,
+        "machine.importUserHoops",
+        json!({"path": "hoops.csv"}),
+    );
+    assert_eq!(r["hoops"].as_array().map(Vec::len), Some(3), "{r}");
+    let hoops = run(&mut s, "machine.hoops", json!({}));
+    let user: Vec<(f64, f64, String)> = hoops["user"]
+        .as_array()
+        .expect("user")
+        .iter()
+        .map(|h| {
+            (
+                h["widthMM"].as_f64().expect("w"),
+                h["heightMM"].as_f64().expect("h"),
+                h["comment"].as_str().unwrap_or_default().to_string(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        user,
+        [
+            (150.0, 240.0, "My big hoop".to_string()),
+            (120.0, 120.0, String::new()),
+            (200.0, 200.0, "Square".to_string()),
+        ]
+    );
+    for (name, body) in [
+        ("words.csv", "big,hoop\n"),
+        ("tiny.csv", "5,5,2,2,\nToo small\n"),
+        ("empty.csv", "\n\n"),
+        ("nan.csv", "NaN,100\n"),
+    ] {
+        std::fs::write(dir.join(name), body).expect("write");
+        assert!(
+            s.execute("machine.importUserHoops", Some(&json!({"path": name})))
+                .is_err(),
+            "{name}"
+        );
+    }
+}

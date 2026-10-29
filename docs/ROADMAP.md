@@ -156,6 +156,9 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    and the `.pas` / `.pmf` pattern sources for an importer, #131);
 6. **PES:** Round 4 added owner-drawn Programmable Stitch Creator sources (`.pas`, `.pmf`,
    `.plf`) for an importer (#131); Font Creator fonts wait for the owner (#134). turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
+6. **PES:** the selected hoop is written to the v6 header in mm and an over-size export
+   warns instead of failing, as PE-DESIGN does (2026-10-29, #125); left: the v6 page and grid
+   fields and the hoop in v1. Turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
    write editable shapes and text; PES v7–v11 and the hoop and Design Page fields (from the
    owner's own files only, as [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 6. **PES:** editable shapes are written (`pesVersion` 11 writes `CEmbLine` objects in PE-DESIGN

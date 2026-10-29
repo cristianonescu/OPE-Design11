@@ -2582,7 +2582,7 @@ fn codec_commands() -> Vec<CommandSpec> {
                 let path = s.resolve(&raw_path, Access::Write, &p.command)?;
                 let split = p.bool("split", Some(false))?;
                 let ty = file_type(p, &path)?;
-                let pes_options = openstitch_formats::pes::WriteOptions::parse(&p.string(
+                let mut pes_options = openstitch_formats::pes::WriteOptions::parse(&p.string(
                     "pesVersion",
                     Some(openstitch_formats::pes::WriteOptions::DEFAULT_NAME),
                 )?)
@@ -2592,6 +2592,7 @@ fn codec_commands() -> Vec<CommandSpec> {
                         format!("use {}", openstitch_formats::pes::WriteOptions::NAMES),
                     )
                 })?;
+                pes_options.hoop_mm = Some(crate::machine::hoop_mm(&s.design));
                 if !ty.can_write() {
                     let names: Vec<_> = FileType::writable().map(|t| t.extension()).collect();
                     return Err(p.invalid(
@@ -2655,11 +2656,16 @@ fn codec_commands() -> Vec<CommandSpec> {
                 }
                 let paths: Vec<String> =
                     files.iter().map(|(t, _)| t.display().to_string()).collect();
+                let check = crate::machine::export_check(&s.design, &pattern);
                 Ok(json!({
                     "path": paths[0],
                     "paths": paths,
                     "stats": stats(&pattern),
                     "sewingArea": crate::machine::sewing_area(&s.design, &pattern),
+                    "fitsPage": check["fitsPage"],
+                    "hoopMM": check["hoopMM"],
+                    "smallestHoop": check["smallestHoop"],
+                    "warnings": check["warnings"],
                 }))
             },
         ),
