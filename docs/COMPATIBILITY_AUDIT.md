@@ -347,8 +347,10 @@ Line references are relative to `crates/`.
   **open:** OpenStitch's arch sews HHHHHHH 79.9 mm wide where PE-DESIGN sews the same object
   79.2 mm (its own text-transform-1: 79.3) round the same 40.8 mm circle, so the spec's width
   check stays at the internal tier until the letters' placement round the circle matches at
-  0.3 mm). Refused for now: right-aligned and vertical text, text on an outline,
-  rotation, letter spacing, kerning, per-character edits, other fonts.
+  0.3 mm), and text fitted to an outline as `CEmbAText` with its Fit Text to Outline settings
+  and the outline it follows (spec `pes-0110-editable-text-fit`, reference pending). Refused for
+  now: right-aligned and vertical text, stretched fit, rotation, letter spacing, kerning,
+  per-character edits, other fonts.
   **PE-DESIGN's check (reference tier, `pes-0110-editable-text`):** it opens the file as
   editable text with every attribute as written and retyping works. Two differences came with
   it: a Hoop Settings tab with no stitch count in the status bar, from the Custom Size page

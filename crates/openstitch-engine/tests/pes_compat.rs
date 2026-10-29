@@ -361,3 +361,36 @@ fn pes_version_11_writes_editable_shapes_and_text_and_refuses_what_it_cannot_hol
     assert!(err.to_string().contains("vertical"), "{err}");
     assert!(!dir.join("d.pes").exists());
 }
+
+#[test]
+fn pes_version_11_writes_text_fitted_to_an_outline() {
+    // compat text-fit-default's design: ABCDE fitted to a 60 mm circle written before it.
+    let dir = temp_dir("v11-fit");
+    let mut s = Session::new(dir.clone());
+    run(
+        &mut s,
+        "design.new",
+        json!({"name": "fit", "width": 100, "height": 100}),
+    );
+    run(
+        &mut s,
+        "shape.ellipse",
+        json!({"cx": 50, "cy": 50, "rx": 30, "outline": "Red"}),
+    );
+    run(
+        &mut s,
+        "text.add",
+        json!({"text": "ABCDE", "font": "lato-bold", "size": 8, "fill": "Red"}),
+    );
+    run(&mut s, "text.setPath", json!({"id": 2, "path": 1}));
+    run(
+        &mut s,
+        "design.export",
+        json!({"path": "a.pes", "pesVersion": "11"}),
+    );
+    let objects =
+        pes::read_objects(&std::fs::read(dir.join("a.pes")).expect("a.pes")).expect("objects");
+    assert_eq!(objects.unparsed, None);
+    let fit = objects.texts[0].fit.expect("CEmbAText");
+    assert_eq!((fit.path, fit.halign, fit.valign), (0, 1, 0));
+}

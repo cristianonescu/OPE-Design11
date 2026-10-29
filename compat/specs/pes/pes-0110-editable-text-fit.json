@@ -1,0 +1,126 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-0110-editable-text-fit",
+  "area": "pes",
+  "title": "PES 0110 writes text fitted to an outline as an editable CEmbAText object",
+  "description": "design.export with pesVersion 11 writes a text fitted to an outline as PE-DESIGN 11's CEmbAText: the CEmbNText letters followed by a tail that holds the Fit Text to Outline settings (horizontal and vertical alignment, orientation, other side) and the archive number of the outline, which is written before it. The design is the compat text-fit-default reference's: a 60 mm circle (Red outline) and ABCDE in Lato Bold, size 8, Fill, fitted to it at the dialog's defaults (centred, above, along). The reference check is PE-DESIGN opening the file with the text still fitted to the circle and editable, and re-saving it.",
+  "covers": {
+    "audit": [
+      5
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES 0110 (PE-DESIGN 11) editable shapes write"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 5"
+    },
+    {
+      "kind": "measured",
+      "note": "docs/FILE_FORMATS.md, CEmbAText: the 14 compat/reference/text/text-fit-* files, one Fit Text to Outline option per file; the writer rewrites them byte-identical outside the documented differences (pes11.rs)"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "fit",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 50,
+        "cy": 50,
+        "rx": 30,
+        "outline": "Red"
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "ABCDE",
+        "font": "lato-bold",
+        "size": 8,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 2,
+        "type": "fill"
+      }
+    },
+    {
+      "command": "text.setPath",
+      "params": {
+        "id": 2,
+        "path": 1
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes",
+      "pesVersion": "11"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "pes/pes-0110-editable-text-fit.pes",
+      "make": "Run `stitchtool compat --only pes-0110-editable-text-fit` and open target/compat/work/pes-0110-editable-text-fit/a.pes in PE-DESIGN 11 (App menu > Open), with Lato Bold installed as for the text references. Expected: a 60 mm circle (red outline) and the text ABCDE (Lato 8, Fill red) fitted to it, centred above it along the outline, as compat/reference/text/text-fit-default.pes. Record in the MANIFEST notes: whether it opens and with what warning, whether the text is still fitted to the circle (moving or reshaping the circle moves the text; Fit Text to Outline settings shown as written), whether the text can be retyped, the status-bar size and stitch count. Then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting in compat/reference/MANIFEST.json. If PE-DESIGN refuses the file or opens it blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": "0110",
+      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature"
+    },
+    {
+      "id": "classes",
+      "measure": {
+        "kind": "pesClasses"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": [
+        "CEmbLine",
+        "CEmbNText"
+      ],
+      "evidence": "text-fit-default.pes: the circle, then the fitted text (the reader reports texts of every class as CEmbNText)"
+    },
+    {
+      "id": "width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN re-sews the circle and the fitted text from the objects",
+      "reference": {
+        "tolerance": {
+          "mm": 1.0
+        }
+      }
+    }
+  ]
+}

@@ -5,14 +5,16 @@
 //! (stitches) knowingly.
 
 use openstitch_core::Thread;
-use openstitch_design::text::{self, TextAlign, TextDirection, TextMetrics, TextSpec};
+use openstitch_design::text::{
+    self, Spread, TextAlign, TextDirection, TextMetrics, TextSpec, VAlign,
+};
 use openstitch_design::{
     Contour, Design, DesignObject, LineSewing, LineType, ObjectKind, Rect, RegionSewing,
     RegionType, RunningStitchPath, Transform,
 };
 use openstitch_formats::pes11::{
-    Envelope, KIND_CURVE_AFTER, KIND_CURVE_BEFORE, Letter, Objects, PAGE_ORIGIN, RegionSewType,
-    Shape, Text, Vertex,
+    Envelope, Fit, KIND_CURVE_AFTER, KIND_CURVE_BEFORE, Letter, Objects, PAGE_ORIGIN,
+    RegionSewType, Shape, Text, Vertex,
 };
 
 /// The `#PES0110` objects of `design`'s visible objects, in design order.
@@ -26,11 +28,18 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
         ..Objects::default()
     };
     let mut groups: Vec<(u64, Vec<u16>)> = Vec::new();
+    // List positions by object id, for the outlines texts are fitted to.
+    let positions: Vec<u64> = design
+        .objects
+        .iter()
+        .filter(|o| o.visible)
+        .map(|o| o.id)
+        .collect();
     for (position, object) in design.objects.iter().filter(|o| o.visible).enumerate() {
         let index = u16::try_from(position).map_err(|_| "too many objects".to_string())?;
         if object.kind == ObjectKind::Text {
             out.texts
-                .push(text_object(object, index, &mut out.threads)?);
+                .push(text_object(object, index, &positions, &mut out.threads)?);
         } else {
             out.shapes.push(shape(object, &mut out.threads)?);
         }
@@ -165,6 +174,7 @@ fn line(id: u64, l: &LineSewing, s: &mut Shape, table: &mut Vec<Thread>) -> Resu
 fn text_object(
     object: &DesignObject,
     position: u16,
+    positions: &[u64],
     table: &mut Vec<Thread>,
 ) -> Result<Text, String> {
     let id = object.id;
@@ -179,16 +189,47 @@ fn text_object(
     if text::font(&spec.font).map(|f| f.id) != Some(text::DEFAULT_FONT) {
         return refuse(&format!("font {:?} (only Lato Bold is written)", spec.font));
     }
-    if spec.path.is_some() {
-        return refuse("text fitted to an outline");
-    }
+    // Fit Text to Outline: the shape it follows must come before the text in the list.
+    let fit = match spec.path {
+        None => None,
+        Some(path) => {
+            let at = positions
+                .iter()
+                .position(|&p| p == path)
+                .filter(|&k| k < usize::from(position))
+                .ok_or_else(|| {
+                    format!(
+                        "object {id}: the outline it is fitted to (object {path}) must be visible and come before the text"
+                    )
+                })?;
+            let halign = match (spec.fit.spread, spec.align) {
+                (Spread::None, TextAlign::Left) => 0,
+                (Spread::None, TextAlign::Center) => 1,
+                (Spread::None, TextAlign::Right) => 2,
+                (Spread::Even, _) => 4,
+                (Spread::Fill, _) => return refuse("text stretched along its outline"),
+            };
+            Some(Fit {
+                path: at as u16,
+                halign,
+                valign: match spec.fit.valign {
+                    VAlign::Bottom => 0,
+                    VAlign::Middle => 1,
+                    VAlign::Top => 2,
+                },
+                upright: spec.fit.upright,
+                other_side: spec.fit.other_side,
+            })
+        }
+    };
     if spec.direction == TextDirection::Vertical {
         return refuse("vertical text");
     }
     if spec.metrics != TextMetrics::Pe {
         return refuse("a text sized by its capital height (an older OpenStitch file)");
     }
-    if spec.letter_spacing != 0.0 || spec.line_spacing != 0.0 || spec.kerning {
+    // Character spacing is mapped on fitted text (text-fit-spacing-m1/p2) only.
+    if (spec.letter_spacing != 0.0 && fit.is_none()) || spec.line_spacing != 0.0 || spec.kerning {
         return refuse("letter spacing, extra line spacing in mm or font kerning");
     }
     if !spec.characters.is_empty() || spec.name_drop.is_some() || object.stitch_block.is_some() {
@@ -221,11 +262,18 @@ fn text_object(
     if letters.is_empty() || breaks.last() == Some(&(letters.len() as u16)) {
         return refuse("an empty text or a trailing line break");
     }
-    let align = match spec.align {
-        TextAlign::Left => 0,
-        TextAlign::Center => 1,
-        TextAlign::Right => return refuse("right-aligned text (no owner file shows its code)"),
+    let align = match (spec.align, &fit) {
+        // A fitted text's alignment is the fit's; its Text Attributes alignment stays left.
+        (_, Some(_)) => 0,
+        (TextAlign::Left, None) => 0,
+        (TextAlign::Center, None) => 1,
+        (TextAlign::Right, None) => {
+            return refuse("right-aligned text (no owner file shows its code)");
+        }
     };
+    if fit.is_some() && !breaks.is_empty() {
+        return refuse("a text of several lines fitted to an outline");
+    }
     if spec.envelope.is_some() && !breaks.is_empty() {
         return refuse("a Text Transform on several lines");
     }
@@ -310,9 +358,15 @@ fn text_object(
         vertical: false,
         transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
         align,
-        // The Text tool's click: the alignment point of the first baseline.
-        origin: (t.tx as f32 + PAGE_ORIGIN, t.ty as f32 + PAGE_ORIGIN),
-        envelope,
+        // The Text tool's click: the alignment point of the first baseline (none when fitted).
+        origin: if fit.is_some() {
+            (0.0, 0.0)
+        } else {
+            (t.tx as f32 + PAGE_ORIGIN, t.ty as f32 + PAGE_ORIGIN)
+        },
+        envelope: if fit.is_some() { None } else { envelope },
+        char_spacing: (spec.letter_spacing * 10.0) as f32,
+        fit,
     })
 }
 

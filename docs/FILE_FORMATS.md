@@ -331,11 +331,28 @@ level on `Agjy 123`.
 | +2 | f32 strength from the level slider. Default level: 30 (presets 1, 2, 13, 14), 50 (3, 4, 7, 8, 11, 12, 17, 18, 21, 22, 25, 26), 20 (5, 6, 15, 16, 19, 20, 23, 24), 10 (9, 10). Preset 3 reads 0 at level 0 and 100 at level 100; preset 1 falls from 41.2 at level 0 to 1.15 at 100 |
 | +6 | 4 × f32. For the arches (presets 1 and 2): the circle's radius, the straight text's centre x, and the circle's centre y, a radius below the baseline for 1 and a radius above the size's top for 2. The radius is the straight text's advance width (its letters' advances, as PE-DESIGN measures its text box, not their ink) over 1.887 on all three texts, and grows with the level (10000 at level 100: flat). For the fans (13, 14): 1000 and zeros in the file made before any arch. For every other preset: the last arch's numbers, carried over from file to file in one session, so not read by PE-DESIGN |
 
+#### `CEmbAText` (Fit Text to Outline)
+
+A text fitted to an outline is a `CEmbAText`: the `CEmbNText` letters and line breaks, then a
+122-byte tail that agrees with the plain text's up to +102 (+0 f32 character spacing in 0.1 mm,
+−10 and 20 in text-fit-spacing-m1 and -p2; +4 line spacing; +8 the Text Attributes alignment,
+left; +78 the transform) and then holds the fit instead of the click point. Evidence: the 14
+compat/reference/text/text-fit-* files, ABCDE (or AHHHH) fitted to a 60 mm circle with one
+Fit Text to Outline option changed per file.
+
+| Tail offset | Content |
+|---|---|
+| +104 | u16 horizontal alignment: 0 left, 1 centre (the default), 2 right, 4 spaced evenly (+0 then holds the computed spacing: 300.4 in text-fit-halign-spaced) |
+| +106 | u16 vertical alignment: 0 above the outline (default), 1 centred, 2 below |
+| +108 | u16 orientation: 0 along the outline, 1 upright |
+| +110 | u16 other side: 1 when ticked |
+| +118 | u16 the outline's MFC archive number (2: the circle, the list's first object; the outline is written before the text), then u16 1 |
+
 Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
 segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
-(kerning, character spacing, rotation, right alignment), the letter's line width and pitch fields,
-the Text Transform levels other than the default (OpenStitch has none), `CEmbAText` (text on an
-outline), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the reader refuses) and
+(kerning, rotation, right alignment; character spacing on plain text), the letter's line width
+and pitch fields, the Text Transform levels other than the default (OpenStitch has none), the
+fit's fifth alignment (stretched), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the reader refuses) and
 the preview images.
 
 #### Writer
@@ -351,15 +368,17 @@ catalogue number, brand and chart), one `CEmbLine` per visible shape with every 
 groups, the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
 as `CEmbNText` (letters at the text's size, Satin or Fill, an optional running, triple or
 zigzag line at PE's defaults, line breaks, the line spacing %, left or centre alignment and the
-click point at the alignment point), and with a Text Transform as `CEmbDText` (the preset's code,
+click point at the alignment point), and fitted to an outline as `CEmbAText` (the fit settings, the
+character spacing and the outline's archive number; the outline must come before the text),
+and with a Text Transform as `CEmbDText` (the preset's code,
 the default level's strength and, for the arches, the circle measured on OpenStitch's straight
 layout; zeros where PE-DESIGN leaves stale numbers). What it cannot hold fails with the object named: stitch patterns, several
 outlines in one object, programmable, motif and the other region types, motif, stem,
 candlewicking, chain and cutting lines; text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character
-edits or under sewing. Checks: the 83 owner files whose list the reader parses completely (37
-with shapes, 19 with plain text, 27 with a Text Transform) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
+edits or under sewing. Checks: the 97 owner files whose list the reader parses completely (37
+with shapes, 19 with plain text, 27 with a Text Transform, 14 with text fitted to an outline) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
 
