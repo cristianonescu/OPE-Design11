@@ -82,8 +82,10 @@ distance), so distinct colours stay distinct on the machine.
 section. Default output (`pes::WriteOptions::default`, `FileType::Pes.write`, and so
 `design.export` without `pesVersion`, Name Drop, USB transfer and Design Database convert) is
 `#PES0060` with one `CEmbOne`/`CSewSeg` stitch group and the RGB thread table, byte-identical to
-pyembroidery's `6`. `pesVersion` = `1t`, `1`, `6t` selects the others; `1t` (`#PES0001`, offset
-0x16, 10 zero bytes, no objects) stays as the smallest, machine-only file. **Unverified:**
+pyembroidery's `6`. `pesVersion` = `1t`, `1`, `6t` selects the others, and `11` writes PE-DESIGN
+11's `#PES0110` with the design's shapes as editable objects ("PES 0110 object list", "Writer"
+below); `1t` (`#PES0001`, offset 0x16, 10 zero bytes, no objects) stays as the smallest,
+machine-only file. **Unverified:**
 whether every Brother machine and PE-DESIGN 11 open these files; needs a black-box open test on
 the owner's machine (docs/COMPATIBILITY_AUDIT.md item 2).
 
@@ -95,9 +97,10 @@ the owner's machine (docs/COMPATIBILITY_AUDIT.md item 2).
 | `1` | ✅ | ❌ | ❌ | ✅ (colours as PEC indexes) | ❌ |
 | `6t` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | `6` (default) | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `11` (PE-DESIGN 11, `#PES0110`) | ✅ | ✅ (thread table in sewing order; no names) | ✅ | ❌ (the shapes are the objects) | ✅ shapes: fill and satin regions; running, zigzag, triple, E and V lines; groups. ❌ text, stitch patterns and the other region and line types: the export fails and names the object. **Unverified** in PE-DESIGN until the owner's copy opens one (spec `pes-0110-editable-shapes`) |
 | 4, 5 (5.5, 5.6), 7–10 | **Blocked** | | | | |
 
-Editor: File ▸ Export ▸ PES offers the four. Engine: `design.export` `pesVersion`.
+Editor: File ▸ Export ▸ PES offers the five. Engine: `design.export` `pesVersion`.
 **Why v4, v5 and v7–v10 are not written:** no public writer exists. pyembroidery's reader only
 gives each version's field *lengths* (v5 has 24 fixed bytes where v6 has 36; v8 has 38; v9/v10
 add a hoop name). It does not say which fields were added or removed, so a v5 header written
@@ -133,10 +136,11 @@ into a design that has none (`adoptProperties` overrides).
 `pes::read_objects` exposes the parsed objects (transform, size, stitch runs, colour log).
 
 PE-DESIGN's editable objects have no public description. Their mapping, from the owner's own
-PE-DESIGN files, is in "PES 0110 object list" below. The reader reads `CEmbLine` shapes and
-stops at the first other class (`ObjectSection::unparsed`). OpenStitch still writes its shapes
-as stitches (a `CEmbOne` stitch group). Unverified: whether PE-DESIGN accepts several `CEmbOne`
-objects in one file, so the writer emits one for the whole design.
+PE-DESIGN files, is in "PES 0110 object list" below. The reader reads `CEmbLine` shapes, the
+groups and the page size and stops at the first other class (`ObjectSection::unparsed`);
+`pes11::write` writes them back (`pesVersion` 11). Versions 1 and 6 still write the shapes as
+stitches (a `CEmbOne` stitch group). Unverified: whether PE-DESIGN accepts several `CEmbOne`
+objects in one file, so those writers emit one for the whole design.
 
 ### PES 0110 object list
 
@@ -159,6 +163,16 @@ below is pinned by a test in `tests/pes11.rs`.
   1, the text object 2, `CTTFLetter` 3 and the letter `A` 4, so `B` starts `03 80`; in r16 the
   second rectangle starts `01 80`. The reader finds the list by the first `FFFF 0000` + class name after the
   header strings; the hoop, page and thread-table fields in between are not all mapped.
+- **Header** (after the five metadata strings; `o-page-200x200`, `o-hoop-*`, `o-machine-single-100x100`
+  against r01): u16 0; u16 1 (0 in the single-needle files); u16 255 (1 single-needle); the hoop
+  width and height in mm (150, 150) and in 0.1 inch (59, 59; 100 mm gives 39); a u8-length
+  hoop/machine string (`nv880e-M` for the 150 × 150 multi-needle hoop, `nv880e-S` for 100 × 100);
+  u16 0; two optional u16 values, each a u16 presence flag then the value when the flag is 1
+  (1800 once in the 200 × 200 page file, 1300 twice in the single-needle 100 × 100 file; meaning
+  unknown); u32 0; the **Design Page width and height in mm**; then u16 7 (0 single-needle), 100, 7,
+  19, 1, 0, 1, 10, 1, 0, 0, 0, 1, 10, a u8-length image file name (empty), u32 0, the identity
+  transform (6 × f32), 16 bytes whose fifth u16 is 4, and the thread count. The two-character code
+  after `01 00` is `10` in the multi-needle files and `01` in the single-needle ones.
 - **Thread table** (right before the object list): u16 count, then per thread the catalogue
   number, RGB and a pad byte, a u32 colour type (10), the PEC chart index as a string ("16" for
   005 SILVER, "5" for 800 RED, matching the PEC colour blocks), the brand ("EMBROIDERY") and the
@@ -188,7 +202,9 @@ below is pinned by a test in `tests/pes11.rs`.
 | 50 | zigzag density, 0.1 line/mm | r01 (4.5) |
 | 52 | running stitch pitch, 0.1 mm; kept while another line type is chosen | r20 (2.0 → 3.0 mm) |
 | 60 | line under sewing 1 on, 0 off | r22 |
-| 134 | region sew type: 0 Satin, 1 Fill, 2 Programmable fill (11 on the inner copy of a hole-sewing pair) | r04, programmable-fill-45, hole-sewing-pentagon-star |
+| 8 (cont.) | the extent of a running or unsewn line equals the bounds; a zigzag adds half its width; the circle's is one unit wider still (589..711) and an open zigzag line's grows only across the line (r11: y ± 10, x unchanged) | r19, r07, r21, r10, r11 |
+| 132 | region sewn 1, Not Sewn 0 (every Round 3 file whose region is Not Sewn has 0; r11's open line keeps 1 with its unused Fill) | o-arc, o-rounded-rect, o-group-two-rects, r11 |
+| 134 | region sew type: 0 Satin, 1 Fill, 2 Programmable fill, 11 Not Sewn (open lines, outlines with the region off, the inner copy of a hole-sewing pair); the Round 3 region types have their own codes (not mapped: `RegionSewType::Other`) | r04, programmable-fill-45, o-group-two-rects, o-arc, hole-sewing-pentagon-star |
 | 136 | region density, 0.1 line/mm | r09 (4.5 → 6.0) |
 | 138 | gradation 0 off, 1 on | region-travel-u-gradation |
 | 162 | a thread-table index for an attribute not identified yet: it points at 800 RED (PE's default colour) in every file, even when nothing sews red | r17, r18, round-1 references |
@@ -197,16 +213,86 @@ below is pinned by a test in `tests/pes11.rs`.
 | 174 | Fill Frequency, % (default 30) | fill-frequency-0/25/50 |
 | 180 | region under sewing 1 on, 0 off | r06 |
 | 186 | Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline | region-travel-u-* |
-| 4432 | geometry: an 84-byte header with three handle marks (f64 and f32 x, y each), a u32 vertex count n, then n vertices | all |
+| 204, 262, 286, 354, 378 | i32 x, y: the bounds' top-left corner, five times (reference points of attributes not identified) | r02, r03, o-closed-curve |
+| 298, 310 | i32 x, y: the bounds' centre (x0 + x1 and y0 + y1 halved, truncated) | r02, r03, o-open-freehand |
+| 386 | the pattern block: u16 10000, u16 53, then 53 polylines, each six zero bytes, u16 1, u16 n and n × (i16 x, i16 y) in a 1024-unit cell; byte-identical in every `CEmbLine` (the default pattern of PE-DESIGN's programmable fill, Brother content) | all |
+| 4360 | u16 1000, 1000, then fields not mapped (u16 1, 0, 20, 0, 650, 0, 650, 0, 20, 20, 0, 1 …) | all |
+| 4372, 4388 | i32 x, y: the bounds' centre again | r02, r03 |
+| 4414, 4426 | u16: the index of the outline's last segment (vertices − 1 closed, vertices − 2 open), followed by f32 1.0 | r10 (3), r11 (0), o-open-freehand (16), o-rounded-rect (6) |
+| 4432 | geometry: an 84-byte header with three marks, a u32 vertex count n, then n vertices | all |
 
-Each vertex is 28 bytes: x, y and two cubic Bézier handles (6 × f32), then a u32 kind (0 corner,
-`0x11` smooth). A rectangle starts in the middle of its bottom edge and runs round the corners;
-an ellipse is four smooth vertices whose handles lie 0.5523 × the radius along the tangent. The
-record ends after its last vertex. After the list come 52 or more bytes not mapped yet.
+The geometry header is `u32 1, u32 segment, f64 t`, `u32 1, u32 segment, f64 t`, `f32 x, y` (mark A),
+`u32 flag, f64 t, u16 1`, `f32 x, y` (mark B), `u32 segment, f64 t`, `f32 x, y` (mark C), `u16 0`.
+For closed shapes the coordinates sit at fixed fractions of the bounds: A a tenth of the width
+left of the left edge at 60 % of the height, B at the centre and 25 % of the height, C a tenth
+of the width right of the right edge at 60 % (r01, r02, r03, r16, o-rounded-rect, o-region-*);
+the curved and open files place A and C on the outline at 60 % instead (o-open-curve) or round
+the first vertex (r11). The segment and `t` fields vary between files of the same shape (r01
+1.0/1.0, r02 0.5/0.75, r08 1.0/0.5, o-region-cross 0.0/0.5): their meaning is not mapped.
 
-Not mapped yet: the fields that differ between E and V, the line's run times, the three handle marks, `CEmbNText`/`CTTFLetter`
-(text, font name, scale), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the
-reader refuses), and the trailer.
+Each vertex is 28 bytes: x, y, the handle of the segment arriving at the vertex, the handle of
+the segment leaving it (6 × f32), then a u32 kind: bit `0x10` the arriving segment is a curve,
+bit `0x01` the leaving one is (0 a corner between straight segments, `0x11` a smooth curve point;
+`0x08` is also set on the freehand tool's cusps). A straight segment's handle is `(0, 0)` (the
+open line r11 repeats the vertex instead, and o-rounded-rect keeps a stale handle after a curve).
+A rectangle starts in the middle of its bottom edge and runs round the corners; an ellipse is
+four smooth vertices whose handles lie 0.5523 × the radius along the tangent. The record ends
+after its last vertex.
+
+After the list: 10 zero bytes; the **group list**, a u16 count then per group its MFC tag
+(`FFFF 0000 0C00 CGroupObject` the first time), a u16 with the `CGroupObject` class's archive
+number (the objects' count + 2: 1 is `CEmbLine`, 2.. the objects, then the class), the u16
+member count and the members' object indexes as u16 (o-group-two-rects, machine-rbr …
+machine-trim-bound); 12 zero bytes; then the **sewing-order list**: u32 1 and, for every object in
+sewing order, (object index, part, 1) triples, part 2 the region, 1 the line and 0 the connection
+from the previous object (every object but the first has one): r01 `(0,2,1) (0,1,1)`, r16 adds
+`(1,0,1) (1,2,1) (1,1,1)`; parts that are not sewn are still listed (r07, machine-trim-fine lists
+the unsewn lines after every region).
+
+After the PEC section, per colour block: the PEC colour list padded to 128 bytes with spaces
+(as v6), a 144-byte 48 × 24 1-bpp icon with the thread's catalogue number and name drawn in it,
+the RGB as u24, then a u16 count of preview images (one per block, 8–15 KB each, not mapped; 0 in
+`o-hoop-100x100-s`, so a file without them is one PE-DESIGN writes itself) and, per block, `0D`
+and the catalogue number as u16 (`0D 05 00` 005 SILVER, `0D 20 03` 800 RED).
+
+Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
+segment and parameter fields, the Round 3 region type codes, `CEmbNText`/`CTTFLetter` (text, font
+name, scale: partly, in the pes-objects notes), `CEmbSpecialShape`, Manual Punch blocks (a
+`CEmbLine` variant the reader refuses) and the preview images.
+
+#### Writer
+
+`pes11::write` (`design.export` `pesVersion` 11; `openstitch_engine::pes11_export` maps the
+design) writes the layout above: the header with the metadata strings and the Design Page size,
+the thread table in sewing order (region thread, then line thread, per object; strings in the
+MFC Unicode form, the PEC chart index of the nearest chart colour, `kind` 10 and the brand and
+chart as the thread has them), one `CEmbLine` per visible shape with every mapped field set, the
+groups, the sewing-order list, the PEC section and the addendum. What it cannot hold fails with
+the object named: text, stitch patterns, several outlines in one object, programmable, motif
+and the other region types, motif, stem, candlewicking, chain and cutting lines. Checks: the
+37 owner files whose list the reader parses completely are rewritten from what it read and read
+back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
+byte-identical to PE-DESIGN's outside these documented differences
+(`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
+
+- **Pattern block** (body 386–4360): OpenStitch writes its own placeholder of the same layout
+  and size (the baseline's 53 point counts, drawn as evenly spaced horizontal lines) instead of
+  copying PE-DESIGN's default pattern, which is Brother content.
+- **Geometry header:** the closed-shape rule for the marks' coordinates and r01's segment and
+  parameter fields (open lines: r11's), so the curved and open owner files differ there.
+- **Extent:** bounds ± half the zigzag width (the circle's 589..711 and the open line's
+  one-axis growth are not reproduced).
+- **+162:** PE-DESIGN points this thread index at 800 RED whatever is sewn; OpenStitch points it
+  at the line colour.
+- **Header:** the hoop fields are the baseline's (150 × 150 mm, `nv880e-M`, multi-needle, code
+  `10`) whatever the design's machine settings; only the page size is the design's.
+- **PEC section:** the stitch stream is byte-identical for a file re-written from its own
+  stitches; the label, two header fields (PE-DESIGN writes 2900 × 1900 at 0x208 where OpenStitch
+  writes the design size, and `0x1F`–`0x2E`), the thumbnails, the icons (blank) and the preview
+  images (none) differ.
+
+Done when PE-DESIGN confirms: whether it opens these files with the shapes editable (compat spec
+`pes-0110-editable-shapes`, owner's check pending). Version 6 stays the default export until then.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
 

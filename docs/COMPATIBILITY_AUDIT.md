@@ -76,7 +76,7 @@ dearest:
 | 2 | Default PES is truncated v1 with no object section (**fixed**, internal regression; open test pending) | PES | 5 | Documented, unverified | Black-box open test |
 | 3 | Trims and jumps inside one fill or satin region; no Running Stitch Path (**fixed**, internal regression) | Stitches | 5 | Documented difference | No |
 | 4 | Trims between underlay, top stitching and outline of one object | Stitches | 4 | Documented, unverified | Single-needle policy |
-| 5 | Every design is written as one stitch group, nothing editable | PES | 5 | Documented, unverified | Yes (shapes, text) |
+| 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes the shapes as `CEmbLine` objects in PE-DESIGN 11's layout; PE-DESIGN open test pending; text pending) | PES | 5 | Documented, unverified | Yes (PE-DESIGN open test; text) |
 | 6 | One sewing direction per text instead of per stroke | Fonts | 5 | Documented difference | Angles |
 | 7 | Auto direction is one fixed angle (**fixed**, internal regression) | Stitches | 4 | Documented difference | No |
 | 8 | Underlay model differs; zigzag lines have no underlay | Stitches | 4 | Documented difference | Geometry |
@@ -319,6 +319,18 @@ Line references are relative to `crates/`.
 
 ## 5. Every design is written as one stitch group; nothing stays editable in PE-DESIGN
 
+- **Status (2026-10-29):** `design.export` with `pesVersion` 11 (editor: File ▸ Export ▸ PES ▸
+  PE-DESIGN 11) writes `#PES0110` with one `CEmbLine` per shape in PE-DESIGN 11.50's own layout:
+  fill and satin regions, running, zigzag, triple, E and V lines, colours, under sewing, density,
+  direction, Frequency, Running Stitch Path, the gradation flag, Bézier outlines, groups, the page
+  size and the sewing-order list (`openstitch-formats/src/pes11.rs`, `openstitch-engine/src/pes11_export.rs`;
+  FILE_FORMATS.md "PES 0110 object list", "Writer"). The 37 owner files the reader parses
+  completely are rewritten from what it read and read back equal, and their object sections are
+  byte-identical to PE-DESIGN's outside the documented differences (the pattern block, the
+  geometry marks' parameters, the hoop fields). Text, stitch patterns, several outlines per
+  object and the other region and line types are refused with the object named; version 6 stays
+  the default. Pending: PE-DESIGN opening such a file with the shape editable (spec
+  `pes-0110-editable-shapes`, reference pending; the owner's check), then text.
 - **Object-class samples (2026-10-28):** `crates/openstitch-formats/tests/fixtures/pe11/o-*.pes`
   (PROVENANCE.md "Round 3") hold one owner-drawn example of every object kind PE-DESIGN writes:
   the Outline, Rectangle/Circle/Arc and Manual Punch tools and every region type are `CEmbLine`,
@@ -515,6 +527,9 @@ Line references are relative to `crates/`.
   - Keep the original object-section bytes plus a hash of the stitch stream. If both are
     unchanged at export, write the bytes back and recompute the PEC offset only. Otherwise
     warn and fall back.
+  - Since 2026-10-29 the `#PES0110` writer (item 5) writes back everything the reader parses
+    (`CEmbLine` shapes, thread table, groups, page), so once the import turns the reader's shapes
+    into design objects (ROADMAP item 6) a PE-DESIGN file of shapes re-saves with its objects.
 
 ## 10. Hoop and Design Page fields are hard-coded in PES
 

@@ -23,6 +23,8 @@ mod order;
 mod ornament;
 pub mod params;
 mod pattern_cmds;
+#[cfg(feature = "formats")]
+pub mod pes11_export;
 pub mod print;
 pub mod project;
 mod punch;

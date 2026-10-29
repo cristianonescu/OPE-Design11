@@ -480,6 +480,8 @@ pub fn pes_classes(s: &ObjectSection) -> Vec<String> {
         .iter()
         .flat_map(|_| ["CEmbOne".to_string(), "CSewSeg".to_string()])
         .collect();
+    v.extend(s.shapes.iter().map(|_| "CEmbLine".to_string()));
+    v.extend(s.groups.iter().map(|_| "CGroupObject".to_string()));
     if let Some(u) = &s.unparsed {
         v.push(u.clone());
     }
