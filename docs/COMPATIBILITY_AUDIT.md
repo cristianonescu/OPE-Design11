@@ -1011,32 +1011,6 @@ Line references are relative to `crates/`.
   0.5 mm on 21 of the 26 presets for "OpenStitch" (specs text-transform-N-openstitch)
   and 18 of 26 for "Agjy 123" (text-transform-N-agjy; the arches 1 and 2 and 18 fail
   there as well, by 0.6-1.3 mm);
-  0.5 mm on 21 of the 26 presets for "OpenStitch" (specs text-transform-N-openstitch);
-  parked (owner's round-4 notes, numbers there): 3 (maxY 0.8 mm low), 9 (minX 1.1 mm), 10
-  (maxX 1.4 mm), 14 (minX 1.7, maxX 2.1 mm: the fan-in fit from HHHHHHH does not hold for
-  descender letters) and 17 (maxY 0.7 mm): the envelopes were fitted on the HHHHHHH box and
-  PE-DESIGN applies them to the cap-height box, so letters below the baseline (p, g, j, y)
-  and round tops land differently. The other-level files wait for a level parameter on
-  `text.add` (none today) and the per-preset fit as a function of the stored value.
-- **Text Transform level (round 4, 2026-10-29):** PE-DESIGN 11.50 has no numeric
-  "Transform level": ticking Transform puts one or two green diamond handles on the canvas
-  and the strength is set by dragging one (the status bar shows nothing). The value is
-  stored in the saved file (a float32 0x7E bytes after the last UTF-16 font name of the
-  `CEmbDText` object, with the arch radius in 0.1 mm as the float32 4 bytes later): a
-  percentage of the font size for the straight-edged presets (default 50; 20 for the bows
-  and waves 5, 6, 15, 16, 19, 20, 23, 24), an angle in degrees for the slants (9, 10:
-  default 10) and the fans (13, 14: default 30, the handle moving horizontally), and for
-  the arches (1, 2) the half-sweep angle (default 30) with the radius that keeps the text
-  length (38.4 mm for "OpenStitch", 30.2 mm for "Agjy 123"); the end-of-arc handle moves
-  horizontally (41.2 deg / 27.9 mm to 1.15 deg / 1000 mm = straight), while the two arrows
-  at the top scale the letters, not the transform. Clicking a preset resets its value to
-  the default. Round 4 recorded every preset on the string "OpenStitch" (round letters,
-  ascenders, descenders) and "Agjy 123" (descenders and digits) at the default level, and
-  at four other handle positions per preset (OpenStitch only; values per file in the owner's
-  notes and the MANIFEST). At the default level OpenStitch's envelopes keep the box within
-  0.5 mm on 21 of the 26 presets for "OpenStitch" (specs text-transform-N-openstitch)
-  and 18 of 26 for "Agjy 123" (text-transform-N-agjy; the arches 1 and 2 and 18 fail
-  there as well, by 0.6-1.3 mm);
   parked (owner's round-4 notes, numbers there): 3 (maxY 0.8 mm low), 9 (minX 1.1 mm), 10
   (maxX 1.4 mm), 14 (minX 1.7, maxX 2.1 mm: the fan-in fit from HHHHHHH does not hold for
   descender letters) and 17 (maxY 0.7 mm): the envelopes were fitted on the HHHHHHH box and
