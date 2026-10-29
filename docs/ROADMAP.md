@@ -90,7 +90,8 @@ harness. The details per item are in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDI
 
 Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDIT.md):
 
-1. **Fill:** PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
+1. **Fill:** Round 4 (2026-10-29) confirmed PE-DESIGN has no random tatami stagger
+   (Frequency and two Stitch Type buttons only) and a 0.1 lines/mm density floor. PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
    Frequency default); the programmable fill density; Stitch Type (turning ends) and Half
    Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
    rows follow PE-DESIGN's cumulative-density placement since 2026-10-28 (#95: every row of
@@ -153,6 +154,11 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
 6. **PES:** turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects
    (round 4 added programmable-fill, motif-fill and motif-line samples with an owner pattern,
    and the `.pas` / `.pmf` pattern sources for an importer, #131);
+6. **PES:** Round 4 added owner-drawn Programmable Stitch Creator sources (`.pas`, `.pmf`,
+   `.plf`) for an importer (#131); Font Creator fonts wait for the owner (#134). turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
+6. **PES:** the selected hoop is written to the v6 header in mm and an over-size export
+   warns instead of failing, as PE-DESIGN does (2026-10-29, #125); left: the v6 page and grid
+   fields and the hoop in v1. Turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
    write editable shapes and text; PES v7–v11 and the hoop and Design Page fields (from the
    owner's own files only, as [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 6. **PES:** editable shapes are written (`pesVersion` 11 writes `CEmbLine` objects in PE-DESIGN
@@ -160,6 +166,13 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    editable (compat `pes-0110-editable-shapes`, the owner's check); turn the `#PES0110` shapes
    the reader parses into editable OpenStitch objects; write text (`CEmbNText`/`CTTFLetter`), the
    other region and line types, hole-sewing pairs and several outlines per object; the hoop
+6. **PES:** editable shapes and Lato Bold text are written (`pesVersion` 11 writes `CEmbLine`
+   and `CEmbNText` objects in PE-DESIGN 11.50's layout, 2026-10-29; issue #120; PE-DESIGN opens
+   the shapes and the text editable, references `pes-0110-editable-shapes`,
+   `pes-0110-editable-text`). Left: PE-DESIGN's confirmation of the Hoop Size page (probe p3);
+   the design's machine type and hoop in the header; BROTHER EMBROIDERY numbers for the chart colours with no owner sample; turn the `#PES0110` shapes and texts the reader
+   parses into editable OpenStitch objects; vertical text, text on an outline
+   (`CEmbAText`) and with Text Transforms (`CEmbDText`); the other region and line types, hole-sewing pairs and several outlines per object; the hoop
    fields; PES v7–v10 (from the owner's own files only, as
    [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
@@ -171,6 +184,16 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    with an "approximate" city-block matcher since 2026-10-29 (#119), checked against the owner's
    twelve-swatch capture; left: Brother catalogue codes for SVG and hex fills, the sew palette
    and user-chart CSV schema (#136), per-machine export limits and hoop codes (#125).
+8. **Formats:** CSD export (no public writer). Thread charts: OpenStitch's own CSV is
+   documented and exported since 2026-10-29 (#136; PE-DESIGN keeps charts as binary `.btc2`,
+   no CSV); left: Brother catalogue codes for the 61 matched chart entries so imported fills
+   snap to them as in PE-DESIGN. PEC moves over 204.7 mm split as PE-DESIGN's
+8. **Formats:** CSD export (no public writer). The CSD and SHV readers match PE-DESIGN's own
+   exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart; left: the
+   `machine-sample-basic` compares (skip PE's zero-length stitches; no trim before a colour
+   change in DST/EXP/HUS/VIP). PEC moves over 204.7 mm split as PE-DESIGN's
+   DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such a move (parked PES of
+   `long-jump-300`).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo
@@ -189,6 +212,12 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
     Photo Stitch 2 only if the captures show the zigzag model is the dominant remaining
     difference (#129). Each is compared with pe-refs-4's captures of PE-DESIGN's output at
     defaults when they land.
+    prepass with documented grid and per-cell defaults since 2026-10-29 (#132). Compared with
+    PE-DESIGN 11.50's round-4 captures on 2026-10-29: Auto Punch fills at 45° and 5 colours
+    (−2.1 % stitches), Cross Stitch's six diagonal stitches per cell (−0.9 %), Photo Stitch 1's
+    Sew Page Color, 3.0 mm Run Pitch and 10 colours (+4 %). Next: PE's colour order and run-to-
+    run travel in Auto Punch and Cross Stitch; PE's meander stitch path and thread mixing in
+    Photo Stitch 1, which is #129's model (Photo Stitch 2 was not captured).
 
 ## Beyond PE-DESIGN
 

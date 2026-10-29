@@ -62,6 +62,13 @@ Design Database converts between `.pes .dst .exp .pcs .hus .vip .shv .jef .sew .
 | 0x210 | … | stitch stream, terminated by `FF` |
 | end | 228 × (n+1) | 1-bit icons: whole design, then one per colour block |
 
+PE-DESIGN 11.50 writes no zero-length stitch to the PEC section: its status bar and its DST
+export count needle points that the PEC section leaves out (a zero-length stitch at each jump
+landing and where a stitch repeats its predecessor; e.g. 475 in the DST of `sample-basic`,
+471 in its PEC, the DST's other 4 all zero-length; 99 of 114 references show 1–9 more in the
+status bar than in their PEC). So reading a PE-DESIGN PES gives fewer needle points than PE
+reports, by design of the file, not of the reader (#135).
+
 Stitch stream: each axis value is either one byte (7-bit two's complement, used when
 −64 < d < 63) or two bytes `1 f f f v v v v  v v v v v v v v` (bit 7 set; bit 5 = trim,
 bit 4 = jump; 12-bit two's complement). Colour change: `FE B0` then `02`/`01` alternating. A move over ±2047 units (204.7 mm) is
@@ -119,7 +126,7 @@ Object section as pyembroidery 1.5.1 reads and writes it (little-endian):
 |---|---|
 | v1 header | u16 scale-to-fit (1), u16 hoop (1), u16 object count |
 | v4+ header | u16 hoop, 2 ASCII digits, then five u8-length strings: name, category, author, keywords, comments. Strings are Windows-1252 with CR LF line breaks, as PE-DESIGN 11 writes them; OpenStitch reads valid UTF-8 (its earlier files, pyembroidery) as UTF-8 |
-| v5–v10 | fixed fields (36 bytes in v6: hoop/page/grid settings, written with pyembroidery's values), u8-length image file name, six f32 (identity transform), u16 counts of programmable fills, motifs, feather patterns, u16 thread count, threads |
+| v5–v10 | fixed fields (36 bytes in v6: hoop/page/grid settings; OpenStitch writes the selected hoop's width and height in mm as the third and fourth u16 (`WriteOptions::hoop_mm`, from `design.export`; 100 × 100 without one) and pyembroidery's values for the rest; PE-DESIGN 11.50's `#PES0110` files store the hoop the same way, u16 mm width and height followed by the hoop name, e.g. 100, 100, "nv880e-S"), u8-length image file name, six f32 (identity transform), u16 counts of programmable fills, motifs, feather patterns, u16 thread count, threads |
 | thread (v5+) | u8-string catalogue no., R G B, u8 0, u32 colour type (`0x0A` custom colour), u8-strings name, brand, chart |
 | objects | u16 object count, `FFFF 0000`, then objects named by u16-length class strings, separated by `FFFF 0000`, ended by `0000 0000` |
 | `CEmbOne` | 16 zero bytes, six f32 transform (a b c d tx ty; pyembroidery places the group at `tx = 1000 − w/2`, `ty = 1000 + h/2`), u16 1, 0, 0, width, height, 8 zero bytes, u16 section count |
@@ -141,8 +148,8 @@ into a design that has none (`adoptProperties` overrides).
 `pes::read_objects` exposes the parsed objects (transform, size, stitch runs, colour log).
 
 PE-DESIGN's editable objects have no public description. Their mapping, from the owner's own
-PE-DESIGN files, is in "PES 0110 object list" below. The reader reads `CEmbLine` shapes, the
-groups and the page size and stops at the first other class (`ObjectSection::unparsed`);
+PE-DESIGN files, is in "PES 0110 object list" below. The reader reads `CEmbLine` shapes,
+`CEmbNText` texts, the groups and the page size and stops at the first other class (`ObjectSection::unparsed`);
 `pes11::write` writes them back (`pesVersion` 11). Versions 1 and 6 still write the shapes as
 stitches (a `CEmbOne` stitch group). Unverified: whether PE-DESIGN accepts several `CEmbOne`
 objects in one file, so those writers emit one for the whole design.
@@ -168,8 +175,10 @@ below is pinned by a test in `tests/pes11.rs`.
   1, the text object 2, `CTTFLetter` 3 and the letter `A` 4, so `B` starts `03 80`; in r16 the
   second rectangle starts `01 80`. The reader finds the list by the first `FFFF 0000` + class name after the
   header strings; the hoop, page and thread-table fields in between are not all mapped.
-- **Header** (after the five metadata strings; `o-page-200x200`, `o-hoop-*`, `o-machine-single-100x100`
-  against r01): u16 0; u16 1 (0 in the single-needle files); u16 255 (1 single-needle); the hoop
+- **Header** (after the five metadata strings; `o-page-200x200`, `o-hoop-*`, `o-machine-single-100x100`,
+  r27 against r01): u16 0; u16 **page mode**: 1 Custom Size page, 0 Hoop Size page (r27,
+  o-hoop-*; PE-DESIGN's default page for a new design); u16 hoop: 255, 15 (100 × 100 mm
+  `nv880e-S` in r27), 1 single-needle; the hoop
   width and height in mm (150, 150) and in 0.1 inch (59, 59; 100 mm gives 39); a u8-length
   hoop/machine string (`nv880e-M` for the 150 × 150 multi-needle hoop, `nv880e-S` for 100 × 100);
   u16 0; two optional u16 values, each a u16 presence flag then the value when the flag is 1
@@ -260,23 +269,69 @@ the RGB as u24, then a u16 count of preview images (one per block, 8–15 KB eac
 `o-hoop-100x100-s`, so a file without them is one PE-DESIGN writes itself) and, per block, `0D`
 and the catalogue number as u16 (`0D 05 00` 005 SILVER, `0D 20 03` 800 RED).
 
+#### `CEmbNText` (text)
+
+Text from the Text tool is a `CEmbNText` with one `CTTFLetter` per character. Evidence: r12 (`A`,
+Lato, size 10, clicked at (10, 20) mm), r13 (size 20 set afterwards, then dragged 10 mm down), r14
+(`AB`), r15 (a rectangle, then the text), r23 (region Fill), r24 (region colour blue), r25 (`B`),
+r26 (clicked 10 mm further right), o-text-10-letters (size 8), o-text-vertical and the compat
+`text-*` references (sizes 20, line spacing 50/100/150 %, a running line, `Hxg`). PE-DESIGN stores
+**no outlines**: it lays the letters out again from the installed font when it opens the file.
+
+| Part | Content | Evidence |
+|---|---|---|
+| text +0 | bounds `x0 y0 x1 y1` (i16): across the letters, from the font's ascent above the first baseline (1.59 × the size for Lato) down to the baseline or the lowest letter | r12, r14, text-defaults-h, text-size-hg |
+| +8 | the same four again (the extent) | all |
+| +16 | transform, 6 × f32: identity, or the moves applied after the text was placed (r13: tx 1.0, ty 100.0 after a 10 mm drag) | r13 |
+| +40 | u16 letter count | r14 (2), o-text-10-letters (10) |
+| then | per letter: the MFC tag (`CTTFLetter` named the first time), u16 character (UTF-16), 148 attribute bytes, the font name (MFC Unicode string, `Lato`), u16 0 | all |
+| letter +2 | f32 the size × 10 when the text was made (100.0 at size 10, 80.0 at 8, 200.0 at 20) | r12, o-text-10-letters, text-defaults-h |
+| letter +6 | f32 scale applied later (2.0 when size 20 was set on r12's text) | r13 |
+| letter +14 | f32 −0.0 in r12–r26, 0.0 in the later files (meaning unknown) | r12, o-text-* |
+| letter +22 | u16 region density, 0.1 line/mm (the Text tool's 5.0) | all |
+| letter +24 | u16 region colour, a thread-table index | r15 (1: the rectangle's line red) |
+| letter +26 | u16 region sew type: 0 Satin, 1 Fill | r23 |
+| letter +60, +62, +64 | u16 line sewn, line sew type (9 not sewn, 1 running), line colour index | text-sewing-order, r15 |
+| letter +144 | u16 700 in r12–r26, 900 in the later files: likely the font weight (the same Lato Bold) | r12, o-text-* |
+| after the letters | u16 count of line breaks, then per break the u16 index of the letter that starts the new line | text-line-spacing-* (`HH`: 1, 1) |
+| tail +4 | f32 line spacing, % | text-line-spacing-50/100/150 |
+| tail +10 | u16 direction: 0 horizontal, 1 vertical | o-text-vertical |
+| tail +78 | transform again, 6 × f32 | r13 |
+| tail +104 | f32 x, y: the click, the left end of the first baseline (file units) | r12 (600, 700), r26 (700, 700), r15 (900, 1000) |
+
+A space is a letter like any other, with the same attributes (r27, `A B`), and is listed in the
+sewing order. The tail is 112 bytes; the fields not listed (Text Attributes such as kerning, character spacing,
+alignment, rotation) are zero or constant in every file. The colour of a text is in the thread
+table: r24 changes only the table. In the sewing-order list a text of n letters lists the
+connections into its letters (parts 0, 2 … 2n − 2, the first object's first skipped), then the
+letters (1, 3 … 2n − 1); a sewn line adds no parts (text-sewing-order).
+
 Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
-segment and parameter fields, the Round 3 region type codes, `CEmbNText`/`CTTFLetter` (text, font
-name, scale: partly, in the pes-objects notes), `CEmbSpecialShape`, Manual Punch blocks (a
-`CEmbLine` variant the reader refuses) and the preview images.
+segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
+(kerning, character spacing, alignment, rotation), the letter's line width and pitch fields, `CEmbDText` (Text Transform), `CEmbAText` (text on an
+outline), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the reader refuses) and
+the preview images.
 
 #### Writer
 
 `pes11::write` (`design.export` `pesVersion` 11; `openstitch_engine::pes11_export` maps the
 design) writes the layout above: the header with the metadata strings and the Design Page size,
 the thread table in sewing order (region thread, then line thread, per object; strings in the
-MFC Unicode form, the PEC chart index of the nearest chart colour, `kind` 10 and the brand and
-chart as the thread has them), one `CEmbLine` per visible shape with every mapped field set, the
-groups, the sewing-order list, the PEC section and the addendum. What it cannot hold fails with
-the object named: text, stitch patterns, several outlines in one object, programmable, motif
-and the other region types, motif, stem, candlewicking, chain and cutting lines. Checks: the
-37 owner files whose list the reader parses completely are rewritten from what it read and read
-back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
+MFC Unicode form, the PEC chart index of the nearest chart colour, `kind` 10; a colour from
+OpenStitch's Brother PEC chart gets the BROTHER EMBROIDERY catalogue number and brand
+`EMBROIDERY` PE-DESIGN writes for it, from the 25 pairs found in the owner's files
+(`pes11::BROTHER_EMBROIDERY`: 1 → 007, 5 → 800, 16 → 005, 20 → 900 …), any other thread its own
+catalogue number, brand and chart), one `CEmbLine` per visible shape with every mapped field set, the
+groups, the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
+as `CEmbNText` (letters at the text's size, Satin or Fill, an optional running, triple or
+zigzag line at PE's defaults, line breaks of left-aligned text, the line spacing %, and the
+click point: the first line's start, measured on OpenStitch's layout for centred and
+right-aligned text). What it cannot hold fails with the object named: stitch patterns, several
+outlines in one object, programmable, motif and the other region types, motif, stem,
+candlewicking, chain and cutting lines; text in another font, with white space other than
+spaces and line breaks, vertical, on an outline, with a Text Transform, rotated or scaled, with letter spacing, kerning, per-character
+edits or under sewing. Checks: the 55 owner files whose list the reader parses completely (37
+with shapes, 18 with text) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
 
@@ -289,15 +344,42 @@ byte-identical to PE-DESIGN's outside these documented differences
   one-axis growth are not reproduced).
 - **+162:** PE-DESIGN points this thread index at 800 RED whatever is sewn; OpenStitch points it
   at the line colour.
-- **Header:** the hoop fields are the baseline's (150 × 150 mm, `nv880e-M`, multi-needle, code
-  `10`) whatever the design's machine settings; only the page size is the design's.
+- **Header:** a design on a 100 × 100 mm page is written on PE-DESIGN's default page, a Hoop
+  Size page (r27's fields: page mode 0, hoop 15, 100 × 100 mm `nv880e-S`, and a u16 of 5 where
+  custom pages have 10); any other page as a Custom Size page with r01's hoop fields (150 × 150
+  mm, `nv880e-M`, multi-needle) and the page size. PE-DESIGN shows a Custom Size page with a
+  Hoop Settings tab, 290 × 190 mm section outlines and no stitch count in the status bar until
+  something is selected; its own Hoop Size page file (r27) shows none of them. The machine type
+  and hoop of the design's machine settings are not mapped yet.
+- **Text:** the letter field at +14 (OpenStitch writes r12's −0.0) and the last sewing-order
+  field of the line-spacing files (PE-DESIGN leaves it unset, `08 CE 53 00`; OpenStitch writes
+  1). A text written from the letter defaults gives r12's object section byte for byte
+  (`a_text_built_from_defaults_writes_r12s_object_section`). From a design, the text box's x
+  extent comes from OpenStitch's layout (r14's `AB`: 59.9–78.7 mm against PE-DESIGN's 79.3) and
+  the thread table lists only the colours sewn (PE-DESIGN's also lists the Text tool's unused
+  line colour, 900).
 - **PEC section:** the stitch stream is byte-identical for a file re-written from its own
-  stitches; the label, two header fields (PE-DESIGN writes 2900 × 1900 at 0x208 where OpenStitch
-  writes the design size, and `0x1F`–`0x2E`), the thumbnails, the icons (blank) and the preview
-  images (none) differ.
+  stitches. The PEC header fields follow the page mode, as in all of PE-DESIGN's own `#PES0110`
+  files: 0x1F `FF`; a Custom Size page 0x24–0x2F `20 FF 00 00 64 00 00 00 00 FF 20 20` and
+  2900 × 1900 at 0x208 (663 files), a Hoop Size page `20 20 20 20 64 20 00 20 00 FF 20 20` and
+  the design's size at 0x208 (46 files; `the_pec_header_carries_pe_designs_fields`). The label,
+  the thumbnails, the icons (blank) and the preview images (none) still differ.
 
-Done when PE-DESIGN confirms: whether it opens these files with the shapes editable (compat spec
-`pes-0110-editable-shapes`, owner's check pending). Version 6 stays the default export until then.
+**PE-DESIGN's check (2026-10-29, compat `pes-0110-editable-shapes`, reference tier):** PE-DESIGN
+11.50 opens the written rectangle with no warning and the shape editable (handles, Shapes tab,
+Sewing Attributes; the region type can be changed), shows the attributes the file holds, and
+re-saves the object section unchanged except the pattern block, where it writes its own default
+pattern over OpenStitch's placeholder. Before the catalogue mapping above, PE-DESIGN showed
+OpenStitch's chart colours as `16 / Brother` with no thread chart. **The text file (2026-10-29,
+`pes-0110-editable-text`, reference tier):** PE-DESIGN opens it with no warning as editable text
+(Lato 10, Satin red, line not sewn, every Text Attribute at its default, the baseline at the
+written click point) and retyping works; its re-save keeps the object section but for the text
+box's right edge, which it takes from its own layout (787 → 793). It showed a Hoop Settings tab and no
+stitch count in the status bar: the file was on a Custom Size page (with PE-DESIGN's own PEC
+stitches too, probe p2), so a 100 × 100 mm design is now written on PE-DESIGN's default Hoop Size
+page (probe p3 asks PE-DESIGN to confirm). A plain click on a stroke selects the text, as for
+PE-DESIGN's own text (a click inside the A's counter selects neither). Version 6 stays the default export until the
+coordinator decides otherwise.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
 
@@ -548,6 +630,13 @@ Records, y down: `dx dy` signed bytes (a jump while in jump mode); `80 01 dx(i16
 moves and enters jump mode (3 words); `80 02` leaves jump mode; `80 03` is skipped (1 word).
 A colour block ends after its word count: the colour change is implicit. No trim record.
 
+Where the records start: PE-DESIGN 11.50's own SHV (`tests/fixtures/pe11/sample-basic.shv`)
+starts them at the end of the colour table, followed by exactly the counted words.
+pyembroidery's reader starts 2 bytes before the end, which on PE's file adds a stitch at the
+origin and, one word short at the end, an extra colour change (#135). OpenStitch starts at
+the table's end unless fewer words follow than the counts add up to (pyembroidery's layout,
+as in `oracle.shv`), and then 2 bytes earlier (`shv_reads_pe_design_export_like_its_dst`).
+
 Evidence: `oracle.shv` is assembled by `tools/genfixtures.py` from that layout (trims as
 `80 03`); pyembroidery's read is the oracle (`shv_reads_oracle_file_like_reference`). Neither
 pyembroidery nor libembroidery (`writeShv` is a stub) writes SHV, and nothing public explains
@@ -592,14 +681,21 @@ bytes. Byte at offset `o` decodes as `(b ^ xor[k % 501]) − sub[k % 479]`:
   byte 0 at `k mod 0x300 = 0x200` and low bytes 0–1 at 0x100.
 
 Decoded: 16 × RGB, 2 unknown bytes, 14 colour-order bytes (palette index per colour block),
-then 3-byte records `flags dy dx` (0.1 mm): bit 0x20 / 0x40 negate x / y; low five bits 0 =
-stitch, any of 0x0C = colour stop, others = trim with a move; `F8`, `87`, `91` end.
+then 3-byte records `flags dy dx` (0.1 mm, magnitudes 0–255): bit 0x20 / 0x40 negate x / y;
+low five bits 0 = stitch, any of 0x0C = colour stop (its bytes do not move the needle), others
+= trim with a move; `F8`, `87`, `91` end. The mask index `k` is the byte's own file offset
+(libembroidery takes the stream position after the read, minus one); OpenStitch read
+`o − 1` until 2026-10-29, which turned PE-DESIGN's CSD into noise (#135).
 
 Source: libembroidery `src/formats/singer.c` (zlib; the same code was published under MIT in
-Embroidermodder in 2013). pyembroidery has no CSD module. Evidence is spec-derived only:
-synthetic files built by the inverse transform in `csd::tests` decode as intended for both
-mask types. **Unverified** (no reference files): y up, the colour-order mapping (libembroidery
-indexes it off by one), a leading stop selecting the first colour, and the trim move. Wilcom
+Embroidermodder in 2013). pyembroidery has no CSD module. **Verified for type 0** against
+PE-DESIGN 11.50's own CSD export (`tests/fixtures/pe11/sample-basic.csd`,
+`csd_reads_pe_design_export_like_its_dst`): every needle point equals PE's DST of the same
+design, y is up, a leading stop selects the first colour, the colour order is 0, 1, … into the
+palette (no off-by-one), the palette holds PE's RGB (800 RED is E3 31 1F, as in its XXX and
+VIP), and a trim's move ends at the next block's first needle point. Type 1 (other
+identifiers) is checked only by synthetic files built by the inverse transform in
+`csd::tests`. Wilcom
 documentation mentions "Type I" and "Type II" CSD (Type II with RGB and an icon); which one
 this is, is unknown. CSD export: no public writer, the unknown bytes are undocumented, so
 OpenStitch does not write CSD (Documented, needs reference files).
@@ -881,6 +977,41 @@ OpenStitch's own embroidery font format, written by `fonts.save` and read by `fo
   threads per stitch glyph.
 - `.osd` files carry the same font objects under `design.fonts`, next to TrueType fonts, which
   are stored as `{"trueType": {"face": 0, "bytes": "<base64>"}}`.
+
+## Thread chart CSV (OpenStitch)
+
+OpenStitch's own format for user thread charts (`threads.importCsv`, `threads.exportCsv`;
+editor: Edit ▸ User Thread Charts… ▸ Import CSV… / Export CSV…). PE-DESIGN 11.50 has no
+thread-chart CSV: its user charts are binary `.btc2` files in its program folder (`MyChart\`),
+made and imported only through Options ▸ Edit User Thread Chart, so charts cannot be exchanged
+with PE-DESIGN through files (round-4 check, issue #136). The `.btc2` format is not decoded.
+
+- UTF-8; a leading BOM is ignored. Lines end in CR LF when written; LF is read too.
+- Lines starting with `#` are comments. The writer puts `# OpenStitch thread chart: <name>` first.
+- An optional column row `code,brand,description,R,G,B` (any case) is skipped; the writer
+  always writes it.
+- One colour per line, six fields in this order:
+
+| Field | Content |
+|---|---|
+| `code` | catalogue number, digits only, may be empty |
+| `brand` | text, may be empty; at most 100 characters kept |
+| `description` | colour name, may be empty; at most 100 characters kept |
+| `R`, `G`, `B` | 0–255 |
+
+- A field in double quotes may hold commas; `""` in it is one quote (RFC 4180). The writer
+  quotes a field only when it holds a comma, a quote or leading or trailing spaces. A record
+  stays on one line: control characters are dropped. Spaces around fields are ignored.
+- At most 2,000 colours per chart and 100 charts; files over 4 MiB are refused.
+
+Earlier OpenStitch versions read the same six columns without quoting or a column row, so
+their files still import. The built-in charts (`threads.builtinCharts`: `brother` = the
+64-entry PEC chart, entries 1–61 marked `basic` as the ones PE-DESIGN matches to;
+`janomeJef`, `janomeSew`, `husqvarnaHus`, `husqvarnaShv`) export in the same schema
+(`threads.exportCsv {builtin}`), so any of them can be copied into a user chart and edited.
+Not adopted from #136, for want of any PE-DESIGN reference: the `#userchart` header with a
+chart code, the `id,R,G,B,attr,code,description` column order, the 6-character code and the
+1,499-colour cap, and the 94-entry "sew palette".
 
 ## OpenStitch template (`.ostemplate`)
 

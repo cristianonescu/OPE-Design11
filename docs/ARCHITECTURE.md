@@ -276,7 +276,7 @@ Verified Compatible).
   reparameterisation rounds; a curve wherever the points are not straight and it fits within
   the tolerance, at least one pixel). A region is satin across its principal axis when it is a
   stroke: its width at its deepest point (twice the chamfer distance to the outside) is at most
-  `satinMaxWidth`; a region keeping area beyond that is fill along the axis (#127's
+  `satinMaxWidth`; a region keeping area beyond that is fill at PE-DESIGN's 45° (#127's
   centerline-thinness test). Colours sew largest area first.
 - **Cross Stitch.** The image's colours are reduced through the same census prepass; each
   cell of a square grid (`round(width / cell) × round(height / cell)`, cells 1–10 mm, default
@@ -300,9 +300,16 @@ Verified Compatible).
 - **Cross Stitch.** The image's colours are reduced first; each cell of a square grid
   (1–10 mm) takes the thread most of its pixels have (transparent cells stay empty). Each colour is one stitch object; each run of cells in a row is sewn "/"
   going right and "\" coming back, stepping along the shared cell sides.
+  2.5 mm, 5 colours) takes the thread most of its modal pixels have (ties to the lower thread;
+  cells mostly transparent stay empty). Each colour is one stitch object; each run of cells in
+  a row is sewn as PE-DESIGN sews a cell, six stitches on its diagonals: going right, top-left
+  → centre → bottom-left, then "/" whole to the top-right; coming back, top-right → centre →
+  bottom-right, then "\" whole to the top-left (Triple sews each whole diagonal three times).
 - **Photo Stitch.** *Fill* (after Photo Stitch 1): a grid of row spacing × stitch length is
   error-diffused onto the threads plus the fabric colour; fabric cells stay unsewn, so tone
-  becomes coverage; rows are staggered by thirds. *Lines* (after Photo Stitch 2): zigzag rows
+  becomes coverage, unless Sew Page Color (on by default, as in PE-DESIGN) makes the fabric
+  colour a thread of its own that sews first; defaults Run Pitch 3.0 mm, 0.25 mm rows, 10
+  colours; rows are staggered by thirds. *Lines* (after Photo Stitch 2): zigzag rows
   whose swing follows darkness (mono) or the local share of each thread (colour); light areas
   break the line. Lighter threads sew first. Mono works on integer Rec. 601 luminance
   `(30 R + 59 G + 11 B) / 100` and stretches contrast first over the full range, darkest grey to

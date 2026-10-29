@@ -941,6 +941,15 @@ impl EditorApp {
         }
         if let Some(r) = self.execute(&CommandRequest::new("design.export", params)) {
             let files = r["paths"].as_array().map_or(1, Vec::len);
+            // A design outside the Design Page is written, as PE-DESIGN does; say so.
+            if let Some(w) = r["warnings"]
+                .as_array()
+                .and_then(|w| w.first())
+                .and_then(|w| w.as_str())
+            {
+                self.status = format!("Exported {}. {w}", path.display());
+                return;
+            }
             self.status = if files > 1 {
                 format!(
                     "Exported {} files ({}-1 …) — the design exceeds one {} file",

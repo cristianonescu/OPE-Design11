@@ -76,7 +76,7 @@ dearest:
 | 2 | Default PES is truncated v1 with no object section (**fixed**, internal regression; open test pending) | PES | 5 | Documented, unverified | Black-box open test |
 | 3 | Trims and jumps inside one fill or satin region; no Running Stitch Path (**fixed**, internal regression) | Stitches | 5 | Documented difference | No |
 | 4 | Trims between underlay, top stitching and outline of one object | Stitches | 4 | Documented, unverified | Single-needle policy |
-| 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes the shapes as `CEmbLine` objects in PE-DESIGN 11's layout; PE-DESIGN open test pending; text pending) | PES | 5 | Documented, unverified | Yes (PE-DESIGN open test; text) |
+| 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes shapes as `CEmbLine`, which PE-DESIGN 11.50 opens editable, and Lato Bold text as `CEmbNText`, which it opens editable and retypable (both reference)) | PES | 5 | Reference | Yes (the Hoop Size page check; Text Transform and text on an outline) |
 | 6 | One sewing direction per text instead of per stroke | Fonts | 5 | Documented difference | Angles |
 | 7 | Auto direction is one fixed angle (**fixed**, internal regression) | Stitches | 4 | Documented difference | No |
 | 8 | Underlay model differs; zigzag lines have no underlay | Stitches | 4 | Documented difference | Geometry |
@@ -329,8 +329,26 @@ Line references are relative to `crates/`.
   byte-identical to PE-DESIGN's outside the documented differences (the pattern block, the
   geometry marks' parameters, the hoop fields). Text, stitch patterns, several outlines per
   object and the other region and line types are refused with the object named; version 6 stays
-  the default. Pending: PE-DESIGN opening such a file with the shape editable (spec
-  `pes-0110-editable-shapes`, reference pending; the owner's check), then text.
+  the default. **PE-DESIGN's check (2026-10-29, reference tier):** PE-DESIGN 11.50 opens the
+  written rectangle with no warning and the shape editable, and re-saves the object section
+  unchanged except its own pattern block (spec `pes-0110-editable-shapes`, MANIFEST entry). It
+  showed the region direction 0°: the file's value, because OpenStitch's default fill direction
+  is 0° where PE-DESIGN's tools start at 45° (r01). The thread records now carry PE-DESIGN's
+  BROTHER EMBROIDERY numbers for OpenStitch's chart colours (it showed `16 / Brother` before).
+- **Text (2026-10-29):** Lato Bold text is written as `CEmbNText` with one `CTTFLetter` per
+  character: size, Satin or Fill with density and colour, a running, triple or zigzag line,
+  line breaks and spacing, and the click point PE-DESIGN stores (the first line's start).
+  PE-DESIGN keeps no outlines for text and lays it out again from the font. The 18 owner text
+  files are rewritten byte-identical outside two PE-side quirks (FILE_FORMATS "Writer").
+  Spaces are letters (r27). Refused for now: vertical text, text on an outline, Text
+  Transforms, rotation, letter spacing, kerning, per-character edits, other fonts.
+  **PE-DESIGN's check (reference tier, `pes-0110-editable-text`):** it opens the file as
+  editable text with every attribute as written and retyping works. Two differences came with
+  it: a Hoop Settings tab with no stitch count in the status bar, from the Custom Size page
+  the file was on (a 100 × 100 mm design is now written on PE-DESIGN's default Hoop Size page,
+  with the PEC header form PE-DESIGN writes for it; confirmation pending, probe p3), and a
+  plain click that seemed not to select the text: it does, on a stroke, as PE-DESIGN's own
+  text.
 - **Object-class samples (2026-10-28):** `crates/openstitch-formats/tests/fixtures/pe11/o-*.pes`
   (PROVENANCE.md "Round 3") hold one owner-drawn example of every object kind PE-DESIGN writes:
   the Outline, Rectangle/Circle/Arc and Manual Punch tools and every region type are `CEmbLine`,
@@ -532,6 +550,22 @@ Line references are relative to `crates/`.
     into design objects (ROADMAP item 6) a PE-DESIGN file of shapes re-saves with its objects.
 
 ## 10. Hoop and Design Page fields are hard-coded in PES
+
+- **Partly fixed (2026-10-29, #125):** `design.export` writes the selected hoop's width and
+  height (rotation applied; the custom page when no hoop is chosen) in mm as the v6 header's
+  hoop fields, where pyembroidery's constant 100 × 100 stood. PE-DESIGN 11.50 stores the hoop
+  the same way in its own `#PES0110` files (u16 100, u16 100, then the hoop name "nv880e-S"
+  for a 100 × 100 mm page, in all 163 owner-drawn reference files). The page, grid and flag
+  fields keep pyembroidery's values, and v1 still writes its fixed hoop. Over-size designs
+  (round-4 capture `hoop-oversize-100.dst`): PE-DESIGN neither rejects a 129 × 105 mm design
+  on a 100 × 100 mm page nor promotes it to a larger hoop; Save As warns and saves on Yes,
+  Export writes silently. OpenStitch writes it and returns a warning, `fitsPage: false` and
+  the smallest Brother hoop it fits (`smallestHoop`); the editor shows the warning. Not
+  implemented from #125, against the reference: per-machine colour-change and data-size caps
+  that reject an export, and automatic hoop promotion. Also against the issue: the two ASCII
+  characters after the header's u16 are "10" in PE's own 0110 files and "01" in files it
+  re-saved from OpenStitch exports, all on 100 × 100 mm pages, so they are not the
+  "01"/"02"/"10" size code the issue describes; OpenStitch keeps pyembroidery's "02".
 
 - **Impact:** severity 4. Every v6 file claims a 100×100 hoop and a fixed page, whatever hoop
   the user chose. Every v1 file claims 130×180. Imported files never set the hoop.
@@ -1097,6 +1131,35 @@ Line references are relative to `crates/`.
   numbers and how it tiles a programmable fill from such a pattern (owner-made Programmable
   Stitch Creator files and the fills sewn from them are requested from the reference round).
   Brother's bundled patterns are never read.
+  what changes is the palette's weighting.
+  Compared with PE-DESIGN 11.50 on 2026-10-29 (round-4 captures from the owner's
+  four-shape image `owner-shapes.bmp`, 240 × 240 px placed at 84.7 mm: a red disc, a green
+  triangle, a yellow rectangle and a blue square on white, every wizard at its defaults):
+  - **Auto Punch** (`autopunch-default.pes`; Max. Number of Colors 5, white omitted): PE
+    makes 4 fill regions (none satin; OpenStitch agrees) of 4482 stitches, each starting with
+    the 1 mm edge run, at 45° except the triangle at 90°. OpenStitch had 4241 (−5.4 %) at 0°
+    (the principal axis); with fill at 45° and 5 colours it has 4387 (−2.1 %): red 1481 / 1485,
+    blue 1279 / 1329, yellow 851 / 881, green 776 / 787 (PE's at 90°). Open: PE's colour order
+    (yellow, blue, red, green, the same in its Cross Stitch; not area, position or chart order)
+    and the triangle's 90°, which one image cannot pin down.
+  - **Cross Stitch** (`crossstitch-default.pes`; Cross size 2.5 mm, 5 colours, Times Single):
+    2866 stitches. PE's grid matches OpenStitch's (cells red 161 / 162, blue 143 / 143, green
+    75 / 74; yellow 94 / 88 at the rectangle's partial edge cells). PE sews six stitches per
+    cell, all on the diagonals: each diagonal once whole and once in halves through the cell
+    centre (median stitch 1.77 mm). OpenStitch sewed four diagonals and two cell-side steps
+    (1907 stitches, −33 %); it now sews PE's six (2841, −0.9 %). Open: PE travels from run to
+    run along the diagonals with one jump per colour, where OpenStitch jumps between row runs.
+  - **Photo Stitch 1** (`photostitch1-default-plus-cross.pes`, items 5–14; Max. Number of
+    Colors 10, Run Pitch 3.0 mm, Sew Page Color ticked): 12 255 stitches in 10 threads, the
+    page colour (White) first over the white areas (7212), every tone band sewn at 160–210
+    needle points per cm². PE's path is not row-based: contour-following meanders of ~3.2 mm
+    runs, 1–5 jumps per colour. OpenStitch had 5235 stitches with the white bare (14 per cm²,
+    stray dither tints) and 2 mm stitches; with Sew Page Color on by default, 3.0 mm stitches,
+    10 colours and 0.25 mm rows it has 12 767 (+4 %): white 157 / 162, yellow 185 / 170, green
+    245 / 211, red 176 / 175, blue 211 / 176 needle points per cm² (OpenStitch / PE). Open:
+    the path (OpenStitch trims at every run end, about 1100 times here) and PE's thread choice
+    (it mixes two or three threads per colour area); both are the stitch-path model of #129,
+    which the patent note in docs/research/beyond/patents.md bears on.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.
@@ -1185,6 +1248,32 @@ Line references are relative to `crates/`.
   needs the codes for all 61 entries (13 known from this and earlier captures) and goes with
   the palette work (#136). The machine-format references (`machine-formats`, red and black)
   pick the same entries under both metrics.
+- **Thread-chart CSV and the built-in palette (2026-10-29, #136):** PE-DESIGN 11.50 has no
+  thread-chart CSV (round-4 check: Options ▸ Edit User Thread Chart only imports; user charts
+  are binary `.btc2` files, 89 bytes of high-entropy data for one colour, in the program
+  folder), so the issue's `#userchart` schema, 6-character code and 1,499-colour cap have no
+  PE-DESIGN counterpart. OpenStitch documents its own CSV (FILE_FORMATS.md "Thread chart
+  CSV": the six columns it already imported, plus a column row and RFC 4180 quoting) and adds
+  `threads.exportCsv` for user and built-in charts and `threads.builtinCharts`, which marks
+  Brother entries 1–61 as the ones PE matches to (#119). Charts cannot be exchanged with
+  PE-DESIGN through files; `.btc2` is not decoded (obfuscated, kept in the program folder).
+  The 94-entry sew palette of the issue is not implemented: no PE-DESIGN capture shows it.
+- **Readers against PE-DESIGN's ten-format export (2026-10-29, #135):** pe-refs-4's
+  `sample-basic` (a satin S and a fill, exported to every type) found four reader problems.
+  (1) PES "drops PE's tie-in records" (471 needle points against PE's 475): not a reader
+  bug. PE-DESIGN's PEC section has no zero-length stitch at all; its DST has the same 471
+  points plus 4 zero-length ones (2 jump landings, 2 repeats), and its status bar counts 1–9
+  more than the PEC in 99 of 114 references. The points are not in the file. (2) CSD read as
+  2 stitches and 51 colour changes: the mask index was the byte offset minus one; with the
+  offset itself PE's CSD equals its DST needle for needle, with PE's colours and colour order
+  (fixture `sample-basic.csd`, reference-checked). (3) SHV read an extra colour change at the
+  end: pyembroidery starts the records 2 bytes before the colour table's end, PE-DESIGN at the
+  end; the reader now follows the word counts (fixture `sample-basic.shv`). (4) Importing PE's
+  DST merged its two colour blocks: a DST has no colours, so the stitch block got none and the
+  blocks were merged as one colour; each block now gets its own Brother chart colour on import.
+  Left for the parked `machine-sample-basic` spec: the writers' compare must skip PE's
+  zero-length stitches, and OpenStitch's DST/EXP/HUS/VIP write a trim where PE writes only the
+  colour change.
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 - **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,
@@ -1261,6 +1350,35 @@ Line references are relative to `crates/`.
     (pes-objects-owner-patterns, reference tier; the files are also `pe11` fixtures). With
     round 3's satin, fill, running, text and applique files every editable kind has a
     sample.
+- **Round-4 batch 4 (2026-10-29, PE-DESIGN 11.50 black-box):**
+  - *Tatami stagger (#123):* PE-DESIGN has no random stagger. Its only stagger controls are
+    Frequency (0-50 %, default 30) and the two Stitch Type buttons; on a 40 mm square at the
+    defaults they give 2068 and 2054 stitches (tatami-40-stitch-type-1/-2, reference tier).
+  - *Density floor (#139):* the Density field accepts 0.1 lines/mm; 0.05 and 0 become 0.1,
+    0.15 rounds to 0.2, 20 becomes 14.0. The floor is 0.1 lines/mm with one decimal.
+  - *Satin length sweep (#122):* twelve 3 mm wide satin columns 0.5-15 mm long at 4.5, 1.0
+    and 0.2 lines/mm. 4.5 and 1.0 pass at the reference tier (satin-length-sweep-d4p5/-d1p0);
+    0.2 is parked (OpenStitch 145 stitches against PE-DESIGN's 184). PE-DESIGN's needle points
+    per column are in the MANIFEST entries for the satin track.
+  - *Optimize Sewing Order (#137):* on six scattered squares in three colours it changed
+    nothing (identical stitch streams before and after); PE-DESIGN groups same-colour
+    objects into one block in first-occurrence order (sew-order-six-objects).
+  - *Concentric and spiral fills (#138):* the Region sew pane offers no Direction field for
+    Concentric Circle or Spiral Stitch, only Density (default 2.0 lines/mm), Run pitch (2.0 mm)
+    and a two-button Start Point choice (the winding).
+  - *Pattern sources (#130, #131):* Programmable Stitch Creator writes one type per mode:
+    `.pas` (Fill/Stamp, Default Size 7.5 mm), `.pmf` (Motif, 5.0 mm), `.plf` (Decorative Fill,
+    100.0 mm, `@SYSENV 10000 10000 1`). A closed square is written with its closing point; two
+    separate lines are two `@TILELINE` records with nothing marking the jump. Six minimal
+    sources and four designs that use them read and write back (pes-objects-psc-patterns).
+  - *Thread charts (#136):* a user chart is stored as `MyChart\<name>.btc2` in PE-DESIGN's
+    program folder, 89 bytes of high-entropy binary for one colour: no CSV.
+  - *Image wizards (#127, #128, #132):* Auto Punch, Cross Stitch and Photo Stitch 1 at their
+    defaults on an owner-made image are fixtures in
+    `crates/openstitch-digitize/tests/fixtures/pe11-wizards` with every default recorded.
+  - *Not recorded:* Font Creator and Stitch Design Factory output (#134, `.pef`, `.pmv`); the
+    owner declined screen-control access to both programs.
+
 ## Order of work
 
 1. **Fix without a reference:** items 1, 3, 7, 14, 15 (ranges), 16 and 17, plus the

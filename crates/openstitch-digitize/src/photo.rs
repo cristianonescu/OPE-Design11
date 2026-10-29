@@ -40,8 +40,12 @@ pub enum PhotoMode {
 pub struct PhotoStitch {
     pub style: PhotoStyle,
     pub mode: PhotoMode,
-    /// Fabric colour: what unsewn areas show.
+    /// Fabric (page) colour: what unsewn areas show.
     pub fabric: Rgb,
+    /// Fill style: sew the page colour too (PE-DESIGN 11.50's "Sew Page Color", ticked by
+    /// default), as a thread of its own that sews first, so every opaque cell is sewn and the
+    /// image's light areas get the page thread instead of bare fabric. Lines ignore it.
+    pub sew_page: bool,
     /// Distance between rows, mm.
     pub row_spacing_mm: f64,
     /// Fill stitch length or zigzag pitch, mm.
@@ -51,18 +55,29 @@ pub struct PhotoStitch {
 impl PhotoStitch {
     pub fn new(style: PhotoStyle, mode: PhotoMode) -> Self {
         let (row_spacing_mm, stitch_mm) = match style {
-            PhotoStyle::Fill => (0.4, 2.0),
+            // Run Pitch 3.0 mm is PE-DESIGN 11.50's default; 0.25 mm rows give its density
+            // (160-210 needle points per cm² in the tone bands of the round-4 capture
+            // `photostitch1-default-plus-cross.pes`; 12 767 needle points against its 12 255).
+            PhotoStyle::Fill => (FILL_ROW_SPACING_MM, RUN_PITCH_MM),
             PhotoStyle::Lines => (1.2, 0.8),
         };
         PhotoStitch {
             style,
             mode,
             fabric: [255, 255, 255],
+            sew_page: style == PhotoStyle::Fill,
             row_spacing_mm,
             stitch_mm,
         }
     }
 }
+
+/// Photo Stitch 1's default Run Pitch, mm (PE-DESIGN 11.50).
+pub const RUN_PITCH_MM: f64 = 3.0;
+/// Default fill row spacing, mm: with [`RUN_PITCH_MM`] it gives PE-DESIGN's needle density.
+pub const FILL_ROW_SPACING_MM: f64 = 0.25;
+/// Photo Stitch 1's default Max. Number of Colors (PE-DESIGN 11.50).
+pub const COLORS: usize = 10;
 
 /// Most grid samples one conversion may use.
 pub const MAX_SAMPLES: usize = 400_000;
@@ -144,6 +159,12 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
         threads.iter().map(rgb_f).collect()
     };
     targets.push(fabric);
+    // Sew Page Color: the fabric target becomes a thread of its own (the nearest chart thread),
+    // so the cells dithered to it are sewn too.
+    let mut threads = threads;
+    if p.sew_page && p.style == PhotoStyle::Fill {
+        threads.push(palette::nearest_pec(p.fabric).1);
+    }
     let dithered = palette::dither(&cells, cols, rows, &targets);
     // Light threads first, so darker detail sews on top.
     let mut order: Vec<usize> = (0..threads.len()).collect();

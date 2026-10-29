@@ -4,6 +4,7 @@
 
 use crate::commands::{CommandSpec, Effect, ParamDoc};
 use crate::params::{CommandError, CommandResult, Params};
+use crate::sandbox::Access;
 use crate::session::EngineState;
 use openstitch_core::StitchPattern;
 use openstitch_design::machine::{self, user_hoop_key};
@@ -17,6 +18,8 @@ const MM: f64 = 10.0;
 const MIN_SIZE: f64 = 10.0;
 const MAX_SIZE: f64 = 2000.0;
 const MAX_USER_HOOPS: usize = 100;
+/// Largest user-hoop table read, bytes.
+const MAX_HOOP_TABLE: u64 = 1 << 20;
 
 fn spec(
     id: &'static str,
@@ -124,6 +127,38 @@ pub fn commands() -> Vec<CommandSpec> {
                 let key = user_hoop_key(hoop.id);
                 m.user_hoops.push(hoop);
                 Ok(json!({ "hoop": key }))
+            },
+        ),
+        spec(
+            "machine.importUserHoops",
+            "Add the user hoops of a table file: per hoop a line width_mm,height_mm,width_in10,height_in10, then a name line (the mm pair is used)",
+            Effect::Edit,
+            vec![crate::commands::PATH],
+            |s, p| {
+                let path = s.resolve(&p.string("path", None)?, Access::Read, &p.command)?;
+                let meta = std::fs::metadata(&path).map_err(|e| p.failed(e.to_string()))?;
+                if meta.len() > MAX_HOOP_TABLE {
+                    return Err(p.failed("the file is too large"));
+                }
+                let bytes = std::fs::read(&path).map_err(|e| p.failed(e.to_string()))?;
+                let hoops =
+                    parse_user_hoops(&String::from_utf8_lossy(&bytes)).map_err(|e| p.failed(e))?;
+                let m = &mut s.design.machine;
+                if m.user_hoops.len() + hoops.len() > MAX_USER_HOOPS {
+                    return Err(p.failed(format!("at most {MAX_USER_HOOPS} user hoops")));
+                }
+                let mut keys = Vec::with_capacity(hoops.len());
+                for (width, height, comment) in hoops {
+                    let id = m.next_user_hoop_id();
+                    m.user_hoops.push(UserHoop {
+                        id,
+                        width,
+                        height,
+                        comment,
+                    });
+                    keys.push(user_hoop_key(id));
+                }
+                Ok(json!({ "hoops": keys }))
             },
         ),
         spec(
@@ -332,6 +367,118 @@ pub fn estimates(d: &Design, pattern: &StitchPattern) -> Value {
 
 /// The sewing area as exported: the whole Design Page or the stitches' extent, with the point
 /// the needle starts from (mm, page coordinates).
+/// Parses a user-hoop table (issue #125): for each hoop a line
+/// `width_mm,height_mm,width_in10,height_in10,` (the inch tenths and a trailing comma are
+/// optional and ignored: the mm pair is authoritative) followed by a name line. A name line may
+/// be missing before the next size line or at the end. Blank lines are skipped. Returns
+/// (width mm, height mm, name) per hoop.
+pub(crate) fn parse_user_hoops(text: &str) -> Result<Vec<(f64, f64, String)>, String> {
+    let lines: Vec<(usize, &str)> = text
+        .lines()
+        .enumerate()
+        .map(|(i, l)| (i + 1, l.trim_start_matches('\u{feff}').trim()))
+        .filter(|(_, l)| !l.is_empty())
+        .collect();
+    let size = |l: &str| -> Option<Vec<f64>> {
+        let fields: Vec<&str> = l.split(',').map(str::trim).collect();
+        let fields = match fields.split_last() {
+            Some((&"", rest)) => rest,
+            _ => &fields[..],
+        };
+        if !(2..=4).contains(&fields.len()) {
+            return None;
+        }
+        fields
+            .iter()
+            .map(|f| f.parse::<f64>().ok().filter(|v| v.is_finite()))
+            .collect()
+    };
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < lines.len() {
+        let (n, line) = lines[i];
+        let v = size(line).ok_or_else(|| {
+            format!("line {n}: expected width_mm,height_mm,width_in10,height_in10")
+        })?;
+        let (width, height) = (v[0], v[1]);
+        for (name, mm) in [("width", width), ("height", height)] {
+            if !(MIN_SIZE..=MAX_SIZE).contains(&mm) {
+                return Err(format!(
+                    "line {n}: {name} {mm} mm is outside {MIN_SIZE}–{MAX_SIZE} mm"
+                ));
+            }
+        }
+        i += 1;
+        let mut comment = String::new();
+        if let Some(&(_, next)) = lines.get(i)
+            && size(next).is_none()
+        {
+            comment = next.chars().take(100).collect();
+            i += 1;
+        }
+        out.push((width, height, comment));
+    }
+    if out.is_empty() {
+        return Err("no hoops in the file".into());
+    }
+    Ok(out)
+}
+
+/// What an export reports about the design's size (issue #125). PE-DESIGN 11.50 neither
+/// rejects nor promotes a design larger than its Design Page: Save As warns that the data
+/// cannot be sent to the machine and saves on Yes, Export writes it silently
+/// (`compat/reference/machine/hoop-oversize-100.dst`, a 129 × 105 mm design on a 100 × 100 mm
+/// page). OpenStitch also writes it, and says so: `warnings` gets one line when the stitches
+/// lie outside the Design Page, `smallestHoop` names the smallest single-position Brother hoop
+/// the design fits (either orientation), `hoopMM` is the size written to the PES header.
+pub fn export_check(d: &Design, pattern: &StitchPattern) -> Value {
+    let b = pattern.bounds();
+    let (pw, ph) = (d.page.width, d.page.height);
+    // Half a unit: coordinates are rounded to 0.1 mm when written.
+    let tol = 0.5;
+    let fits_page =
+        b.min_x >= -tol && b.min_y >= -tol && b.max_x <= pw + tol && b.max_y <= ph + tol;
+    let (dw, dh) = (b.width() / MM, b.height() / MM);
+    let smallest = BROTHER_HOOPS
+        .iter()
+        .filter(|h| !h.multi_position)
+        .filter(|h| (dw <= h.width && dh <= h.height) || (dw <= h.height && dh <= h.width))
+        .min_by(|a, b| (a.width * a.height).total_cmp(&(b.width * b.height)));
+    let mut warnings = Vec::new();
+    if !fits_page {
+        let hint = smallest.map_or_else(
+            || " It is larger than every single-position Brother hoop.".to_string(),
+            |h| format!(" The smallest Brother hoop it fits is {}.", h.label),
+        );
+        warnings.push(format!(
+            "The design ({dw:.1} × {dh:.1} mm) does not lie within the {:.1} × {:.1} mm Design \
+             Page, so a machine with this hoop may refuse it. It was written anyway, as \
+             PE-DESIGN 11 writes it.{hint}",
+            pw / MM,
+            ph / MM
+        ));
+    }
+    let (hw, hh) = hoop_mm(d);
+    json!({
+        "fitsPage": fits_page,
+        "designMM": [dw, dh],
+        "hoopMM": [hw, hh],
+        "smallestHoop": smallest.map(|h| h.id),
+        "warnings": warnings,
+    })
+}
+
+/// Hoop size written to the PES header, mm: the selected hoop (rotation applied), else the
+/// custom Design Page.
+pub fn hoop_mm(d: &Design) -> (u16, u16) {
+    let (w, h) = d
+        .machine
+        .hoop_size()
+        .unwrap_or((d.page.width / MM, d.page.height / MM));
+    let mm = |v: f64| v.round().clamp(1.0, f64::from(u16::MAX)) as u16;
+    (mm(w), mm(h))
+}
+
 pub fn sewing_area(d: &Design, pattern: &StitchPattern) -> Value {
     let (w, h, c) = match d.machine.sewing_area {
         SewingArea::DesignPage => (d.page.width, d.page.height, d.page.center()),

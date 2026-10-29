@@ -65,10 +65,14 @@ pub struct ObjectSection {
     pub objects: Vec<EmbOne>,
     /// PE-DESIGN 11 (`#PES0110`) editable shapes (`CEmbLine`), in file order.
     pub shapes: Vec<crate::pes11::Shape>,
-    /// PE-DESIGN 11 groups: the member indexes of each `CGroupObject`.
+    /// PE-DESIGN 11 texts (`CEmbNText`), each with its position in the object list.
+    pub texts: Vec<crate::pes11::Text>,
+    /// PE-DESIGN 11 groups: the member positions of each `CGroupObject`.
     pub groups: Vec<Vec<u16>>,
     /// PE-DESIGN 11 Design Page size in mm, when the header had the mapped layout.
     pub page_mm: Option<(u16, u16)>,
+    /// PE-DESIGN 11 Hoop Size page (header page mode 0) rather than a Custom Size page.
+    pub hoop_page: bool,
     /// The first object class that was not parsed, if any.
     pub unparsed: Option<String>,
 }
@@ -299,8 +303,10 @@ pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
             let objects = crate::pes11::read_objects(data, r.offset, pec_offset)?;
             section.threads = objects.threads;
             section.shapes = objects.shapes;
+            section.texts = objects.texts;
             section.groups = objects.groups;
             section.page_mm = objects.page_mm;
+            section.hoop_page = objects.hoop_page;
             section.unparsed = objects.unparsed;
             return Ok(section);
         }
@@ -462,6 +468,11 @@ pub struct WriteOptions {
     pub version: Version,
     /// No objects: just the header and the PEC section.
     pub truncated: bool,
+    /// Hoop width × height in mm for the v6 header's hoop fields; `None` writes 100 × 100
+    /// (pyembroidery's constant). PE-DESIGN 11.50 stores the Design Page's hoop there as two
+    /// u16 mm values followed by the hoop name (owner's `#PES0110` files: 100, 100, "nv880e-S"
+    /// for a 100 × 100 mm page; issue #125).
+    pub hoop_mm: Option<(u16, u16)>,
 }
 
 impl Default for WriteOptions {
@@ -472,6 +483,7 @@ impl Default for WriteOptions {
         Self {
             version: Version::V6,
             truncated: false,
+            hoop_mm: None,
         }
     }
 }
@@ -490,6 +502,7 @@ impl WriteOptions {
             return Some(Self {
                 version: Version::V11,
                 truncated: false,
+                hoop_mm: None,
             });
         }
         let (v, truncated) = match s.strip_suffix('t') {
@@ -501,7 +514,11 @@ impl WriteOptions {
             "6" => Version::V6,
             _ => return None,
         };
-        Some(Self { version, truncated })
+        Some(Self {
+            version,
+            truncated,
+            hoop_mm: None,
+        })
     }
 }
 
@@ -537,7 +554,7 @@ pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u
             w.u16le(1); // scale to fit
             w.u16le(1); // hoop
         }
-        Version::V6 | Version::V11 => write_header_v6(&mut w, &pattern)?,
+        Version::V6 | Version::V11 => write_header_v6(&mut w, &pattern, options.hoop_mm)?,
     }
     if options.truncated {
         w.u16le(0);
@@ -594,14 +611,21 @@ fn write_string16(w: &mut ByteWriter, s: &str) {
     w.ascii(s);
 }
 
-fn write_header_v6(w: &mut ByteWriter, pattern: &StitchPattern) -> Result<()> {
+fn write_header_v6(
+    w: &mut ByteWriter,
+    pattern: &StitchPattern,
+    hoop_mm: Option<(u16, u16)>,
+) -> Result<()> {
     w.u16le(1); // hoop
     w.ascii("02");
     for key in METADATA_KEYS {
         write_string8(w, pattern.metadata.get(key).map(String::as_str));
     }
+    let (hoop_w, hoop_h) = hoop_mm.map_or((0x64, 0x64), |(w, h)| (i64::from(w), i64::from(h)));
+    // Optimize hoop change, custom page, hoop width and height (mm), then pyembroidery's
+    // page, grid and display constants.
     for v in [
-        0, 0, 0x64, 0x64, 0, 0xC8, 0xC8, 0x64, 0x64, 0x64, 0x07, 0x13, 1, 1, 0, 100, 1, 0,
+        0, 0, hoop_w, hoop_h, 0, 0xC8, 0xC8, 0x64, 0x64, 0x64, 0x07, 0x13, 1, 1, 0, 100, 1, 0,
     ] {
         w.u16le(v);
     }

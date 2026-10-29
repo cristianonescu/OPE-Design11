@@ -103,7 +103,7 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt(
                     "colors",
                     "int 1-64",
-                    "Thread colours to reduce to (default 8)",
+                    "Thread colours to reduce to (default 5, PE-DESIGN's Max. Number of Colors)",
                 ),
                 opt(
                     "resolution",
@@ -144,7 +144,7 @@ pub fn commands() -> Vec<CommandSpec> {
             |s, p| {
                 let (image, frame) = load(s, p)?;
                 let options = AutoPunch {
-                    colors: count(p, "colors", 8, 1, 64)?,
+                    colors: count(p, "colors", AutoPunch::default().colors as i64, 1, 64)?,
                     resolution: count(p, "resolution", 400, 64, 2048)? as u32,
                     min_area_mm2: p.opt("minArea", 1.0, 0.0, 1000.0)?,
                     smooth: count(p, "smooth", 0, 0, 5)? as u32,
@@ -168,7 +168,11 @@ pub fn commands() -> Vec<CommandSpec> {
             Effect::Edit,
             placement_docs(vec![
                 opt("cellSize", "mm", "Grid cell side, 1-10 (default 2.5)"),
-                opt("colors", "int 1-64", "Thread colours (default 8)"),
+                opt(
+                    "colors",
+                    "int 1-64",
+                    "Thread colours (default 5, PE-DESIGN's Max. Number of Colors)",
+                ),
                 opt(
                     "type",
                     "full|half",
@@ -226,7 +230,7 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt(
                     "colors",
                     "int 1-32",
-                    "Thread colours in colour mode (default 8)",
+                    "Thread colours in colour mode (default 10, PE-DESIGN's Max. Number of Colors)",
                 ),
                 opt("thread", "color", "Thread in mono mode (default Black)"),
                 opt(
@@ -235,14 +239,19 @@ pub fn commands() -> Vec<CommandSpec> {
                     "Fabric colour shown where nothing is sewn (default #ffffff)",
                 ),
                 opt(
+                    "sewPage",
+                    "bool",
+                    "Style fill: sew the fabric colour as a thread too (PE-DESIGN's Sew Page Color; default true)",
+                ),
+                opt(
                     "rowSpacing",
                     "mm",
-                    "Distance between rows, 0.2-5 (default 0.4 fill, 1.2 lines)",
+                    "Distance between rows, 0.2-5 (default 0.25 fill, 1.2 lines)",
                 ),
                 opt(
                     "stitchLength",
                     "mm",
-                    "Fill stitch length or zigzag pitch, 0.3-7 (default 2 fill, 0.8 lines)",
+                    "Fill stitch length (Run Pitch) or zigzag pitch, 0.3-7 (default 3 fill, 0.8 lines)",
                 ),
             ]),
             |s, p| {
@@ -253,12 +262,13 @@ pub fn commands() -> Vec<CommandSpec> {
                 };
                 let mode = match choice(p, "mode", "color", &["color", "mono"])? {
                     "mono" => PhotoMode::Mono(thread(p, "thread")?.unwrap_or(Thread::rgb(0))),
-                    _ => PhotoMode::Color(count(p, "colors", 8, 1, 32)?),
+                    _ => PhotoMode::Color(count(p, "colors", photo::COLORS as i64, 1, 32)?),
                 };
                 let mut options = PhotoStitch::new(style, mode);
                 if let Some(f) = thread(p, "fabric")? {
                     options.fabric = [f.red, f.green, f.blue];
                 }
+                options.sew_page = p.bool("sewPage", Some(options.sew_page))?;
                 options.row_spacing_mm = p.opt("rowSpacing", options.row_spacing_mm, 0.2, 5.0)?;
                 options.stitch_mm = p.opt("stitchLength", options.stitch_mm, 0.3, 7.0)?;
                 let out = photo::convert(&image, &frame, &options).map_err(|e| failed(p, e))?;

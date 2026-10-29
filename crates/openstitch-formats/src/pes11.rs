@@ -6,9 +6,10 @@
 //! already named class starts with `0x8000 | n`, where n is the class's entry in the archive's
 //! map. MFC numbers classes and objects in one sequence from 1 (each new class takes the next
 //! number, then each object), so after a text and its letters a class's number is not its
-//! order of appearance. Only `CEmbLine` (shapes and lines drawn with the shape and line tools) is
-//! read. Reading stops at the first other class, or at a `CEmbLine` whose geometry doesn't fit
-//! its bounds (a variant not mapped yet, such as a Manual Punch block), and records the class in
+//! order of appearance. `CEmbLine` (shapes and lines drawn with the shape and line tools) and
+//! `CEmbNText` with its `CTTFLetter`s (text from the Text tool) are read. Reading stops at the
+//! first other class, or at a `CEmbLine` whose geometry doesn't fit its bounds (a variant not
+//! mapped yet, such as a Manual Punch block), and records the class in
 //! [`super::ObjectSection::unparsed`].
 //!
 //! [`write`] is the inverse: a `#PES0110` file whose object list holds the same `CEmbLine`
@@ -26,6 +27,10 @@ mod template;
 
 const EMB_LINE: &str = "CEmbLine";
 const GROUP_OBJECT: &str = "CGroupObject";
+const EMB_TEXT: &str = "CEmbNText";
+const TTF_LETTER: &str = "CTTFLetter";
+/// Bytes of a `CTTFLetter` between its character code and its font name.
+const LETTER_ATTRS: usize = 148;
 /// Bytes of a `CEmbLine` body before its geometry, in every reference file mapped so far.
 const LINE_BODY: usize = 4432;
 /// Geometry header before the vertex count (three handle marks).
@@ -99,10 +104,17 @@ pub struct Vertex {
 pub struct Objects {
     /// The Design Page size in mm (header), when the header had the mapped layout.
     pub page_mm: Option<(u16, u16)>,
+    /// The page is a Hoop Size page (header page mode 0), not a Custom Size page (1). PE-DESIGN
+    /// shows a Custom Size page with a Hoop Settings tab and section outlines; a new design in
+    /// PE-DESIGN starts on a Hoop Size page.
+    pub hoop_page: bool,
     /// The thread table, in its file order (the shapes' colour indexes point into it).
     pub threads: Vec<Thread>,
     pub shapes: Vec<Shape>,
-    /// Groups (`CGroupObject` after the list): each the indexes of its member objects.
+    /// Texts (`CEmbNText`), each at its [`Text::position`] in the object list; the shapes fill
+    /// the other positions in order.
+    pub texts: Vec<Text>,
+    /// Groups (`CGroupObject` after the list): each the positions of its member objects.
     pub groups: Vec<Vec<u16>>,
     /// The first object class that was not read, if any.
     pub unparsed: Option<String>,
@@ -194,6 +206,81 @@ impl Shape {
     }
 }
 
+/// A `CEmbNText`: text from the Text tool. PE-DESIGN stores no outlines, only the characters,
+/// the font and the attributes: it lays the text out again from the font when it opens the file.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Text {
+    /// Index of the text in the object list (shapes and texts share it).
+    pub position: u16,
+    /// `x0, y0, x1, y1` of the laid-out letters in file units.
+    pub bounds: [i16; 4],
+    pub letters: Vec<Letter>,
+    /// Indexes of the letters that start a new line (line breaks are not letters).
+    pub breaks: Vec<u16>,
+    /// Line spacing, % of the character height (PE-DESIGN's default 100).
+    pub line_spacing: f32,
+    /// Vertical text (Text Attributes, direction).
+    pub vertical: bool,
+    /// Moves applied after the text was placed: `a b c d tx ty`, as f32 (identity when none).
+    pub transform: [f32; 6],
+    /// Where the Text tool was clicked: the left end of the first baseline, file units.
+    pub origin: (f32, f32),
+}
+
+/// One `CTTFLetter` of a [`Text`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct Letter {
+    /// The character, as a UTF-16 code unit.
+    pub ch: u16,
+    /// Text size when the text was made, mm (PE-DESIGN's size: 0.7 of the em).
+    pub size: f32,
+    /// Scale applied to the size later (Text Attributes size changed on a placed text: r13).
+    pub scale: f32,
+    /// Region density, line/mm.
+    pub density: f32,
+    /// Region colour: an index into [`Objects::threads`].
+    pub region_color: u16,
+    /// Region sew type: Satin (the Text tool's default) or Fill.
+    pub region: RegionSewType,
+    pub line_sewn: bool,
+    /// Line sew type code as in [`Shape::line_type`] (9 while not sewn).
+    pub line_type: u16,
+    /// Line colour: an index into [`Objects::threads`].
+    pub line_color: u16,
+    /// TrueType family name (`Lato`).
+    pub font: String,
+    /// A u16 that is 700 in the owner's first text files and 900 in later ones (the same
+    /// Lato Bold font); likely the font weight. Kept as read.
+    pub weight: u16,
+}
+
+impl Letter {
+    /// A letter in Lato Bold at the Text tool's defaults (r12): size 10 mm, Satin at
+    /// 5.0 line/mm, line not sewn.
+    pub fn with_defaults(ch: u16) -> Self {
+        Letter {
+            ch,
+            size: 10.0,
+            scale: 1.0,
+            density: 5.0,
+            region_color: 0,
+            region: RegionSewType::Satin,
+            line_sewn: false,
+            line_type: Shape::LINE_NOT_SEWN,
+            line_color: 0,
+            font: "Lato".into(),
+            weight: 700,
+        }
+    }
+}
+
+impl Text {
+    /// Number of objects in `objects`' list.
+    fn count(objects: &Objects) -> usize {
+        objects.shapes.len() + objects.texts.len()
+    }
+}
+
 // MARK: Reading
 
 /// Locates the object list after the header strings: the u16 count right before the first
@@ -277,11 +364,14 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
     };
     let threads = read_threads(data, from, at).unwrap_or_default();
     let page_mm = read_page(data, from);
-    let done = |shapes, groups, unparsed| {
+    let hoop_page = data.get(from + 2..from + 4) == Some(&[0, 0][..]);
+    let done = |shapes, texts, groups, unparsed| {
         Ok(Objects {
             page_mm,
+            hoop_page,
             threads: threads.clone(),
             shapes,
+            texts,
             groups,
             unparsed,
         })
@@ -293,20 +383,43 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
     // The archive map: classes by name, objects as `None`, numbered from 1.
     let mut map: Vec<Option<String>> = Vec::new();
     let mut shapes = Vec::new();
-    for _ in 0..count {
+    let mut texts = Vec::new();
+    for position in 0..count {
         let class = match read_tag(&mut r, &mut map)? {
             Ok(class) => class,
-            Err(tag) => return done(shapes, Vec::new(), Some(format!("object tag {tag:#06x}"))),
+            Err(tag) => {
+                return done(
+                    shapes,
+                    texts,
+                    Vec::new(),
+                    Some(format!("object tag {tag:#06x}")),
+                );
+            }
         };
         map.push(None);
+        if class == EMB_TEXT {
+            match read_text(&mut r, &mut map, position as u16)? {
+                Some(text) => texts.push(text),
+                None => {
+                    return done(
+                        shapes,
+                        texts,
+                        Vec::new(),
+                        Some(format!("{EMB_TEXT} (unmapped variant)")),
+                    );
+                }
+            }
+            continue;
+        }
         if class != EMB_LINE {
-            return done(shapes, Vec::new(), Some(class));
+            return done(shapes, texts, Vec::new(), Some(class));
         }
         match read_line(&mut r)? {
             Some(shape) => shapes.push(shape),
             None => {
                 return done(
                     shapes,
+                    texts,
                     Vec::new(),
                     Some(format!("{EMB_LINE} (unmapped variant)")),
                 );
@@ -314,7 +427,7 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
         }
     }
     let groups = read_groups(&mut r, &mut map).unwrap_or_default();
-    done(shapes, groups, None)
+    done(shapes, texts, groups, None)
 }
 
 /// An MFC object tag: `Ok(class name)`, or `Err(tag)` for a tag that refers to no class.
@@ -364,6 +477,79 @@ fn read_groups(r: &mut ByteReader<'_>, map: &mut Vec<Option<String>>) -> Result<
         groups.push(members);
     }
     Ok(groups)
+}
+
+fn f32_at(b: &[u8], i: usize) -> f32 {
+    f32::from_le_bytes([b[i], b[i + 1], b[i + 2], b[i + 3]])
+}
+
+/// One `CEmbNText` at the reader's offset: bounds, extent, transform, the u16 letter count,
+/// the letters (each a `CTTFLetter`: char code, 148 attribute bytes, font name, u16 0), then
+/// the line-break list and the text's own fields. `None` (reader unchanged) when a letter is
+/// not a `CTTFLetter` or a field is out of range.
+fn read_text(
+    r: &mut ByteReader<'_>,
+    map: &mut Vec<Option<String>>,
+    position: u16,
+) -> Result<Option<Text>> {
+    let start = r.offset;
+    let fail = |r: &mut ByteReader<'_>| {
+        r.offset = start;
+        Ok(None)
+    };
+    let head = r.read(42)?;
+    let bounds = [0, 1, 2, 3].map(|k| u16_at(head, 2 * k) as i16);
+    let n = usize::from(u16_at(head, 40));
+    let mut letters = Vec::with_capacity(n);
+    for _ in 0..n {
+        match read_tag(r, map)? {
+            Ok(class) if class == TTF_LETTER => {}
+            _ => return fail(r),
+        }
+        map.push(None);
+        let ch = r.u16le()? as u16;
+        let a = r.read(LETTER_ATTRS)?;
+        let Some(font) = crate::pes::read_string8(r)? else {
+            return fail(r);
+        };
+        r.u16le()?;
+        letters.push(Letter {
+            ch,
+            size: f32_at(a, 2) / 10.0,
+            scale: f32_at(a, 6),
+            density: f32::from(u16_at(a, 22)) / 10.0,
+            region_color: u16_at(a, 24),
+            region: RegionSewType::from_raw(u16_at(a, 26)),
+            line_sewn: u16_at(a, 60) != 0,
+            line_type: u16_at(a, 62),
+            line_color: u16_at(a, 64),
+            font,
+            weight: u16_at(a, 144),
+        });
+    }
+    let breaks_n = r.u16le()? as usize;
+    if breaks_n > n {
+        return fail(r);
+    }
+    let mut breaks = Vec::with_capacity(breaks_n);
+    for _ in 0..breaks_n {
+        breaks.push(r.u16le()? as u16);
+    }
+    let tail = r.read(template::TEXT_TAIL.len())?;
+    let mut transform = [0_f32; 6];
+    for (k, v) in transform.iter_mut().enumerate() {
+        *v = f32_at(tail, 78 + 4 * k);
+    }
+    Ok(Some(Text {
+        position,
+        bounds,
+        letters,
+        breaks,
+        line_spacing: f32_at(tail, 4),
+        vertical: u16_at(tail, 10) != 0,
+        transform,
+        origin: (f32_at(tail, 104), f32_at(tail, 108)),
+    }))
 }
 
 fn u16_at(b: &[u8], i: usize) -> u16 {
@@ -447,11 +633,48 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
             objects.threads.len()
         )));
     }
-    if objects.shapes.is_empty() || objects.shapes.len() > 0x7FFE {
+    let total = Text::count(objects);
+    if total == 0 || total > 0x3FFF {
         return Err(FormatError::ValueOutOfRange(format!(
-            "PES 0110: {} objects (1 to 32766)",
-            objects.shapes.len()
+            "PES 0110: {total} objects (1 to 16383)"
         )));
+    }
+    let mut at_position: Vec<Option<&Text>> = vec![None; total];
+    for t in &objects.texts {
+        let slot = at_position
+            .get_mut(usize::from(t.position))
+            .ok_or_else(|| {
+                FormatError::ValueOutOfRange(format!("PES 0110: text at position {}", t.position))
+            })?;
+        if slot.replace(t).is_some() {
+            return Err(FormatError::ValueOutOfRange(format!(
+                "PES 0110: two texts at position {}",
+                t.position
+            )));
+        }
+        if t.letters.is_empty() || t.letters.len() > 0x3FFF {
+            return Err(FormatError::ValueOutOfRange(format!(
+                "PES 0110: text at position {} has {} letters",
+                t.position,
+                t.letters.len()
+            )));
+        }
+        if t.breaks.iter().any(|&b| usize::from(b) >= t.letters.len()) {
+            return Err(FormatError::ValueOutOfRange(
+                "PES 0110: line break after the last letter".into(),
+            ));
+        }
+        for l in &t.letters {
+            for c in [l.line_color, l.region_color] {
+                if usize::from(c) >= objects.threads.len() {
+                    return Err(FormatError::ValueOutOfRange(format!(
+                        "PES 0110: text at position {} uses thread {c} of {}",
+                        t.position,
+                        objects.threads.len()
+                    )));
+                }
+            }
+        }
     }
     for (i, s) in objects.shapes.iter().enumerate() {
         if s.vertices.len() < 2 {
@@ -470,7 +693,7 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
         }
     }
     for g in &objects.groups {
-        if g.is_empty() || g.iter().any(|&m| usize::from(m) >= objects.shapes.len()) {
+        if g.is_empty() || g.iter().any(|&m| usize::from(m) >= total) {
             return Err(FormatError::ValueOutOfRange(
                 "PES 0110: group member outside the object list".into(),
             ));
@@ -486,32 +709,146 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     for key in crate::pes::METADATA_KEYS {
         crate::pes::write_string8(&mut w, pattern.metadata.get(key).map(String::as_str));
     }
-    write_header(&mut w, objects.page_mm.unwrap_or((100, 100)));
-    write_threads(&mut w, &objects.threads);
-    w.u16le(objects.shapes.len() as i64);
-    // Archive map: CEmbLine is entry 1, the objects 2..; CGroupObject (if any) comes next.
-    for (i, shape) in objects.shapes.iter().enumerate() {
-        if i == 0 {
-            w.u16le(0xFFFF);
-            w.u16le(0);
-            w.u16le(EMB_LINE.len() as i64);
-            w.ascii(EMB_LINE);
-        } else {
-            w.u16le(0x8001);
-        }
-        write_line(&mut w, shape);
+    let page = objects.page_mm.unwrap_or((100, 100));
+    if objects.hoop_page && page != (100, 100) {
+        return Err(FormatError::ValueOutOfRange(format!(
+            "PES 0110: a Hoop Size page of {} x {} mm (only PE-DESIGN's 100 x 100 mm hoop page is mapped)",
+            page.0, page.1
+        )));
     }
-    write_trailer(&mut w, objects);
+    write_header(&mut w, page, objects.hoop_page);
+    write_threads(&mut w, &objects.threads);
+    w.u16le(total as i64);
+    let mut archive = Archive::default();
+    let mut shapes = objects.shapes.iter();
+    for slot in &at_position {
+        match slot {
+            Some(text) => {
+                archive.tag(&mut w, EMB_TEXT);
+                write_text(&mut w, &mut archive, text);
+            }
+            None => {
+                let shape = shapes.next().expect("one shape per free position");
+                archive.tag(&mut w, EMB_LINE);
+                write_line(&mut w, shape);
+            }
+        }
+    }
+    write_trailer(&mut w, &mut archive, objects, &at_position);
     w.patch32le(pec_placeholder, w.len() as i64);
+    let pec_start = w.len();
     let list = pec::write_section(&pattern, &mut w)?;
+    patch_pec_header(&mut w.bytes[pec_start..], objects.hoop_page);
     write_addendum(&mut w, &list, &pattern.threads);
     Ok(w.bytes)
+}
+
+/// The PEC header fields PE-DESIGN 11.50 writes with each page mode (all of its `#PES0110`
+/// files in compat/reference, tests/fixtures/pe11 and the round-4 captures, 2026-10-29): 0x1F
+/// `FF`; on a multi-needle Custom Size page 0x24–0x2F `20 FF 00 00 64 00 00 00 00 FF 20 20` and
+/// 2900 × 1900 at 0x208 (663 files), on a Hoop Size page `20 20 20 20 64 20 00 20 00 FF 20 20`
+/// and the design's size there, as the PEC writer puts it (46 files).
+fn patch_pec_header(pec: &mut [u8], hoop_page: bool) {
+    pec[0x1F] = 0xFF;
+    if hoop_page {
+        pec[0x24..0x30].copy_from_slice(&[
+            0x20, 0x20, 0x20, 0x20, 0x64, 0x20, 0x00, 0x20, 0x00, 0xFF, 0x20, 0x20,
+        ]);
+        return;
+    }
+    pec[0x24..0x30].copy_from_slice(&[
+        0x20, 0xFF, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x20, 0x20,
+    ]);
+    pec[0x208..0x20A].copy_from_slice(&2900_u16.to_le_bytes());
+    pec[0x20A..0x20C].copy_from_slice(&1900_u16.to_le_bytes());
+}
+
+/// MFC `CArchive` numbering while writing: classes and objects share one count from 1.
+#[derive(Default)]
+struct Archive {
+    next: u16,
+    classes: Vec<(&'static str, u16)>,
+}
+
+impl Archive {
+    /// Writes the tag of a new object of `class` (the class name the first time, else
+    /// `0x8000 | n`) and counts the object.
+    fn tag(&mut self, w: &mut ByteWriter, class: &'static str) {
+        match self.classes.iter().find(|(c, _)| *c == class) {
+            Some(&(_, n)) => w.u16le(i64::from(0x8000 | n)),
+            None => {
+                self.next += 1;
+                self.classes.push((class, self.next));
+                w.u16le(0xFFFF);
+                w.u16le(0);
+                w.u16le(class.len() as i64);
+                w.ascii(class);
+            }
+        }
+        self.next += 1;
+    }
+
+    fn number(&self, class: &str) -> u16 {
+        self.classes
+            .iter()
+            .find(|(c, _)| *c == class)
+            .map_or(0, |&(_, n)| n)
+    }
+}
+
+/// One `CEmbNText`: bounds, the same as its extent, the identity transform, the letters, the
+/// line breaks and the text's own fields (r12's, with the line spacing, direction, transform
+/// and origin patched).
+fn write_text(w: &mut ByteWriter, archive: &mut Archive, t: &Text) {
+    for _ in 0..2 {
+        for v in t.bounds {
+            w.u16le(i64::from(v));
+        }
+    }
+    for v in t.transform {
+        w.f32le(f64::from(v));
+    }
+    w.u16le(t.letters.len() as i64);
+    for l in &t.letters {
+        archive.tag(w, TTF_LETTER);
+        w.u16le(i64::from(l.ch));
+        let mut a = template::LETTER_ATTRS;
+        a[2..6].copy_from_slice(&(l.size * 10.0).to_le_bytes());
+        a[6..10].copy_from_slice(&l.scale.to_le_bytes());
+        put16(&mut a, 22, tenths(l.density));
+        put16(&mut a, 24, l.region_color);
+        put16(&mut a, 26, l.region.raw());
+        put16(&mut a, 60, u16::from(l.line_sewn));
+        put16(&mut a, 62, l.line_type);
+        put16(&mut a, 64, l.line_color);
+        put16(&mut a, 144, l.weight);
+        w.append(&a);
+        write_mfc_unicode(w, &l.font);
+        w.u16le(0);
+    }
+    w.u16le(t.breaks.len() as i64);
+    for &b in &t.breaks {
+        w.u16le(i64::from(b));
+    }
+    let mut tail = template::TEXT_TAIL;
+    tail[4..8].copy_from_slice(&t.line_spacing.to_le_bytes());
+    put16(&mut tail, 10, u16::from(t.vertical));
+    for (k, v) in t.transform.iter().enumerate() {
+        tail[78 + 4 * k..82 + 4 * k].copy_from_slice(&v.to_le_bytes());
+    }
+    tail[104..108].copy_from_slice(&t.origin.0.to_le_bytes());
+    tail[108..112].copy_from_slice(&t.origin.1.to_le_bytes());
+    w.append(&tail);
 }
 
 /// The header fields after the metadata strings up to the thread count: the hoop (150 × 150 mm,
 /// `nv880e-M`, multi-needle), the page size in mm, and fields not mapped yet, as the baseline
 /// file has them.
-fn write_header(w: &mut ByteWriter, page_mm: (u16, u16)) {
+fn write_header(w: &mut ByteWriter, page_mm: (u16, u16), hoop_page: bool) {
+    if hoop_page {
+        w.append(&template::HEADER_HOOP_100);
+        return;
+    }
     let mut h = template::HEADER;
     // After 14 hoop bytes and the machine string come a u16, two absent optional fields (u16 0
     // each) and a u32, then the page width and height.
@@ -537,18 +874,75 @@ fn write_mfc_unicode(w: &mut ByteWriter, s: &str) {
     }
 }
 
+/// The BROTHER EMBROIDERY catalogue number of the PEC chart colours PE-DESIGN 11.50 writes in its
+/// thread tables, as `(PEC index, catalogue number)`: every pair found in the owner's own
+/// `#PES0110` files (compat/reference, tests/fixtures/pe11 and the round-4 captures, 2026-10-29;
+/// each with brand `EMBROIDERY`, an empty chart name and exactly the PEC chart's RGB). The other
+/// 39 chart colours have no owner sample yet.
+pub const BROTHER_EMBROIDERY: [(usize, &str); 25] = [
+    (1, "007"),
+    (2, "405"),
+    (3, "534"),
+    (4, "070"),
+    (5, "800"),
+    (12, "208"),
+    (13, "205"),
+    (14, "513"),
+    (16, "005"),
+    (20, "900"),
+    (22, "869"),
+    (24, "058"),
+    (25, "086"),
+    (28, "030"),
+    (29, "001"),
+    (32, "019"),
+    (33, "126"),
+    (37, "509"),
+    (48, "807"),
+    (50, "519"),
+    (51, "107"),
+    (55, "614"),
+    (56, "515"),
+    (58, "206"),
+    (61, "027"),
+];
+
+/// Catalogue number, brand and chart name for `t` in a PE-DESIGN 11 thread table. A colour from
+/// OpenStitch's Brother PEC chart (brand `Brother`, its chart number as the catalogue number,
+/// the chart's exact RGB) is written as PE-DESIGN writes that colour, from its BROTHER EMBROIDERY
+/// chart: PE-DESIGN shows `16 / Brother` with no thread chart otherwise (compat
+/// pes-0110-editable-shapes, the owner's check of 2026-10-29). Any other thread keeps its own
+/// strings.
+fn pe_thread_strings(t: &Thread, index: usize) -> (&str, &str, &str) {
+    let own = (
+        t.catalog_number.as_deref().unwrap_or(""),
+        t.brand.as_deref().unwrap_or(""),
+        t.chart.as_deref().unwrap_or(""),
+    );
+    let from_pec_chart = t.brand.as_deref() == Some("Brother")
+        && t.catalog_number.as_deref() == Some(index.to_string().as_str())
+        && PEC_CHART[index]
+            .as_ref()
+            .is_some_and(|c| c.rgb_value() == t.rgb_value());
+    match BROTHER_EMBROIDERY.iter().find(|&&(i, _)| i == index) {
+        Some(&(_, catalog)) if from_pec_chart => (catalog, "EMBROIDERY", ""),
+        _ => own,
+    }
+}
+
 /// The thread table: catalogue number, RGB and a pad byte, colour type, the PEC chart index of
 /// the nearest chart colour as a string, brand and chart name.
 fn write_threads(w: &mut ByteWriter, threads: &[Thread]) {
     w.u16le(threads.len() as i64);
     for t in threads {
-        write_mfc_unicode(w, t.catalog_number.as_deref().unwrap_or(""));
+        let index = nearest_index(t, &PEC_CHART).unwrap_or(0);
+        let (catalog, brand, chart) = pe_thread_strings(t, index);
+        write_mfc_unicode(w, catalog);
         w.append(&[t.red, t.green, t.blue, 0]);
         w.u32le(i64::from(t.kind.unwrap_or(Thread::CUSTOM_KIND)));
-        let index = nearest_index(t, &PEC_CHART).unwrap_or(0);
         write_mfc_unicode(w, &index.to_string());
-        write_mfc_unicode(w, t.brand.as_deref().unwrap_or(""));
-        write_mfc_unicode(w, t.chart.as_deref().unwrap_or(""));
+        write_mfc_unicode(w, brand);
+        write_mfc_unicode(w, chart);
     }
 }
 
@@ -715,25 +1109,23 @@ fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
 
 /// After the object list: 10 zero bytes, the group list (u16 count; per group its MFC tag,
 /// the `CGroupObject` class's archive number, the u16 member count and the members' object
-/// indexes), 12 zero
-/// bytes, then the sewing-order list: u32 1 and, per object in order, (index, part, 1) triples
-/// for the connection from the previous object (part 0, every object but the first), the
-/// region (2) and the line (1).
-fn write_trailer(w: &mut ByteWriter, objects: &Objects) {
+/// positions), 12 zero bytes, then the sewing-order list: u32 1 and (position, part, 1)
+/// triples. A shape lists the connection from the previous object (part 0, every object but
+/// the first), its region (2) and its line (1); a text of n letters lists the connections into
+/// its letters (parts 0, 2 … 2n − 2; the first object's first skipped), then the letters
+/// (1, 3 … 2n − 1). PE-DESIGN's last third field is sometimes not 1 (the text-line-spacing
+/// files end in `08 CE 53 00`); OpenStitch writes 1.
+fn write_trailer(
+    w: &mut ByteWriter,
+    archive: &mut Archive,
+    objects: &Objects,
+    at_position: &[Option<&Text>],
+) {
     w.fill(0, 10);
     w.u16le(objects.groups.len() as i64);
-    // Archive numbers: 1 CEmbLine, 2.. the objects, then the CGroupObject class and each group.
-    let class_number = objects.shapes.len() as i64 + 2;
-    for (g, members) in objects.groups.iter().enumerate() {
-        if g == 0 {
-            w.u16le(0xFFFF);
-            w.u16le(0);
-            w.u16le(GROUP_OBJECT.len() as i64);
-            w.ascii(GROUP_OBJECT);
-        } else {
-            w.u16le(0x8000 | class_number);
-        }
-        w.u16le(class_number);
+    for members in &objects.groups {
+        archive.tag(w, GROUP_OBJECT);
+        w.u16le(i64::from(archive.number(GROUP_OBJECT)));
         w.u16le(members.len() as i64);
         for &m in members {
             w.u16le(i64::from(m));
@@ -741,10 +1133,22 @@ fn write_trailer(w: &mut ByteWriter, objects: &Objects) {
     }
     w.fill(0, 12);
     w.u32le(1);
-    for i in 0..objects.shapes.len() as i64 {
-        let parts: &[i64] = if i == 0 { &[2, 1] } else { &[0, 2, 1] };
-        for &part in parts {
-            w.u32le(i);
+    for (i, slot) in at_position.iter().enumerate() {
+        let parts: Vec<i64> = match slot {
+            None if i == 0 => vec![2, 1],
+            None => vec![0, 2, 1],
+            Some(t) => {
+                let n = t.letters.len() as i64;
+                let skip = usize::from(i == 0);
+                (0..n)
+                    .map(|k| 2 * k)
+                    .skip(skip)
+                    .chain((0..n).map(|k| 2 * k + 1))
+                    .collect()
+            }
+        };
+        for part in parts {
+            w.u32le(i as i64);
             w.u32le(part);
             w.u32le(1);
         }
@@ -791,9 +1195,27 @@ mod tests {
     }
 
     #[test]
+    fn brother_chart_colours_get_pe_designs_embroidery_numbers() {
+        let silver = PEC_CHART[16].clone().expect("silver");
+        assert_eq!(pe_thread_strings(&silver, 16), ("005", "EMBROIDERY", ""));
+        let red = PEC_CHART[5].clone().expect("red");
+        assert_eq!(pe_thread_strings(&red, 5), ("800", "EMBROIDERY", ""));
+        // A custom colour, and a chart colour with no owner sample, keep their own strings.
+        let mut custom = Thread::rgb(0x12_34_56);
+        custom.catalog_number = Some("42".into());
+        assert_eq!(pe_thread_strings(&custom, 16), ("42", "", ""));
+        let unsampled = PEC_CHART[6].clone().expect("chart colour");
+        assert_eq!(pe_thread_strings(&unsampled, 6), ("6", "Brother", ""));
+        // A chart RGB under another brand is not relabelled.
+        let mut other = silver.clone();
+        other.brand = Some("Madeira".into());
+        assert_eq!(pe_thread_strings(&other, 16), ("16", "Madeira", ""));
+    }
+
+    #[test]
     fn page_size_is_patched_into_the_header() {
         let mut w = ByteWriter::default();
-        write_header(&mut w, (130, 180));
+        write_header(&mut w, (130, 180), false);
         let s = String::from_utf8_lossy(&w.bytes[15..23]).into_owned();
         assert_eq!(s, "nv880e-M");
         assert_eq!(&w.bytes[33..37], &[130, 0, 180, 0]);

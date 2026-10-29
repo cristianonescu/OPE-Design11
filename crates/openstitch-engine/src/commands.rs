@@ -2544,9 +2544,15 @@ fn codec_commands() -> Vec<CommandSpec> {
             ],
             |s, p| {
                 let (path, data) = read_file(s, p, 64 << 20)?;
-                let pattern = file_type(p, &path)?
+                let mut pattern = file_type(p, &path)?
                     .read(&data)
                     .map_err(|e| p.failed(e.to_string()))?;
+                // DST, EXP and other formats without colours: one Brother chart colour per
+                // block, so the blocks stay apart (without threads the blocks shared one colour
+                // and were merged, issue #135).
+                if pattern.threads.len() < pattern.color_block_count() {
+                    pattern.fix_thread_count(None);
+                }
                 let found = openstitch_design::DesignProperties::from_metadata(&pattern.metadata);
                 let adopt = p.bool("adoptProperties", Some(s.design.properties.is_empty()))?
                     && !found.is_empty();
@@ -2582,7 +2588,7 @@ fn codec_commands() -> Vec<CommandSpec> {
                 let path = s.resolve(&raw_path, Access::Write, &p.command)?;
                 let split = p.bool("split", Some(false))?;
                 let ty = file_type(p, &path)?;
-                let pes_options = openstitch_formats::pes::WriteOptions::parse(&p.string(
+                let mut pes_options = openstitch_formats::pes::WriteOptions::parse(&p.string(
                     "pesVersion",
                     Some(openstitch_formats::pes::WriteOptions::DEFAULT_NAME),
                 )?)
@@ -2592,6 +2598,7 @@ fn codec_commands() -> Vec<CommandSpec> {
                         format!("use {}", openstitch_formats::pes::WriteOptions::NAMES),
                     )
                 })?;
+                pes_options.hoop_mm = Some(crate::machine::hoop_mm(&s.design));
                 if !ty.can_write() {
                     let names: Vec<_> = FileType::writable().map(|t| t.extension()).collect();
                     return Err(p.invalid(
@@ -2655,11 +2662,16 @@ fn codec_commands() -> Vec<CommandSpec> {
                 }
                 let paths: Vec<String> =
                     files.iter().map(|(t, _)| t.display().to_string()).collect();
+                let check = crate::machine::export_check(&s.design, &pattern);
                 Ok(json!({
                     "path": paths[0],
                     "paths": paths,
                     "stats": stats(&pattern),
                     "sewingArea": crate::machine::sewing_area(&s.design, &pattern),
+                    "fitsPage": check["fitsPage"],
+                    "hoopMM": check["hoopMM"],
+                    "smallestHoop": check["smallestHoop"],
+                    "warnings": check["warnings"],
                 }))
             },
         ),

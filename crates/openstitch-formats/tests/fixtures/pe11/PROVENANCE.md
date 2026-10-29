@@ -37,6 +37,11 @@ policy: docs/LEGAL_AND_LICENSING.md. Each rN file is the baseline B with one pro
 | `r20-line-running-pitch.pes` | `87ee85d649052fc934e9e019e5e1b64eb8df5720f155c3f6a11f7f4f5b78e1b6` | r19 (same design), Run pitch 3.0 mm. 10,00 x 10,00 mm, 251 st. |
 | `r21-zigzag-width.pes` | `4217cc26142986c7a81a40b69befdc0995ca8a6d538a14f0cbec2c73f85242ce` | B, line Zigzag width 3.0 mm (default 2.0). 13,00 x 13,00 mm, 484 st. |
 | `r22-line-noUnder.pes` | `84a72272dd2b3d7fefa688f7e453822c121e478721460d0ce2c36e3570259b0e` | B, Sewing Attributes > Line sew > Under sewing unticked. 12,00 x 12,00 mm, 426 st. |
+| `r23-text-fill.pes` | `f7e7e2b6d7799c46139981403bd4db7b0dd7081472c5bf2b020d80d1c0e27e61` | r12's text `A` (Text tool, Lato, size 10, click (10,20)), region Fill Stitch (the text fill defaults: under sewing off, density 5.0). 187 st. Copied into the repo 2026-10-29 for the `#PES0110` text writer (#120). |
+| `r24-text-blue.pes` | `8c8c7fef1f2d2d1a69300b7fb484a9f8c7e431e5c27bd84db96319528dc0914c` | r12's text `A`, region Satin, region colour 007 EMBROIDERY PRUSSIAN BLUE. 155 st. |
+| `r25-text-b.pes` | `e5e0bc6b7e8b545e3bde1944852c661789279882ad5032b7c6f9d399d5203063` | r12 but the letter `B`. 7,70 x 10,30 mm, 207 st. |
+| `r26-text-moved.pes` | `1450b6f8f655ec92a930c10be2afcf489e7cab43e24c9e1adea2a4c083c2861f` | r12 with the click 10 mm further right, at (20,20): box about (20,9.7)-(30.1,20). 155 st. |
+| `r27-text-a-space-b.pes` | `70c2c73817f116c07a28ea3334fce45e64788b74e2fdb497484c70f7529c5ba5` | Round 4 (2026-10-29, session pe-refs-4, PE-DESIGN 11.50, Windows 11 Pro 10.0.26300): New design (page as PE-DESIGN started: Hoop Size 100 x 100 mm `nv880e-S`), Text tool at its defaults (Lato, 10,0, line Not Sewn, Satin Stitch 800 RED), click at (10,20) mm, typed `A B`, Select. 22,30 x 15,90 mm, 364 st; Save As Ver.11.0 (#PES0110). Shows that a space is stored as a letter. |
 
 ## Round 3 (2026-10-28): the remaining object kinds
 
@@ -84,3 +89,17 @@ Made by the owner's PE-DESIGN 11.50 (Layout & Editing) on Windows 11 Pro 10.0.26
 | `obj-progfill-owner-v.pes` | `5adffe08327bccf391412e2ecf4264f3ec40258658685f239e7b554b6b7db4b3` | Rectangle tool dragged (20,20)-(50,40) mm, line Running Stitch (red, pitch 2.0), region Prog. Fill Stitch with the owner-drawn pattern owner-v.pas (compat/reference/pes; a V across the 8 x 8 cell, made in Programmable Stitch Creator), 7.5 x 7.5 mm, Direction 0, Offset row 0 %, Base Sewing off; region density 4.5, direction 45, under sewing off, 007 PRUSSIAN BLUE. 30,00 x 20,00 mm, 641 st. |
 | `obj-motif-fill-owner-v.pes` | `d88daafad7dd68b04669a663f940bc3d83fcb2e97da821d2de72f26f25900f07` | The same rectangle, region Motif Stitch with the owner-drawn motif owner-v.pmf (compat/reference/pes; a V), Pattern1 5.0 x 5.0 mm, H/V-Arrange first buttons, offsets and spacing 0.0, Pattern2 off, Direction 0, Row offset 0.0, Run pitch 5.0. 30,00 x 20,00 mm, 144 st. |
 | `obj-motif-line-owner-v.pes` | `fc5acdc25795d540f46b9b7353b64203420057f69ae41d38129b6611e29f7082` | The same rectangle, region Not Sewn, line Motif Stitch with owner-v.pmf, 5.0 x 5.0 mm, H/V-Arrange first buttons, Offset 0.0, Spacing 0.0, Run pitch 5.0, Start/End Type Feed. 30,00 x 20,00 mm, 47 st. |
+
+**Round 4 machine exports (#135):** made by the owner's PE-DESIGN 11.50 (Layout & Editing) on
+Windows 11 Pro 10.0.26300, 2026-10-29 11:43-11:47, by black-box GUI use only (track
+pe-refs-4). Design Page 100 x 100 mm. Text tool "S", size 20.0, region Satin Stitch, 800
+EMBROIDERY RED (14,00 x 21,10 mm, 278 st); Rectangle (60,60)-(70,68) mm, line Not Sewn,
+region Fill Stitch, 007 EMBROIDERY PRUSSIAN BLUE (10,00 x 8,00 mm, 197 st). Sewing order: the
+S, then the rectangle. Save As PES, then App menu > Export... to each type, no options dialog,
+no warning. Three of the eleven files are kept here for the readers' tests:
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `sample-basic.csd` | `b405685a744df0dd4395279c561822aea4010d8460c7887404aaa9b7e52b841b` | Export, type Singer (*.CSD). |
+| `sample-basic.dst` | `c29378ba32fda42d1b5e5499cdec5c4594ab70ac49dc5fa69ee710000c8b855b` | Export, type Tajima (*.DST). |
+| `sample-basic.shv` | `508c945b5a4e9047da8cda1fd69240a6add83cd9183d1460bffdb3ba0c9dc727` | Export, type Husqvarna/Viking (*.SHV). |

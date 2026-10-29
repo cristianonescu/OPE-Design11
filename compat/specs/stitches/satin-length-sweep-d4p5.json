@@ -1,0 +1,245 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "satin-length-sweep-d4p5",
+  "area": "stitches",
+  "title": "Twelve satin columns 0.5 to 15 mm long at 4.5 lines/mm (the minimum-crossing threshold sweep)",
+  "description": "Twelve 3 mm wide satin rectangles with lengths 0.5, 0.8, 1.0, 1.2, 1.5, 2, 3, 5, 8, 10, 12, 15 mm, 7 mm apart, direction 0 (rows along x, so the crossings run across the 3 mm width and the length is the swept parameter), density 4.5, under sewing off. Issue #122: whether the extra end crossing threshold is 1 mm or 10 mm. PE-DESIGN's needle points per column (tie-in and lock included): 0.5 mm -> 15, 0.8 mm -> 12, 1.0 mm -> 17, 1.2 mm -> 17, 1.5 mm -> 16, 2 mm -> 23, 3 mm -> 28, 5 mm -> 36, 8 mm -> 44, 10 mm -> 63, 12 mm -> 66, 15 mm -> 87; 424 in all. The total count and bounds are compared; the per-column counts are in the manifest for the satin track.",
+  "covers": {
+    "audit": [
+      1
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Satin: a zigzag across the column"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/satin-length-sweep-d4p5.pes (PE-DESIGN 11.50, 2026-10-29): 424 stitches, 80.00 x 15.00 mm"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 5,
+        "y": 10,
+        "width": 3,
+        "height": 0.5
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 12,
+        "y": 10,
+        "width": 3,
+        "height": 0.8
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 19,
+        "y": 10,
+        "width": 3,
+        "height": 1.0
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 26,
+        "y": 10,
+        "width": 3,
+        "height": 1.2
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 33,
+        "y": 10,
+        "width": 3,
+        "height": 1.5
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 40,
+        "y": 10,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 47,
+        "y": 10,
+        "width": 3,
+        "height": 3
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 54,
+        "y": 10,
+        "width": 3,
+        "height": 5
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 61,
+        "y": 10,
+        "width": 3,
+        "height": 8
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 68,
+        "y": 10,
+        "width": 3,
+        "height": 10
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 75,
+        "y": 10,
+        "width": 3,
+        "height": 12
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 82,
+        "y": 10,
+        "width": 3,
+        "height": 15
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "type": "satin",
+        "angle": 0,
+        "density": 4.5,
+        "underlay": false
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "satin.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/satin-length-sweep-d4p5.pes",
+      "make": "Import Patterns > from Vector Image: an SVG with twelve rect elements x = 5 + 7 i, y = 10, width 3, height as listed (mm), distinct fills; Shapes tab (all selected) region Satin Stitch, under sewing unticked, Direction 0, Density 4.5; line Not Sewn. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "satin.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "percent": 10
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "satin.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "satin.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    }
+  ]
+}

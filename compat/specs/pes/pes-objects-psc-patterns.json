@@ -1,0 +1,195 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-objects-psc-patterns",
+  "area": "pes",
+  "title": "Minimal owner-drawn Programmable Stitch Creator patterns (2-point line, 4-point square, two lines, motifs, decorative) and the PES designs that use them",
+  "description": "Six pattern sources drawn in PE-DESIGN 11.50's Programmable Stitch Creator with known grid coordinates (compat/reference/pes/psc-*.pas, .pmf, .plf): a 2-point diagonal line, a closed 4-point square (written with its closing point), two separate lines (a jump), the untouched 2-point motif, a 3-point zigzag motif, and a decorative-fill line. Four designs use them: programmable fill with the square and with the line, motif fill with the 2-point motif, and a 40 mm line with the zigzag motif; each is read by OpenStitch and written again (stitches and colours survive). Issues #130, #131 (the ASCII grammar: @VERSION 10000; @SYSENV 1 for .pas/.pmf, @SYSENV 10000 10000 1 for .plf; @TILE n + @TILELINE i npts x y ...; @LINE npts x y ...; cell 0..1024) and #134's request for owner-made container samples (fonts were not recordable: Font Creator access was declined).",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES write v1 and v6"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/pes/psc-*.pas/.pmf/.plf (Programmable Stitch Creator 11.50, 2026-10-29): psc-line-2pt.pas: Fill/Stamp: one line from the cell's top-left to its bottom-right corner (@TILELINE 0 2 0 0 1024 1024); psc-square-4pt.pas: Fill/Stamp: a closed square, clicks (128,128) (896,128) (896,896) (128,896) and a double-click back on (128,128); PE-DESIGN writes the closing point, 5 points; psc-two-lines.pas: Fill/Stamp: two separate horizontal lines at y 256 and 768 (@TILE 2, two @TILELINE records; nothing marks the jump); psc-motif-2pt.pmf: Motif: the editor's fixed base line (0,512)-(1024,512) saved untouched (@LINE 2); psc-motif-zigzag-3pt.pmf: Motif: a point added by clicking the base line and dragged to (512,768) (@LINE 3); psc-deco-1line.plf: Decorative Fill: one line (128,128)-(896,896) on the 16 x 16 grid (@SYSENV 10000 10000 1, @TILE 1, @TILELINE 0 2)"
+    },
+    {
+      "kind": "measured",
+      "note": "compat/reference/pes/prog-fill-square-4pt.pes 2355 stitches, prog-fill-line-2pt.pes 1638, motif-fill-2pt.pes 130, line-motif-zigzag-3pt.pes 23"
+    }
+  ],
+  "inputs": [
+    {
+      "from": "compat/reference/pes/prog-fill-square-4pt.pes",
+      "name": "prog-fill-square-4pt.pes"
+    },
+    {
+      "from": "compat/reference/pes/prog-fill-line-2pt.pes",
+      "name": "prog-fill-line-2pt.pes"
+    },
+    {
+      "from": "compat/reference/pes/motif-fill-2pt.pes",
+      "name": "motif-fill-2pt.pes"
+    },
+    {
+      "from": "compat/reference/pes/line-motif-zigzag-3pt.pes",
+      "name": "line-motif-zigzag-3pt.pes"
+    }
+  ],
+  "script": [],
+  "exports": [
+    {
+      "path": "prog-fill-square-4pt-rt.pes",
+      "fromInput": "prog-fill-square-4pt.pes"
+    },
+    {
+      "path": "prog-fill-line-2pt-rt.pes",
+      "fromInput": "prog-fill-line-2pt.pes"
+    },
+    {
+      "path": "motif-fill-2pt-rt.pes",
+      "fromInput": "motif-fill-2pt.pes"
+    },
+    {
+      "path": "line-motif-zigzag-3pt-rt.pes",
+      "fromInput": "line-motif-zigzag-3pt.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design-prog-fill-square-4pt",
+      "file": "pes/prog-fill-square-4pt.pes",
+      "make": "App menu > New (100 x 100 mm); a Rectangle (10,10)-(50,50) mm (Size dialog 40 x 40), line Not Sewn, region Prog. Fill Stitch with psc-square-4pt at 7.5 x 7.5 mm, Direction 0, Offset row 0 %, Base Sewing off, 007 PRUSSIAN BLUE, under sewing off, density 4.5, direction 45. Save As PES (default type)."
+    },
+    {
+      "id": "pe-design-prog-fill-line-2pt",
+      "file": "pes/prog-fill-line-2pt.pes",
+      "make": "App menu > New (100 x 100 mm); a Rectangle (10,10)-(50,50) mm (Size dialog 40 x 40), line Not Sewn, region Prog. Fill Stitch with psc-line-2pt at 7.5 x 7.5 mm, Direction 0, Offset row 0 %, Base Sewing off, 007 PRUSSIAN BLUE, under sewing off, density 4.5, direction 45. Save As PES (default type)."
+    },
+    {
+      "id": "pe-design-motif-fill-2pt",
+      "file": "pes/motif-fill-2pt.pes",
+      "make": "App menu > New (100 x 100 mm); a Rectangle (10,10)-(50,50) mm (Size dialog 40 x 40), line Not Sewn, region Motif Stitch, Pattern1 = psc-motif-2pt at 5.0 x 5.0 mm, H/V-Arrange first buttons, offsets and spacing 0, Pattern2 off, Direction 0, Row offset 0, Run pitch 5.0, 007 PRUSSIAN BLUE, under sewing off, density 4.5, direction 45. Save As PES (default type)."
+    },
+    {
+      "id": "pe-design-line-motif-zigzag-3pt",
+      "file": "pes/line-motif-zigzag-3pt.pes",
+      "make": "App menu > New (100 x 100 mm); an Open Straight Line (10,30)-(50,30) mm (snapped to 39.5 mm), line Motif Stitch with psc-motif-zigzag-3pt at 5.0 x 5.0 mm, Offset 0, Spacing 0, Run pitch 5.0, Start/End Type Feed, 800 RED, 007 PRUSSIAN BLUE, under sewing off, density 4.5, direction 45. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "prog-fill-square-4pt-roundtrip",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "prog-fill-square-4pt-rt.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file read and written again keeps its stitches and colours",
+      "reference": {
+        "id": "pe-design-prog-fill-square-4pt"
+      }
+    },
+    {
+      "id": "prog-fill-line-2pt-roundtrip",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "prog-fill-line-2pt-rt.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file read and written again keeps its stitches and colours",
+      "reference": {
+        "id": "pe-design-prog-fill-line-2pt"
+      }
+    },
+    {
+      "id": "motif-fill-2pt-roundtrip",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "motif-fill-2pt-rt.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file read and written again keeps its stitches and colours",
+      "reference": {
+        "id": "pe-design-motif-fill-2pt"
+      }
+    },
+    {
+      "id": "line-motif-zigzag-3pt-roundtrip",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsCenter",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false
+        }
+      },
+      "source": {
+        "export": "line-motif-zigzag-3pt-rt.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file read and written again keeps its stitches and colours",
+      "reference": {
+        "id": "pe-design-line-motif-zigzag-3pt"
+      }
+    }
+  ]
+}

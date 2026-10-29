@@ -1,0 +1,211 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "sew-order-six-objects",
+  "area": "stitches",
+  "title": "Six scattered fill squares in three colours, saved before and after Optimize Sewing Order",
+  "description": "Six 15 mm fill squares at (10,10) red, (70,70) blue, (70,10) red, (10,70) green, (40,40) blue, (40,10) green, imported from an SVG in that order. PE-DESIGN 11.50 groups them into three colour blocks in first-occurrence order (red, blue, green), visiting red top-left, red top-right, blue bottom-right, blue centre, green bottom-left, green top-centre. The Sewing Order pane's Optimize Sewing Order button changed nothing on this design (the two files differ in 4 header bytes only). Issue #137: OpenStitch's order.optimize is compared with the colour blocks and stitch counts of both files.",
+  "covers": {
+    "audit": [
+      16
+    ],
+    "featureMatrix": [
+      {
+        "area": "Editing",
+        "feature": "Sewing order editing"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/sew-order-six-before.pes and -after.pes (PE-DESIGN 11.50, 2026-10-29): 2585 stitches, 3 colour blocks, identical PEC streams"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 15,
+        "height": 15,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 70,
+        "y": 70,
+        "width": 15,
+        "height": 15,
+        "fill": "Blue"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 70,
+        "y": 10,
+        "width": 15,
+        "height": 15,
+        "fill": "Red"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 70,
+        "width": 15,
+        "height": 15,
+        "fill": "#00a000"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 40,
+        "y": 40,
+        "width": 15,
+        "height": 15,
+        "fill": "Blue"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 40,
+        "y": 10,
+        "width": 15,
+        "height": 15,
+        "fill": "#00a000"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          1,
+          3
+        ],
+        "type": "fill",
+        "color": "Red",
+        "angle": 45,
+        "underlay": true
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          2,
+          5
+        ],
+        "type": "fill",
+        "color": "Blue",
+        "angle": 45,
+        "underlay": true
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          4,
+          6
+        ],
+        "type": "fill",
+        "color": "#00a000",
+        "angle": 45,
+        "underlay": true
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "type": "none"
+      }
+    },
+    {
+      "command": "order.optimize",
+      "params": {}
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design-before",
+      "file": "stitches/sew-order-six-before.pes",
+      "make": "Import Patterns > from Vector Image: the six rect elements above (15 x 15 mm, fills red, blue, red, green, blue, green). Save As PES (default type) unchanged."
+    },
+    {
+      "id": "pe-design-after",
+      "file": "stitches/sew-order-six-after.pes",
+      "make": "The same design after the Sewing Order pane's Optimize Sewing Order button. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "blocks-before",
+      "measure": {
+        "kind": "colorBlocks"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "three colours, first-occurrence order",
+      "reference": {
+        "id": "pe-design-before"
+      }
+    },
+    {
+      "id": "blocks-after",
+      "measure": {
+        "kind": "colorBlocks"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "Optimize Sewing Order keeps the three blocks",
+      "reference": {
+        "id": "pe-design-after"
+      }
+    },
+    {
+      "id": "stitches-after",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "id": "pe-design-after",
+        "tolerance": {
+          "percent": 8
+        }
+      }
+    }
+  ]
+}
