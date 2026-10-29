@@ -1,0 +1,174 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "line-motif-zigzag-3pt",
+  "area": "stitches",
+  "title": "Motif line with the owner's psc-motif-zigzag-3pt.pmf",
+  "description": "A 39.5 mm straight line sewn as a motif line with an owner-made 3-point motif (base line with its middle point dragged to (512,768)) at 5 x 5 mm: 8 motifs stretched to 4.94 mm fill the line from end to end, each point 1.25 mm off the line (256 of the 1024-unit cell at 5 mm).",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Line sew types",
+        "feature": "Motif"
+      },
+      {
+        "area": "Programmable Stitch Creator",
+        "feature": "Import of the user's own"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Motif Stitch (line): pattern, size, offset, spacing, run pitch"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference stitches/line-motif-zigzag-3pt.pes (reference round 4 log, PATTERN DESIGNS 13:42-13:45): 23 stitches, 39.5 x 1.3 mm"
+    }
+  ],
+  "inputs": [
+    {
+      "from": "crates/openstitch-design/tests/fixtures/patterns/psc-motif-zigzag-3pt.pmf",
+      "name": "psc-motif-zigzag-3pt.pmf"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "pattern.import",
+      "params": {
+        "path": "psc-motif-zigzag-3pt.pmf",
+        "id": "owner-zigzag"
+      }
+    },
+    {
+      "command": "shape.polygon",
+      "params": {
+        "points": [
+          [
+            10,
+            30
+          ],
+          [
+            49.5,
+            30
+          ]
+        ],
+        "closed": false,
+        "outline": "Blue"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "ids": [
+          1
+        ],
+        "type": "motif",
+        "motif": "owner-zigzag",
+        "width": 5,
+        "height": 5,
+        "spacing": 0,
+        "pitch": 5,
+        "startEnd": "feed"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "line.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/line-motif-zigzag-3pt.pes",
+      "make": "Programmable Stitch Creator, New Motif Pattern: click the base line to add a point, drag it to (512,768); Save As psc-motif-zigzag-3pt.pmf (Default Size 5.0 mm). Layout & Editing, 100 x 100 mm page: Shapes > Outline > Open Straight Line from (10,30) to (50,30) mm (snapped to 39.5 mm), line Motif Stitch > that file at 5.0 x 5.0 mm, Offset 0.0, Spacing 0.0, Run pitch 5.0, Start/End Feed. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "the motif's middle point sits 256 of 1024 cell units off the line: 1.25 mm at 5 mm",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "the motifs fill the 39.5 mm line from end to end",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "stitch-length-median",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "median",
+        "minLength": 0.3
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "8 motifs on 39.5 mm: each half a 4.94 mm motif, a 2.76 mm stitch",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "trims-inside",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "trim"
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "one region: no trim",
+      "expected": 0,
+      "reference": {}
+    },
+    {
+      "id": "jumps-inside",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "jump"
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "one region: no jump",
+      "expected": 0,
+      "reference": {}
+    }
+  ]
+}

@@ -129,17 +129,31 @@ fn layers_inner(
         flat.entry = r.entry.map(|p| w.forward(p));
         flat.reference = r.reference.map(|p| w.forward(p));
         let (c, h) = (w.forward_contours(closed), w.forward_contours(holes));
-        return layers(&c, &flat, &h)
+        return layers_with(&c, &flat, &h, user)
             .into_iter()
             .map(|l| w.back_runs(l))
             .collect();
     }
-    // Reference point: the pattern grid starts there.
-    if let Some(at) = r.reference
+    // Reference point: the pattern grid starts there. A programmable or motif fill without one
+    // starts its grid at the region's top-left corner, as PE-DESIGN 11.50 does
+    // (compat/reference/stitches/prog-fill-*.pes, motif-fill-2pt.pes).
+    // The shifted copy carries the reference (0, 0), so it is not anchored again.
+    let anchor = r
+        .reference
+        .or_else(|| {
+            matches!(r.kind, RegionType::ProgrammableFill | RegionType::MotifFill)
+                .then(|| {
+                    Rect::enclosing(closed.iter().flat_map(|c| c.outline_points()))
+                        .map(|b| v2(b.min_x, b.min_y))
+                })
+                .flatten()
+        })
+        .filter(|m| m.x != 0.0 || m.y != 0.0);
+    if let Some(at) = anchor
         && direction::REFERENCE_TYPES.contains(&r.kind)
     {
         let mut local = r.clone();
-        local.reference = None;
+        local.reference = Some(v2(0.0, 0.0));
         local.entry = r.entry.map(|p| p - at);
         local.center = r.center.map(|p| p - at);
         let back = |l: Vec<Run>| -> Vec<Run> {
@@ -147,10 +161,11 @@ fn layers_inner(
                 .map(|run| run.into_iter().map(|p| p + at).collect())
                 .collect()
         };
-        return layers(
+        return layers_with(
             &direction::shifted(closed, v2(-at.x, -at.y)),
             &local,
             &direction::shifted(holes, v2(-at.x, -at.y)),
+            user,
         )
         .into_iter()
         .map(back)

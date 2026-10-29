@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 223 · pass 223 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 227 · pass 227 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -30,13 +30,15 @@ Specs: 223 · pass 223 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Lettering | Fit text to outline (text on a path)… | reference | `text-fit-ahhhh`, `text-fit-default`, `text-fit-halign-left`, `text-fit-halign-right`, `text-fit-halign-spaced`, `text-fit-orient-upright`, `text-fit-otherside`, `text-fit-satin-ahhhh`, `text-fit-size-12`, `text-fit-size-6`, `text-fit-spacing-m1`, `text-fit-spacing-p2`, `text-fit-valign-below`, `text-fit-valign-center` |
 | Lettering | Text Transform… | reference | `text-transform-1-openstitch`, `text-transform-1`, `text-transform-10`, `text-transform-11-agjy`, `text-transform-11-openstitch`, `text-transform-11`, `text-transform-12-agjy`, `text-transform-12-openstitch`, `text-transform-12`, `text-transform-13-agjy`, `text-transform-13-openstitch`, `text-transform-13`, `text-transform-14`, `text-transform-15-agjy`, `text-transform-15-openstitch`, `text-transform-15`, `text-transform-16-agjy`, `text-transform-16-openstitch`, `text-transform-16`, `text-transform-17`, `text-transform-18-openstitch`, `text-transform-18`, `text-transform-19-agjy`, `text-transform-19-openstitch`, `text-transform-19`, `text-transform-2-openstitch`, `text-transform-2`, `text-transform-20-agjy`, `text-transform-20-openstitch`, `text-transform-20`, `text-transform-21-agjy`, `text-transform-21-openstitch`, `text-transform-21`, `text-transform-22-agjy`, `text-transform-22-openstitch`, `text-transform-22`, `text-transform-23-agjy`, `text-transform-23-openstitch`, `text-transform-23`, `text-transform-24-agjy`, `text-transform-24-openstitch`, `text-transform-24`, `text-transform-25-agjy`, `text-transform-25-openstitch`, `text-transform-25`, `text-transform-26-agjy`, `text-transform-26-openstitch`, `text-transform-26`, `text-transform-3`, `text-transform-4-agjy`, `text-transform-4-openstitch`, `text-transform-4`, `text-transform-5-agjy`, `text-transform-5-openstitch`, `text-transform-5`, `text-transform-6-agjy`, `text-transform-6-openstitch`, `text-transform-6`, `text-transform-7-agjy`, `text-transform-7-openstitch`, `text-transform-7`, `text-transform-8-agjy`, `text-transform-8-openstitch`, `text-transform-8`, `text-transform-9` |
 | Lettering | Text entry and attributes… | reference | `text-defaults-fill`, `text-defaults-h`, `text-line-spacing-100`, `text-line-spacing-150`, `text-line-spacing-50`, `text-sewing-order`, `text-size-h`, `text-size-hg` |
+| Line sew types | Motif… | reference | `line-motif-zigzag-3pt` |
 | Line sew types | Motif (OpenStitch's own motif library… | reference | `line-candlewick-default`, `line-candlewick-startend-feed`, `line-candlewick-startend-run`, `line-chain-default`, `line-chain-startend-feed`, `line-chain-startend-l2side-feed`, `line-chain-startend-l2side-run`, `line-chain-startend-mid-feed`, `line-chain-startend-mid-run`, `line-chain-startend-run`, `line-e-default`, `line-e-rect-default`, `line-stem-default`, `line-stem-startend-feed`, `line-stem-startend-run`, `line-v-default`, `line-v-rect-default` |
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
 | Line sew types | Running (pitch, run times 1… | reference | `line-running-default`, `line-triple-default`, `run-circle-60` |
 | Line sew types | Zigzag: width, density… | reference | `line-zigzag-default`, `line-zigzag-density-max` |
 | Machine | Brother 64-colour PEC chart mapping… | reference | `thread-match-swatches` |
+| Programmable Stitch Creator | Import of the user's own… | reference | `line-motif-zigzag-3pt`, `motif-fill-2pt`, `prog-fill-line-2pt`, `prog-fill-square-4pt` |
 | Region sew types | Fill (tatami: angle or auto direction… | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions`, `square-gradation-30-10`, `square-gradation-default`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5-h33`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-density-min`, `sweep-fill-dir-135`, `sweep-fill-dir-30`, `sweep-fill-dir-45`, `sweep-fill-dir-90`, `sweep-fill-freq-10`, `sweep-fill-freq-40`, `sweep-fill-pitch-2p0`, `sweep-fill-pitch-3p0`, `sweep-fill-pitch-6p0`, `sweep-fill-pitch-max`, `sweep-fill-pitch-min`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max`, `sweep-fill-us-default`, `sweep-fill-us-density-dense`, `sweep-fill-us-density-light`, `sweep-fill-us-type-2`, `u-gradation-50-50`, `u-gradation-80-20`, `u-gradation-95-50`, `u-gradation-blend-blue`, `u-gradation-dir-90`, `u-gradation-pattern-2`, `u-gradation-pattern-3`, `u-gradation-pattern-4`, `u-gradation-pattern-5`, `u-gradation-pattern-6`, `u-gradation-pattern-7`, `u-gradation-pattern-8` |
-| Region sew types | Programmable fill… | reference | `programmable-fill-45` |
+| Region sew types | Programmable fill… | reference | `motif-fill-2pt`, `prog-fill-line-2pt`, `prog-fill-square-4pt`, `programmable-fill-45` |
 | Region sew types | Satin: a zigzag across the column… | internal-regression; reference pending | `machine-satin-width-16`, `machine-satin-width-18`, `machine-satin-width-20`, `machine-satin-width-22`, `machine-satin-width-25`, `machine-satin-width-30`, `auto-satin-bent-band`, `region-travel-u-satin`, `satin-auto-bend-30-nohalf`, `satin-auto-bend-30`, `satin-auto-bend-45-nohalf`, `satin-auto-bend-45`, `satin-auto-bend-60`, `satin-auto-bend-75-nohalf`, `satin-auto-bend-75`, `satin-auto-bend-90-nohalf`, `satin-auto-bend-90`, `satin-col-us-type-1`, `satin-col-us-type-2`, `satin-col-us-type-3`, `satin-col-us-type-4`, `satin-feather`, `satin-gradation`, `satin-sections-h`, `satin-zigzag-rect`, `satin-zigzag-skeleton`, `sweep-satin-density-0p2`, `sweep-satin-density-0p3`, `sweep-satin-density-0p5`, `sweep-satin-density-4p5`, `sweep-satin-density-max`, `sweep-satin-density-min`, `sweep-satin-pull-0p5`, `sweep-satin-pull-max`, `sweep-satin-us-default`, `sweep-satin-us-type-2`, `sweep-satin-width-10`, `sweep-satin-width-15`, `sweep-satin-width-2`, `sweep-satin-width-3` |
 
 ## By audit item
@@ -103,6 +105,7 @@ Specs: 223 · pass 223 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/line-chain-startend-run` | pass | reference | — | — | pass | — |
 | `stitches/line-e-default` | pass | reference | — | — | pass | — |
 | `stitches/line-e-rect-default` | pass | reference | — | — | pass | — |
+| `stitches/line-motif-zigzag-3pt` | pass | reference | pass | — | pass | — |
 | `stitches/line-running-default` | pass | reference | pass | — | pass | — |
 | `stitches/line-stem-default` | pass | reference | — | — | pass | — |
 | `stitches/line-stem-startend-feed` | pass | reference | — | — | pass | — |
@@ -112,7 +115,10 @@ Specs: 223 · pass 223 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/line-v-rect-default` | pass | reference | — | — | pass | — |
 | `stitches/line-zigzag-default` | pass | reference | pass | — | pass | — |
 | `stitches/line-zigzag-density-max` | pass | reference | — | — | pass | — |
+| `stitches/motif-fill-2pt` | pass | reference | pass | — | pass | — |
 | `stitches/optimize-entry-exit` | pass | reference | pass | — | pass | — |
+| `stitches/prog-fill-line-2pt` | pass | reference | pass | — | pass | — |
+| `stitches/prog-fill-square-4pt` | pass | reference | pass | — | pass | — |
 | `stitches/programmable-fill-45` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-along-outline` | pass | reference | pass | — | pass | — |
 | `stitches/region-travel-u-fill` | pass | reference | pass | — | pass | — |
