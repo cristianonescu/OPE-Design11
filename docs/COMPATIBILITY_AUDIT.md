@@ -654,7 +654,10 @@ Line references are relative to `crates/`.
 ## 15. Missing fill, satin and zigzag attributes; wrong ranges
 
 - **Impact:** severity 3. These PE-DESIGN settings can't be set or reproduced:
-  - Fill Frequency (fixed ⅓ stagger);
+  - Fill Frequency (fixed ⅓ stagger) — fixed; since 2026-10-29 (#123) the regular Frequency
+    brick is one of two stagger strategies, the other OpenStitch's seeded random stagger
+    (`stagger: random`, `staggerSeed`), which has no PE-DESIGN counterpart: PE's Fill pane
+    offers the Frequency field only (every round-2 sweep's MANIFEST settings list its fields);
   - Stitch Type (turning ends);
   - Half Stitch;
   - zigzag Sharp Corners / Miter limit.

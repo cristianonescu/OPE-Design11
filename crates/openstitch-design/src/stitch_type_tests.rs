@@ -662,6 +662,97 @@ fn underlay_styles_layer_inside_the_region() {
 }
 
 #[test]
+fn regular_stagger_is_the_frequency_brick_and_the_third_without_one() {
+    use crate::generate::Stagger;
+    // The old third-of-a-stitch stagger cycles 0, 1/3, 2/3 from the page origin; the regular
+    // stagger with a 1/3 offset walks the same three phases, anchored at the first row's
+    // start as PE-DESIGN's Frequency grid is ((k + 1) · f).
+    let third: Vec<f64> = (0..6).map(|k| Stagger::Third.phase(k)).collect();
+    assert_eq!(
+        third,
+        [0.0, 1.0 / 3.0, 2.0 / 3.0, 0.0, 1.0 / 3.0, 2.0 / 3.0]
+    );
+    let regular = Stagger::Regular(1.0 / 3.0);
+    for k in 0..6 {
+        let a = regular.anchored(k).expect("anchored");
+        assert!((a - ((k + 1) % 3) as f64 / 3.0).abs() < 1e-9, "{k}: {a}");
+    }
+    assert_eq!(Stagger::Third.anchored(0), None);
+    assert!((Stagger::Regular(0.3).anchored(2).expect("anchored") - 0.9).abs() < 1e-9);
+    // A region's stagger: the Frequency unless the random one is chosen; no Frequency, the third.
+    let mut r = region(RegionType::Fill);
+    assert_eq!(r.fill_stagger(), Stagger::Regular(0.3));
+    r.frequency = None;
+    assert_eq!(r.fill_stagger(), Stagger::Third);
+    r.stagger = crate::StaggerKind::Random;
+    assert_eq!(
+        r.fill_stagger(),
+        Stagger::Random(RegionSewing::DEFAULT_STAGGER_SEED)
+    );
+    r.stagger_seed = Some(42);
+    assert_eq!(r.fill_stagger(), Stagger::Random(42));
+}
+
+#[test]
+fn random_stagger_is_seeded_reproducible_and_does_not_repeat() {
+    use crate::generate::Stagger;
+    let a: Vec<f64> = (0..40)
+        .map(|k| Stagger::Random(7).anchored(k).expect("phase"))
+        .collect();
+    let b: Vec<f64> = (0..40)
+        .map(|k| Stagger::Random(7).anchored(k).expect("phase"))
+        .collect();
+    assert_eq!(a, b, "the same seed gives the same rows");
+    let c: Vec<f64> = (0..40)
+        .map(|k| Stagger::Random(8).anchored(k).expect("phase"))
+        .collect();
+    assert_ne!(a, c, "another seed gives other rows");
+    assert!(a.iter().all(|&f| (0.0..1.0).contains(&f)));
+    let mut sorted: Vec<i64> = a.iter().map(|f| (f * 1e9) as i64).collect();
+    sorted.sort_unstable();
+    sorted.dedup();
+    assert_eq!(sorted.len(), 40, "no two rows share an offset: {a:?}");
+    // A fill sewn twice with the same seed is identical; with the regular stagger its interior
+    // needle points fall on three columns per 1.2 mm shift cycle, with the random one they do not.
+    let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 400.0)];
+    let mut r = region(RegionType::Fill);
+    r.underlay = false;
+    r.stagger = crate::StaggerKind::Random;
+    r.stagger_seed = Some(3);
+    let once = crate::region::layers(&c, &r, &[]);
+    let twice = crate::region::layers(&c, &r, &[]);
+    assert_eq!(once, twice);
+    let offsets = |layers: &[Vec<Run>]| -> usize {
+        let mut xs: Vec<i64> = layers
+            .last()
+            .expect("top")
+            .iter()
+            .flatten()
+            .filter(|p| p.x > 112.0 && p.x < 488.0)
+            .map(|p| ((p.x - 100.0).rem_euclid(40.0) * 10.0).round() as i64)
+            .collect();
+        xs.sort_unstable();
+        xs.dedup();
+        xs.len()
+    };
+    assert!(
+        offsets(&once) > 50,
+        "{} distinct grid offsets",
+        offsets(&once)
+    );
+    r.stagger = crate::StaggerKind::Regular;
+    let regular = crate::region::layers(&c, &r, &[]);
+    assert!(
+        offsets(&regular) <= 12,
+        "{} distinct grid offsets",
+        offsets(&regular)
+    );
+    for l in &once {
+        assert_inside(l, &c, "random stagger");
+    }
+}
+
+#[test]
 fn gradation_spreads_rows_towards_the_far_side() {
     let c = vec![Contour::rectangle(0.0, 0.0, 100.0, 200.0)];
     let even = crate::region::row_positions(&c, 0.0, 4.0, None);

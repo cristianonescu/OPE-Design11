@@ -717,6 +717,18 @@ pub enum UnderlayStyle {
     Cross,
 }
 
+/// How a fill's needle grid moves from row to row (see [`crate::generate::Stagger`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StaggerKind {
+    /// PE-DESIGN's Frequency: a fixed fraction of a stitch per row (regular brick).
+    #[default]
+    Regular,
+    /// OpenStitch's own: a seeded pseudo-random fraction per row, reproducible from
+    /// `stagger_seed`. PE-DESIGN has no such option.
+    Random,
+}
+
 /// Which row ends a feathered edge roughens.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -925,6 +937,13 @@ pub struct RegionSewing {
     /// New fills take PE-DESIGN 11's 30; unset (older files) keeps the ⅓ stagger.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub frequency: Option<f64>,
+    /// Fill: how the needle grid moves from row to row, the regular Frequency brick (PE-DESIGN)
+    /// or OpenStitch's seeded random stagger.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub stagger: StaggerKind,
+    /// Seed of the random stagger (default [`RegionSewing::DEFAULT_STAGGER_SEED`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stagger_seed: Option<u64>,
     /// Programmable / motif fill: shift of every other tile row (column), % of the tile.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub row_offset: Option<f64>,
@@ -1022,6 +1041,8 @@ impl RegionSewing {
             run_pitch: None,
             // PE-DESIGN 11's Frequency default (its field shows 30 %).
             frequency: (kind == RegionType::Fill).then_some(30.0),
+            stagger: StaggerKind::Regular,
+            stagger_seed: None,
             row_offset: None,
             column_offset: None,
             start_inside: false,
@@ -1120,6 +1141,21 @@ impl RegionSewing {
     /// Fill: needle shift from one row to the next, fraction of a stitch (default ⅓).
     pub fn fill_shift(&self) -> Option<f64> {
         self.frequency.map(|f| f.clamp(0.0, 50.0) / 100.0)
+    }
+
+    /// Seed of the random stagger when none is set.
+    pub const DEFAULT_STAGGER_SEED: u64 = 0x5747_4747;
+
+    /// The fill's row-to-row stagger: the random one when chosen (seeded), else the
+    /// Frequency's regular brick, else the ⅓ stagger of files without a Frequency.
+    pub fn fill_stagger(&self) -> crate::generate::Stagger {
+        use crate::generate::Stagger;
+        match self.stagger {
+            StaggerKind::Random => {
+                Stagger::Random(self.stagger_seed.unwrap_or(Self::DEFAULT_STAGGER_SEED))
+            }
+            StaggerKind::Regular => self.fill_shift().map_or(Stagger::Third, Stagger::Regular),
+        }
     }
 
     /// Spacing in mm, or the type's default.

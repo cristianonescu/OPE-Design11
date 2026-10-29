@@ -527,14 +527,28 @@ fn region_type_controls(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> {
     };
     let mut v = Vec::new();
     match r.kind {
-        RegionType::Fill => v.push(percent(
-            "Frequency",
-            "region.frequency",
-            "frequency",
-            r.frequency,
-            33.0,
-            50.0,
-        )),
+        RegionType::Fill => {
+            v.push(percent(
+                "Frequency",
+                "region.frequency",
+                "frequency",
+                r.frequency,
+                33.0,
+                50.0,
+            ));
+            v.push(choice(
+                "Stagger",
+                "stagger",
+                match r.stagger {
+                    openstitch_design::StaggerKind::Regular => "regular",
+                    openstitch_design::StaggerKind::Random => "random",
+                },
+                &[
+                    ("regular", "Regular (Frequency)"),
+                    ("random", "Random (seeded)"),
+                ],
+            ));
+        }
         RegionType::Satin => {}
         RegionType::ProgrammableFill => {
             v.push(pattern(PatternKind::Fill));
