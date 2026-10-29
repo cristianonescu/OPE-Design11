@@ -251,3 +251,73 @@ fn translate_moves_every_point_inside_the_band_only() {
     assert!(c.cells.contains(&[2, 1]));
     assert!(c.translate(v2(-20.0, 0.0)).is_err());
 }
+
+#[test]
+fn pmv_reads_back_what_it_writes() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pmv");
+    for name in ["zigzag", "wide", "flat", "wave"] {
+        let bytes = std::fs::read(dir.join(format!("{name}.pmv"))).expect("fixture");
+        let read = sewing::pmv_read(&bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let pts: Vec<[f64; 2]> = serde_json::from_slice(
+            &std::fs::read(dir.join(format!("{name}.json"))).expect("fixture"),
+        )
+        .expect("json");
+        assert_eq!(
+            read.needles.len(),
+            pts.len().min(sewing::PMV_MAX_NEEDLES),
+            "{name}"
+        );
+        assert_eq!(read.banner, [b'.'; 36], "{name}");
+        assert_eq!(read.lengths.len(), 18, "{name}");
+        // Re-encoding the decoded points gives the file back byte for byte.
+        assert_eq!(sewing::pmv_bytes(&read.needles), bytes, "{name} round trip");
+        // Unscaled files (width within 7 mm) decode to the source within the 0.25 mm packing.
+        if name != "wide" {
+            let ys: Vec<f64> = pts.iter().map(|p| p[1]).collect();
+            let mid = (ys.iter().cloned().fold(f64::INFINITY, f64::min)
+                + ys.iter().cloned().fold(f64::NEG_INFINITY, f64::max))
+                / 2.0;
+            for (i, (&[sx, sy], &(x, y))) in pts.iter().zip(&read.needles).enumerate() {
+                assert!((sx - x).abs() <= 1.25 + 1e-9, "{name} x {i}: {sx} vs {x}");
+                assert!(
+                    (sy - mid - y).abs() <= 1.25 + 1e-9,
+                    "{name} y {i}: {sy} vs {y}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn pmv_import_makes_a_decorative_stitch_and_rejects_damage() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pmv");
+    let bytes = std::fs::read(dir.join("zigzag.pmv")).expect("fixture");
+    let s = sewing::pmv_import(&bytes, "zig", "Zigzag").expect("import");
+    assert_eq!(s.kind, sewing::SewingKind::Decorative);
+    assert_eq!(s.points.len(), 21);
+    assert!((s.width - 6.0).abs() < 1e-9, "{}", s.width);
+    assert!((s.points[0].x).abs() < 1e-9);
+    // Re-exporting an imported pattern is accepted.
+    assert!(sewing::pmv(&s).is_ok());
+
+    assert!(sewing::pmv_read(b"").is_err());
+    assert!(sewing::pmv_read(b"#PMV0002").is_err());
+    assert!(sewing::pmv_read(&bytes[..bytes.len() - 1]).is_err());
+    let mut longer = bytes.clone();
+    longer.push(0);
+    assert!(sewing::pmv_read(&longer).is_err());
+    let mut bad_count = bytes.clone();
+    bad_count[100] = 0xff;
+    bad_count[101] = 0xff;
+    assert!(sewing::pmv_read(&bad_count).is_err());
+    let mut bad_pair = bytes.clone();
+    bad_pair[104] = 0x40;
+    assert!(sewing::pmv_read(&bad_pair).is_err());
+    let mut bad_magic = bytes.clone();
+    bad_magic[0] = b'!';
+    assert!(sewing::pmv_read(&bad_magic).is_err());
+    // Every truncation fails cleanly.
+    for n in 0..bytes.len() {
+        assert!(sewing::pmv_read(&bytes[..n]).is_err(), "{n}");
+    }
+}
