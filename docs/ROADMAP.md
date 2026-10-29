@@ -169,7 +169,8 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    split as PE-DESIGN's DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such
    a move (parked PES of `long-jump-300`). Colour matching is equal-weight squared Euclidean
    with an "approximate" city-block matcher since 2026-10-29 (#119), checked against the owner's
-   twelve-swatch capture; left: Brother catalogue codes for SVG and hex fills, the sew palette
+   twelve-swatch capture, and the 61 BROTHER EMBROIDERY catalogue codes are known since the
+   round-4 chart reading; left: snapping SVG and hex fills to them, the sew palette
    and user-chart CSV schema (#136), per-machine export limits and hoop codes (#125).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.

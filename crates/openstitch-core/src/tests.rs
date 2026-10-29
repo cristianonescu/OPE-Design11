@@ -202,3 +202,69 @@ fn pattern_serializes_with_camel_case_commands() {
     let back: StitchPattern = serde_json::from_str(&json).expect("deserialize");
     assert_eq!(back, p);
 }
+
+/// The BROTHER EMBROIDERY codes of PEC entries 1–61 (pe-refs-4's reading of PE-DESIGN's chart,
+/// matched by name): one code per entry, every code once, none for 62–64, and every pair PE
+/// writes in the owner's own `#PES0110` files.
+#[test]
+fn brother_embroidery_codes_cover_the_basic_chart_once() {
+    for (k, &(i, code, name)) in BROTHER_EMBROIDERY.iter().enumerate() {
+        assert_eq!(i, k + 1);
+        assert_eq!(code.len(), 3, "{code}");
+        assert!(code.bytes().all(|b| b.is_ascii_digit()), "{code}");
+        assert_eq!(pec_index_of_brother_code(code), Some(i), "{code} {name}");
+        assert_eq!(brother_embroidery_code(i), Some(code));
+        let pec = PEC_CHART[i]
+            .as_ref()
+            .and_then(|t| t.name.as_deref())
+            .unwrap_or("");
+        assert!(
+            pec.eq_ignore_ascii_case(name)
+                || pec
+                    .replace(' ', "")
+                    .eq_ignore_ascii_case(&name.replace(' ', ""))
+                || (name == "VERMILLION" && pec == "Vermilion"),
+            "{i}: PEC {pec} vs PE {name}"
+        );
+    }
+    assert_eq!(BROTHER_EMBROIDERY.len(), PEC_BASIC_COLORS);
+    for i in [0, 62, 63, 64, 65] {
+        assert_eq!(brother_embroidery_code(i), None);
+    }
+    assert_eq!(pec_index_of_brother_code("7"), None);
+    // Pairs from PE-DESIGN's own thread tables (owner files, issue #119 swatches).
+    for (i, code) in [
+        (1, "007"),
+        (2, "405"),
+        (3, "534"),
+        (4, "070"),
+        (5, "800"),
+        (11, "214"),
+        (12, "208"),
+        (13, "205"),
+        (14, "513"),
+        (16, "005"),
+        (20, "900"),
+        (22, "869"),
+        (24, "058"),
+        (25, "086"),
+        (28, "030"),
+        (29, "001"),
+        (32, "019"),
+        (33, "126"),
+        (35, "348"),
+        (37, "509"),
+        (38, "415"),
+        (39, "817"),
+        (48, "807"),
+        (50, "519"),
+        (51, "107"),
+        (55, "614"),
+        (56, "515"),
+        (57, "124"),
+        (58, "206"),
+        (61, "027"),
+    ] {
+        assert_eq!(brother_embroidery_code(i), Some(code), "{i}");
+    }
+}

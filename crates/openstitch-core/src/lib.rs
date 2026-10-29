@@ -8,9 +8,14 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
+mod brother;
 mod charts;
 mod trims;
 
+pub use brother::{
+    BROTHER_EMBROIDERY, BROTHER_EMBROIDERY_BRAND, brother_embroidery_code,
+    pec_index_of_brother_code,
+};
 pub use charts::{HUS_CHART, JEF_CHART, PEC_CHART, SEW_CHART, SHV_CHART};
 
 /// Brother chart entries a colour is matched against: 1–61. PE-DESIGN 11.50 never picked 62–64
