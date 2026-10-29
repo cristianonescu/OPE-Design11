@@ -157,7 +157,7 @@ Specs: 244 · pass 244 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/shape-start-points` | pass | reference | pass | — | pass | pending |
 | `stitches/spiral-circle40-d1p0` | pass | reference | — | — | pass | — |
 | `stitches/spiral-circle40-d3p0` | pass | reference | — | — | pass | — |
-| `stitches/spiral-circle40-pitch3p0` | pass | reference | — | — | pass | — |
+| `stitches/spiral-circle40-pitch3p0` | pass | reference | pass | — | pass | — |
 | `stitches/spiral-circle40-start2` | pass | reference | — | — | pass | — |
 | `stitches/spiral-circle40` | pass | reference | — | — | pass | — |
 | `stitches/spiral-rect40x30` | pass | reference | — | — | pass | — |

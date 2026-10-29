@@ -1106,13 +1106,21 @@ Line references are relative to `crates/`.
   - A ring made as Set hole sewing with the inner circle's region Not Sewn keeps the hole
     (OpenStitch dropped a paired hole whose inner shape sewed no region; fixed).
 
-  Status: reference tier, all 14 specs pass. Stitch counts within 3 % (spiral at pitch 3.0:
-  6 %), bounds within 0.35 mm, mean stitch length within 0.15 mm. Known differences: PE splits
+  Status: reference tier, all 14 specs pass. Stitch counts within 3 %, bounds within 0.35 mm,
+  mean stitch length within 0.15 mm. Open (count checks kept out of the reference tier, not
+  loosened):
+  - `spiral-circle40-pitch3p0`: PE 1354 stitches, OpenStitch 1284 (−5.2 %). Suspected cause:
+    at a 3 mm pitch PE puts more needle points on the inner turns than the 4·2ⁿ rule gives (it
+    matches within 2 % at 2 mm). The count is an internal-tier check pinning OpenStitch's 1284
+    at 3 %; bounds and stitch lengths stay at the reference tier.
+  - `spiral-ring40-hole15`: PE 1952 stitches, OpenStitch 1473 (−24.5 %), because PE sews the
+    band where the outline's and the hole's spirals meet as about 30 trimmed pieces (64 trims).
+    The spec compares bounds and stitch lengths only.
+
+  Other known differences: PE splits
   more chords inside each concentric circle (2.0 / 1.0 + 1.0 / 1.33 × 3 mm runs) than the 0.1 mm
   rounding explains; the concentric seam on a Bézier circle; the spiral's winding on a circle
-  (PE turns against the outline there and with it on the rectangle); with a hole PE sews the
-  meeting band as about 30 trimmed pieces (64 trims, 1952 stitches against OpenStitch's 1473),
-  so that spec compares bounds and stitch lengths only.
+  (PE turns against the outline there and with it on the rectangle).
 - **Image digitizing (Phase 6, issues #127, #128, #132, #129):** the Auto Punch, Cross Stitch
   and Photo Stitch pipelines were this project's own approximations; the Phase 6 gap analysis
   pins their arithmetic. Done 2026-10-29 (#128): mono Photo Stitch uses integer Rec. 601

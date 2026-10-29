@@ -73,12 +73,12 @@
       "source": {
         "export": "region.pes"
       },
-      "evidence": "PE-DESIGN 11.50's file: 1354 stitches; OpenStitch within 6 %",
-      "reference": {
-        "tolerance": {
-          "percent": 6
-        }
-      }
+      "expected": 1284,
+      "tolerance": {
+        "percent": 3
+      },
+      "tier": "internal-regression",
+      "evidence": "KNOWN DIFFERENCE (open, COMPATIBILITY_AUDIT Concentric Circle and Spiral): PE-DESIGN 11.50's file has 1354 stitches, OpenStitch 1284 (-5.2 %), outside the family's 3 %. Suspected cause: at a 3 mm pitch PE puts more needle points on the inner turns than the 4*2^n chord-fits-the-pitch rule gives (the rule matches PE within 2 % at 2 mm); not yet measured turn by turn. This check pins OpenStitch's own count (internal tier) until the rule is found; the other checks compare with PE's file."
     },
     {
       "id": "bounds-width",
