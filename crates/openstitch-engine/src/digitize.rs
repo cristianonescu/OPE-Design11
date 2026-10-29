@@ -113,12 +113,12 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt(
                     "minArea",
                     "mm",
-                    "Regions smaller than this many mm² merge into a neighbour (default 1)",
+                    "Small-region parameter, mm²: regions of at most max(4, round(minArea / mmPerPx²)) pixels merge into a neighbour (default 1)",
                 ),
                 opt(
                     "smooth",
                     "int 0-5",
-                    "Majority-filter passes before segmentation (default 1)",
+                    "Extra majority-filter passes on the labels after the 3×3 modal colour census (default 0)",
                 ),
                 opt(
                     "simplify",
@@ -133,7 +133,7 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt(
                     "satinMaxWidth",
                     "mm",
-                    "Regions with satin stitches up to this long become satin (default 6)",
+                    "Regions whose stroke width is at most this become satin across the stroke (default 6)",
                 ),
                 opt(
                     "skipBackground",
@@ -147,7 +147,7 @@ pub fn commands() -> Vec<CommandSpec> {
                     colors: count(p, "colors", 8, 1, 64)?,
                     resolution: count(p, "resolution", 400, 64, 2048)? as u32,
                     min_area_mm2: p.opt("minArea", 1.0, 0.0, 1000.0)?,
-                    smooth: count(p, "smooth", 1, 0, 5)? as u32,
+                    smooth: count(p, "smooth", 0, 0, 5)? as u32,
                     trace: trace_options(p, 0.7)?,
                     satin_max_mm: p.opt("satinMaxWidth", 6.0, 1.0, 12.0)?,
                     skip_background: p.bool("skipBackground", Some(true))?,

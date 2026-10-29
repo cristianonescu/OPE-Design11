@@ -1,6 +1,9 @@
-//! Colour reduction: median cut to N colours, each mapped to the nearest Brother PEC chart
-//! thread (red-mean distance, `openstitch-core`), plus Floyd–Steinberg dithering.
+//! Colour reduction: a 3×3 modal colour pre-filter and a colour census capped at
+//! [`CENSUS_COLORS`] tracked colours (the prepass Auto Punch and Cross Stitch share, #127 #132),
+//! median cut to N colours, each mapped to the nearest Brother PEC chart thread (the distance
+//! is `openstitch-core`'s), plus Floyd–Steinberg dithering.
 
+use crate::raster::Raster;
 use openstitch_core::{PEC_CHART, Thread, color_distance, nearest_index};
 
 pub type Rgb = [u8; 3];
@@ -26,11 +29,117 @@ pub fn nearest_pec(c: Rgb) -> (usize, Thread) {
     (i, PEC_CHART[i].clone().unwrap_or_else(|| thread(c)))
 }
 
+/// Most distinct colours the census tracks; later colours join their nearest tracked one.
+pub const CENSUS_COLORS: usize = 100;
+
+/// The colour census of an image: the 3×3 modal colour of every opaque pixel (alpha ≥ 128),
+/// counted into at most [`CENSUS_COLORS`] tracked colours, in the order they were first met.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Census {
+    /// Tracked colours with their pixel counts, first met first.
+    pub colors: Vec<(Rgb, u64)>,
+    /// The modal colour of every pixel, `None` where it is transparent.
+    pub modal: Vec<Option<Rgb>>,
+}
+
+impl Census {
+    /// Opaque pixels counted.
+    pub fn pixels(&self) -> u64 {
+        self.colors.iter().map(|c| c.1).sum()
+    }
+}
+
+/// Modal colour of the 3×3 window around `(x, y)`: the colour most of the window's opaque
+/// pixels have. Ties keep the centre's own colour when it is among them, otherwise the
+/// smallest packed colour. `None` for a transparent centre.
+fn modal_at(image: &Raster, x: u32, y: u32) -> Option<Rgb> {
+    let [r, g, b, a] = image.pixel(x, y);
+    if a < 128 {
+        return None;
+    }
+    let centre = [r, g, b];
+    let mut counts: Vec<(Rgb, u8)> = Vec::with_capacity(9);
+    for ny in y.saturating_sub(1)..(y + 2).min(image.height()) {
+        for nx in x.saturating_sub(1)..(x + 2).min(image.width()) {
+            let [r, g, b, a] = image.pixel(nx, ny);
+            if a < 128 {
+                continue;
+            }
+            let c = [r, g, b];
+            match counts.iter_mut().find(|k| k.0 == c) {
+                Some(k) => k.1 += 1,
+                None => counts.push((c, 1)),
+            }
+        }
+    }
+    let most = counts.iter().map(|k| k.1).max().unwrap_or(0);
+    let mut tied: Vec<Rgb> = counts.iter().filter(|k| k.1 == most).map(|k| k.0).collect();
+    if tied.contains(&centre) {
+        return Some(centre);
+    }
+    tied.sort_by_key(|&c| pack(c));
+    tied.first().copied().or(Some(centre))
+}
+
+/// Squared Euclidean RGB distance (the census's own merge metric).
+fn sq_dist(a: Rgb, b: Rgb) -> u32 {
+    (0..3)
+        .map(|k| {
+            let d = i32::from(a[k]) - i32::from(b[k]);
+            (d * d) as u32
+        })
+        .sum()
+}
+
+/// The colour census of `image` (#127): every opaque pixel takes its 3×3 modal colour, and the
+/// modal colours are counted into a histogram of at most [`CENSUS_COLORS`] tracked colours.
+/// Once the cap is reached a new colour is counted under its nearest tracked colour (ties to
+/// the earlier one). Deterministic for a given image.
+pub fn census(image: &Raster) -> Census {
+    let mut colors: Vec<(Rgb, u64)> = Vec::new();
+    let mut modal = Vec::with_capacity(image.width() as usize * image.height() as usize);
+    for y in 0..image.height() {
+        for x in 0..image.width() {
+            let m = modal_at(image, x, y);
+            modal.push(m);
+            let Some(c) = m else { continue };
+            if let Some(k) = colors.iter_mut().find(|k| k.0 == c) {
+                k.1 += 1;
+            } else if colors.len() < CENSUS_COLORS {
+                colors.push((c, 1));
+            } else {
+                let mut best = (u32::MAX, 0);
+                for (i, k) in colors.iter().enumerate() {
+                    let d = sq_dist(c, k.0);
+                    if d < best.0 {
+                        best = (d, i);
+                    }
+                }
+                colors[best.1].1 += 1;
+            }
+        }
+    }
+    Census { colors, modal }
+}
+
 impl Palette {
     /// Median cut of `colors` (a pixel list; order does not matter) into at most `n` boxes,
     /// then PEC matching. Deterministic: ties go to the lowest box / smallest packed colour.
     pub fn build(colors: &[Rgb], n: usize) -> Palette {
-        let means = median_cut(colors, n.max(1));
+        Self::from_histogram(&histogram(colors), n)
+    }
+
+    /// The palette of a colour census: its tracked colours, weighted by their counts, median
+    /// cut into at most `n` boxes, then PEC matching (#127).
+    pub fn from_census(census: &Census, n: usize) -> Palette {
+        let mut hist = census.colors.clone();
+        hist.sort_by_key(|c| pack(c.0));
+        Self::from_histogram(&hist, n)
+    }
+
+    /// Median cut of a sorted colour histogram, then PEC matching.
+    fn from_histogram(hist: &[(Rgb, u64)], n: usize) -> Palette {
+        let means = median_cut_histogram(hist, n.max(1));
         let mut threads: Vec<Thread> = Vec::new();
         let mut chart: Vec<usize> = Vec::new();
         let mut thread_of = Vec::with_capacity(means.len());
@@ -69,9 +178,8 @@ fn pack(c: Rgb) -> u32 {
     u32::from(c[0]) << 16 | u32::from(c[1]) << 8 | u32::from(c[2])
 }
 
-/// Weighted median cut (variance-driven: the box with the largest squared error splits at
-/// its mean). Returns up to `n` mean colours (fewer if the image has fewer distinct colours).
-pub fn median_cut(colors: &[Rgb], n: usize) -> Vec<Rgb> {
+/// Distinct colours of a pixel list with their counts, sorted by packed value.
+fn histogram(colors: &[Rgb]) -> Vec<(Rgb, u64)> {
     let mut packed: Vec<u32> = colors.iter().map(|&c| pack(c)).collect();
     packed.sort_unstable();
     let mut hist: Vec<(Rgb, u64)> = Vec::new();
@@ -82,10 +190,21 @@ pub fn median_cut(colors: &[Rgb], n: usize) -> Vec<Rgb> {
             _ => hist.push((c, 1)),
         }
     }
+    hist
+}
+
+/// Weighted median cut (variance-driven: the box with the largest squared error splits at
+/// its mean). Returns up to `n` mean colours (fewer if the image has fewer distinct colours).
+pub fn median_cut(colors: &[Rgb], n: usize) -> Vec<Rgb> {
+    median_cut_histogram(&histogram(colors), n)
+}
+
+/// [`median_cut`] of a colour histogram sorted by packed value.
+fn median_cut_histogram(hist: &[(Rgb, u64)], n: usize) -> Vec<Rgb> {
     if hist.is_empty() {
         return Vec::new();
     }
-    let mut boxes: Vec<Vec<(Rgb, u64)>> = vec![hist];
+    let mut boxes: Vec<Vec<(Rgb, u64)>> = vec![hist.to_vec()];
     while boxes.len() < n {
         // Split the box with the largest squared error, along its highest-variance channel,
         // at the weighted mean; ties go to the lower box and channel.

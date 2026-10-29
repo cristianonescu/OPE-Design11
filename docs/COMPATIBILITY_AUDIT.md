@@ -1011,7 +1011,15 @@ Line references are relative to `crates/`.
   min/max stretch anchors on. Left: the colour mode's thread snap through the equal-weight
   metric (#119), the sepia re-tone, and the capture comparison (stitch density per tone band
   and total counts against pe-refs-4's Photo Stitch files at defaults) once those captures
-  land; #127 and #132 follow in their own PRs.
+  land. Done 2026-10-29 (#127): Auto Punch reduces colours from a census of the pixels' 3×3
+  modal colours capped at 100 tracked colours (later colours count under their nearest
+  tracked one), removes every 4-connected region of at most `max(4, round(param · 100 /
+  mmPerPx²))` pixels (the parameter in mm², so `minArea / mmPerPx²`) into its neighbour, and
+  decides satin by a centerline-thinness test (stroke width at the deepest point at most
+  `satinMaxWidth`, default 6 mm) instead of the longest scan span across the principal axis:
+  a bent 4 mm stroke is now satin, a 10 mm blob fill. Left for #127: the recorded defaults
+  and the region, satin and stitch counts against pe-refs-4's Auto Punch captures; the
+  optional graph-cut foreground step. #132 follows in its own PR.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.
