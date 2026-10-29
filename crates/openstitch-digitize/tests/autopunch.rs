@@ -464,3 +464,165 @@ fn satin_is_decided_by_stroke_width() {
         }
     }
 }
+
+/// Black horizontal bars on white as the round-4 bar captures' inputs were drawn (pe-refs-4's
+/// `wizimg.py`, 10 px/mm): an image `w_mm` × `h_mm`, bars from x = 10 mm `len_mm` long, the
+/// first at y = 5 mm, `gap_mm` apart.
+fn bars(w_mm: u32, h_mm: u32, len_mm: u32, gap_mm: u32, widths: &[f64]) -> Raster {
+    let mut rs = Vec::new();
+    let mut y = 50;
+    for &w in widths {
+        let h = (w * 10.0).round() as u32;
+        rs.push((100, y, 100 + len_mm * 10, y + h, BLACK));
+        y += h + gap_mm * 10;
+    }
+    rects(w_mm * 10, h_mm * 10, WHITE, &rs)
+}
+
+/// PE-DESIGN 11.50 on the same inputs (round-4 `autopunch-thin-strokes.pes`: 0.75–4 mm satin
+/// with Auto direction and no under sewing, 0.5 mm fill with under sewing, 2018 stitches;
+/// `autopunch-thin-strokes-wide.pes`: 5 and 6 mm satin, 7–12 mm fill across the bar at 90°,
+/// 14 mm fill at 45°, 3197 stitches); one colour; the widest bar sewn first.
+#[test]
+fn bar_widths_choose_satin_and_fill_as_pe_design() {
+    let p = AutoPunch::default();
+    let widths = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0, 4.0];
+    let thin = bars(60, 70, 40, 5, &widths);
+    let out =
+        autopunch::convert(&thin, &Frame::new(0.0, 0.0, 59.9, thin.width()), &p).expect("converts");
+    assert_eq!(out.threads.len(), 1, "automatic colours: black only");
+    let kinds: Vec<(RegionType, bool, bool)> = out
+        .objects
+        .iter()
+        .map(|o| {
+            let r = o.region.as_ref().expect("region");
+            (r.kind, r.auto_direction, r.underlay)
+        })
+        .collect();
+    // Widest first: 4 mm … 0.75 mm satin, then the 0.5 mm fill.
+    let mut want = vec![(RegionType::Satin, true, false); 8];
+    want.push((RegionType::Fill, false, true));
+    assert_eq!(kinds, want);
+    let wide = bars(50, 96, 30, 4, &[5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 14.0]);
+    let out =
+        autopunch::convert(&wide, &Frame::new(0.0, 0.0, 50.0, wide.width()), &p).expect("converts");
+    let got: Vec<(RegionType, f64)> = out
+        .objects
+        .iter()
+        .map(|o| {
+            let r = o.region.as_ref().expect("region");
+            (r.kind, r.angle)
+        })
+        .collect();
+    assert_eq!(
+        got,
+        vec![
+            (RegionType::Fill, 45.0),
+            (RegionType::Fill, 90.0),
+            (RegionType::Fill, 90.0),
+            (RegionType::Fill, 90.0),
+            (RegionType::Fill, 90.0),
+            (RegionType::Satin, 90.0),
+            (RegionType::Satin, 90.0),
+        ]
+    );
+}
+
+/// The owner's four shapes (red disc, green triangle, yellow rectangle, blue square on white)
+/// in two layouts with every shape moved and recoloured.
+fn shapes(moved: bool) -> Raster {
+    let (r, g, b, y) = (
+        [220, 30, 30, 255],
+        [30, 160, 60, 255],
+        [30, 60, 200, 255],
+        [240, 200, 40, 255],
+    );
+    Raster::from_fn(240, 240, |px, py| {
+        let (fx, fy) = (f64::from(px), f64::from(py));
+        let disc = |cx: f64, cy: f64, rad: f64| (fx - cx).powi(2) + (fy - cy).powi(2) < rad * rad;
+        let tri = |x0: f64, x1: f64, base: f64, apex: f64| {
+            let t = (fy - apex) / (base - apex);
+            (0.0..=1.0).contains(&t) && (fx - (x0 + x1) / 2.0).abs() <= t * (x1 - x0) / 2.0
+        };
+        let rect = |x0, y0, x1, y1| px >= x0 && px < x1 && py >= y0 && py < y1;
+        let hit = if moved {
+            [
+                (rect(20, 20, 100, 100), g),
+                (rect(130, 40, 210, 90), b),
+                (tri(20.0, 120.0, 220.0, 150.0), r),
+                (disc(170.0, 170.0, 49.0), y),
+            ]
+        } else {
+            [
+                (disc(60.0, 60.0, 49.0), r),
+                (tri(130.0, 230.0, 100.0, 30.0), g),
+                (rect(20, 150, 100, 200), y),
+                (rect(130, 130, 210, 210), b),
+            ]
+        };
+        hit.iter().find(|h| h.0).map_or(WHITE, |h| h.1)
+    })
+    .expect("size")
+}
+
+/// PE-DESIGN 11.50 sews the four colours yellow, blue, red, green on both layouts
+/// (`autopunch-default.pes`, `autopunch-owner-shapes-moved.pes`): by the colour's R + G + B,
+/// highest first, not by area or position; and finds 4 colours plus white by itself.
+#[test]
+fn colours_sew_in_pe_design_order_wherever_they_are() {
+    for moved in [false, true] {
+        let out = autopunch::convert(
+            &shapes(moved),
+            &Frame::new(0.0, 0.0, 84.7, 240),
+            &AutoPunch::default(),
+        )
+        .expect("converts");
+        let order: Vec<String> = out
+            .threads
+            .iter()
+            .map(|t| t.name.as_deref().unwrap_or_default().to_string())
+            .collect();
+        assert_eq!(out.threads.len(), 4, "{order:?}");
+        let names = |t: &openstitch_core::Thread| (t.red, t.green, t.blue);
+        let (y, b, r, g) = (
+            names(&out.threads[0]),
+            names(&out.threads[1]),
+            names(&out.threads[2]),
+            names(&out.threads[3]),
+        );
+        assert!(
+            y.0 > 200 && y.1 > 150 && y.2 < 100,
+            "yellow first: {order:?}"
+        );
+        assert!(b.2 > 150 && b.0 < 60, "blue second: {order:?}");
+        assert!(r.0 > 200 && r.1 < 60, "red third: {order:?}");
+        assert!(g.1 > 100 && g.0 < 80 && g.2 < 80, "green last: {order:?}");
+        assert!(
+            out.objects
+                .iter()
+                .all(|o| { o.region.as_ref().map(|r| r.kind) == Some(RegionType::Fill) })
+        );
+    }
+}
+
+/// The working copy keeps the image's own colours (most common colour per box), so a black
+/// bar on white never gains grey edge regions.
+#[test]
+fn working_copy_adds_no_blended_colours() {
+    let img = bars(50, 20, 40, 5, &[0.75, 2.0]);
+    let small = img.fit_mode(120);
+    assert!(small.width() <= 120 && small.height() <= 120);
+    for y in 0..small.height() {
+        for x in 0..small.width() {
+            let p = small.pixel(x, y);
+            assert!(p == BLACK || p == WHITE, "{p:?} at {x},{y}");
+        }
+    }
+    assert_eq!(img.fit_mode(10_000), img);
+    // The census of a picture with five flat colours counts five; a photo-like gradient is
+    // capped.
+    let c = palette::census(&shapes(false).fit_mode(400));
+    assert_eq!(c.auto_colors(), 5);
+    let ramp = Raster::from_fn(256, 64, |x, _| [x as u8, (255 - x) as u8, 128, 255]).expect("size");
+    assert!(palette::census(&ramp).auto_colors() <= palette::AUTO_MAX);
+}

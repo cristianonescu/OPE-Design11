@@ -5,6 +5,7 @@
 pub mod boolean;
 pub mod column;
 pub mod compile;
+pub mod concentric;
 pub mod direction;
 mod envelope_presets;
 pub mod fonts;
@@ -30,6 +31,7 @@ pub mod sewing;
 pub mod shapes;
 pub(crate) mod shaping;
 pub mod skeleton;
+pub mod spiral;
 pub mod stamp;
 pub mod stitch_edit;
 pub mod text;
@@ -43,13 +45,16 @@ pub use machine::{
 pub use model::{
     Arrange, BackgroundImage, ChainShape, Design, DesignObject, DesignPage, DesignProperties,
     Feather, FeatherSide, Gradation, Guides, ImageAdjust, LineSewing, LineType, ObjectKind,
-    RegionSewing, RegionType, RunningStitchPath, StaggerKind, StartEnd, StitchBlock, UnderlayStyle,
+    OptimizeOrder, RegionSewing, RegionType, RunningStitchPath, StaggerKind, StartEnd, StitchBlock,
+    UnderlayDensity, UnderlayParts, UnderlayStyle,
 };
 pub use text::{
     CharEdit, FONTS, FontInfo, Layout, PathFit, Spread, TextAlign, TextDirection, TextError,
     TextMetrics, TextSpec, VAlign,
 };
 
+#[cfg(test)]
+mod concentric_spiral_tests;
 #[cfg(test)]
 mod stitch_type_tests;
 #[cfg(test)]

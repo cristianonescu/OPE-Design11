@@ -26,9 +26,17 @@ use std::borrow::Cow;
 mod template;
 
 const EMB_LINE: &str = "CEmbLine";
+/// A shape from the Shapes gallery: a `CEmbLine` record under its own class name (o-gallery-heart).
+const EMB_SPECIAL: &str = "CEmbSpecialShape";
 const GROUP_OBJECT: &str = "CGroupObject";
 const EMB_TEXT: &str = "CEmbNText";
+/// Text with a Text Transform: a `CEmbNText` with the transform after its tail.
+const EMB_TEXT_TRANSFORM: &str = "CEmbDText";
+/// Text fitted to an outline: a `CEmbNText` whose tail ends with the fit and the path.
+const EMB_TEXT_FIT: &str = "CEmbAText";
 const TTF_LETTER: &str = "CTTFLetter";
+/// Bytes of a `CEmbDText`'s Text Transform after its tail.
+const ENVELOPE: usize = 22;
 /// Bytes of a `CTTFLetter` between its character code and its font name.
 const LETTER_ATTRS: usize = 148;
 /// Bytes of a `CEmbLine` body before its geometry, in every reference file mapped so far.
@@ -152,6 +160,8 @@ pub struct Shape {
     pub under_sewing: bool,
     /// Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline.
     pub running_path: u16,
+    /// From the Shapes gallery (`CEmbSpecialShape`): the same record, kept under that class.
+    pub gallery: bool,
     pub vertices: Vec<Vertex>,
 }
 
@@ -185,6 +195,7 @@ impl Shape {
             frequency: 30,
             under_sewing: true,
             running_path: 0,
+            gallery: false,
             vertices: Vec::new(),
         }
     }
@@ -223,8 +234,48 @@ pub struct Text {
     pub vertical: bool,
     /// Moves applied after the text was placed: `a b c d tx ty`, as f32 (identity when none).
     pub transform: [f32; 6],
-    /// Where the Text tool was clicked: the left end of the first baseline, file units.
+    /// Text Attributes alignment: 0 left, 1 centre (r12 and o-text-transform-1 left, the
+    /// round-4 centred texts 1). Right is not mapped.
+    pub align: u16,
+    /// Where the Text tool was clicked, file units: the first baseline's alignment point (its
+    /// left end for left-aligned text, its middle for centred text).
     pub origin: (f32, f32),
+    /// Text Transform (`CEmbDText`), if any.
+    pub envelope: Option<Envelope>,
+    /// Character spacing (Text Attributes), 0.1 mm (tail +0; −10 at −1 mm, 20 at +2 mm in the
+    /// text-fit references).
+    pub char_spacing: f32,
+    /// Fit Text to Outline (`CEmbAText`), if any. A fitted text stores no click point.
+    pub fit: Option<Fit>,
+}
+
+/// Fit Text to Outline: the end of a `CEmbAText`'s tail (compat text-fit-*).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Fit {
+    /// Position in the object list of the shape the text follows; the file stores the shape's
+    /// archive number, so the shape comes before the text.
+    pub path: u16,
+    /// Horizontal alignment: 0 left, 1 centre, 2 right, 4 spaced evenly.
+    pub halign: u16,
+    /// Vertical alignment: 0 above the outline, 1 centred on it, 2 below it.
+    pub valign: u16,
+    /// Text orientation upright instead of along the outline.
+    pub upright: bool,
+    /// The other side of the outline.
+    pub other_side: bool,
+}
+
+/// A Text Transform: the 22 bytes after a `CEmbDText`'s tail.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Envelope {
+    /// PE-DESIGN's code of the preset (not its place in the palette: preset 1 is 24, 3 is 0).
+    pub code: u16,
+    /// The preset's strength, from the level slider (preset 3: 0 at level 0, 50 at the default,
+    /// 100 at level 100).
+    pub strength: f32,
+    /// The arch presets' circle (radius, centre x, centre y) and a fourth value; the other
+    /// presets leave the last arch's numbers there.
+    pub geometry: [f32; 4],
 }
 
 /// One `CTTFLetter` of a [`Text`].
@@ -384,6 +435,8 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
     let mut map: Vec<Option<String>> = Vec::new();
     let mut shapes = Vec::new();
     let mut texts = Vec::new();
+    // (archive number, list position) of every object read, for the paths of fitted texts.
+    let mut numbers: Vec<(u16, u16)> = Vec::new();
     for position in 0..count {
         let class = match read_tag(&mut r, &mut map)? {
             Ok(class) => class,
@@ -397,8 +450,9 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             }
         };
         map.push(None);
-        if class == EMB_TEXT {
-            match read_text(&mut r, &mut map, position as u16)? {
+        numbers.push((map.len() as u16, position as u16));
+        if class == EMB_TEXT || class == EMB_TEXT_TRANSFORM || class == EMB_TEXT_FIT {
+            match read_text(&mut r, &mut map, position as u16, &class, &numbers)? {
                 Some(text) => texts.push(text),
                 None => {
                     return done(
@@ -411,11 +465,14 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             }
             continue;
         }
-        if class != EMB_LINE {
+        if class != EMB_LINE && class != EMB_SPECIAL {
             return done(shapes, texts, Vec::new(), Some(class));
         }
         match read_line(&mut r)? {
-            Some(shape) => shapes.push(shape),
+            Some(shape) => shapes.push(Shape {
+                gallery: class == EMB_SPECIAL,
+                ..shape
+            }),
             None => {
                 return done(
                     shapes,
@@ -491,7 +548,11 @@ fn read_text(
     r: &mut ByteReader<'_>,
     map: &mut Vec<Option<String>>,
     position: u16,
+    class: &str,
+    numbers: &[(u16, u16)],
 ) -> Result<Option<Text>> {
+    let transformed = class == EMB_TEXT_TRANSFORM;
+    let fitted = class == EMB_TEXT_FIT;
     let start = r.offset;
     let fail = |r: &mut ByteReader<'_>| {
         r.offset = start;
@@ -535,11 +596,40 @@ fn read_text(
     for _ in 0..breaks_n {
         breaks.push(r.u16le()? as u16);
     }
-    let tail = r.read(template::TEXT_TAIL.len())?;
+    let tail = r.read(if fitted {
+        template::FIT_TAIL.len()
+    } else {
+        template::TEXT_TAIL.len()
+    })?;
+    let fit = if fitted {
+        let number = u16_at(tail, 118);
+        let Some(&(_, path)) = numbers.iter().find(|&&(n, _)| n == number) else {
+            return fail(r);
+        };
+        Some(Fit {
+            path,
+            halign: u16_at(tail, 104),
+            valign: u16_at(tail, 106),
+            upright: u16_at(tail, 108) != 0,
+            other_side: u16_at(tail, 110) != 0,
+        })
+    } else {
+        None
+    };
     let mut transform = [0_f32; 6];
     for (k, v) in transform.iter_mut().enumerate() {
         *v = f32_at(tail, 78 + 4 * k);
     }
+    let envelope = if transformed {
+        let e = r.read(ENVELOPE)?;
+        Some(Envelope {
+            code: u16_at(e, 0),
+            strength: f32_at(e, 2),
+            geometry: [6, 10, 14, 18].map(|k| f32_at(e, k)),
+        })
+    } else {
+        None
+    };
     Ok(Some(Text {
         position,
         bounds,
@@ -548,7 +638,15 @@ fn read_text(
         line_spacing: f32_at(tail, 4),
         vertical: u16_at(tail, 10) != 0,
         transform,
-        origin: (f32_at(tail, 104), f32_at(tail, 108)),
+        align: u16_at(tail, 8),
+        origin: if fitted {
+            (0.0, 0.0)
+        } else {
+            (f32_at(tail, 104), f32_at(tail, 108))
+        },
+        envelope,
+        char_spacing: f32_at(tail, 0),
+        fit,
     }))
 }
 
@@ -613,6 +711,7 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         frequency: u16_at(body, 174),
         under_sewing: u16_at(body, 180) != 0,
         running_path: u16_at(body, 186),
+        gallery: false,
         vertices,
     }))
 }
@@ -657,6 +756,12 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
                 "PES 0110: text at position {} has {} letters",
                 t.position,
                 t.letters.len()
+            )));
+        }
+        if t.fit.is_some_and(|f| f.path >= t.position) {
+            return Err(FormatError::ValueOutOfRange(format!(
+                "PES 0110: the text at position {} must follow an object written before it",
+                t.position
             )));
         }
         if t.breaks.iter().any(|&b| usize::from(b) >= t.letters.len()) {
@@ -724,12 +829,19 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     for slot in &at_position {
         match slot {
             Some(text) => {
-                archive.tag(&mut w, EMB_TEXT);
-                write_text(&mut w, &mut archive, text);
+                let class = match (&text.fit, &text.envelope) {
+                    (Some(_), _) => EMB_TEXT_FIT,
+                    (None, Some(_)) => EMB_TEXT_TRANSFORM,
+                    (None, None) => EMB_TEXT,
+                };
+                archive.tag(&mut w, class);
+                archive.objects.push(archive.next);
+                write_text(&mut w, &mut archive, text)?;
             }
             None => {
                 let shape = shapes.next().expect("one shape per free position");
-                archive.tag(&mut w, EMB_LINE);
+                archive.tag(&mut w, if shape.gallery { EMB_SPECIAL } else { EMB_LINE });
+                archive.objects.push(archive.next);
                 write_line(&mut w, shape);
             }
         }
@@ -768,6 +880,8 @@ fn patch_pec_header(pec: &mut [u8], hoop_page: bool) {
 struct Archive {
     next: u16,
     classes: Vec<(&'static str, u16)>,
+    /// Archive number of the object at each list position written so far.
+    objects: Vec<u16>,
 }
 
 impl Archive {
@@ -799,7 +913,12 @@ impl Archive {
 /// One `CEmbNText`: bounds, the same as its extent, the identity transform, the letters, the
 /// line breaks and the text's own fields (r12's, with the line spacing, direction, transform
 /// and origin patched).
-fn write_text(w: &mut ByteWriter, archive: &mut Archive, t: &Text) {
+fn write_text(w: &mut ByteWriter, archive: &mut Archive, t: &Text) -> Result<()> {
+    if t.fit.is_some() && t.envelope.is_some() {
+        return Err(FormatError::ValueOutOfRange(
+            "PES 0110: a text both fitted to an outline and transformed".into(),
+        ));
+    }
     for _ in 0..2 {
         for v in t.bounds {
             w.u16le(i64::from(v));
@@ -830,15 +949,44 @@ fn write_text(w: &mut ByteWriter, archive: &mut Archive, t: &Text) {
     for &b in &t.breaks {
         w.u16le(i64::from(b));
     }
-    let mut tail = template::TEXT_TAIL;
+    let mut tail = match t.fit {
+        Some(_) => template::FIT_TAIL.to_vec(),
+        None => template::TEXT_TAIL.to_vec(),
+    };
+    tail[0..4].copy_from_slice(&t.char_spacing.to_le_bytes());
     tail[4..8].copy_from_slice(&t.line_spacing.to_le_bytes());
+    put16(&mut tail, 8, t.align);
     put16(&mut tail, 10, u16::from(t.vertical));
     for (k, v) in t.transform.iter().enumerate() {
         tail[78 + 4 * k..82 + 4 * k].copy_from_slice(&v.to_le_bytes());
     }
-    tail[104..108].copy_from_slice(&t.origin.0.to_le_bytes());
-    tail[108..112].copy_from_slice(&t.origin.1.to_le_bytes());
+    match &t.fit {
+        Some(f) => {
+            let number = *archive.objects.get(usize::from(f.path)).ok_or_else(|| {
+                FormatError::ValueOutOfRange(format!(
+                    "PES 0110: the text at position {} follows the object at {}, which comes after it",
+                    t.position, f.path
+                ))
+            })?;
+            put16(&mut tail, 104, f.halign);
+            put16(&mut tail, 106, f.valign);
+            put16(&mut tail, 108, u16::from(f.upright));
+            put16(&mut tail, 110, u16::from(f.other_side));
+            put16(&mut tail, 118, number);
+        }
+        None => {
+            tail[104..108].copy_from_slice(&t.origin.0.to_le_bytes());
+            tail[108..112].copy_from_slice(&t.origin.1.to_le_bytes());
+        }
+    }
     w.append(&tail);
+    if let Some(e) = &t.envelope {
+        w.u16le(i64::from(e.code));
+        for v in std::iter::once(e.strength).chain(e.geometry) {
+            w.f32le(f64::from(v));
+        }
+    }
+    Ok(())
 }
 
 /// The header fields after the metadata strings up to the thread count: the hoop (150 × 150 mm,

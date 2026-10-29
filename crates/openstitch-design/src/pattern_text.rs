@@ -11,9 +11,8 @@
 //! @VERSION 40000
 //! @UNIT 11
 //! @COOD 2 0 0 8000 8000
-//! @SYSENV 0                 PAS: fill subtype
-//! @SYSENV 1024              PMF: motif height in cell units
-//! @SYSENV 75 75 0           PLF: tile width, height (0.1 mm) and repeat flag
+//! @SYSENV 1                 PAS, PMF: PE-DESIGN 11.50 writes 1
+//! @SYSENV 10000 10000 1     PLF: tile width and height (0.01 mm: 100 mm) and a flag
 //! @TILE 2                   number of tile lines that follow
 //! @TILELINE 0 2 0 0 1024 1024
 //! @TILELINE 1 3 0 1024 512 512 1024 1024
@@ -24,8 +23,10 @@
 //! Mapping into the unit box: a cell x of 0…1024 becomes 0…1 along the tile; cell y grows
 //! downwards like the Design Page. A fill tile keeps the cell as the unit tile. A motif's
 //! stroke runs from its first to its last point along the sewing line and is scaled so those
-//! two points sit at (0, 0) and (1, 0); across the line the cell's 1024 units span the motif
-//! height (y −1…1 is ±512). A decorative row keeps y in 0…1 and is chained left to right. Which
+//! two points sit at (0, 0) and (1, 0), and across it at the same scale (PE-DESIGN's base line
+//! runs the whole cell, so 1024 cell units are one motif size both ways: a point 256 units off
+//! the line sews 1.25 mm off it at the 5 mm default, as in compat/reference/stitches/
+//! line-motif-zigzag-3pt.pes). A decorative row keeps y in 0…1 and is chained left to right. Which
 //! of these PE-DESIGN's own Programmable Stitch Creator writes, and at which physical size the
 //! `@SYSENV` numbers sew, is pinned only by owner-made files; until then the physical sizes are
 //! returned as read and the Design's own tile size applies.
@@ -43,11 +44,12 @@ pub const MAX_DIRECTIVES: usize = 10_000;
 /// The role a `@SYSENV` line gives a file.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextRole {
-    /// `.pas`: a fill or stamp tile; the number is the fill subtype as written.
+    /// `.pas`: a fill or stamp tile; the `@SYSENV` number as written (PE-DESIGN 11.50: 1).
     Fill { subtype: i64 },
-    /// `.pmf`: a motif; the number is its height in cell units as written.
+    /// `.pmf`: a motif; the `@SYSENV` number as written (PE-DESIGN 11.50: 1).
     Motif { height: i64 },
-    /// `.plf`: a decorative-fill row; width and height in 0.1 mm and the repeat flag, as written.
+    /// `.plf`: a decorative-fill tile; width and height in 0.01 mm and a flag, as written
+    /// (PE-DESIGN 11.50: 10000, 10000, 1 for its 100 mm Default Size).
     Decorative {
         width: i64,
         height: i64,
@@ -257,27 +259,35 @@ pub fn parse(text: &str, id: &str, name: &str) -> Result<TextPattern, String> {
             if *w <= 0 || *h <= 0 {
                 return Err("decorative @SYSENV width and height must be positive".into());
             }
-            let mut paths = Vec::new();
-            for p in tile_lines.iter().map(|(_, p)| p).chain(&lines) {
-                let q: Vec<Vec2> = p.iter().map(|&p| unit_pt(p)).collect();
-                // A decorative row chains tiles left to right: its path runs from x = 0 to
-                // x = 1 at one height.
-                let (a, b) = (q[0], *q.last().expect("2+ points"));
-                if a.x != 0.0 || b.x != 1.0 || (a.y - b.y).abs() > 1e-9 {
-                    return Err(
-                        "a decorative row must run from the left edge to the right edge at one height"
-                            .into(),
-                    );
-                }
-                paths.push(q);
+            let paths: Vec<Vec<Vec2>> = tile_lines
+                .iter()
+                .map(|(_, p)| p)
+                .chain(&lines)
+                .map(|p| p.iter().map(|&p| unit_pt(p)).collect())
+                .collect();
+            if paths.is_empty() {
+                return Err("a decorative tile needs at least one @TILELINE".into());
             }
+            // OpenStitch's decorative fill chains tiles into rows, so it needs every path to
+            // run from the left edge to the right edge at one height. PE-DESIGN's Programmable
+            // Stitch Creator draws free lines on a 16 × 16 grid; a tile whose lines do not
+            // chain is kept as a fill tile (its lines sewn by programmable fill) until a
+            // PE-DESIGN decorative-fill reference pins how such lines are sewn.
+            let chains = paths.iter().all(|q| {
+                let (a, b) = (q[0], *q.last().expect("2+ points"));
+                a.x == 0.0 && b.x == 1.0 && (a.y - b.y).abs() <= 1e-9
+            });
             (
                 TextRole::Decorative {
                     width: *w,
                     height: *h,
                     repeat: *r,
                 },
-                PatternKind::Decorative,
+                if chains {
+                    PatternKind::Decorative
+                } else {
+                    PatternKind::Fill
+                },
                 paths,
             )
         }
@@ -294,10 +304,11 @@ pub fn parse(text: &str, id: &str, name: &str) -> Result<TextPattern, String> {
                 .iter()
                 .map(|&p| {
                     let d = p - a;
-                    // Along the stroke 0…1; across in motif heights (±512 cell units = ±1).
+                    // Along the stroke 0…1; across at the same scale (one stroke length is
+                    // one motif size).
                     v2(
                         (d.x * ux + d.y * uy) / len,
-                        ((-d.x * uy + d.y * ux) / (CELL / 2.0)).clamp(-1.0, 1.0),
+                        ((-d.x * uy + d.y * ux) / len).clamp(-1.0, 1.0),
                     )
                 })
                 .collect();
@@ -384,7 +395,7 @@ mod tests {
         let p = &m.pattern.paths[0];
         assert_eq!((p[0], p[2]), (v2(0.0, 0.0), v2(1.0, 0.0)));
         assert!(
-            (p[1].x - 0.5).abs() < 1e-9 && (p[1].y + 1.0).abs() < 1e-9,
+            (p[1].x - 0.5).abs() < 1e-9 && (p[1].y + 0.5).abs() < 1e-9,
             "{p:?}"
         );
 
@@ -423,7 +434,6 @@ mod tests {
             "@SYSENV 0\n@BOGUS 1\n@TILELINE 0 2 0 0 1 1\n",
             "@SYSENV 0\n@SYSENV 0\n@TILELINE 0 2 0 0 1 1\n",
             "@SYSENV 1024\n@LINE 2 5 5 5 5\n",
-            "@SYSENV 75 75 0\n@TILELINE 0 2 0 0 1024 512\n",
             "@SYSENV 0 75 0\n@TILELINE 0 2 0 0 1024 0\n",
             "@SYSENV 0\n@TILELINE 0 2 0 0 1 1\n\u{e9}",
             "@SYSENV 0\n@TILEAREA 2 0 0 1 1\n",

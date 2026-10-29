@@ -221,16 +221,19 @@ mod tests {
         let c = v2(120.0, 260.0);
         r.center = Some(c);
         let spacing = 10.0 / r.density;
-        let points = layers(&square, &r);
-        assert!(points.len() > 100);
-        // Ring radii are multiples of the spacing (plus one offset): distances to the centre
-        // fall into narrow bands.
-        let phase = |p: &Vec2| (p.distance(c) / spacing).fract();
+        assert!(layers(&square, &r).len() > 100);
+        // The whole circles (the first run; PE-DESIGN sews the cut ones after a trim) have
+        // radii that are multiples of the spacing, needle points on the 0.1 mm grid: distances
+        // to the centre fall into narrow bands.
+        let runs = crate::region::layers(std::slice::from_ref(&square), &r, &[])
+            .pop()
+            .expect("top");
+        let points = &runs[0];
         let off = points
             .iter()
             .filter(|p| {
-                let f = (phase(p) - phase(&points[points.len() / 2])).rem_euclid(1.0);
-                f.min(1.0 - f) > 0.1
+                let k = p.distance(c) / spacing;
+                (k - k.round()).abs() * spacing > 1.0
             })
             .count();
         assert!(off * 10 < points.len(), "{off} of {}", points.len());
@@ -267,13 +270,16 @@ mod tests {
     fn reference_point_moves_the_pattern_grid() {
         let square = Contour::rectangle(3.3, 7.1, 300.7, 290.3);
         let mut r0 = sewing(RegionType::ProgrammableFill);
-        // The tile grid lines up with the region's axes at 0°.
+        // The tile grid lines up with the region's axes at 0°. Without a reference point it
+        // starts at the region's top-left corner (3.3, 7.1), as in PE-DESIGN.
         r0.angle = 0.0;
+        r0.pattern = Some("diamonds".into());
         let (pw, ph) = r0.pattern_size_mm();
+        let corner = v2(3.3, 7.1);
         let mut whole = r0.clone();
-        whole.reference = Some(v2(pw * 20.0, ph * 20.0));
+        whole.reference = Some(corner + v2(pw * 20.0, ph * 20.0));
         let mut half = r0.clone();
-        half.reference = Some(v2(pw * 5.0, 0.0));
+        half.reference = Some(corner + v2(pw * 5.0, 0.0));
         let base = layers(&square, &r0);
         let same = layers(&square, &whole);
         let moved = layers(&square, &half);

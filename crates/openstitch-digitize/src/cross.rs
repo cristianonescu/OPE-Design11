@@ -5,7 +5,8 @@
 //!
 //! Defaults, documented and configurable (#132), as PE-DESIGN 11.50's Cross Stitch wizard
 //! shows them (round-4 capture `crossstitch-default.pes`): Cross size 2.5 mm (0.4 cells per
-//! mm), Max. Number of Colors 5, full crosses, Cross Stitch Times Single (`triple` sews each
+//! mm), Max. Number of Colors automatic from the image (0; PE showed 5 for four shapes on
+//! white), full crosses, Cross Stitch Times Single (`triple` sews each
 //! full diagonal three times, as the Cross stitch region type's Triple does), the
 //! border-majority colour left out (PE omits the white ground the same way). The grid is
 //! `round(width / cell) × round(height / cell)` cells over the placed image. Colour → cell:
@@ -40,7 +41,7 @@ pub enum CrossType {
 pub struct CrossStitch {
     /// Grid cell side, mm (1–10); the grid has `1 / cell_mm` cells per mm.
     pub cell_mm: f64,
-    /// Thread colours to reduce to (1–64).
+    /// Thread colours to reduce to (1–64), or 0 for the automatic count.
     pub colors: usize,
     pub kind: CrossType,
     /// Each diagonal sewn three times instead of once (3 or 1 stitches per diagonal).
@@ -52,8 +53,9 @@ pub struct CrossStitch {
 impl CrossStitch {
     /// Default grid cell, mm.
     pub const CELL_MM: f64 = 2.5;
-    /// Default thread colours.
-    pub const COLORS: usize = 5;
+    /// Default thread colours: 0, the automatic count PE-DESIGN fills in from the image
+    /// (5 for the owner's four shapes on white).
+    pub const COLORS: usize = 0;
 
     /// Stitches per cell for these settings: a full cross is two full diagonals (1 or 3
     /// stitches each) and four half diagonals; a half cross one "/" and a step along the bottom.
@@ -110,14 +112,18 @@ pub fn convert(image: &Raster, frame: &Frame, p: &CrossStitch) -> Result<Convert
     // each cell takes the thread most of its pixels have, and is empty when most of its
     // pixels are transparent.
     let side = (cols.max(rows) * 8).clamp(64, 1024) as u32;
-    let work = image.fit(side);
+    let work = image.fit_mode(side);
     let census = palette::census(&work);
     if census.colors.is_empty() {
         return Err(DigitizeError::Empty(
             "the image is fully transparent".into(),
         ));
     }
-    let palette = Palette::from_census(&census, p.colors.clamp(1, 64));
+    let colors = match p.colors {
+        0 => census.auto_colors(),
+        n => n.min(64),
+    };
+    let palette = Palette::from_census(&census, colors);
     let (ww, wh) = (work.width() as usize, work.height() as usize);
     // Thread of every working pixel from its modal colour; the transparent ones vote "empty".
     let pixel_thread: Vec<usize> = census
@@ -165,13 +171,14 @@ pub fn convert(image: &Raster, frame: &Frame, p: &CrossStitch) -> Result<Convert
             count[l as usize] += 1;
         }
     }
-    let mut order: Vec<usize> = (0..palette.threads.len())
-        .filter(|&t| count[t] > 0)
-        .collect();
+    // PE-DESIGN's colour order: brightest channel sum first.
+    let order = palette::brightness_order(
+        &palette,
+        (0..palette.threads.len()).filter(|&t| count[t] > 0),
+    );
     if order.is_empty() {
         return Err(DigitizeError::Empty("every cell is background".into()));
     }
-    order.sort_by_key(|&t| (std::cmp::Reverse(count[t]), t));
     let mut objects = Vec::new();
     for &t in &order {
         let mut stitches = Vec::new();

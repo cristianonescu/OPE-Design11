@@ -16,6 +16,12 @@ use crate::stamp;
 const MAX_ROWS: usize = 20_000;
 const MAX_POINTS: usize = 2_000_000;
 
+/// Longest programmable-fill stitch between two needle points, 0.1 mm. PE-DESIGN 11.50 sews
+/// only where rows cross the pattern lines and leaves gaps of 8 mm unsplit
+/// (compat/reference/stitches/prog-fill-square-4pt.pes); longer gaps are split evenly at
+/// OpenStitch's general long-stitch bound, 12 mm.
+pub const PROGRAMMABLE_MAX_STITCH: f64 = 120.0;
+
 /// Layers (runs) of region type `r.kind` (not fill or satin), rows at `angle` degrees.
 pub fn generate(
     closed: &[Contour],
@@ -59,16 +65,17 @@ pub fn generate(
                     row_spacing: row_spacing * 2.0,
                     ..p
                 };
-                layers.push(region.rows(generate::fill(closed, &base, holes), base.stitch_length));
+                // Frequency (or the random stagger) staggers the base sewing only, as in
+                // PE-DESIGN (greyed there without Base Sewing): the pattern rows have no grid.
+                layers.push(region.rows(
+                    generate::fill_shifted(closed, &base, holes, r.fill_stagger()),
+                    base.stitch_length,
+                ));
             }
-            // Embossed tile areas sew stitches up to EMBOSS_MAX (`programmable` splits the
-            // others to the stitch length itself).
-            let limit = if pattern.region_mask().is_some() {
-                p.stitch_length.max(stamp::EMBOSS_MAX)
-            } else {
-                p.stitch_length
-            };
-            layers.push(region.rows(programmable(closed, holes, &p, &tile, r.frequency), limit));
+            // `programmable` places every needle point itself (crossings, area edges, splits
+            // of long gaps); the rows are only rerouted, not split again.
+            let limit = PROGRAMMABLE_MAX_STITCH.max(stamp::EMBOSS_MAX);
+            layers.push(region.rows(programmable(closed, holes, &p, &tile), limit));
             layers
         }
         RegionType::Piping => {
@@ -83,10 +90,13 @@ pub fn generate(
         RegionType::MotifFill => {
             let pattern = patterns::resolve(user, PatternKind::Motif, r.pattern.as_deref());
             let period = pw + spacing;
+            // The motif's base line runs through the middle of its row band, as in PE-DESIGN's
+            // motif cell (base line at 512 of 1024): rows start half a motif below the grid
+            // origin, the region's top-left corner (compat/reference/stitches/motif-fill-2pt.pes).
             let unit: Vec<Vec2> = pattern.paths[0]
                 .iter()
-                .map(|q| v2(q.x * pw, q.y * ph))
-                .chain(std::iter::once(v2(period, 0.0)))
+                .map(|q| v2(q.x * pw, q.y * ph + ph / 2.0))
+                .chain(std::iter::once(v2(period, ph / 2.0)))
                 .collect();
             let shift = r.row_offset.unwrap_or(50.0) / 100.0;
             let rows = tile_rows(closed, holes, angle, &unit, period, ph + spacing, shift);
@@ -117,30 +127,41 @@ pub fn generate(
             vec![region.pieces_raw(cross_stitch(closed, holes, angle, spacing, r.triple))]
         }
         RegionType::ConcentricCircle => {
-            let c = r.center.unwrap_or_else(|| centre(closed));
-            let rings = concentric(closed, c, row_spacing, pitch);
-            let mut pieces = Vec::new();
-            for ring in rings {
-                pieces.extend(clip(&ring, closed, holes));
-            }
-            if !r.start_inside {
-                pieces.reverse();
-            }
-            vec![region.sequence(nearest_next(pieces))]
+            // PE-DESIGN 11.50 (see crate::concentric): whole circles, a trim, the cut ones.
+            let p = crate::concentric::ConcentricParams {
+                center: r.center.unwrap_or_else(|| centre(closed)),
+                spacing: row_spacing,
+                pitch,
+                start_inside: r.start_inside,
+                entry: r.entry,
+            };
+            let cc = crate::concentric::concentric(closed, holes, &p);
+            let arcs = region.sequence_raw(cc.arcs);
+            let full: Vec<Run> = if cc.full.len() >= 2 {
+                vec![cc.full]
+            } else {
+                Vec::new()
+            };
+            vec![if cc.arcs_first {
+                arcs.into_iter().chain(full).collect()
+            } else {
+                full.into_iter().chain(arcs).collect()
+            }]
         }
         RegionType::Radial => {
             let c = r.center.unwrap_or_else(|| centre(closed));
             vec![region.sequence(radial(closed, holes, c, row_spacing, pitch))]
         }
         RegionType::Spiral => {
-            let c = r.center.unwrap_or_else(|| centre(closed));
-            let spiral = archimedean(c, reach(closed, c), row_spacing, pitch, r.counterclockwise);
-            let mut pieces = clip(&spiral, closed, holes);
-            if !r.start_inside {
-                pieces.reverse();
-                pieces.iter_mut().for_each(|p| p.reverse());
-            }
-            vec![region.sequence(nearest_next(pieces))]
+            // PE-DESIGN 11.50 (see crate::spiral): the outline offset a row per turn.
+            let p = crate::spiral::SpiralParams {
+                spacing: row_spacing,
+                pitch,
+                reverse_winding: r.counterclockwise,
+                start_inside: r.start_inside,
+                entry: r.entry,
+            };
+            vec![region.sequence_raw(crate::spiral::spiral(closed, holes, &p))]
         }
         RegionType::FlexibleSpiral => {
             let spiral = flexible_spiral(closed, spacing, pitch, r.counterclockwise);
@@ -355,38 +376,37 @@ struct Tile<'a> {
     column_offset: f64,
 }
 
-/// Programmable fill: fill rows whose needle points fall on the tiled pattern's lines (so
-/// the pattern shows as a texture) plus a regular grid where the pattern leaves gaps.
-fn programmable(
-    closed: &[Contour],
-    holes: &[Contour],
-    p: &RegionParams,
-    tile: &Tile,
-    frequency: Option<f64>,
-) -> Vec<Run> {
-    let f = frequency.unwrap_or(33.0) / 100.0;
-    let l = p.stitch_length;
+/// Programmable fill, as PE-DESIGN 11.50 sews it (compat/reference/stitches/prog-fill-*.pes):
+/// rows at the region's direction and density whose needle points are the row's two ends and
+/// every point where the row crosses a line of the pattern tiled on the page axes (tile
+/// origin at the region's top-left corner or the reference point; see `region::layers`).
+/// A row that follows the previous one along the same edge leaves out its first end point, so
+/// consecutive rows share their turning point and no stitch runs along the outline (PE-DESIGN
+/// sews 3, 5, 7… points per row on the line tile, never a turn of two points). Nothing else
+/// is added: gaps between crossings stay one stitch up to
+/// [`PROGRAMMABLE_MAX_STITCH`] and are split evenly beyond it. Embossed and engraved tile
+/// areas add needle points at their edges, drop those inside embossed areas and split
+/// engraved stretches into short stitches.
+fn programmable(closed: &[Contour], holes: &[Contour], p: &RegionParams, tile: &Tile) -> Vec<Run> {
+    let rad = p.angle.to_radians();
     let spans = row_spans(closed, holes, p);
     let mask = tile.pattern.region_mask();
-    generate::chain_spans(&spans, p, |span, row, forward| {
+    generate::chain_satin_spans(&spans, p, |span, row, forward| {
         let (a, b) = (*span.start(), *span.end());
-        let marks = tile_crossings(tile, span, row_y(&spans, row), p.row_spacing, l);
-        let mut xs: Vec<f64> = grid_points(span, l, (row as f64 * f).fract())
-            .into_iter()
-            .filter(|&x| x == a || x == b || marks.iter().all(|m| (m - x).abs() > l * 0.3))
-            .collect();
+        let y = row_y(&spans, row);
+        let (from, to) = (v2(a, y).rotated(rad), v2(b, y).rotated(rad));
+        let mut xs = vec![a, b];
         xs.extend(
-            marks
-                .iter()
-                .copied()
+            tile_crossings(tile, from, to, p.row_spacing, p.stitch_length / 3.0)
+                .into_iter()
+                .map(|t| a + (b - a) * t)
                 .filter(|&m| m - a > 2.0 && b - m > 2.0),
         );
         xs.sort_by(f64::total_cmp);
         xs.dedup_by(|x, y| (*x - *y).abs() < 2.0);
-        let y = row_y(&spans, row);
         let effects = mask
             .as_ref()
-            .map(|m| effect_spans(tile, m, a, b, y))
+            .map(|m| effect_spans(tile, m, a, b, y, rad))
             .unwrap_or_default();
         let effect = |x: f64| {
             effects
@@ -395,25 +415,27 @@ fn programmable(
                 .map(|&(_, _, f)| f)
         };
         if !effects.is_empty() {
-            // Needle points at every area edge; none inside an embossed area.
-            xs.extend(
-                effects
-                    .iter()
-                    .flat_map(|&(s, e, _)| [s, e])
-                    .filter(|&x| x > a && x < b),
-            );
+            // Needle points at every area edge, except where a crossing already marks it (the
+            // mask's edges lie within two of its cells of the line); none inside an embossed
+            // area.
+            let tol = 2.0 * tile.width.max(tile.height) / patterns::MASK_CELLS as f64;
+            let edges: Vec<f64> = effects
+                .iter()
+                .flat_map(|&(s, e, _)| [s, e])
+                .filter(|&x| x > a && x < b && xs.iter().all(|m| (m - x).abs() >= tol))
+                .collect();
+            xs.extend(edges);
             xs.retain(|&x| effect(x) != Some(RegionEffect::Emboss));
             xs.sort_by(f64::total_cmp);
             xs.dedup_by(|x, y| (*x - *y).abs() < 1.0);
         }
-        // No stitch longer than the stitch length (short in engraved areas, long in
-        // embossed ones).
+        // Long gaps split evenly (short in engraved areas, long in embossed ones).
         let mut out = vec![xs[0]];
         for w in xs.windows(2) {
             let max = match effect((w[0] + w[1]) / 2.0) {
                 Some(RegionEffect::Engrave) => stamp::ENGRAVE_STEP,
-                Some(RegionEffect::Emboss) => stamp::EMBOSS_MAX,
-                None => l,
+                Some(RegionEffect::Emboss) => stamp::EMBOSS_MAX.max(PROGRAMMABLE_MAX_STITCH),
+                None => PROGRAMMABLE_MAX_STITCH,
             };
             let n = ((w[1] - w[0]) / max).ceil().max(1.0) as usize;
             out.extend((1..=n).map(|k| w[0] + (w[1] - w[0]) * k as f64 / n as f64));
@@ -425,41 +447,51 @@ fn programmable(
     })
 }
 
-/// Unit-tile coordinates of rotated point (`x`, `y`) (the inverse of the tiling in
-/// [`tile_crossings`]).
-fn tile_uv(tile: &Tile, x: f64, y: f64) -> Vec2 {
+/// Origin of tile (`i`, `j`) on the page: tile columns `i` along x, rows `j` along y; odd
+/// columns shift down by the column offset, odd rows right by the row offset.
+fn tile_origin(tile: &Tile, i: i64, j: i64) -> Vec2 {
     let (w, h) = (tile.width, tile.height);
-    let base = (x / w).floor() as i64;
+    let xo = if j.rem_euclid(2) == 1 {
+        tile.row_offset * w
+    } else {
+        0.0
+    };
+    let yo = if i.rem_euclid(2) == 1 {
+        tile.column_offset * h
+    } else {
+        0.0
+    };
+    v2(i as f64 * w + xo, j as f64 * h + yo)
+}
+
+/// Unit-tile coordinates of page point `q` (the inverse of [`tile_origin`]'s tiling).
+fn tile_uv(tile: &Tile, q: Vec2) -> Vec2 {
+    let (w, h) = (tile.width, tile.height);
+    let j0 = (q.y / h).floor() as i64;
+    let i0 = (q.x / w).floor() as i64;
     let mut best = v2(0.0, 0.0);
-    for i in [base, base - 1] {
-        let yo = if i.rem_euclid(2) == 1 {
-            tile.column_offset * h
-        } else {
-            0.0
-        };
-        let j = ((y - yo) / h).floor();
-        let xo = if (j as i64).rem_euclid(2) == 1 {
-            tile.row_offset * w
-        } else {
-            0.0
-        };
-        let u = (x - i as f64 * w - xo) / w;
-        best = v2(u, (y - yo - j * h) / h);
-        if (0.0..1.0).contains(&u) {
-            break;
+    for j in [j0, j0 - 1] {
+        for i in [i0, i0 - 1] {
+            let o = tile_origin(tile, i, j);
+            let uv = v2((q.x - o.x) / w, (q.y - o.y) / h);
+            if (0.0..1.0).contains(&uv.x) && (0.0..1.0).contains(&uv.y) {
+                return uv;
+            }
+            best = uv;
         }
     }
     best
 }
 
-/// Pieces (start, end, effect) of the row a…b at rotated `y` inside embossed or engraved
-/// areas of the tile, found every 0.2 mm.
+/// Pieces (start, end, effect) of the row a…b at rotated `y` (rows at `rad`) inside embossed
+/// or engraved areas of the tile, found every 0.2 mm.
 fn effect_spans(
     tile: &Tile,
     mask: &RegionMask,
     a: f64,
     b: f64,
     y: f64,
+    rad: f64,
 ) -> Vec<(f64, f64, RegionEffect)> {
     const STEP: f64 = 2.0;
     let mut out: Vec<(f64, f64, RegionEffect)> = Vec::new();
@@ -467,7 +499,7 @@ fn effect_spans(
     let n = ((b - a) / STEP).ceil().max(1.0) as usize;
     for k in 0..=n {
         let x = a + (b - a) * k as f64 / n as f64;
-        let e = mask.effect_at(tile_uv(tile, x, y));
+        let e = mask.effect_at(tile_uv(tile, v2(x, y).rotated(rad)));
         if open.map(|o| o.1) != e {
             if let Some((s, f)) = open.take() {
                 out.push((s, x, f));
@@ -489,51 +521,87 @@ fn row_y(spans: &[RowSpan], row: usize) -> f64 {
         .unwrap_or_default()
 }
 
-/// Positions along the row at rotated `y` where the tiled pattern's lines cross it; lines
-/// nearly parallel to the row (within one row spacing) add points every third of a stitch.
-fn tile_crossings(tile: &Tile, span: &Span, y: f64, row_spacing: f64, l: f64) -> Vec<f64> {
+/// Where the page segment `from`…`to` (one row) crosses the lines of the pattern tiled on the
+/// page axes, as fractions 0…1 of the segment. A pattern line nearly along the row (spanning
+/// less than one row spacing across it) adds points every `along_step` along the part it
+/// shares with the row, when it lies within half a row spacing of the row, so it still shows.
+fn tile_crossings(
+    tile: &Tile,
+    from: Vec2,
+    to: Vec2,
+    row_spacing: f64,
+    along_step: f64,
+) -> Vec<f64> {
     let (w, h) = (tile.width, tile.height);
-    let (a, b) = (*span.start(), *span.end());
+    let d = to - from;
+    let len = d.length();
+    if len <= 0.0 || w <= 0.0 || h <= 0.0 {
+        return Vec::new();
+    }
+    let dir = d * (1.0 / len);
+    let (lo, hi) = (
+        v2(from.x.min(to.x), from.y.min(to.y)),
+        v2(from.x.max(to.x), from.y.max(to.y)),
+    );
     let mut out = Vec::new();
-    let first = (a / w).floor() as i64 - 1;
-    let last = (b / w).ceil() as i64 + 1;
-    for i in first..=last {
-        let yo = if i.rem_euclid(2) == 1 {
-            tile.column_offset * h
+    // Only the tiles the row passes: per tile column (widened by one tile for the offsets),
+    // the tile rows between the row's lowest and highest y over that column.
+    let (i0, i1) = ((lo.x / w).floor() as i64 - 2, (hi.x / w).ceil() as i64 + 1);
+    let y_at = |x: f64| {
+        if d.x.abs() < 1e-9 {
+            None
         } else {
-            0.0
+            Some(from.y + (x.clamp(lo.x, hi.x) - from.x) * d.y / d.x)
+        }
+    };
+    for i in i0..=i1 {
+        let (xa, xb) = ((i - 1) as f64 * w, (i + 2) as f64 * w);
+        let (ya, yb) = match (y_at(xa), y_at(xb)) {
+            (Some(a), Some(b)) => (a.min(b), a.max(b)),
+            _ => (lo.y, hi.y),
         };
-        let j = ((y - yo) / h).floor();
-        let xo = if (j as i64).rem_euclid(2) == 1 {
-            tile.row_offset * w
-        } else {
-            0.0
-        };
-        let x0 = i as f64 * w + xo;
-        let v = (y - yo - j * h) / h;
-        for path in &tile.pattern.paths {
-            for seg in path.windows(2) {
-                let (p, q) = (seg[0], seg[1]);
-                if ((p.y - q.y) * h).abs() < row_spacing {
-                    let my = (p.y + q.y) / 2.0;
-                    if ((my - v) * h).abs() <= row_spacing / 2.0 {
-                        let (lo, hi) = (p.x.min(q.x) * w, p.x.max(q.x) * w);
-                        let mut x = lo;
-                        while x <= hi {
-                            out.push(x0 + x);
-                            x += l / 3.0;
-                        }
+        let (j0, j1) = ((ya / h).floor() as i64 - 2, (yb / h).ceil() as i64 + 1);
+        for j in j0..=j1 {
+            let o = tile_origin(tile, i, j);
+            for path in &tile.pattern.paths {
+                for seg in path.windows(2) {
+                    let p = o + v2(seg[0].x * w, seg[0].y * h);
+                    let q = o + v2(seg[1].x * w, seg[1].y * h);
+                    let e = q - p;
+                    let denom = d.x * e.y - d.y * e.x;
+                    if e.length() <= 0.0 {
+                        continue;
                     }
-                    continue;
-                }
-                if (p.y - v) * (q.y - v) <= 0.0 {
-                    let u = p.x + (v - p.y) / (q.y - p.y) * (q.x - p.x);
-                    out.push(x0 + u * w);
+                    let across = (e.x * -dir.y + e.y * dir.x).abs();
+                    if across < row_spacing {
+                        // Along the row: points along the shared part if it is this row's.
+                        let off = (p - from).x * -dir.y + (p - from).y * dir.x;
+                        if off.abs() <= row_spacing / 2.0 {
+                            let (s0, s1) = (
+                                ((p - from).x * dir.x + (p - from).y * dir.y) / len,
+                                ((q - from).x * dir.x + (q - from).y * dir.y) / len,
+                            );
+                            let (s0, s1) = (s0.min(s1).max(0.0), s0.max(s1).min(1.0));
+                            let step = (along_step / len).max(1e-6);
+                            let mut s = s0;
+                            while s <= s1 {
+                                out.push(s);
+                                s += step;
+                            }
+                        }
+                        continue;
+                    }
+                    let f = p - from;
+                    let t = (f.x * e.y - f.y * e.x) / denom;
+                    let u = (f.x * d.y - f.y * d.x) / denom;
+                    if (0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u) {
+                        out.push(t);
+                    }
                 }
             }
         }
     }
-    out.retain(|&x| x > a && x < b);
+    out.retain(|&t| t > 0.0 && t < 1.0);
     out.sort_by(f64::total_cmp);
     out
 }
@@ -764,23 +832,6 @@ fn cross_stitch(
 
 // ------------------------------------------------------------------ circles and spirals
 
-/// Concentric circles about `c`, `spacing` apart, out to the farthest outline point.
-fn concentric(closed: &[Contour], c: Vec2, spacing: f64, pitch: f64) -> Vec<Vec<Vec2>> {
-    let r_max = reach(closed, c);
-    let mut out = Vec::new();
-    let mut r = spacing / 2.0;
-    while r <= r_max && out.len() < MAX_ROWS {
-        let n = ((std::f64::consts::TAU * r / pitch.max(1.0)).ceil() as usize).max(8);
-        out.push(
-            (0..=n)
-                .map(|k| c + v2(r, 0.0).rotated(std::f64::consts::TAU * k as f64 / n as f64))
-                .collect(),
-        );
-        r += spacing;
-    }
-    out
-}
-
 /// Radial lines from the centre, `spacing` apart at the outer edge. Lines are thinned towards
 /// the centre: a line of level L (the number of trailing zero bits of its index) starts where
 /// the lines of higher levels are `spacing` apart, so the centre is not overloaded. Lines run
@@ -815,24 +866,6 @@ fn radial(
             pieces.iter_mut().for_each(|p| p.reverse());
         }
         out.extend(pieces);
-    }
-    out
-}
-
-/// Archimedean spiral about `c` (radius grows `spacing` per turn) out to `r_max`, points about
-/// `pitch` apart; clockwise on screen unless `ccw`.
-fn archimedean(c: Vec2, r_max: f64, spacing: f64, pitch: f64, ccw: bool) -> Vec<Vec2> {
-    let sign = if ccw { -1.0 } else { 1.0 };
-    let mut out = vec![c];
-    let mut theta: f64 = 0.0;
-    while out.len() < MAX_POINTS {
-        let r = spacing * theta / std::f64::consts::TAU;
-        theta += pitch / r.max(spacing);
-        let r = spacing * theta / std::f64::consts::TAU;
-        out.push(c + v2(r, 0.0).rotated(sign * theta));
-        if r > r_max + spacing {
-            break;
-        }
     }
     out
 }

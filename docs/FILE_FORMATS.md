@@ -88,6 +88,16 @@ rgb(255, 128, 0) to 11 Deep Gold rather than 62 Orange (`thread-match-swatches.p
 matcher picks the chart entry for JEF, SEW, HUS and PCS. `approximate_index` is the "approximate" palette matcher
 (city-block winner, squared-Euclidean fallback) for the built-in sew palette.
 
+Brother catalogue codes: PE-DESIGN 11.50's BROTHER EMBROIDERY chart has exactly 61 rows, one
+per PEC entry 1–61, with a 3-digit code and brand `EMBROIDERY` (none for 62–64).
+`openstitch_core::BROTHER_EMBROIDERY` lists `(PEC index, code, name)` for all 61, with
+`brother_embroidery_code(pec_index)` and `pec_index_of_brother_code(code)` (800 RED = PEC 5,
+405 BLUE = 2, 900 BLACK = 20). Sources: the chart's rows read from PE's Sewing Attributes ▸ Color
+tab, matched to the PEC chart by name and checked against the 30 pairs PE writes in the owner's
+own `#PES0110` thread tables (all agree); 307 LINEN is PEC 42 by elimination (pyembroidery names
+42 and 57 both "Flesh Pink", and PE's files put 124 FLESH PINK at 57). The dialog's own first
+column (1 BLACK, 2 WHITE, 3 RED, …) is not the PEC index.
+
 ## PES
 
 `#PESvvvv` signature, u32 offset of the PEC section, version-dependent object section, PEC
@@ -198,6 +208,10 @@ below is pinned by a test in `tests/pes11.rs`.
   locates the table as the one that parses to exactly where the object list starts.
 - **Coordinates** are 0.1 mm with the page's top-left corner at (500, 500), y down, in every
   file so far (all on a 100 × 100 mm page).
+- `CEmbSpecialShape` (a Shapes-gallery shape: o-gallery-heart, the five gallery shapes of
+  shape-start-points, the appliqué's heart) is a `CEmbLine` record byte for byte under its own
+  class name: the same 4432-byte body, geometry header and vertices, and no gallery id. The
+  reader reads it as a shape (`Shape::gallery`) and the writer writes it back under its class.
 - Classes seen: `CEmbLine` (Shape tools: rectangle, ellipse, open and closed lines), `CEmbNText`
   with one `CTTFLetter` per letter (text), `CEmbSpecialShape` (Shapes gallery presets).
 
@@ -295,9 +309,10 @@ r26 (clicked 10 mm further right), o-text-10-letters (size 8), o-text-vertical a
 | letter +144 | u16 700 in r12–r26, 900 in the later files: likely the font weight (the same Lato Bold) | r12, o-text-* |
 | after the letters | u16 count of line breaks, then per break the u16 index of the letter that starts the new line | text-line-spacing-* (`HH`: 1, 1) |
 | tail +4 | f32 line spacing, % | text-line-spacing-50/100/150 |
+| tail +8 | u16 alignment: 0 left, 1 centre (right not sampled) | r12, o-text-transform-1 (0); the round-4 and text-transform-N centred texts (1) |
 | tail +10 | u16 direction: 0 horizontal, 1 vertical | o-text-vertical |
 | tail +78 | transform again, 6 × f32 | r13 |
-| tail +104 | f32 x, y: the click, the left end of the first baseline (file units) | r12 (600, 700), r26 (700, 700), r15 (900, 1000) |
+| tail +104 | f32 x, y: the click, the first baseline's alignment point (its left end for left-aligned text, its middle for centred text; file units) | r12 (600, 700), r26 (700, 700), r15 (900, 1000), text-transform-N (1000, 1000) |
 
 A space is a letter like any other, with the same attributes (r27, `A B`), and is listed in the
 sewing order. The tail is 112 bytes; the fields not listed (Text Attributes such as kerning, character spacing,
@@ -306,10 +321,44 @@ table: r24 changes only the table. In the sewing-order list a text of n letters 
 connections into its letters (parts 0, 2 … 2n − 2, the first object's first skipped), then the
 letters (1, 3 … 2n − 1); a sewn line adds no parts (text-sewing-order).
 
+#### `CEmbDText` (Text Transform)
+
+A text with a Text Transform is a `CEmbDText`: the `CEmbNText` record unchanged (letters, line
+breaks, 112-byte tail), then 22 bytes. Evidence: compat/reference/text/text-transform-1 … 26
+(HHHHHHH, each preset at the default level), o-text-transform-1, and the owner's round-4 captures
+of every preset at levels 0, 25, 50, 75 and 100 on `OpenStitch` and of every preset at the default
+level on `Agjy 123`.
+
+| Offset | Content |
+|---|---|
+| +0 | u16 PE-DESIGN's code of the preset. By palette place 1–26: 24, 25, 0, 1, 8, 9, 4, 5, 10, 11, 3, 2, 7, 6, 18, 19, 12, 14, 20, 21, 17, 16, 22, 23, 13, 15 (the same on all three texts) |
+| +2 | f32 strength from the level slider. Default level: 30 (presets 1, 2, 13, 14), 50 (3, 4, 7, 8, 11, 12, 17, 18, 21, 22, 25, 26), 20 (5, 6, 15, 16, 19, 20, 23, 24), 10 (9, 10). Preset 3 reads 0 at level 0 and 100 at level 100; preset 1 falls from 41.2 at level 0 to 1.15 at 100 |
+| +6 | 4 × f32. For the arches (presets 1 and 2): the circle's radius, the straight text's centre x, and the circle's centre y, a radius below the baseline for 1 and a radius above the size's top for 2. The radius is the straight text's advance width (its letters' advances, as PE-DESIGN measures its text box, not their ink) over 1.887 on all three texts, and grows with the level (10000 at level 100: flat). For the fans (13, 14): 1000 and zeros in the file made before any arch. For every other preset: the last arch's numbers, carried over from file to file in one session, so not read by PE-DESIGN |
+
+#### `CEmbAText` (Fit Text to Outline)
+
+A text fitted to an outline is a `CEmbAText`: the `CEmbNText` letters and line breaks, then a
+122-byte tail that agrees with the plain text's up to +102 (+0 f32 character spacing in 0.1 mm,
+−10 and 20 in text-fit-spacing-m1 and -p2; +4 line spacing; +8 the Text Attributes alignment,
+left; +78 the transform) and then holds the fit instead of the click point. Evidence: the 14
+compat/reference/text/text-fit-* files, ABCDE (or AHHHH) fitted to a 60 mm circle with one
+Fit Text to Outline option changed per file.
+
+| Tail offset | Content |
+|---|---|
+| +104 | u16 horizontal alignment: 0 left, 1 centre (the default), 2 right, 4 spaced evenly (+0 then holds the computed spacing: 300.4 in text-fit-halign-spaced) |
+| +106 | u16 vertical alignment: 0 above the outline (default), 1 centred, 2 below |
+| +108 | u16 orientation: 0 along the outline, 1 upright |
+| +110 | u16 other side: 1 when ticked |
+| +118 | u16 the outline's MFC archive number (2: the circle, the list's first object; the outline is written before the text), then u16 1 |
+
 Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
 segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
-(kerning, character spacing, alignment, rotation), the letter's line width and pitch fields, `CEmbDText` (Text Transform), `CEmbAText` (text on an
-outline), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the reader refuses) and
+(kerning, rotation, right alignment; character spacing on plain text), the letter's line width
+and pitch fields, the Text Transform levels other than the default (OpenStitch has none), the
+fit's fifth alignment (stretched), Manual Punch blocks (a `CEmbLine` body whose geometry header
+is a block list: a u32 count, 3 in o-manual-straight and o-manual-curve, then per-block entries;
+owner files with 1, 2 and 3 blocks requested), the appliqué's fifth object and
 the preview images.
 
 #### Writer
@@ -324,14 +373,18 @@ OpenStitch's Brother PEC chart gets the BROTHER EMBROIDERY catalogue number and 
 catalogue number, brand and chart), one `CEmbLine` per visible shape with every mapped field set, the
 groups, the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
 as `CEmbNText` (letters at the text's size, Satin or Fill, an optional running, triple or
-zigzag line at PE's defaults, line breaks of left-aligned text, the line spacing %, and the
-click point: the first line's start, measured on OpenStitch's layout for centred and
-right-aligned text). What it cannot hold fails with the object named: stitch patterns, several
+zigzag line at PE's defaults, line breaks, the line spacing %, left or centre alignment and the
+click point at the alignment point), and fitted to an outline as `CEmbAText` (the fit settings, the
+character spacing and the outline's archive number; the outline must come before the text),
+and with a Text Transform as `CEmbDText` (the preset's code,
+the default level's strength and, for the arches, the circle measured on OpenStitch's straight
+layout; zeros where PE-DESIGN leaves stale numbers). What it cannot hold fails with the object named: stitch patterns, several
 outlines in one object, programmable, motif and the other region types, motif, stem,
 candlewicking, chain and cutting lines; text in another font, with white space other than
-spaces and line breaks, vertical, on an outline, with a Text Transform, rotated or scaled, with letter spacing, kerning, per-character
-edits or under sewing. Checks: the 55 owner files whose list the reader parses completely (37
-with shapes, 18 with text) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
+spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
+lines, rotated or scaled, with letter spacing, kerning, per-character
+edits or under sewing. Checks: the 99 owner files whose list the reader parses completely (37
+with shapes, 19 with plain text, 27 with a Text Transform, 14 with text fitted to an outline; two of them with gallery shapes) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
 
@@ -351,6 +404,17 @@ byte-identical to PE-DESIGN's outside these documented differences
   Hoop Settings tab, 290 × 190 mm section outlines and no stitch count in the status bar until
   something is selected; its own Hoop Size page file (r27) shows none of them. The machine type
   and hoop of the design's machine settings are not mapped yet.
+- **Text Transform:** from a design, the arch circle is the straight text's advance width
+  over 1.887, measured on OpenStitch's layout as the shift between a left and a right aligned
+  setting: HHHHHHH's radius 40.83 mm against PE-DESIGN's 40.80; the other presets carry zeros
+  where PE-DESIGN leaves its last arch's numbers. The text box of an arch is PE-DESIGN's straight
+  box (ascent line to baseline) bent round the arch's circle: for HHHHHHH OpenStitch writes
+  541..1459 × 841..1169 where PE-DESIGN writes 552..1441 × 841..1170 (it recomputes the box when
+  it opens the file). OpenStitch's own arch layout uses the same circle since 2026-10-29 (its
+  text-transform-1 and -2 references still pass at 0.5 mm) but sews HHHHHHH 79.9 mm wide where
+  PE-DESIGN sews this object 79.2 mm: an open difference in how the letters are placed round the
+  circle (COMPATIBILITY_AUDIT item 5). Other presets: the letters' extent, the top at most
+  the ascent line.
 - **Text:** the letter field at +14 (OpenStitch writes r12's −0.0) and the last sewing-order
   field of the line-spacing files (PE-DESIGN leaves it unset, `08 CE 53 00`; OpenStitch writes
   1). A text written from the letter defaults gives r12's object section byte for byte
@@ -378,8 +442,12 @@ box's right edge, which it takes from its own layout (787 → 793). It showed a 
 stitch count in the status bar: the file was on a Custom Size page (with PE-DESIGN's own PEC
 stitches too, probe p2), so a 100 × 100 mm design is now written on PE-DESIGN's default Hoop Size
 page (probe p3 asks PE-DESIGN to confirm). A plain click on a stroke selects the text, as for
-PE-DESIGN's own text (a click inside the A's counter selects neither). Version 6 stays the default export until the
-coordinator decides otherwise.
+PE-DESIGN's own text (a click inside the A's counter selects neither). **Text Transform (2026-10-29,
+`pes-0110-editable-text-transform`, reference tier):** PE-DESIGN opens HHHHHHH with preset 1 as
+editable text with Transform ticked, preset 1 at its default level (re-selecting the preset gives
+the same 79.20 × 26.50 mm and 1307 stitches), centred, Lato 10, and the text can be retyped on
+the arc. Its re-save keeps the object section but for the text box. Version 6 stays the default
+export until the coordinator decides otherwise.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
 
@@ -822,14 +890,36 @@ rows, used by the bundled library (`crates/openstitch-design/patterns/`, generat
 
 Coordinates are in the pattern's unit box: motif x −0.5…1.5 (along the line), y −1…1
 (across, scaled by the motif height), one path from (0, 0) to (1, 0); fill x, y 0…1 (the
-tile; programmable fill puts needle points where its rows cross the lines); decorative x
+tile; programmable fill puts needle points where its rows cross the lines, see below); decorative x
 −0.5…1.5, y 0…1, every path from (0, y) to (1, y) so tiles chain into rows. Unknown fields
 are refused. A region's area is found on a 64 × 64 grid over the tile that wraps at its sides
 (the tile repeats); a point on a line or in an area the lines do not close names nothing, and a
 later region of the same area replaces an earlier one. Programmable fill sews engraved areas
-with 1 mm stitches and drops needle points inside embossed areas (stitches up to 7 mm), like
-the stamp effects. Designs carry the user patterns they define in `design.patterns` (same document
-shape), so a project sews the same everywhere.
+with 1 mm stitches and drops needle points inside embossed areas, like the stamp effects.
+Designs carry the user patterns they define in `design.patterns` (same document shape), so a
+project sews the same everywhere.
+
+How the tiles are sewn (pinned 2026-10-29 against PE-DESIGN 11.50's own fills of owner-made
+patterns, `compat/reference/stitches/prog-fill-*.pes`, `motif-fill-2pt.pes`,
+`line-motif-zigzag-3pt.pes`):
+
+- **Programmable fill:** the tile lies on the page axes (pattern direction 0), its grid starting
+  at the region's top-left corner, or at the reference point when one is set. Rows run at the
+  region's direction and density. A row's needle points are its two ends and every point where
+  it crosses a tile line, nothing else; consecutive rows share their turning point. Gaps
+  between crossings stay one stitch up to 12 mm (PE-DESIGN leaves 8 mm gaps whole) and are
+  split evenly beyond. Frequency staggers the base sewing only. On the 40 × 40 mm square at
+  45° and a 7.5 mm tile, PE-DESIGN sews 2355 and 1638 needle points with the square and line
+  tiles, OpenStitch 2329 and 1636; every OpenStitch needle point lies within 0.2 mm of one of
+  PE-DESIGN's (mean 0.10 and 0.11 mm).
+- **Motif fill:** the same grid origin; each motif's base line runs through the middle of its
+  row band, so the first row lies half a motif below the region's top edge.
+- **Motif line:** a whole number of motifs, stretched along the line to fill it from end to end,
+  on open and closed lines alike (8 motifs of 4.94 mm on a 39.5 mm line at the 5 mm size).
+
+Not yet the same: PE-DESIGN's motif fill travels between rows along the outline at 2 mm
+(130 needle points against OpenStitch's 103, which joins rows with one stitch), and its motif
+line adds tie-in and tie-off stitches (23 against 16).
 
 ### Text pattern sources (`.pas`, `.pmf`, `.plf`)
 
@@ -845,10 +935,10 @@ Layout (ASCII, CRLF or LF, one directive per line, a trailing `\` continues the 
 
 | Directive | Meaning |
 |---|---|
-| `@VERSION n` | file version, returned as read |
-| `@UNIT n`, `@COOD …` | header values, read and ignored |
-| `@SYSENV n` | one number: a fill/stamp tile (`.pas`, the fill subtype) or, when the file holds exactly one `@LINE` and no tile geometry, a motif (`.pmf`, the motif height in cell units) |
-| `@SYSENV w h r` | three numbers: a decorative-fill row (`.plf`): tile width and height in 0.1 mm and the repeat flag, returned as read |
+| `@VERSION n` | file version, returned as read (PE-DESIGN 11.50 writes `10000`) |
+| `@UNIT n`, `@COOD …` | header values, read and ignored (PE-DESIGN 11.50 writes neither) |
+| `@SYSENV n` | one number: a fill/stamp tile (`.pas`) or, when the file holds exactly one `@LINE` and no tile geometry, a motif (`.pmf`); PE-DESIGN 11.50 writes `1` for both, returned as read |
+| `@SYSENV w h r` | three numbers: a decorative-fill tile (`.plf`): width and height in 0.01 mm and a flag; PE-DESIGN 11.50 writes `10000 10000 1`, its 100 mm Default Size, returned as read |
 | `@TILE n` | number of `@TILELINE`s that follow (checked when present) |
 | `@TILELINE i npts x0 y0 …` | tile line `i` (0, 1, … in order), `npts` ≥ 2 points |
 | `@TILEAREA npts x0 y0 …` | a stamp outline, ≥ 3 points, kept as a closed path of the tile |
@@ -858,14 +948,23 @@ Every coordinate is an integer in the 0…1024 cell (anything outside is refused
 directives, a `@TILE` count that disagrees, lines out of order, a missing `@SYSENV` or one given
 twice, non-ASCII bytes and more than 64 paths or 4000 points). Mapping into
 `openstitch.pattern`: cell x and y divided by 1024 (y down); a motif stroke is turned so its first
-and last points sit at (0, 0) and (1, 0), and 512 cell units across it are one motif height; a
-decorative row must run from x = 0 to x = 1024 at one height. The resulting pattern obeys the
-`openstitch.pattern` rules above and sews with the design's own tile size, motif size and row
-settings. The physical size the `@SYSENV` numbers stand for, and which of the three layouts
-PE-DESIGN's Programmable Stitch Creator writes for an owner-drawn pattern, are pinned only by
-owner-made files (requested from the reference round: a 2-point line, a 4-point square, two
-separate lines, a motif, a decorative row, and the programmable/motif fills PE-DESIGN sews
-from them); until then the numbers are returned as read. Writing these files is not planned.
+and last points sit at (0, 0) and (1, 0) and is scaled the same way across (PE-DESIGN's base
+line spans the cell, so 1024 cell units are one motif size: a point 256 units off the line sews
+1.25 mm off it at 5 mm). A decorative tile whose lines all run from x = 0 to x = 1024 at one
+height becomes a decorative row; one with free lines (PE-DESIGN's editor draws anywhere on a
+16 × 16 grid) is kept as a fill tile, because OpenStitch's decorative fill chains rows and how
+PE-DESIGN sews free decorative lines has no reference yet. The pattern then obeys the
+`openstitch.pattern` rules above and sews at the design's own tile and motif size (PE-DESIGN's
+Default Sizes: 7.5 mm fill/stamp, 5.0 mm motif, 100 mm decorative fill).
+
+What PE-DESIGN 11.50's Programmable Stitch Creator writes (owner-made files, 2026-10-29,
+`crates/openstitch-design/tests/fixtures/patterns/` with `PROVENANCE.md`): each editor mode
+offers exactly one Save type (`.pas`, `.pmf`, `.plf`), so these text files are PE-DESIGN's own
+format for user patterns, not only Brother's shipped ones; CRLF; points snap to the grid
+(8 × 8 cells of 128 units for fill/stamp); a closed shape is written with its closing point (a
+square has 5 points); each separate line is its own `@TILELINE`, with nothing marking the move
+between them; the motif editor starts from a fixed base line (0, 512)–(1024, 512). Writing these
+files is not planned.
 
 ## OpenStitch sewing stitches (`openstitch.sewing`)
 

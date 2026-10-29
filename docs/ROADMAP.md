@@ -23,7 +23,9 @@ for macOS, Windows and Linux. CI builds and tests all three.
   - Merge, remove overlap, boolean combine, split, offset lines (`i_overlay`).
   - Paste sewing attributes; entry/exit points with draggable markers.
   - Floral pattern and original decorative frames; embossing, engraving and stamps.
-  - Sewing order (`order.move`, `order.byColor`, `order.optimize`) with per-object jump trimming.
+  - Sewing order (`order.move`, `order.byColor`, `order.optimize`) with per-object jump trimming;
+    `order.optimize` in PE-DESIGN's mode by default, with OpenStitch's shortest-jump (2-opt) mode
+    as a design setting (beyond PE-DESIGN, #137).
   - Sewing direction (round fill, centre and reference points); Manual Punch; Satin Skeleton
     tool and skeletons derived from shapes.
   - User settings: saved attribute sets and user thread charts.
@@ -33,7 +35,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
   - Line types: motif (own library), stem, candlewicking, E/V, chain, cutting, zigzag half stitch.
   - Satin and fill options: auto direction, underlays, gradation, feather, split, travel.
   - Region types: programmable fill, motif fill, piping, cross stitch, concentric circle,
-    radial, spiral, flexible spiral, stippling, net fill, zigzag net fill, decorative fill.
+    radial, spiral, flexible spiral, stippling, net fill, zigzag net fill, decorative fill;
+    concentric circle and spiral calibrated to PE-DESIGN 11.50 (#138, 14 references).
 - **Lettering:** text objects with Lato Bold and Pacifico (SIL OFL), text on a path, user
   TrueType/OpenType fonts (CJK through any font with the glyphs), shaping of right-to-left and
   complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits
@@ -96,9 +99,12 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
    rows follow PE-DESIGN's cumulative-density placement since 2026-10-28 (#95: every row of
    the U within 0.12 mm, overlap 0.83 → 0.89); left for the U: PE's section order for fills in
-   several parts (right leg, left leg, then the top bar ending at the first vertex); under
-   sewing Density Dense / Light (the second under sewing type, `cross`, is done for fill and
-   satin since 2026-10-28, specs sweep-fill-us-type-2 and sweep-satin-us-type-2).
+   several parts (right leg, left leg, then the top bar ending at the first vertex). Under
+   sewing Density Dense / Medium / Light and the combinable under sewing parts (edge, rows,
+   lattice, piping) are done since 2026-10-29 (#124: sweep-fill-us-density-dense/-light at the
+   reference tier; the second type, `cross`, since 2026-10-28, specs sweep-fill-us-type-2 and
+   sweep-satin-us-type-2); left: the button-to-capture mapping of a Manual Punch column's five
+   under sewing types once pe-refs-4 notes it, and the zigzag's exact split points.
    Density floor: 0.1 lines/mm for fill and satin, as PE-DESIGN 11.50's field and the
    `sweep-*-density-min` references (#139's 0.2 floor was checked against them on 2026-10-29
    and not adopted; `attribute-ranges` covers the boundaries).
@@ -111,9 +117,11 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    satin (satin-gradation, needle for needle). Also done 2026-10-28: the minimum-density
    sawtooth (sweep-satin-density-min, needle for needle: the crossings count back from the
    start point's line, which the round-3 column at 0.2, 0.3 and 0.5 lines/mm confirmed record
-   for record; left: the bound under which a single-line gap next to the far end is not
-   crossed, between 0.33 and 2 mm). Next on this
-   track: the second under sewing type (sweep-satin-us-type-2).
+   for record). Done 2026-10-29 (#122): plain satin has no minimum-crossing threshold (the
+   far end's single-line gap is crossed at 0.22–5 mm, pe-refs-4's satin-length-sweep), its
+   lattice stretches to whole gaps, and a column started at one end is sewn from its far end
+   back to the start point; left: PE's entry/exit optimisation between objects (it moves start
+   points) and the Auto satin fan on sharp bends (satin-auto-bend-120: PE 161 stitches, ours 273).
 3. **Lines:** Start/End Type Feed/Run for stem, candlewicking and chain, with the L2 marker and
    the Feed/Run choice in the editor; open lines and chain diamonds; candlewicking Low and
    High. The motif line cannot be compared: PE-DESIGN's default motif is Brother's own artwork.
@@ -171,8 +179,9 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    the shapes and the text editable, references `pes-0110-editable-shapes`,
    `pes-0110-editable-text`). Left: PE-DESIGN's confirmation of the Hoop Size page (probe p3);
    the design's machine type and hoop in the header; BROTHER EMBROIDERY numbers for the chart colours with no owner sample; turn the `#PES0110` shapes and texts the reader
-   parses into editable OpenStitch objects; vertical text, text on an outline
-   (`CEmbAText`) and with Text Transforms (`CEmbDText`); the other region and line types, hole-sewing pairs and several outlines per object; the hoop
+   parses into editable OpenStitch objects; PE-DESIGN opening text fitted to an outline
+   (`pes-0110-editable-text-fit`); right-aligned and vertical text; Manual Punch blocks and the appliqué's objects (owner files
+   requested); the other region and line types, hole-sewing pairs and several outlines per object; the hoop
    fields; PES v7–v10 (from the owner's own files only, as
    [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
@@ -182,7 +191,8 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    split as PE-DESIGN's DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such
    a move (parked PES of `long-jump-300`). Colour matching is equal-weight squared Euclidean
    with an "approximate" city-block matcher since 2026-10-29 (#119), checked against the owner's
-   twelve-swatch capture; left: Brother catalogue codes for SVG and hex fills, the sew palette
+   twelve-swatch capture, and the 61 BROTHER EMBROIDERY catalogue codes are known since the
+   round-4 chart reading; left: snapping SVG and hex fills to them, the sew palette
    and user-chart CSV schema (#136), per-machine export limits and hoop codes (#125).
 8. **Formats:** CSD export (no public writer). Thread charts: OpenStitch's own CSV is
    documented and exported since 2026-10-29 (#136; PE-DESIGN keeps charts as binary `.btc2`,
@@ -206,18 +216,16 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
     with the (1, 255) guard); Auto Punch's 3×3 modal colour census capped at 100 colours, the
     `max(4, round(param · 100 / mmPerPx²))` small-region floor at 4-connectivity and the
     centerline-thinness satin-vs-fill test done 2026-10-29 (#127); Cross Stitch shares that
-    prepass with documented grid and per-cell defaults since 2026-10-29 (#132). Next: the rotating-line coverage model for
-    centerline-thinness satin-vs-fill test done 2026-10-29 (#127). Next: Cross Stitch sharing
-    that prepass with documented grid and per-cell defaults (#132); the rotating-line coverage model for
-    Photo Stitch 2 only if the captures show the zigzag model is the dominant remaining
-    difference (#129). Each is compared with pe-refs-4's captures of PE-DESIGN's output at
-    defaults when they land.
     prepass with documented grid and per-cell defaults since 2026-10-29 (#132). Compared with
-    PE-DESIGN 11.50's round-4 captures on 2026-10-29: Auto Punch fills at 45° and 5 colours
-    (−2.1 % stitches), Cross Stitch's six diagonal stitches per cell (−0.9 %), Photo Stitch 1's
-    Sew Page Color, 3.0 mm Run Pitch and 10 colours (+4 %). Next: PE's colour order and run-to-
-    run travel in Auto Punch and Cross Stitch; PE's meander stitch path and thread mixing in
-    Photo Stitch 1, which is #129's model (Photo Stitch 2 was not captured).
+    PE-DESIGN 11.50's round-4 captures on 2026-10-29: Cross Stitch's six diagonal stitches per
+    cell (−0.9 % stitches), Photo Stitch 1's Sew Page Color, 3.0 mm Run Pitch and 10 colours
+    (+5 %); second round (bars, moved shapes, mono, Photo Stitch 2): Auto Punch's satin/fill
+    bounds 0.7–6.5 mm, Auto-direction satin without under sewing, fill across strokes up to
+    13 mm and at 45° beyond, automatic colour count, PE's colour order (R + G + B, highest
+    first, also in Cross Stitch), Sew Page Color in Color mode only (Auto Punch within 3 % of
+    PE's stitches on all four captures). Next: run-to-run travel in Cross Stitch; PE's meander
+    path for Photo Stitch 1 (mono +39 % stitches from short runs) and the per-colour screen
+    angles of Photo Stitch 2, both #129.
 
 ## Beyond PE-DESIGN
 
@@ -249,7 +257,7 @@ before any code; the ranking and the proposed tracks are in
 
 | Item | Feature | Phase | Sketch | Status |
 |---|---|---|---|---|
-| B1 | Contour (offset) fill | A | [research/beyond/contour-fill.md](research/beyond/contour-fill.md) | Sketched; not started |
+| B1 | Contour (offset) fill | A | [research/beyond/contour-fill.md](research/beyond/contour-fill.md) | Sketched. The single spiral exists as PE-DESIGN's own Spiral Stitch (an offset spiral, calibrated 2026-10-29, #138, `crate::spiral`); offset rings, double spiral, echo rings and join styles remain |
 | B2 | Two-guide fills and stitch-angle maps | D | [research/beyond/guided-fill-and-angle-maps.md](research/beyond/guided-fill-and-angle-maps.md) | Sketched; not started |
 | B3 | Satin corners and short stitches | B | [research/beyond/satin-corners-and-short-stitches.md](research/beyond/satin-corners-and-short-stitches.md) | Sketched; not started |
 | B4 | Auto-routed running stitches, Redwork, satin branching | C | [research/beyond/auto-route-and-branching.md](research/beyond/auto-route-and-branching.md) | Sketched; not started |
@@ -259,7 +267,7 @@ before any code; the ranking and the proposed tracks are in
 | B8 | Crosshatch, curved crosshatch, lace | A | [research/beyond/crosshatch-and-lace.md](research/beyond/crosshatch-and-lace.md) | Sketched; not started |
 | B9 | Maze and meander fills, fur, randomisation | D | [research/beyond/meander-maze-and-randomisation.md](research/beyond/meander-maze-and-randomisation.md) | Sketched; not started |
 | B10 | Variable-width satin line | B | [research/beyond/variable-width-satin-line.md](research/beyond/variable-width-satin-line.md) | Sketched; not started |
-| B11 | Closest join, auto start/end, continue digitizing, overlap removal | C | [research/beyond/closest-join-and-overlap.md](research/beyond/closest-join-and-overlap.md) | Sketched; not started |
+| B11 | Closest join, auto start/end, continue digitizing, overlap removal | C | [research/beyond/closest-join-and-overlap.md](research/beyond/closest-join-and-overlap.md) | Sketched; not started. Related, shipped 2026-10-29 (#137): `order.optimize` mode `minJump`, a 2-opt shortest-jump order per colour block with every neighbouring pair linked, as a design setting (`optimizeOrder`); PE-DESIGN's order stays the default |
 | B12 | Carving lines, knockdown fill | A | [research/beyond/carving-and-knockdown.md](research/beyond/carving-and-knockdown.md) | Sketched; not started |
 | B13 | Density map, troubleshoot, thread conversion, auto hoop | E | [research/beyond/quality-tools.md](research/beyond/quality-tools.md) | Sketched; not started |
 | B14 | Stitch-file resize with density | E | [research/beyond/stitch-file-resize.md](research/beyond/stitch-file-resize.md) | Sketched; not started |
@@ -287,12 +295,13 @@ layout, every byte checked). Waiting for the owner-made samples: PE-DESIGN's own
 and a motif fill sewn from them, and a Font Creator font of one and two owner-drawn glyphs
 with text set in it. Each lands as its own PR with the fixtures' provenance in a MANIFEST.
 bundled patterns, motifs and fonts are never read. Done: import of `.pas`/`.pmf`/`.plf` text
-sources in the documented `@DIRECTIVE` layout (2026-10-29). Waiting for the owner-made samples:
-Programmable Stitch Creator saves (a 2-point line, a 4-point square, two separate lines; a
-motif; a decorative-fill row) with a programmable fill and a motif fill sewn from them (to pin
-the physical size and the tiling), PE-DESIGN's own PMV files, and a Font Creator font of one
-and two owner-drawn glyphs with text set in it. Each lands as its own PR with the fixtures'
-provenance in a MANIFEST.
+sources in the documented `@DIRECTIVE` layout, checked against six owner-made Programmable
+Stitch Creator files, and programmable fill, motif fill and motif line tiled as PE-DESIGN 11.50
+sews them (2026-10-29: four reference specs). Next: the motif fill's travel between rows and
+the motif line's tie stitches; a decorative-fill reference for free `.plf` lines. Waiting for
+the owner-made samples: PE-DESIGN's own PMV files and a Font Creator font of one and two
+owner-drawn glyphs with text set in it (pe-refs-4 could not reach Font Creator and Stitch Design
+Factory). Each lands as its own PR with the fixtures' provenance in a MANIFEST.
 
 ## Blocked
 

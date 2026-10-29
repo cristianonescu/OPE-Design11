@@ -1,0 +1,147 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-0110-editable-text-transform",
+  "area": "pes",
+  "title": "PES 0110 writes Text Transform text as an editable CEmbDText object",
+  "description": "design.export with pesVersion 11 writes a text with a Text Transform as PE-DESIGN 11's CEmbDText: the CEmbNText record (letters, size, sewing, alignment, the click point) followed by the transform: PE-DESIGN's code for the preset, the default level's strength and, for the arches, the circle the text is bent round. The design is the compat text-transform-1 reference's: HHHHHHH in Lato Bold, size 10, centred on (50,50) mm, Fill at 5.0 line/mm without under sewing, in Red, with preset 1 (arch over). The reference check is PE-DESIGN opening the file with the text editable and the preset applied, and re-saving it.",
+  "covers": {
+    "audit": [
+      5
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES 0110 (PE-DESIGN 11) editable shapes write"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 5"
+    },
+    {
+      "kind": "measured",
+      "note": "docs/FILE_FORMATS.md, CEmbDText: the 26 compat/reference/text/text-transform-N files and the owner's round-4 captures of every preset at levels 0-100 on two other texts; the writer rewrites the 27 text-transform owner files byte-identical outside the documented differences (pes11.rs)"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 opening a.pes (MANIFEST pes-0110-editable-text-transform, 2026-10-29): editable text, Transform preset 1 at the default level, retypable; the PES section re-saved unchanged but for the text box"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "t1",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "HHHHHHH",
+        "font": "lato-bold",
+        "size": 10,
+        "x": 50,
+        "y": 50,
+        "fill": "Red",
+        "envelope": 1
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "underlay": false,
+        "density": 5
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes",
+      "pesVersion": "11"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "pes/pes-0110-editable-text-transform.pes",
+      "make": "Run `stitchtool compat --only pes-0110-editable-text-transform` and open target/compat/work/pes-0110-editable-text-transform/a.pes in PE-DESIGN 11 (App menu > Open), with Lato Bold installed as for the text references. Expected: the text HHHHHHH as an editable text object bent over an arch (Text Attributes > Transform ticked, the first preset, level as PE-DESIGN's default), Lato size 10, Fill Stitch red without under sewing, centred on (50,50) mm; compare its shape with compat/reference/text/text-transform-1.pes. Record in the MANIFEST notes: whether it opens and with what warning, the preset and level PE-DESIGN shows, whether the text and the preset can be changed, the status-bar size and stitch count. Then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting in compat/reference/MANIFEST.json. If PE-DESIGN refuses the file or opens it blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": "0110",
+      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature",
+      "reference": {}
+    },
+    {
+      "id": "classes",
+      "measure": {
+        "kind": "pesClasses"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": [
+        "CEmbNText"
+      ],
+      "evidence": "text-transform-1.pes: one text object, written as CEmbDText (the reader reports texts of both classes as CEmbNText)",
+      "reference": {}
+    },
+    {
+      "id": "width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "internal regression: OpenStitch's own arch sews 79.9 mm. Known difference, open in docs/COMPATIBILITY_AUDIT.md item 5: PE-DESIGN re-sews this object at 79.20 mm (its own text-transform-1: 79.30) round the same 40.8 mm circle; OpenStitch places the letters round the circle differently. Not compared at the reference tier until it matches at 0.3 mm",
+      "expected": 79.9,
+      "tolerance": {
+        "mm": 0.05
+      }
+    },
+    {
+      "id": "height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN re-sews the arched text from the object: 26.50 mm",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "colour-blocks",
+      "measure": {
+        "kind": "colorBlocks"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 1,
+      "evidence": "one red block",
+      "reference": {}
+    }
+  ]
+}

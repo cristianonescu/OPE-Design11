@@ -180,7 +180,8 @@ fn bad_digitize_parameters_fail_cleanly() {
         ("digitize.autoPunch", json!({"path": "empty.png"})),
         (
             "digitize.autoPunch",
-            json!({"path": "sample.png", "colors": 0}),
+            // 0 is the automatic count; 65 is out of range.
+            json!({"path": "sample.png", "colors": 65}),
         ),
         (
             "digitize.autoPunch",

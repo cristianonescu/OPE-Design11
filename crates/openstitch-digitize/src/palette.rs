@@ -47,6 +47,46 @@ impl Census {
     pub fn pixels(&self) -> u64 {
         self.colors.iter().map(|c| c.1).sum()
     }
+
+    /// The automatic colour count (PE-DESIGN's Auto Punch and Cross Stitch fill in "Max. Number
+    /// of Colors" from the image: 2 for black bars on white, 5 for four flat shapes on white):
+    /// the tracked colours holding at least [`AUTO_SHARE`] of the opaque pixels, at least 1 and
+    /// at most [`AUTO_MAX`].
+    pub fn auto_colors(&self) -> usize {
+        let total = self.pixels() as f64;
+        self.colors
+            .iter()
+            .filter(|c| c.1 as f64 >= total * AUTO_SHARE)
+            .count()
+            .clamp(1, AUTO_MAX)
+    }
+}
+
+/// Smallest share of the opaque pixels a colour needs to count in [`Census::auto_colors`].
+pub const AUTO_SHARE: f64 = 0.005;
+/// Most colours [`Census::auto_colors`] picks.
+pub const AUTO_MAX: usize = 16;
+
+/// Thread indices of `palette` in PE-DESIGN's colour order (round-4 captures
+/// `autopunch-default.pes` and `autopunch-owner-shapes-moved.pes`, the same in Cross Stitch):
+/// by the reduced colour's channel sum R + G + B, highest first (white 765, yellow 480, blue
+/// 290, red 280, green 250 on the owner's shapes, wherever each colour sits and whatever its
+/// area); ties to the lower index. A thread reached from several reduced colours takes the
+/// brightest of them.
+pub fn brightness_order(palette: &Palette, threads: impl IntoIterator<Item = usize>) -> Vec<usize> {
+    let sum = |t: usize| -> u32 {
+        palette
+            .means
+            .iter()
+            .zip(&palette.thread_of)
+            .filter(|(_, k)| **k == t)
+            .map(|(m, _)| m.iter().map(|&v| u32::from(v)).sum::<u32>())
+            .max()
+            .unwrap_or(0)
+    };
+    let mut order: Vec<usize> = threads.into_iter().collect();
+    order.sort_by_key(|&t| (std::cmp::Reverse(sum(t)), t));
+    order
 }
 
 /// Modal colour of the 3×3 window around `(x, y)`: the colour most of the window's opaque

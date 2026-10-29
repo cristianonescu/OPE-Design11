@@ -12,7 +12,8 @@ use openstitch_design::text::{self, TextAlign, TextDirection, TextSpec};
 use openstitch_design::{
     Arrange, Bezier, ChainShape, Compiler, Contour, Design, DesignObject, DesignPage, Feather,
     FeatherSide, Gradation, Layout, LineSewing, LineType, ObjectKind, Rect, RegionSewing,
-    RegionType, RunningStitchPath, StaggerKind, StartEnd, Transform, UnderlayStyle, Vec2, v2,
+    RegionType, RunningStitchPath, StaggerKind, StartEnd, Transform, UnderlayDensity,
+    UnderlayParts, UnderlayStyle, Vec2, v2,
 };
 use serde_json::{Value, json};
 
@@ -366,17 +367,29 @@ fn design_commands() -> Vec<CommandSpec> {
         ),
         spec(
             "design.setProperties",
-            "Set the Design Property fields written to PES (category, author, keywords, comments)",
+            "Set the Design Property fields written to PES (category, author, keywords, comments) and the design's Optimize Sewing Order mode",
             Effect::Edit,
             vec![
                 opt("category", "string", "Category (\"\" clears)"),
                 opt("author", "string", "Author (\"\" clears)"),
                 opt("keywords", "string", "Keywords (\"\" clears)"),
                 opt("comments", "string", "Comments (\"\" clears)"),
+                opt(
+                    "optimizeOrder",
+                    "peDesign|minJump",
+                    "What order.optimize does by default: PE-DESIGN 11.50's order (default) or the shortest total jump (beyond PE-DESIGN; saved with the design)",
+                ),
             ],
             |s, p| {
                 let mut properties = s.design.properties.clone();
                 let mut given = false;
+                let mut optimize_order = s.design.optimize_order;
+                if p.has("optimizeOrder") {
+                    given = true;
+                    let m = p.string("optimizeOrder", None)?;
+                    optimize_order = openstitch_design::OptimizeOrder::from_id(&m)
+                        .ok_or_else(|| p.invalid("optimizeOrder", "must be peDesign or minJump"))?;
+                }
                 for key in openstitch_design::DesignProperties::KEYS {
                     if !p.has(key) {
                         continue;
@@ -389,12 +402,16 @@ fn design_commands() -> Vec<CommandSpec> {
                     }
                 }
                 if !given {
-                    return Err(
-                        p.invalid("category", "give category, author, keywords or comments")
-                    );
+                    return Err(p.invalid(
+                        "category",
+                        "give category, author, keywords, comments or optimizeOrder",
+                    ));
                 }
                 s.design.properties = properties;
-                Ok(json!(s.design.properties))
+                s.design.optimize_order = optimize_order;
+                let mut out = json!(s.design.properties);
+                out["optimizeOrder"] = json!(optimize_order.id());
+                Ok(out)
             },
         ),
         spec(
@@ -407,6 +424,7 @@ fn design_commands() -> Vec<CommandSpec> {
                 Ok(json!({
                     "name": s.design.name,
                     "properties": s.design.properties,
+                    "optimizeOrder": s.design.optimize_order.id(),
                     "pageWidthMM": s.design.page.width / MM,
                     "pageHeightMM": s.design.page.height / MM,
                     "objects": s.design.objects.len(),
@@ -1094,13 +1112,23 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 opt("underlay", "bool", "Underlay (style in underlayStyle)"),
                 opt(
                     "underlayStyle",
-                    "edge|zigzag|edgeZigzag|double",
-                    "Underlay: edge run, inset rows, both, or two crossing layers",
+                    "edge|zigzag|edgeZigzag|double|edgeFill|cross",
+                    "Underlay: edge run, inset rows, both, two crossing layers, PE-DESIGN's first type (edge and rows) or its second (edge and lattice); shorthand for underlayParts",
+                ),
+                opt(
+                    "underlayParts",
+                    "[edge|zigzag|lattice|center]",
+                    "Underlay components, combinable: the inset edge run, rows across the direction (a column's zigzag), the lattice of two crossing layers at +-45 degrees, the piping down the middle; an empty list sews none",
+                ),
+                opt(
+                    "underlayDensity",
+                    "dense|medium|light",
+                    "PE-DESIGN's under sewing Density: rows 1.4, 2.0 or 3.5 mm apart",
                 ),
                 opt(
                     "underlaySpacing",
                     "mm",
-                    "Distance between underlay rows, 1-10",
+                    "Distance between underlay rows, 1-10 (overrides underlayDensity)",
                 ),
                 opt(
                     "autoDirection",
@@ -1299,6 +1327,36 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         ],
                     )? {
                         r.underlay_style = u;
+                        r.underlay_parts = None;
+                    }
+                    if p.has("underlayParts") {
+                        let names: Vec<&str> = p
+                            .array("underlayParts")?
+                            .iter()
+                            .map(|v| {
+                                v.as_str().ok_or_else(|| {
+                                    p.invalid("underlayParts", "must be an array of strings")
+                                })
+                            })
+                            .collect::<Result<_, _>>()?;
+                        r.underlay_parts =
+                            Some(UnderlayParts::from_names(names).ok_or_else(|| {
+                                p.invalid(
+                                    "underlayParts",
+                                    format!("expected {}", UnderlayParts::NAMES.join(", ")),
+                                )
+                            })?);
+                    }
+                    if let Some(d) = choice(
+                        p,
+                        "underlayDensity",
+                        &[
+                            ("dense", UnderlayDensity::Dense),
+                            ("medium", UnderlayDensity::Medium),
+                            ("light", UnderlayDensity::Light),
+                        ],
+                    )? {
+                        r.underlay_density = d;
                     }
                     if p.has("underlaySpacing") {
                         r.underlay_spacing = Some(p.req("underlaySpacing", 1.0, 10.0)?);

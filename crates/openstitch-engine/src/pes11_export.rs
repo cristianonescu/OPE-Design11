@@ -5,14 +5,16 @@
 //! (stitches) knowingly.
 
 use openstitch_core::Thread;
-use openstitch_design::text::{self, TextAlign, TextDirection, TextMetrics, TextSpec};
+use openstitch_design::text::{
+    self, Spread, TextAlign, TextDirection, TextMetrics, TextSpec, VAlign,
+};
 use openstitch_design::{
     Contour, Design, DesignObject, LineSewing, LineType, ObjectKind, Rect, RegionSewing,
     RegionType, RunningStitchPath, Transform,
 };
 use openstitch_formats::pes11::{
-    KIND_CURVE_AFTER, KIND_CURVE_BEFORE, Letter, Objects, PAGE_ORIGIN, RegionSewType, Shape, Text,
-    Vertex,
+    Envelope, Fit, KIND_CURVE_AFTER, KIND_CURVE_BEFORE, Letter, Objects, PAGE_ORIGIN,
+    RegionSewType, Shape, Text, Vertex,
 };
 
 /// The `#PES0110` objects of `design`'s visible objects, in design order.
@@ -26,11 +28,18 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
         ..Objects::default()
     };
     let mut groups: Vec<(u64, Vec<u16>)> = Vec::new();
+    // List positions by object id, for the outlines texts are fitted to.
+    let positions: Vec<u64> = design
+        .objects
+        .iter()
+        .filter(|o| o.visible)
+        .map(|o| o.id)
+        .collect();
     for (position, object) in design.objects.iter().filter(|o| o.visible).enumerate() {
         let index = u16::try_from(position).map_err(|_| "too many objects".to_string())?;
         if object.kind == ObjectKind::Text {
             out.texts
-                .push(text_object(object, index, &mut out.threads)?);
+                .push(text_object(object, index, &positions, &mut out.threads)?);
         } else {
             out.shapes.push(shape(object, &mut out.threads)?);
         }
@@ -165,6 +174,7 @@ fn line(id: u64, l: &LineSewing, s: &mut Shape, table: &mut Vec<Thread>) -> Resu
 fn text_object(
     object: &DesignObject,
     position: u16,
+    positions: &[u64],
     table: &mut Vec<Thread>,
 ) -> Result<Text, String> {
     let id = object.id;
@@ -179,19 +189,47 @@ fn text_object(
     if text::font(&spec.font).map(|f| f.id) != Some(text::DEFAULT_FONT) {
         return refuse(&format!("font {:?} (only Lato Bold is written)", spec.font));
     }
-    if spec.path.is_some() {
-        return refuse("text fitted to an outline");
-    }
-    if spec.envelope.is_some() {
-        return refuse("a Text Transform");
-    }
+    // Fit Text to Outline: the shape it follows must come before the text in the list.
+    let fit = match spec.path {
+        None => None,
+        Some(path) => {
+            let at = positions
+                .iter()
+                .position(|&p| p == path)
+                .filter(|&k| k < usize::from(position))
+                .ok_or_else(|| {
+                    format!(
+                        "object {id}: the outline it is fitted to (object {path}) must be visible and come before the text"
+                    )
+                })?;
+            let halign = match (spec.fit.spread, spec.align) {
+                (Spread::None, TextAlign::Left) => 0,
+                (Spread::None, TextAlign::Center) => 1,
+                (Spread::None, TextAlign::Right) => 2,
+                (Spread::Even, _) => 4,
+                (Spread::Fill, _) => return refuse("text stretched along its outline"),
+            };
+            Some(Fit {
+                path: at as u16,
+                halign,
+                valign: match spec.fit.valign {
+                    VAlign::Bottom => 0,
+                    VAlign::Middle => 1,
+                    VAlign::Top => 2,
+                },
+                upright: spec.fit.upright,
+                other_side: spec.fit.other_side,
+            })
+        }
+    };
     if spec.direction == TextDirection::Vertical {
         return refuse("vertical text");
     }
     if spec.metrics != TextMetrics::Pe {
         return refuse("a text sized by its capital height (an older OpenStitch file)");
     }
-    if spec.letter_spacing != 0.0 || spec.line_spacing != 0.0 || spec.kerning {
+    // Character spacing is mapped on fitted text (text-fit-spacing-m1/p2) only.
+    if (spec.letter_spacing != 0.0 && fit.is_none()) || spec.line_spacing != 0.0 || spec.kerning {
         return refuse("letter spacing, extra line spacing in mm or font kerning");
     }
     if !spec.characters.is_empty() || spec.name_drop.is_some() || object.stitch_block.is_some() {
@@ -224,8 +262,20 @@ fn text_object(
     if letters.is_empty() || breaks.last() == Some(&(letters.len() as u16)) {
         return refuse("an empty text or a trailing line break");
     }
-    if !breaks.is_empty() && spec.align != TextAlign::Left {
-        return refuse("centred or right-aligned text of several lines (the alignment field)");
+    let align = match (spec.align, &fit) {
+        // A fitted text's alignment is the fit's; its Text Attributes alignment stays left.
+        (_, Some(_)) => 0,
+        (TextAlign::Left, None) => 0,
+        (TextAlign::Center, None) => 1,
+        (TextAlign::Right, None) => {
+            return refuse("right-aligned text (no owner file shows its code)");
+        }
+    };
+    if fit.is_some() && !breaks.is_empty() {
+        return refuse("a text of several lines fitted to an outline");
+    }
+    if spec.envelope.is_some() && !breaks.is_empty() {
+        return refuse("a Text Transform on several lines");
     }
     // Region first, then line: PE-DESIGN's thread table is in sewing order.
     let Some(r) = &object.region else {
@@ -274,58 +324,174 @@ fn text_object(
             .round()
             .clamp(-32768.0, 32767.0) as i16
     };
-    let shift = baseline_start(spec).map_err(|e| format!("object {id}: {e}"))?;
     // PE-DESIGN's text box runs from the font's ascent above the first baseline (1.59 × the size
     // for Lato: r12 at size 10, text-defaults-h at size 20) down to the lowest letter or the
-    // baseline, and across the letters.
-    let top = t.ty - ASCENT_PER_SIZE * spec.size * 10.0;
+    // baseline, and across the letters. A transformed text's box is its letters' extent.
+    let ascent_line = t.ty - ASCENT_PER_SIZE * spec.size * 10.0;
+    let envelope = match spec.envelope {
+        Some(preset) => Some(envelope(spec, preset).map_err(|e| format!("object {id}: {e}"))?),
+        None => None,
+    };
+    let bounds = match (spec.envelope, &envelope) {
+        // The arches: PE-DESIGN's straight box bent round the arch's circle.
+        (Some(preset @ (1 | 2)), Some(e)) => {
+            let [r, cx, _, _] = e.geometry.map(f64::from);
+            let o = f64::from(PAGE_ORIGIN);
+            bent_box(preset, r, cx - o, t.ty, spec.size * 10.0)
+        }
+        // A transformed text: its letters, its top at most the ascent line (presets 3, 13 …).
+        (Some(_), _) => [
+            b.min_x,
+            b.min_y.min(ascent_line),
+            b.max_x,
+            b.max_y.max(t.ty),
+        ],
+        // A straight text: from the ascent line down to the baseline or the lowest letter.
+        _ => [b.min_x, ascent_line, b.max_x, b.max_y.max(t.ty)],
+    };
     Ok(Text {
         position,
-        bounds: [
-            page(b.min_x),
-            page(top),
-            page(b.max_x),
-            page(b.max_y.max(t.ty)),
-        ],
+        bounds: bounds.map(page),
         letters,
         breaks,
         line_spacing: spec.line_spacing_percent as f32,
         vertical: false,
         transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
-        origin: (
-            (t.tx + shift) as f32 + PAGE_ORIGIN,
-            t.ty as f32 + PAGE_ORIGIN,
-        ),
+        align,
+        // The Text tool's click: the alignment point of the first baseline (none when fitted).
+        origin: if fit.is_some() {
+            (0.0, 0.0)
+        } else {
+            (t.tx as f32 + PAGE_ORIGIN, t.ty as f32 + PAGE_ORIGIN)
+        },
+        envelope: if fit.is_some() { None } else { envelope },
+        char_spacing: (spec.letter_spacing * 10.0) as f32,
+        fit,
     })
 }
 
 /// How far above the baseline PE-DESIGN's text box starts, per mm of Lato text size.
 const ASCENT_PER_SIZE: f64 = 1.59;
 
-/// Where the first line starts, along x, relative to the text's alignment point: 0 for left
-/// aligned text, minus half or all of the line's advance for centred or right-aligned text.
-/// The advance is measured as how far the letters move between a left and a right aligned
-/// layout of the same text.
-fn baseline_start(spec: &TextSpec) -> Result<f64, String> {
-    if spec.align == TextAlign::Left {
-        return Ok(0.0);
-    }
-    let left_of = |align: TextAlign| -> Result<f64, String> {
-        let probe = TextSpec {
-            align,
-            transform: Transform::IDENTITY,
-            ..spec.clone()
+/// The box PE-DESIGN stores for an arched text (preset 1 over, 2 under; 0.1 mm, page
+/// coordinates without the file offset): its straight box, from the ascent line down to the
+/// baseline across the text's width (2 × r × [`ARCH_RADIANS`] / 2), bent round the arch's circle
+/// of radius `r` centred on `cx`. It matches PE-DESIGN's own boxes to 1–2 mm (HHHHHHH and
+/// OpenStitch, compat text-transform-1 and -2 and the round-4 captures); PE-DESIGN recomputes
+/// the box when it opens the file (its re-save of pes-0110-editable-text-transform changed only
+/// the box).
+fn bent_box(preset: u8, r: f64, cx: f64, baseline: f64, size: f64) -> [f64; 4] {
+    let ascent = ASCENT_PER_SIZE * size;
+    let half = ARCH_RADIANS / 2.0;
+    let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+    for k in 0..=32 {
+        let a = -half + 2.0 * half * f64::from(k) / 32.0;
+        // Over: the baseline on the circle, the box outside it. Under: the size's top on the
+        // circle, the box hanging below it.
+        let (radii, centre_y, sign) = if preset == 1 {
+            ([r, r + ascent], baseline + r, -1.0)
+        } else {
+            ([r - (ascent - size), r + size], baseline - size - r, 1.0)
         };
-        let layout = text::layout(&probe, None).map_err(|e| e.to_string())?;
-        Rect::enclosing(layout.contours().iter().flat_map(Contour::outline_points))
-            .map(|r| r.min_x)
-            .ok_or_else(|| "the text has no outline".to_string())
+        for rho in radii {
+            let (x, y) = (cx + rho * a.sin(), centre_y + sign * rho * a.cos());
+            x0 = x0.min(x);
+            x1 = x1.max(x);
+            y0 = y0.min(y);
+            y1 = y1.max(y);
+        }
+    }
+    [x0, y0, x1, y1]
+}
+
+/// PE-DESIGN's code and default-level strength of Text Transform presets 1–26 (its palette
+/// order, as [`TextSpec::envelope`] numbers them): the same in every owner file
+/// (compat/reference/text/text-transform-N, the round-4 captures on two other texts).
+const ENVELOPES: [(u16, f32); 26] = [
+    (24, 30.0),
+    (25, 30.0),
+    (0, 50.0),
+    (1, 50.0),
+    (8, 20.0),
+    (9, 20.0),
+    (4, 50.0),
+    (5, 50.0),
+    (10, 10.0),
+    (11, 10.0),
+    (3, 50.0),
+    (2, 50.0),
+    (7, 30.0),
+    (6, 30.0),
+    (18, 20.0),
+    (19, 20.0),
+    (12, 50.0),
+    (14, 50.0),
+    (20, 20.0),
+    (21, 20.0),
+    (17, 50.0),
+    (16, 50.0),
+    (22, 20.0),
+    (23, 20.0),
+    (13, 50.0),
+    (15, 50.0),
+];
+
+/// The arch presets bend the text round a circle whose radius is the straight text's advance
+/// width over this angle (HHHHHHH, OpenStitch and Agjy 123 in the owner files: 1.887).
+const ARCH_RADIANS: f64 = 1.887;
+
+/// The `CEmbDText` transform of preset `preset` at the default level. The arches (1 over, 2
+/// under) carry their circle: the radius, the straight text's centre x and the circle's centre
+/// y, a radius below the baseline for 1 and a radius above the size's top for 2. The fans (13,
+/// 14) carry 1000 and zeros, as in the owner file made before any arch; the other presets leave
+/// PE-DESIGN's last arch numbers there, which OpenStitch writes as zeros.
+fn envelope(spec: &TextSpec, preset: u8) -> Result<Envelope, String> {
+    let &(code, strength) = ENVELOPES
+        .get(usize::from(preset).wrapping_sub(1))
+        .ok_or_else(|| format!("Text Transform preset {preset} (1-26)"))?;
+    let geometry = match preset {
+        1 | 2 => {
+            let straight = TextSpec {
+                envelope: None,
+                transform: Transform::IDENTITY,
+                ..spec.clone()
+            };
+            // The straight text's advance width, as PE-DESIGN measures its box: the shift of the
+            // letters between a left and a right aligned layout.
+            let min_x = |align: TextAlign| -> Result<f64, String> {
+                let probe = TextSpec {
+                    align,
+                    ..straight.clone()
+                };
+                let layout = text::layout(&probe, None).map_err(|e| e.to_string())?;
+                Rect::enclosing(layout.contours().iter().flat_map(Contour::outline_points))
+                    .map(|b| b.min_x)
+                    .ok_or_else(|| "the text has no outline".to_string())
+            };
+            let advance = min_x(TextAlign::Left)? - min_x(TextAlign::Right)?;
+            let start = match spec.align {
+                TextAlign::Left => 0.0,
+                TextAlign::Center => -advance / 2.0,
+                TextAlign::Right => -advance,
+            };
+            let (tx, ty) = (spec.transform.tx, spec.transform.ty);
+            let r = advance / ARCH_RADIANS;
+            let cx = tx + start + advance / 2.0 + f64::from(PAGE_ORIGIN);
+            let baseline = ty + f64::from(PAGE_ORIGIN);
+            let cy = if preset == 1 {
+                baseline + r
+            } else {
+                baseline - spec.size * 10.0 - r
+            };
+            [r as f32, cx as f32, cy as f32, 0.0]
+        }
+        13 | 14 => [1000.0, 0.0, 0.0, 0.0],
+        _ => [0.0; 4],
     };
-    let advance = left_of(TextAlign::Left)? - left_of(TextAlign::Right)?;
-    Ok(match spec.align {
-        TextAlign::Left => 0.0,
-        TextAlign::Center => -advance / 2.0,
-        TextAlign::Right => -advance,
+    Ok(Envelope {
+        code,
+        strength,
+        geometry,
     })
 }
 
@@ -470,7 +636,7 @@ mod tests {
     }
 
     #[test]
-    fn text_becomes_letters_at_the_baseline_start() {
+    fn text_becomes_letters_at_the_alignment_point() {
         let mut design = Design::new("t", openstitch_design::DesignPage::default());
         let mut spec = TextSpec::new("AB", text::DEFAULT_FONT, 10.0);
         spec.transform = Transform::translation(100.0, 200.0);
@@ -493,16 +659,34 @@ mod tests {
         assert_eq!(t.bounds[3], 700, "letters stand on the baseline");
         assert_eq!(t.bounds[1], 541, "the font's ascent above it, as r12");
 
-        // Centred: the origin moves left by half the line's advance.
+        // Centred: alignment 1 and the click at the middle of the line, as PE-DESIGN writes it.
         let mut centred = Design::new("t", openstitch_design::DesignPage::default());
         spec.align = TextAlign::Center;
-        let (mut object, _) = DesignObject::text(spec.clone(), Some(region), None).expect("layout");
+        let (mut object, _) =
+            DesignObject::text(spec.clone(), Some(region.clone()), None).expect("layout");
         object.region.as_mut().expect("region").underlay = false;
         centred.add(object);
         let c = &objects(&centred).expect("objects").texts[0];
-        let half = 600.0 - c.origin.0;
-        assert!(half > 50.0 && half < 120.0, "{half}");
-        assert!((f32::from(c.bounds[0]) - c.origin.0).abs() < 3.0, "{:?}", c);
+        assert_eq!((c.align, c.origin), (1, (600.0, 700.0)));
+        assert!(f32::from(c.bounds[0]) < 600.0 && f32::from(c.bounds[2]) > 600.0);
+
+        // Text Transform preset 1 (arch over): PE-DESIGN's code 24 at strength 30, and the
+        // circle a radius below the baseline.
+        let mut arched = Design::new("t", openstitch_design::DesignPage::default());
+        spec.envelope = Some(1);
+        let (mut object, _) =
+            DesignObject::text(spec.clone(), Some(region.clone()), None).expect("layout");
+        object.region.as_mut().expect("region").underlay = false;
+        arched.add(object);
+        let a = objects(&arched).expect("objects").texts.remove(0);
+        let e = a.envelope.expect("CEmbDText");
+        assert_eq!((e.code, e.strength), (24, 30.0));
+        assert!(e.geometry[0] > 50.0, "{:?}", e.geometry);
+        assert!((e.geometry[2] - (700.0 + e.geometry[0])).abs() < 0.01);
+        // The arch's box: its apex at the ascent line above the baseline, its ends below it.
+        assert_eq!(a.bounds[1], 541);
+        assert!(a.bounds[3] > 700, "{:?}", a.bounds);
+        spec.envelope = None;
 
         // A tab, a vertical text and a rotated text are refused with the reason.
         for (text, vertical, rotate) in [

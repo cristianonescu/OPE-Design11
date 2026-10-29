@@ -73,7 +73,22 @@ pub fn image_wizard_window(app: &mut EditorApp, ctx: &egui::Context) {
                 }
                 if colours {
                     ui.label("Colours");
-                    ui.add(egui::Slider::new(&mut w.colors, 1..=32));
+                    // 0 is "Auto" (Auto Punch, Cross Stitch): the image's own colour count.
+                    let low = if matches!(w.method, Method::PhotoFill | Method::PhotoLines) {
+                        1
+                    } else {
+                        0
+                    };
+                    w.colors = w.colors.max(low);
+                    ui.add(
+                        egui::Slider::new(&mut w.colors, low..=32).custom_formatter(|v, _| {
+                            if v == 0.0 {
+                                "Auto".into()
+                            } else {
+                                format!("{v}")
+                            }
+                        }),
+                    );
                     ui.end_row();
                 }
                 match w.method {

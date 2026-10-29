@@ -197,22 +197,23 @@ fn text_letters_and_attributes_read() {
 
 #[test]
 fn unmapped_layouts_stop_reading_instead_of_misreading() {
-    // A Manual Punch block and the eight Shape-tool start-point shapes from the compat
-    // references: layouts not mapped yet must end the list as "unparsed", with the shapes read
-    // before them intact and every vertex inside its bounds.
+    // A Manual Punch block and the appliqué's fifth object: layouts not mapped yet must end
+    // the list as "unparsed", with the shapes read before them intact and every vertex inside
+    // its bounds. The eight Shape-tool start-point shapes (five of them gallery shapes) read
+    // completely.
     let dir = concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../compat/reference/stitches"
     );
     for (name, read, stop) in [
         ("satin-zigzag-column", 0, "CEmbLine (unmapped variant)"),
-        ("shape-start-points", 3, "CEmbSpecialShape"),
+        ("shape-start-points", 8, ""),
     ] {
         let bytes = std::fs::read(format!("{dir}/{name}.pes")).expect("reference");
         let section = pes::read_objects(&bytes).expect("objects");
         assert_eq!(
             (section.shapes.len(), section.unparsed.as_deref()),
-            (read, Some(stop)),
+            (read, Some(stop).filter(|s| !s.is_empty())),
             "{name}"
         );
         for s in &section.shapes {
@@ -274,7 +275,12 @@ fn thread_table_and_colour_indexes() {
                 .as_deref()
         })
         .collect();
-    assert_eq!(catalog, ["800", "007", "027"], "{colours:?}");
+    // All eight shapes now read (five are gallery shapes): the region colours in order.
+    assert_eq!(
+        catalog,
+        ["800", "007", "027", "019", "058", "030", "070", "005"],
+        "{colours:?}"
+    );
 }
 
 #[test]
@@ -356,7 +362,50 @@ fn round_3_object_files_read_their_stitches_and_stop_cleanly() {
 
 /// The owner files whose object list the reader parses completely (every object a `CEmbLine`
 /// or a `CEmbNText`, groups included): the writer's round-trip and byte-comparison set.
-const FULLY_PARSED: [&str; 56] = [
+const FULLY_PARSED: [&str; 99] = [
+    "o-gallery-heart",
+    "shape-start-points",
+    "text-fit-ahhhh",
+    "text-fit-default",
+    "text-fit-halign-left",
+    "text-fit-halign-right",
+    "text-fit-halign-spaced",
+    "text-fit-orient-upright",
+    "text-fit-otherside",
+    "text-fit-satin-ahhhh",
+    "text-fit-size-12",
+    "text-fit-size-6",
+    "text-fit-spacing-m1",
+    "text-fit-spacing-p2",
+    "text-fit-valign-below",
+    "text-fit-valign-center",
+    "o-text-transform-1",
+    "text-transform-1",
+    "text-transform-2",
+    "text-transform-3",
+    "text-transform-4",
+    "text-transform-5",
+    "text-transform-6",
+    "text-transform-7",
+    "text-transform-8",
+    "text-transform-9",
+    "text-transform-10",
+    "text-transform-11",
+    "text-transform-12",
+    "text-transform-13",
+    "text-transform-14",
+    "text-transform-15",
+    "text-transform-16",
+    "text-transform-17",
+    "text-transform-18",
+    "text-transform-19",
+    "text-transform-20",
+    "text-transform-21",
+    "text-transform-22",
+    "text-transform-23",
+    "text-transform-24",
+    "text-transform-25",
+    "text-transform-26",
     "r27-text-a-space-b",
     "r12-text-a",
     "r13-text-a-20",
@@ -439,6 +488,13 @@ fn objects_of(bytes: &[u8]) -> Objects {
 
 /// An owner file: `text-*` from compat/reference/text, the others from tests/fixtures/pe11.
 fn owner_file(name: &str) -> Vec<u8> {
+    if name == "shape-start-points" {
+        let path = format!(
+            "{}/../../compat/reference/stitches/{name}.pes",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        return std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
+    }
     if name.starts_with("text-") {
         let path = format!(
             "{}/../../compat/reference/text/{name}.pes",
@@ -517,15 +573,21 @@ fn list_offset(bytes: &[u8]) -> usize {
         - 2
 }
 
-/// Byte offsets of the leading `CEmbLine` bodies in `bytes` (the byte after the class name or
-/// tag); `count` of them, which must come first in the list.
+/// Byte offsets of the leading `CEmbLine` / `CEmbSpecialShape` bodies in `bytes` (the byte after
+/// the class name or tag); `count` of them, which must come first in the list.
 fn body_offsets(bytes: &[u8], count: usize) -> Vec<usize> {
     let mut out = Vec::new();
-    let mut at = list_offset(bytes) + 16;
+    let mut at = list_offset(bytes) + 2;
     for _ in 0..count {
+        // The MFC tag: a class name the first time (FFFF, schema, u16 length, name), else u16.
+        at += if bytes[at..at + 2] == [0xFF, 0xFF] {
+            6 + usize::from(u16::from_le_bytes([bytes[at + 4], bytes[at + 5]]))
+        } else {
+            2
+        };
         out.push(at);
         let n = u32::from_le_bytes(bytes[at + 4516..at + 4520].try_into().expect("n")) as usize;
-        at += 4520 + 28 * n + 2; // the next object's 0x8001 tag
+        at += 4520 + 28 * n;
     }
     out
 }
@@ -535,9 +597,11 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
     // docs/FILE_FORMATS.md, "Writer": the pattern block inside every body is OpenStitch's own;
     // the two parameters of the geometry header's first marks vary between files of the same
     // shape (r02, r08), and the marks' coordinates follow the closed-shape rule, which the open
-    // and curved owner files do not all share. Everything else in the object section is
-    // identical.
+    // and curved owner files do not all share (the circles the text-fit files' texts follow
+    // too). Everything else in the object section is identical.
     let marks_differ = [
+        "o-gallery-heart",
+        "shape-start-points",
         "r10-circle",
         "r11-line",
         "o-arc",
@@ -602,7 +666,9 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
                     || (extent_differs && b + 8 <= from && to <= b + 16)
                     || (gh + 8 <= from && to <= gh + 16)
                     || (gh + 24 <= from && to <= gh + 32)
-                    || (marks_differ.contains(&name) && gh <= from && to <= gh + 84)
+                    || ((marks_differ.contains(&name) || name.starts_with("text-fit"))
+                        && gh <= from
+                        && to <= gh + 84)
             })
         };
         // Text: a letter field that is f32 -0.0 in r12–r26 and 0.0 in the later owner files
@@ -610,6 +676,8 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
         // line-spacing files (OpenStitch writes 1).
         let text_quirk = |from: usize, to: usize| {
             (to - from <= 4 && written[from..to].iter().all(|&b| b == 0 || b == 0x80))
+                // A sewing-order entry's last field, 1, that PE-DESIGN sometimes leaves unset.
+                || (to - from <= 4 && from + 200 > written.len() && written[from..to].iter().all(|&b| b <= 1))
                 || (name.starts_with("text-line-spacing") && from >= written.len() - 4)
         };
         let unexplained: Vec<(usize, usize)> = diff_ranges(written, fixture)
@@ -766,7 +834,11 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
             line_spacing: 100.0,
             vertical: false,
             transform: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            align: 0,
             origin: (600.0, 700.0),
+            envelope: None,
+            char_spacing: 0.0,
+            fit: None,
         }],
         groups: Vec::new(),
         unparsed: None,
@@ -805,4 +877,114 @@ fn the_pec_header_carries_pe_designs_fields() {
             );
         }
     }
+}
+
+#[test]
+fn text_transform_presets_read() {
+    // compat/reference/text/text-transform-N: HHHHHHH with Text Transform preset N at the
+    // default level. Each preset has its own code; the strength is the default level's.
+    let codes: [(u16, f32); 26] = [
+        (24, 30.0),
+        (25, 30.0),
+        (0, 50.0),
+        (1, 50.0),
+        (8, 20.0),
+        (9, 20.0),
+        (4, 50.0),
+        (5, 50.0),
+        (10, 10.0),
+        (11, 10.0),
+        (3, 50.0),
+        (2, 50.0),
+        (7, 30.0),
+        (6, 30.0),
+        (18, 20.0),
+        (19, 20.0),
+        (12, 50.0),
+        (14, 50.0),
+        (20, 20.0),
+        (21, 20.0),
+        (17, 50.0),
+        (16, 50.0),
+        (22, 20.0),
+        (23, 20.0),
+        (13, 50.0),
+        (15, 50.0),
+    ];
+    for (k, &(code, strength)) in codes.iter().enumerate() {
+        let name = format!("text-transform-{}", k + 1);
+        let t = &objects_of(&owner_file(&name)).texts[0];
+        let e = t.envelope.expect("CEmbDText");
+        assert_eq!((e.code, e.strength), (code, strength), "{name}");
+        assert_eq!(t.align, 1, "{name}: made centred");
+        assert_eq!(
+            t.origin,
+            (1000.0, 1000.0),
+            "{name}: the click, the alignment point"
+        );
+    }
+    // The arches: the circle round which HHHHHHH is bent (radius, centre x, centre y).
+    let over = objects_of(&owner_file("text-transform-1")).texts[0]
+        .envelope
+        .expect("arch");
+    for (got, want) in over.geometry[..3].iter().zip([408.025, 1000.0, 1408.025]) {
+        assert!((got - want).abs() < 0.01, "{:?}", over.geometry);
+    }
+    let plain = &objects_of(&owner_file("o-text-transform-1")).texts[0];
+    assert_eq!(plain.align, 0, "left aligned");
+}
+
+#[test]
+fn fit_text_to_outline_reads() {
+    // compat/reference/text/text-fit-*: ABCDE (or AHHHH) fitted to a 60 mm circle, one Fit
+    // Text to Outline option changed per file.
+    let fit = |name: &str| {
+        let o = objects_of(&owner_file(name));
+        assert_eq!((o.shapes.len(), o.texts.len()), (1, 1), "{name}");
+        o.texts[0].fit.expect("CEmbAText")
+    };
+    let default = fit("text-fit-default");
+    assert_eq!(default.path, 0, "the circle, written first");
+    assert_eq!(
+        (
+            default.halign,
+            default.valign,
+            default.upright,
+            default.other_side
+        ),
+        (1, 0, false, false)
+    );
+    assert_eq!(fit("text-fit-halign-left").halign, 0);
+    assert_eq!(fit("text-fit-halign-right").halign, 2);
+    assert_eq!(fit("text-fit-halign-spaced").halign, 4);
+    assert_eq!(fit("text-fit-valign-center").valign, 1);
+    assert_eq!(fit("text-fit-valign-below").valign, 2);
+    assert!(fit("text-fit-orient-upright").upright);
+    assert!(fit("text-fit-otherside").other_side);
+    let spacing = |name: &str| objects_of(&owner_file(name)).texts[0].char_spacing;
+    assert_eq!(
+        (
+            spacing("text-fit-spacing-m1"),
+            spacing("text-fit-spacing-p2")
+        ),
+        (-10.0, 20.0)
+    );
+}
+
+#[test]
+fn gallery_shapes_read_as_shapes() {
+    // A Shapes-gallery heart is a CEmbLine record under the class CEmbSpecialShape: the same
+    // attributes and Bézier outline; the writer keeps the class.
+    let heart = objects_of(&owner_file("o-gallery-heart"));
+    assert_eq!(heart.shapes.len(), 1);
+    let s = &heart.shapes[0];
+    assert!(s.gallery && s.closed);
+    assert_eq!(s.bounds, [600, 600, 900, 900]);
+    assert_eq!(s.line_type, Shape::LINE_RUNNING);
+    let start = objects_of(&owner_file("shape-start-points"));
+    assert_eq!(
+        start.shapes.iter().filter(|s| s.gallery).count(),
+        5,
+        "three Shape-tool shapes, five gallery shapes"
+    );
 }

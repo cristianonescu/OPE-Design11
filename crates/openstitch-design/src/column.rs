@@ -213,6 +213,143 @@ pub fn fill(rungs: &[[Vec2; 2]], spacing: f64, stitch_length: f64, pull: f64) ->
     run
 }
 
+/// Inset of a column's under sewing from its outline (0.1 mm): PE-DESIGN 11.50 sews a Manual
+/// Punch column's under sewing 0.5 mm inside the rails and the end rungs (round-4 captures
+/// satin-col-us-*, a 39.5 × 6 mm straight column: edge run and zigzag on x 11.0–49.5,
+/// y 10.5–15.5).
+const UNDERLAY_INSET: f64 = 5.0;
+/// Longest stitch (0.1 mm) of the column under sewing's edge run, piping and the travel
+/// between its parts: equal stitches up to 2.5 mm (PE-DESIGN: 2.41 mm along a 38.5 mm rail,
+/// 2.5 across the 5 mm end).
+const UNDERLAY_PITCH: f64 = 25.0;
+
+/// The rungs of a column moved [`UNDERLAY_INSET`] inside its outline: each rung shortened at
+/// both ends, the first and last rung moved inward along the column.
+fn inset_rungs(rungs: &[[Vec2; 2]]) -> Vec<[Vec2; 2]> {
+    let n = rungs.len();
+    let mut out: Vec<[Vec2; 2]> = rungs
+        .iter()
+        .map(|&[l, r]| {
+            let len = l.distance(r);
+            if len <= 2.0 * UNDERLAY_INSET + 1.0 {
+                let m = l.lerp(r, 0.5);
+                return [m, m];
+            }
+            let d = (r - l) * (UNDERLAY_INSET / len);
+            [l + d, r - d]
+        })
+        .collect();
+    if n >= 2 {
+        for (i, j) in [(0, 1), (n - 1, n - 2)] {
+            let along = [rungs[j][0] - rungs[i][0], rungs[j][1] - rungs[i][1]];
+            for side in 0..2 {
+                let len = along[side].length();
+                if len > UNDERLAY_INSET {
+                    out[i][side] = out[i][side] + along[side] * (UNDERLAY_INSET / len);
+                }
+            }
+        }
+    }
+    out
+}
+
+/// The under sewing of a Manual Punch column as PE-DESIGN 11.50 sews it (round-4 captures of a
+/// 39.5 × 6 mm straight satin column, 4.5 lines/mm, Density Medium), from `start` (the
+/// column's start point) and back to it, as one run: the edge run [`UNDERLAY_INSET`] inside
+/// the outline in equal stitches up to [`UNDERLAY_PITCH`], entered at the inset point nearest
+/// the start (PE: 2 × 16 stitches of 2.41 mm along the rails and 2.5 mm across the ends; 39
+/// stitches in all with the travel); the piping, a running stitch down the middle of the
+/// column from the start end (16 × 2.41 mm); and the zigzag between the inset rails from the
+/// far end back, its needle points `spacing` apart along the column (a whole number of equal
+/// gaps, 19 of 2.03 mm over 38.5 mm at Medium) with every diagonal split into equal stitches
+/// no longer than `stitch` (PE: 42 stitches for the 19 diagonals of 5.4 mm). Which parts are
+/// sewn follows `parts` (PE's "Edge only", "Region only (zigzag)", "Region only (piping)",
+/// "Edge and region (zigzag)" and "Region only (zigzag and piping)"; the captures show edge +
+/// piping + zigzag at 286 stitches against 186 without under sewing, edge alone 225, piping +
+/// zigzag 249). Empty with fewer than two rungs or nothing to sew.
+pub fn underlay(
+    rungs: &[[Vec2; 2]],
+    parts: crate::model::UnderlayParts,
+    spacing: f64,
+    stitch: f64,
+    start: Vec2,
+) -> Run {
+    if rungs.len() < 2 || !parts.any() {
+        return Vec::new();
+    }
+    let inner = inset_rungs(rungs);
+    let n = inner.len();
+    let near_first = start.distance(inner[0][0]).min(start.distance(inner[0][1]))
+        <= start
+            .distance(inner[n - 1][0])
+            .min(start.distance(inner[n - 1][1]));
+    // The column in sewing order: its start end first.
+    let inner: Vec<[Vec2; 2]> = if near_first {
+        inner
+    } else {
+        inner.into_iter().rev().collect()
+    };
+    let mut run = vec![start];
+    let go = |run: &mut Run, to: Vec2| {
+        let from = *run.last().expect("starts at the start point");
+        run.extend(subdivide(&[from, to], UNDERLAY_PITCH).into_iter().skip(1));
+    };
+    if parts.edge {
+        let outline = outline(&inner);
+        let at = crate::route::snap(std::slice::from_ref(&outline), start);
+        let edge = crate::generate::running(&outline.starting_at(at), UNDERLAY_PITCH, 1);
+        if let Some(&first) = edge.first() {
+            go(&mut run, first);
+            run.extend(edge.into_iter().skip(1));
+        }
+    }
+    if parts.center {
+        let mids: Vec<Vec2> = inner.iter().map(|[l, r]| l.lerp(*r, 0.5)).collect();
+        let line = subdivide(&mids, UNDERLAY_PITCH);
+        if let Some(&first) = line.first() {
+            go(&mut run, first);
+            run.extend(line.into_iter().skip(1));
+        }
+    }
+    if parts.zigzag {
+        // Stations along the column, a whole number of equal gaps per section nearest to
+        // `spacing`, from the far end back to the start end.
+        let mut stations: Vec<[Vec2; 2]> = vec![inner[0]];
+        for w in inner.windows(2) {
+            let ([a, b], [c, d]) = (w[0], w[1]);
+            let len = a.distance(c).max(b.distance(d));
+            let k = ((len / spacing.max(0.1)).round() as usize).clamp(1, 100_000);
+            stations.extend((1..=k).map(|i| {
+                let t = i as f64 / k as f64;
+                [a.lerp(c, t), b.lerp(d, t)]
+            }));
+        }
+        stations.reverse();
+        // The diagonals alternate rails from the far end and end on the rail nearer the start
+        // point (PE-DESIGN: 20 stations, the first on the far end's bottom rail, the last on the
+        // top rail next to the start point at the column's top-left corner).
+        let start_side = usize::from(start.distance(inner[0][1]) < start.distance(inner[0][0]));
+        let mut side = if stations.len().is_multiple_of(2) {
+            1 - start_side
+        } else {
+            start_side
+        };
+        let mut path = Vec::new();
+        for s in &stations {
+            path.push(s[side]);
+            side = 1 - side;
+        }
+        let zig = subdivide(&path, stitch.max(1.0));
+        if let Some(&first) = zig.first() {
+            go(&mut run, first);
+            run.extend(zig.into_iter().skip(1));
+        }
+    }
+    go(&mut run, start);
+    run.dedup_by(|a, b| a.distance(*b) < 1e-9);
+    run
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

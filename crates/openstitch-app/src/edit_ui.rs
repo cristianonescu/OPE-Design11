@@ -12,7 +12,7 @@ use openstitch_app::editor::hit::bounds_of;
 use openstitch_app::editor::objects;
 use openstitch_app::editor::tools::snap_to_grid;
 use openstitch_app::editor::{CommandRequest, Phase, SelectionHandles, Tool, ToolEffect, Viewport};
-use openstitch_design::{Contour, MachineType, ObjectKind, Vec2};
+use openstitch_design::{Contour, MachineType, ObjectKind, OptimizeOrder, Vec2};
 use std::collections::BTreeSet;
 
 /// Editor state for these operations.
@@ -627,12 +627,30 @@ pub fn order_controls(app: &mut EditorApp, ui: &mut egui::Ui) -> Option<CommandR
         {
             out = Some(CommandRequest::new("order.byColor", serde_json::json!({})));
         }
-        if ui
-            .button("Optimise")
-            .on_hover_text("Group colours (drawing order within a colour) and link entry and exit points; overlapping objects keep their order")
-            .clicked()
-        {
+        let mode = app.session.design().optimize_order;
+        let hint = match mode {
+            OptimizeOrder::PeDesign => "As PE-DESIGN 11.50: group colours (drawing order within a colour) and link the entry and exit points of same-colour neighbours; overlapping objects keep their order",
+            OptimizeOrder::MinJump => "Beyond PE-DESIGN: the same colour groups, each arranged for the shortest total jump (greedy nearest, then 2-opt), every neighbouring pair linked; overlapping objects keep their order",
+        };
+        if ui.button("Optimise").on_hover_text(hint).clicked() {
             out = Some(CommandRequest::new("order.optimize", serde_json::json!({})));
+        }
+        let mut chosen = mode;
+        egui::ComboBox::from_id_salt("order-optimize-mode")
+            .selected_text(mode.label())
+            .width(130.0)
+            .show_ui(ui, |ui| {
+                for m in OptimizeOrder::ALL {
+                    ui.selectable_value(&mut chosen, m, m.label());
+                }
+            })
+            .response
+            .on_hover_text("How Optimise arranges the objects; saved with the design");
+        if chosen != mode {
+            out = Some(CommandRequest::new(
+                "design.setProperties",
+                serde_json::json!({ "optimizeOrder": chosen.id() }),
+            ));
         }
     });
     let d = app.session.design();
