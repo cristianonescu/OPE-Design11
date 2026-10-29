@@ -9,7 +9,9 @@ use crate::commands::{
 use crate::params::{CommandError, Params};
 use crate::sandbox::Access;
 use crate::session::EngineState;
-use openstitch_core::{Thread, color_distance};
+use openstitch_core::{
+    HUS_CHART, JEF_CHART, PEC_CHART, SEW_CHART, SHV_CHART, Thread, color_distance,
+};
 use openstitch_design::{LineSewing, RegionSewing};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -192,9 +194,116 @@ fn chart_thread(p: &Params, base: Option<Thread>) -> Result<Thread, CommandError
     Ok(t)
 }
 
-/// One CSV line `code,brand,description,R,G,B` (PE-DESIGN's user chart CSV layout).
+/// Columns of OpenStitch's thread-chart CSV, in order (docs/FILE_FORMATS.md, "Thread chart
+/// CSV"). PE-DESIGN 11.50 has no thread-chart CSV: its user charts are binary `.btc2` files in
+/// the program folder and are only imported through its own dialog (issue #136), so this
+/// schema is OpenStitch's own.
+pub const CSV_COLUMNS: [&str; 6] = ["code", "brand", "description", "R", "G", "B"];
+
+/// The fields of one CSV record on one line. A field in double quotes may hold commas, and `""`
+/// inside it is one quote (RFC 4180); records do not span lines. Fields are trimmed.
+fn csv_fields(line: &str) -> Result<Vec<String>, String> {
+    let mut out = Vec::new();
+    let mut field = String::new();
+    let mut chars = line.chars().peekable();
+    let (mut quoted, mut was_quoted) = (false, false);
+    loop {
+        match chars.next() {
+            None if quoted => return Err("a quoted field is not closed".into()),
+            None => {
+                out.push(field.trim().to_string());
+                return Ok(out);
+            }
+            Some('"') if quoted => {
+                if chars.peek() == Some(&'"') {
+                    chars.next();
+                    field.push('"');
+                } else {
+                    quoted = false;
+                }
+            }
+            Some('"') if !was_quoted && field.trim().is_empty() => {
+                field.clear();
+                (quoted, was_quoted) = (true, true);
+            }
+            Some(',') if !quoted => {
+                out.push(field.trim().to_string());
+                field.clear();
+                was_quoted = false;
+            }
+            Some(c) => field.push(c),
+        }
+    }
+}
+
+/// Whether `line` is the column-name row `code,brand,description,R,G,B` (any case).
+fn csv_header(fields: &[String]) -> bool {
+    fields.len() == CSV_COLUMNS.len()
+        && fields
+            .iter()
+            .zip(CSV_COLUMNS)
+            .all(|(f, c)| f.eq_ignore_ascii_case(c))
+}
+
+/// One field written for the CSV: quoted when it holds a comma, a quote or edge spaces;
+/// control characters (line breaks) dropped, as the reader would.
+fn csv_field(s: &str) -> String {
+    let s: String = s.chars().filter(|c| !c.is_control()).collect();
+    if s.contains([',', '"']) || s.trim() != s {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s
+    }
+}
+
+/// The CSV record of a thread: `code,brand,description,R,G,B`.
+fn csv_record(t: &Thread) -> String {
+    format!(
+        "{},{},{},{},{},{}",
+        csv_field(t.catalog_number.as_deref().unwrap_or("")),
+        csv_field(t.brand.as_deref().unwrap_or("")),
+        csv_field(t.name.as_deref().unwrap_or("")),
+        t.red,
+        t.green,
+        t.blue
+    )
+}
+
+/// A whole chart as CSV: a `#` comment line naming it, the column row, one record per colour;
+/// CRLF line ends (RFC 4180), UTF-8 without BOM.
+pub fn chart_csv<'a>(name: &str, threads: impl IntoIterator<Item = &'a Thread>) -> String {
+    let name: String = name.chars().filter(|c| !c.is_control()).collect();
+    let mut out = format!(
+        "# OpenStitch thread chart: {name}\r\n{}\r\n",
+        CSV_COLUMNS.join(",")
+    );
+    for t in threads {
+        out.push_str(&csv_record(t));
+        out.push_str("\r\n");
+    }
+    out
+}
+
+/// Brother chart entries PE-DESIGN 11.50 matches a colour to: 1–61 (the owner's swatch capture
+/// never picked 62–64; see `openstitch_core` and issue #119).
+const BROTHER_BASIC: usize = 61;
+
+/// Thread charts built into OpenStitch: id, display name, entries. The index of an entry is the
+/// format's colour number; `None` marks a number the format leaves unused.
+pub fn builtin_charts() -> [(&'static str, &'static str, &'static [Option<Thread>]); 5] {
+    [
+        ("brother", "Brother (PEC / PES chart)", &PEC_CHART),
+        ("janomeJef", "Janome (JEF chart)", &JEF_CHART),
+        ("janomeSew", "Janome (SEW chart)", &SEW_CHART),
+        ("husqvarnaHus", "Husqvarna Viking (HUS chart)", &HUS_CHART),
+        ("husqvarnaShv", "Husqvarna Viking (SHV chart)", &SHV_CHART),
+    ]
+}
+
+/// One CSV line `code,brand,description,R,G,B` (OpenStitch's thread-chart CSV, [`CSV_COLUMNS`]).
 fn csv_thread(line: &str) -> Result<Thread, String> {
-    let f: Vec<&str> = line.split(',').map(str::trim).collect();
+    let f = csv_fields(line)?;
+    let f: Vec<&str> = f.iter().map(String::as_str).collect();
     if f.len() != 6 {
         return Err("expected 6 fields: code,brand,description,R,G,B".into());
     }
@@ -583,7 +692,10 @@ fn chart_commands() -> Vec<CommandSpec> {
                 let mut threads = Vec::new();
                 for (k, line) in text.lines().enumerate() {
                     let line = line.trim_start_matches('\u{feff}').trim();
-                    if line.is_empty() || line.starts_with('#') {
+                    if line.is_empty()
+                        || line.starts_with('#')
+                        || csv_fields(line).is_ok_and(|f| csv_header(&f))
+                    {
                         continue;
                     }
                     threads.push(
@@ -597,6 +709,81 @@ fn chart_commands() -> Vec<CommandSpec> {
                 let added = threads.len();
                 c.threads.extend(threads);
                 Ok(json!({ "added": added }))
+            },
+        ),
+        spec(
+            "threads.builtinCharts",
+            "The thread charts built into OpenStitch (Brother, Janome JEF and SEW, Husqvarna Viking HUS and SHV) with each entry's number, colour, code, brand and name",
+            Effect::Read,
+            vec![],
+            |_, _| {
+                Ok(Value::Array(
+                    builtin_charts()
+                        .iter()
+                        .map(|(id, name, chart)| {
+                            let threads: Vec<Value> = chart
+                                .iter()
+                                .enumerate()
+                                .filter_map(|(i, t)| {
+                                    let t = t.as_ref()?;
+                                    let mut v = describe_thread(t);
+                                    v["index"] = json!(i);
+                                    if *id == "brother" {
+                                        // Matched to (1–61) or only kept from files (62–64).
+                                        v["basic"] = json!(i <= BROTHER_BASIC);
+                                    }
+                                    Some(v)
+                                })
+                                .collect();
+                            json!({ "id": id, "name": name, "threads": threads })
+                        })
+                        .collect(),
+                ))
+            },
+        ),
+        spec(
+            "threads.exportCsv",
+            "Write a user chart (chart) or a built-in chart (builtin) as OpenStitch's thread-chart CSV (code,brand,description,R,G,B)",
+            Effect::File,
+            vec![
+                opt("chart", "string", "User chart name"),
+                opt(
+                    "builtin",
+                    "string",
+                    "Built-in chart id (see threads.builtinCharts)",
+                ),
+                crate::commands::PATH,
+            ],
+            |s, p| {
+                let (name, threads): (String, Vec<Thread>) =
+                    match (p.has("chart"), p.has("builtin")) {
+                        (true, false) => {
+                            let n = p.string("chart", None)?;
+                            let c = s
+                                .user
+                                .chart_index(&n)
+                                .map(|i| &s.user.thread_charts[i])
+                                .ok_or_else(|| p.not_found(format!("thread chart '{n}'")))?;
+                            (c.name.clone(), c.threads.clone())
+                        }
+                        (false, true) => {
+                            let id = p.string("builtin", None)?;
+                            let (_, name, chart) = builtin_charts()
+                                .into_iter()
+                                .find(|(i, _, _)| *i == id)
+                                .ok_or_else(|| {
+                                    let ids: Vec<&str> =
+                                        builtin_charts().iter().map(|c| c.0).collect();
+                                    p.invalid("builtin", format!("use one of {}", ids.join(", ")))
+                                })?;
+                            (name.to_string(), chart.iter().flatten().cloned().collect())
+                        }
+                        _ => return Err(p.invalid("chart", "give either chart or builtin")),
+                    };
+                let path = s.resolve(&p.string("path", None)?, Access::Write, &p.command)?;
+                std::fs::write(&path, chart_csv(&name, &threads))
+                    .map_err(|e| p.failed(e.to_string()))?;
+                Ok(json!({ "path": path.display().to_string(), "colors": threads.len() }))
             },
         ),
         spec(
@@ -652,6 +839,31 @@ fn chart_commands() -> Vec<CommandSpec> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn csv_quoting_round_trips() {
+        let mut t = Thread::rgb(0x0a14ff);
+        t.catalog_number = Some(Cow::Borrowed("0042"));
+        t.brand = Some(Cow::Borrowed("Acme, Inc."));
+        t.name = Some(Cow::Borrowed("Sky \"blue\""));
+        let line = csv_record(&t);
+        assert_eq!(line, "0042,\"Acme, Inc.\",\"Sky \"\"blue\"\"\",10,20,255");
+        assert_eq!(csv_thread(&line), Ok(t));
+        assert_eq!(
+            csv_fields(" \"a,b\" , c ,\"\"").expect("ok"),
+            ["a,b", "c", ""]
+        );
+        assert!(csv_fields("\"open").is_err());
+        assert!(csv_header(
+            &csv_fields("Code,Brand,Description,r,g,b").expect("ok")
+        ));
+        assert!(!csv_header(&csv_fields("1,a,b,1,2,3").expect("ok")));
+        let csv = chart_csv("Mine\n", [&Thread::rgb(0xff0000)]);
+        assert_eq!(
+            csv,
+            "# OpenStitch thread chart: Mine\r\ncode,brand,description,R,G,B\r\n,,,255,0,0\r\n"
+        );
+    }
 
     #[test]
     fn csv_lines() {

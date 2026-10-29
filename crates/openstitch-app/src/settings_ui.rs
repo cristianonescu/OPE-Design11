@@ -248,6 +248,17 @@ fn charts_window(app: &mut EditorApp, ctx: &egui::Context) {
                         json!({ "chart": name, "path": path.to_string_lossy() }),
                     ));
                 }
+                if ui.button("Export CSV…").clicked()
+                    && let Some(path) = rfd::FileDialog::new()
+                        .add_filter("CSV", &["csv"])
+                        .set_file_name(format!("{name}.csv"))
+                        .save_file()
+                {
+                    request = Some(CommandRequest::new(
+                        "threads.exportCsv",
+                        json!({ "chart": name, "path": path.to_string_lossy() }),
+                    ));
+                }
                 if ui
                     .button("Remap design")
                     .on_hover_text("Change every thread to the nearest colour of this chart")

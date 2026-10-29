@@ -1230,6 +1230,16 @@ Line references are relative to `crates/`.
   needs the codes for all 61 entries (13 known from this and earlier captures) and goes with
   the palette work (#136). The machine-format references (`machine-formats`, red and black)
   pick the same entries under both metrics.
+- **Thread-chart CSV and the built-in palette (2026-10-29, #136):** PE-DESIGN 11.50 has no
+  thread-chart CSV (round-4 check: Options ▸ Edit User Thread Chart only imports; user charts
+  are binary `.btc2` files, 89 bytes of high-entropy data for one colour, in the program
+  folder), so the issue's `#userchart` schema, 6-character code and 1,499-colour cap have no
+  PE-DESIGN counterpart. OpenStitch documents its own CSV (FILE_FORMATS.md "Thread chart
+  CSV": the six columns it already imported, plus a column row and RFC 4180 quoting) and adds
+  `threads.exportCsv` for user and built-in charts and `threads.builtinCharts`, which marks
+  Brother entries 1–61 as the ones PE matches to (#119). Charts cannot be exchanged with
+  PE-DESIGN through files; `.btc2` is not decoded (obfuscated, kept in the program folder).
+  The 94-entry sew palette of the issue is not implemented: no PE-DESIGN capture shows it.
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 - **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,

@@ -177,6 +177,12 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    with an "approximate" city-block matcher since 2026-10-29 (#119), checked against the owner's
    twelve-swatch capture; left: Brother catalogue codes for SVG and hex fills, the sew palette
    and user-chart CSV schema (#136), per-machine export limits and hoop codes (#125).
+8. **Formats:** CSD export (no public writer). Thread charts: OpenStitch's own CSV is
+   documented and exported since 2026-10-29 (#136; PE-DESIGN keeps charts as binary `.btc2`,
+   no CSV); left: Brother catalogue codes for the 61 matched chart entries so imported fills
+   snap to them as in PE-DESIGN. PEC moves over 204.7 mm split as PE-DESIGN's
+   DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such a move (parked PES of
+   `long-jump-300`).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo

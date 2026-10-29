@@ -276,3 +276,93 @@ fn bad_user_settings_inputs_fail_cleanly() {
         );
     }
 }
+
+/// OpenStitch's thread-chart CSV (issue #136; PE-DESIGN 11.50 has no CSV for its charts, so
+/// the schema is OpenStitch's own): the built-in charts are listed, any chart exports as
+/// `code,brand,description,R,G,B` with a header row and quoting, and an export imports back.
+#[test]
+fn thread_chart_csv_exports_and_imports_back() {
+    let dir = temp_dir();
+    let mut s = Session::new(&dir);
+    let builtin = run(&mut s, "threads.builtinCharts", json!({}));
+    let ids: Vec<&str> = builtin
+        .as_array()
+        .expect("charts")
+        .iter()
+        .map(|c| c["id"].as_str().expect("id"))
+        .collect();
+    assert_eq!(
+        ids,
+        [
+            "brother",
+            "janomeJef",
+            "janomeSew",
+            "husqvarnaHus",
+            "husqvarnaShv"
+        ]
+    );
+    let brother = builtin[0]["threads"].as_array().expect("threads");
+    assert_eq!(brother.len(), 64);
+    assert_eq!(brother[0]["index"], json!(1));
+    assert_eq!(brother[4]["color"], json!("#ed171f"));
+    let basic = brother.iter().filter(|t| t["basic"] == json!(true)).count();
+    assert_eq!(basic, 61);
+
+    // A built-in chart exports and imports back into a user chart unchanged.
+    let r = run(
+        &mut s,
+        "threads.exportCsv",
+        json!({"builtin": "brother", "path": "brother.csv"}),
+    );
+    assert_eq!(r["colors"], json!(64));
+    let text = std::fs::read_to_string(dir.join("brother.csv")).expect("csv");
+    assert!(text.starts_with("# OpenStitch thread chart: Brother (PEC / PES chart)\r\ncode,brand,description,R,G,B\r\n1,Brother,Prussian Blue,14,31,124\r\n"));
+    run(&mut s, "threads.createChart", json!({"name": "Copy"}));
+    let r = run(
+        &mut s,
+        "threads.importCsv",
+        json!({"chart": "Copy", "path": "brother.csv"}),
+    );
+    assert_eq!(r["added"], json!(64));
+    let charts = run(&mut s, "threads.charts", json!({}));
+    let copied: Vec<&Value> = charts[0]["threads"]
+        .as_array()
+        .expect("threads")
+        .iter()
+        .collect();
+    for (a, b) in copied.iter().zip(brother) {
+        for k in ["color", "code", "brand", "description"] {
+            assert_eq!(a[k], b[k], "{k}");
+        }
+    }
+
+    // A user chart with commas and quotes in its strings round-trips.
+    run(&mut s, "threads.createChart", json!({"name": "Odd"}));
+    run(
+        &mut s,
+        "threads.addColor",
+        json!({"chart": "Odd", "color": "#123456", "code": "7", "brand": "Acme, Inc.", "description": "Say \"hi\""}),
+    );
+    run(
+        &mut s,
+        "threads.exportCsv",
+        json!({"chart": "Odd", "path": "odd.csv"}),
+    );
+    run(&mut s, "threads.createChart", json!({"name": "Odd2"}));
+    run(
+        &mut s,
+        "threads.importCsv",
+        json!({"chart": "Odd2", "path": "odd.csv"}),
+    );
+    let charts = run(&mut s, "threads.charts", json!({}));
+    assert_eq!(charts[1]["threads"], charts[2]["threads"]);
+
+    for bad in [
+        json!({"path": "x.csv"}),
+        json!({"chart": "Odd", "builtin": "brother", "path": "x.csv"}),
+        json!({"builtin": "madeira", "path": "x.csv"}),
+        json!({"chart": "Nope", "path": "x.csv"}),
+    ] {
+        assert!(s.execute("threads.exportCsv", Some(&bad)).is_err(), "{bad}");
+    }
+}
