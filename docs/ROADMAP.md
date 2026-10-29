@@ -90,7 +90,8 @@ harness. The details per item are in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDI
 
 Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDIT.md):
 
-1. **Fill:** PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
+1. **Fill:** Round 4 (2026-10-29) confirmed PE-DESIGN has no random tatami stagger
+   (Frequency and two Stitch Type buttons only) and a 0.1 lines/mm density floor. PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
    Frequency default); the programmable fill density; Stitch Type (turning ends) and Half
    Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
    rows follow PE-DESIGN's cumulative-density placement since 2026-10-28 (#95: every row of
@@ -153,6 +154,8 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
 6. **PES:** turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects
    (round 4 added programmable-fill, motif-fill and motif-line samples with an owner pattern,
    and the `.pas` / `.pmf` pattern sources for an importer, #131);
+6. **PES:** Round 4 added owner-drawn Programmable Stitch Creator sources (`.pas`, `.pmf`,
+   `.plf`) for an importer (#131); Font Creator fonts wait for the owner (#134). turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
    write editable shapes and text; PES v7–v11 and the hoop and Design Page fields (from the
    owner's own files only, as [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 6. **PES:** editable shapes are written (`pesVersion` 11 writes `CEmbLine` objects in PE-DESIGN
