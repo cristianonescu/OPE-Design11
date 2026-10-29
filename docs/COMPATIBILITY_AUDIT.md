@@ -1114,6 +1114,40 @@ Line references are relative to `crates/`.
   than one record; VIP's exact piece length (7.5–7.9 mm); JEF's `-1` hoop block; XXX's header
   tables and palette filler; SEW's 340 header bytes; DST's `AX`/`AY`; PE-DESIGN's RGB for chart
   colour 800 RED (`E3 31 1F`) against the PEC chart table's `ED 17 1F`.
+- **Concentric Circle and Spiral (calibrated 2026-10-29, #138):** issue #138 assumed PE-DESIGN
+  has no concentric or spiral sewing; it has both as region sew types, with only Density
+  (default 2.0), Run pitch (2.0) and two Start Point buttons. Fourteen references
+  (`concentric-*`, `spiral-*`: a 40 mm circle at defaults, start 2, density 1.0 and 3.0, pitch
+  3.0; a 40 × 30 mm rectangle; a 40 mm ring with a 15 mm hole) show:
+  - Concentric Circle: circles about the bounding-box centre at d, 2d, … (d = 1 / density);
+    the whole circles from the largest inwards, each from one radial seam, counter-clockwise;
+    a trim; the cut circles from the smallest outwards as arcs, back and forth per piece, with
+    running travel along the outline. The seam is where the first cut circle meets the
+    outline (on the rectangle where the 15.5 mm circle leaves the bottom edge, 75.4°).
+  - Spiral: not an Archimedean spiral about a centre but the outline offset a row inwards per
+    turn (turns 0.5 mm apart on both axes of the rectangle), from R1 on the outline to the
+    middle; per turn 4·2ⁿ needle points (64 a turn down to r ≈ 10 mm on the circle, then 32,
+    16, 8), corners kept on the rectangle.
+  - The second Start Point button sews the same stitches backwards; neither type travels from
+    R1 or to R2.
+  - A ring made as Set hole sewing with the inner circle's region Not Sewn keeps the hole
+    (OpenStitch dropped a paired hole whose inner shape sewed no region; fixed).
+
+  Status: reference tier, all 14 specs pass. Stitch counts within 3 %, bounds within 0.35 mm,
+  mean stitch length within 0.15 mm. Open (count checks kept out of the reference tier, not
+  loosened):
+  - `spiral-circle40-pitch3p0`: PE 1354 stitches, OpenStitch 1284 (−5.2 %). Suspected cause:
+    at a 3 mm pitch PE puts more needle points on the inner turns than the 4·2ⁿ rule gives (it
+    matches within 2 % at 2 mm). The count is an internal-tier check pinning OpenStitch's 1284
+    at 3 %; bounds and stitch lengths stay at the reference tier.
+  - `spiral-ring40-hole15`: PE 1952 stitches, OpenStitch 1473 (−24.5 %), because PE sews the
+    band where the outline's and the hole's spirals meet as about 30 trimmed pieces (64 trims).
+    The spec compares bounds and stitch lengths only.
+
+  Other known differences: PE splits
+  more chords inside each concentric circle (2.0 / 1.0 + 1.0 / 1.33 × 3 mm runs) than the 0.1 mm
+  rounding explains; the concentric seam on a Bézier circle; the spiral's winding on a circle
+  (PE turns against the outline there and with it on the rectangle).
 - **Image digitizing (Phase 6, issues #127, #128, #132, #129):** the Auto Punch, Cross Stitch
   and Photo Stitch pipelines were this project's own approximations; the Phase 6 gap analysis
   pins their arithmetic. Done 2026-10-29 (#128): mono Photo Stitch uses integer Rec. 601

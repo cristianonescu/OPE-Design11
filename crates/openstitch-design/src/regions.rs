@@ -117,30 +117,41 @@ pub fn generate(
             vec![region.pieces_raw(cross_stitch(closed, holes, angle, spacing, r.triple))]
         }
         RegionType::ConcentricCircle => {
-            let c = r.center.unwrap_or_else(|| centre(closed));
-            let rings = concentric(closed, c, row_spacing, pitch);
-            let mut pieces = Vec::new();
-            for ring in rings {
-                pieces.extend(clip(&ring, closed, holes));
-            }
-            if !r.start_inside {
-                pieces.reverse();
-            }
-            vec![region.sequence(nearest_next(pieces))]
+            // PE-DESIGN 11.50 (see crate::concentric): whole circles, a trim, the cut ones.
+            let p = crate::concentric::ConcentricParams {
+                center: r.center.unwrap_or_else(|| centre(closed)),
+                spacing: row_spacing,
+                pitch,
+                start_inside: r.start_inside,
+                entry: r.entry,
+            };
+            let cc = crate::concentric::concentric(closed, holes, &p);
+            let arcs = region.sequence_raw(cc.arcs);
+            let full: Vec<Run> = if cc.full.len() >= 2 {
+                vec![cc.full]
+            } else {
+                Vec::new()
+            };
+            vec![if cc.arcs_first {
+                arcs.into_iter().chain(full).collect()
+            } else {
+                full.into_iter().chain(arcs).collect()
+            }]
         }
         RegionType::Radial => {
             let c = r.center.unwrap_or_else(|| centre(closed));
             vec![region.sequence(radial(closed, holes, c, row_spacing, pitch))]
         }
         RegionType::Spiral => {
-            let c = r.center.unwrap_or_else(|| centre(closed));
-            let spiral = archimedean(c, reach(closed, c), row_spacing, pitch, r.counterclockwise);
-            let mut pieces = clip(&spiral, closed, holes);
-            if !r.start_inside {
-                pieces.reverse();
-                pieces.iter_mut().for_each(|p| p.reverse());
-            }
-            vec![region.sequence(nearest_next(pieces))]
+            // PE-DESIGN 11.50 (see crate::spiral): the outline offset a row per turn.
+            let p = crate::spiral::SpiralParams {
+                spacing: row_spacing,
+                pitch,
+                reverse_winding: r.counterclockwise,
+                start_inside: r.start_inside,
+                entry: r.entry,
+            };
+            vec![region.sequence_raw(crate::spiral::spiral(closed, holes, &p))]
         }
         RegionType::FlexibleSpiral => {
             let spiral = flexible_spiral(closed, spacing, pitch, r.counterclockwise);
@@ -764,23 +775,6 @@ fn cross_stitch(
 
 // ------------------------------------------------------------------ circles and spirals
 
-/// Concentric circles about `c`, `spacing` apart, out to the farthest outline point.
-fn concentric(closed: &[Contour], c: Vec2, spacing: f64, pitch: f64) -> Vec<Vec<Vec2>> {
-    let r_max = reach(closed, c);
-    let mut out = Vec::new();
-    let mut r = spacing / 2.0;
-    while r <= r_max && out.len() < MAX_ROWS {
-        let n = ((std::f64::consts::TAU * r / pitch.max(1.0)).ceil() as usize).max(8);
-        out.push(
-            (0..=n)
-                .map(|k| c + v2(r, 0.0).rotated(std::f64::consts::TAU * k as f64 / n as f64))
-                .collect(),
-        );
-        r += spacing;
-    }
-    out
-}
-
 /// Radial lines from the centre, `spacing` apart at the outer edge. Lines are thinned towards
 /// the centre: a line of level L (the number of trailing zero bits of its index) starts where
 /// the lines of higher levels are `spacing` apart, so the centre is not overloaded. Lines run
@@ -815,24 +809,6 @@ fn radial(
             pieces.iter_mut().for_each(|p| p.reverse());
         }
         out.extend(pieces);
-    }
-    out
-}
-
-/// Archimedean spiral about `c` (radius grows `spacing` per turn) out to `r_max`, points about
-/// `pitch` apart; clockwise on screen unless `ccw`.
-fn archimedean(c: Vec2, r_max: f64, spacing: f64, pitch: f64, ccw: bool) -> Vec<Vec2> {
-    let sign = if ccw { -1.0 } else { 1.0 };
-    let mut out = vec![c];
-    let mut theta: f64 = 0.0;
-    while out.len() < MAX_POINTS {
-        let r = spacing * theta / std::f64::consts::TAU;
-        theta += pitch / r.max(spacing);
-        let r = spacing * theta / std::f64::consts::TAU;
-        out.push(c + v2(r, 0.0).rotated(sign * theta));
-        if r > r_max + spacing {
-            break;
-        }
     }
     out
 }

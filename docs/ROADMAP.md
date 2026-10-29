@@ -33,7 +33,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
   - Line types: motif (own library), stem, candlewicking, E/V, chain, cutting, zigzag half stitch.
   - Satin and fill options: auto direction, underlays, gradation, feather, split, travel.
   - Region types: programmable fill, motif fill, piping, cross stitch, concentric circle,
-    radial, spiral, flexible spiral, stippling, net fill, zigzag net fill, decorative fill.
+    radial, spiral, flexible spiral, stippling, net fill, zigzag net fill, decorative fill;
+    concentric circle and spiral calibrated to PE-DESIGN 11.50 (#138, 14 references).
 - **Lettering:** text objects with Lato Bold and Pacifico (SIL OFL), text on a path, user
   TrueType/OpenType fonts (CJK through any font with the glyphs), shaping of right-to-left and
   complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits
@@ -252,7 +253,7 @@ before any code; the ranking and the proposed tracks are in
 
 | Item | Feature | Phase | Sketch | Status |
 |---|---|---|---|---|
-| B1 | Contour (offset) fill | A | [research/beyond/contour-fill.md](research/beyond/contour-fill.md) | Sketched; not started |
+| B1 | Contour (offset) fill | A | [research/beyond/contour-fill.md](research/beyond/contour-fill.md) | Sketched. The single spiral exists as PE-DESIGN's own Spiral Stitch (an offset spiral, calibrated 2026-10-29, #138, `crate::spiral`); offset rings, double spiral, echo rings and join styles remain |
 | B2 | Two-guide fills and stitch-angle maps | D | [research/beyond/guided-fill-and-angle-maps.md](research/beyond/guided-fill-and-angle-maps.md) | Sketched; not started |
 | B3 | Satin corners and short stitches | B | [research/beyond/satin-corners-and-short-stitches.md](research/beyond/satin-corners-and-short-stitches.md) | Sketched; not started |
 | B4 | Auto-routed running stitches, Redwork, satin branching | C | [research/beyond/auto-route-and-branching.md](research/beyond/auto-route-and-branching.md) | Sketched; not started |

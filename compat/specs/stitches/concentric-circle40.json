@@ -1,0 +1,132 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "concentric-circle40",
+  "area": "stitches",
+  "title": "Concentric Circle Stitch: Shapes > Rectangle/Circle/Arc > Circle, defaults",
+  "description": "PE-DESIGN 11.50's Concentric Circle Stitch: circles about the centre one row (1 / density) apart; the whole circles from the largest inwards, each from one radial seam, then a trim and the circles the outline cuts, from the smallest outwards, as arcs. 4·2^n needle points a circle on the 0.1 mm grid. PE-DESIGN splits more chords inside a circle than that (2.0 / 1.0+1.0 / 1.33×3 mm runs), so counts are compared within 3 %, bounds, and the mean stitch length.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Concentric circle"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/concentric-circle40.pes (PE-DESIGN 11.50, 2026-10-29, pe-refs-4): 39,80 x 39,90 mm, 1841 stitches"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 50,
+        "cy": 50,
+        "rx": 20
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "concentricCircle",
+        "color": "Red"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "region.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/concentric-circle40.pes",
+      "make": "Shapes > Rectangle/Circle/Arc > Circle dragged (30,30)-(70,70) mm (a Fill region reads exactly 40,00 x 40,00); region Concentric Circle Stitch, every attribute at its default. Design Settings Hoop Size 100 x 100 mm (multi-needle machine type); line Not Sewn (Line); colour 800 EMBROIDERY RED (PEC 5); nothing else in the design. Region sew attributes of both Concentric Circle Stitch and Spiral Stitch: only Density (default 2,0 line/mm), Run pitch (default 2,0 mm) and Start Point (two buttons, default the first); no direction, under sewing or pull compensation. Defaults reset between variants. Save As PES (default type, #PES0110). Status bar 39,80 x 39,90 mm, Stitches = 1841."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: 1841 stitches; OpenStitch within 3 %",
+      "reference": {
+        "tolerance": {
+          "percent": 3
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "stitch-length-mean",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "mean",
+        "minLength": 0.3
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    }
+  ]
+}
