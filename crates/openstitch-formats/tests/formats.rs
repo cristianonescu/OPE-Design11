@@ -530,6 +530,66 @@ fn distinct_colours_get_distinct_chart_entries() {
     );
 }
 
+/// PEC long-form deltas: every move over ±2047 units (204.7 mm) is split as PE-DESIGN splits
+/// an over-long DST move (maximum along the longer axis, remainder last; `long-jump-300.dst`),
+/// so no encoded coordinate exceeds the 12-bit form and the endpoint is reached exactly (#126).
+#[test]
+fn pec_splits_moves_over_2047_units_like_pe_design_dst() {
+    let deltas = |p: &StitchPattern| -> Vec<(f64, f64)> {
+        let back = pes::read(&pes::write(p).expect("write")).expect("read");
+        let pts: Vec<[f64; 2]> = back
+            .stitches
+            .iter()
+            .filter(|s| matches!(s.command, Command::Stitch | Command::Jump))
+            .map(|s| [s.x, s.y])
+            .collect();
+        pts.windows(2)
+            .map(|w| (w[1][0] - w[0][0], w[1][1] - w[0][1]))
+            .collect()
+    };
+    for (len, expected) in [
+        (2047.0, vec![(2047.0, 0.0)]), // 204.7 mm: one long-form record
+        (2048.0, vec![(2047.0, 0.0), (1.0, 0.0)]), // 204.8 mm: the maximum, then 0.1 mm
+        (4095.0, vec![(2047.0, 0.0), (2047.0, 0.0), (1.0, 0.0)]), // 409.5 mm
+    ] {
+        let mut p = with_threads(&[0]);
+        p.stitch_to(0.0, 0.0);
+        p.stitch_to(len, 0.0);
+        p.push(Command::End);
+        assert_eq!(deltas(&p), expected, "{len}");
+    }
+    // Diagonal: the longer axis takes the maximum, the other its proportional share; the
+    // remainder is the last piece and the sum is the original vector.
+    let mut p = with_threads(&[0]);
+    p.stitch_to(0.0, 0.0);
+    p.stitch_to(2116.0, -2783.0);
+    p.push(Command::End);
+    let d = deltas(&p);
+    assert_eq!(d[0], (1556.0, -2047.0));
+    assert_eq!(d.len(), 2);
+    assert_eq!(
+        d.iter().fold((0.0, 0.0), |a, b| (a.0 + b.0, a.1 + b.1)),
+        (2116.0, -2783.0)
+    );
+    // Fractions: 0.5 → 2047.5 rounds to 0 → 2048 in the encoder, so the split works on the
+    // rounded coordinates and still never writes a delta over 2047.
+    let mut p = with_threads(&[0]);
+    p.jump_to(0.5, 0.5);
+    p.stitch_to(2047.5, 0.5);
+    p.jump_to(2047.5, 4095.5);
+    p.push(Command::End);
+    let d = deltas(&p);
+    assert!(
+        d.iter()
+            .all(|(x, y)| x.abs() <= 2047.0 && y.abs() <= 2047.0),
+        "{d:?}"
+    );
+    assert_eq!(
+        d.iter().fold((0.0, 0.0), |a, b| (a.0 + b.0, a.1 + b.1)),
+        (2048.0, 4096.0)
+    );
+}
+
 #[test]
 fn pec_long_deltas_round_trip() {
     let mut p = with_threads(&[0]);
