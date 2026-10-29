@@ -425,6 +425,7 @@ fn objects_of(bytes: &[u8]) -> Objects {
     assert_eq!(s.version, "0110");
     Objects {
         page_mm: s.page_mm,
+        hoop_page: s.hoop_page,
         threads: s.threads,
         shapes: s.shapes,
         texts: s.texts,
@@ -448,6 +449,9 @@ fn owner_file(name: &str) -> Vec<u8> {
 
 #[test]
 fn region_not_sewn_groups_and_page_size_read() {
+    // r01 was saved on a Custom Size page, r27 on PE-DESIGN's default Hoop Size page.
+    assert!(!objects_of(&data("pe11/r01-rect.pes")).hoop_page);
+    assert!(objects_of(&data("pe11/r27-text-a-space-b.pes")).hoop_page);
     let o = objects_of(&data("pe11/o-group-two-rects.pes"));
     assert_eq!(o.shapes.len(), 2);
     assert!(o.shapes.iter().all(|s| s.region == RegionSewType::NotSewn));
@@ -578,13 +582,7 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
             assert_eq!(machine(&written), machine(&fixture), "{name}");
             let m = machine(&fixture);
             assert_eq!(&written[12..21], &fixture[12..21], "{name}: header");
-            // r27 was made on a Hoop-Size page: one more hoop field differs (5 for 10).
-            let mut header = fixture[m..list].to_vec();
-            if name == "r27-text-a-space-b" {
-                assert_eq!(header[28..30], [5, 0], "{name}");
-                header[28..30].copy_from_slice(&[10, 0]);
-            }
-            assert_eq!(&written[m..list], &header[..], "{name}: header");
+            assert_eq!(&written[m..list], &fixture[m..list], "{name}: header");
         }
         // The object list and the trailer, compared from the list start.
         let (fixture, written) = (&fixture[list..pec], &written[list_w..pec_w]);
@@ -674,6 +672,7 @@ fn an_openstitch_shape_with_curves_round_trips() {
     second.bounds = Shape::bounds_of(&second.vertices);
     let objects = Objects {
         page_mm: Some((130, 180)),
+        hoop_page: false,
         threads: vec![openstitch_core::Thread::rgb(0x12_34_56)],
         shapes: vec![shape, second],
         texts: Vec::new(),
@@ -724,6 +723,7 @@ fn texts_between_shapes_and_in_groups_round_trip() {
     second.bounds = Shape::bounds_of(&second.vertices);
     let objects = Objects {
         page_mm: Some((100, 100)),
+        hoop_page: false,
         threads: r01.threads.clone(),
         shapes: vec![r01.shapes[0].clone(), second],
         texts: vec![text],
@@ -749,6 +749,7 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
     let read = objects_of(&fixture);
     let objects = Objects {
         page_mm: Some((100, 100)),
+        hoop_page: false,
         threads: read.threads.clone(),
         shapes: Vec::new(),
         texts: vec![Text {
@@ -777,7 +778,13 @@ fn the_pec_header_carries_pe_designs_fields() {
     // PE-DESIGN's own files with OpenStitch's object header (150 × 150 mm hoop, custom page)
     // carry these PEC header fields; the PEC writer's own values made PE-DESIGN show a Hoop
     // Settings tab on a written text.
-    for name in ["r01-rect", "r12-text-a", "r14-text-ab", "text-defaults-h"] {
+    for name in [
+        "r01-rect",
+        "r12-text-a",
+        "r14-text-ab",
+        "text-defaults-h",
+        "r27-text-a-space-b",
+    ] {
         let fixture = owner_file(name);
         let written = pes11::write(&objects_of(&fixture), &stitches_of(&fixture)).expect("write");
         let pec_of = |b: &[u8]| u32::from_le_bytes(b[8..12].try_into().expect("offset")) as usize;
@@ -787,10 +794,12 @@ fn the_pec_header_carries_pe_designs_fields() {
             &fixture[p + 0x13..p + 0x30],
             "{name}"
         );
-        assert_eq!(
-            &written[q + 0x208..q + 0x20C],
-            &fixture[p + 0x208..p + 0x20C],
-            "{name}"
-        );
+        if !objects_of(&fixture).hoop_page {
+            assert_eq!(
+                &written[q + 0x208..q + 0x20C],
+                &fixture[p + 0x208..p + 0x20C],
+                "{name}"
+            );
+        }
     }
 }

@@ -136,8 +136,8 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
 6. **PES:** editable shapes and Lato Bold text are written (`pesVersion` 11 writes `CEmbLine`
    and `CEmbNText` objects in PE-DESIGN 11.50's layout, 2026-10-29; issue #120; PE-DESIGN opens
    the shapes and the text editable, references `pes-0110-editable-shapes`,
-   `pes-0110-editable-text`). Left: a plain click on written text does not select it in
-   PE-DESIGN; BROTHER EMBROIDERY numbers for the chart colours with no owner sample; turn the `#PES0110` shapes and texts the reader
+   `pes-0110-editable-text`). Left: PE-DESIGN's confirmation of the Hoop Size page (probe p3);
+   the design's machine type and hoop in the header; BROTHER EMBROIDERY numbers for the chart colours with no owner sample; turn the `#PES0110` shapes and texts the reader
    parses into editable OpenStitch objects; vertical text, text on an outline
    (`CEmbAText`) and with Text Transforms (`CEmbDText`); the other region and line types, hole-sewing pairs and several outlines per object; the hoop
    fields; PES v7–v10 (from the owner's own files only, as

@@ -285,6 +285,8 @@ fn pes_version_11_writes_editable_shapes_and_text_and_refuses_what_it_cannot_hol
     assert_eq!(objects.version, "0110");
     assert_eq!(objects.unparsed, None);
     assert_eq!(objects.page_mm, Some((100, 100)));
+    // PE-DESIGN's default page for a new design: a Hoop Size page, no Hoop Settings tab.
+    assert!(objects.hoop_page);
     assert_eq!(objects.shapes.len(), 1);
     let shape = &objects.shapes[0];
     assert_eq!(shape.bounds, [600, 600, 700, 700]);

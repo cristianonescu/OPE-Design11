@@ -69,6 +69,8 @@ pub struct ObjectSection {
     pub groups: Vec<Vec<u16>>,
     /// PE-DESIGN 11 Design Page size in mm, when the header had the mapped layout.
     pub page_mm: Option<(u16, u16)>,
+    /// PE-DESIGN 11 Hoop Size page (header page mode 0) rather than a Custom Size page.
+    pub hoop_page: bool,
     /// The first object class that was not parsed, if any.
     pub unparsed: Option<String>,
 }
@@ -302,6 +304,7 @@ pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
             section.texts = objects.texts;
             section.groups = objects.groups;
             section.page_mm = objects.page_mm;
+            section.hoop_page = objects.hoop_page;
             section.unparsed = objects.unparsed;
             return Ok(section);
         }

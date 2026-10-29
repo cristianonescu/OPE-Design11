@@ -157,8 +157,10 @@ below is pinned by a test in `tests/pes11.rs`.
   1, the text object 2, `CTTFLetter` 3 and the letter `A` 4, so `B` starts `03 80`; in r16 the
   second rectangle starts `01 80`. The reader finds the list by the first `FFFF 0000` + class name after the
   header strings; the hoop, page and thread-table fields in between are not all mapped.
-- **Header** (after the five metadata strings; `o-page-200x200`, `o-hoop-*`, `o-machine-single-100x100`
-  against r01): u16 0; u16 1 (0 in the single-needle files); u16 255 (1 single-needle); the hoop
+- **Header** (after the five metadata strings; `o-page-200x200`, `o-hoop-*`, `o-machine-single-100x100`,
+  r27 against r01): u16 0; u16 **page mode**: 1 Custom Size page, 0 Hoop Size page (r27,
+  o-hoop-*; PE-DESIGN's default page for a new design); u16 hoop: 255, 15 (100 × 100 mm
+  `nv880e-S` in r27), 1 single-needle; the hoop
   width and height in mm (150, 150) and in 0.1 inch (59, 59; 100 mm gives 39); a u8-length
   hoop/machine string (`nv880e-M` for the 150 × 150 multi-needle hoop, `nv880e-S` for 100 × 100);
   u16 0; two optional u16 values, each a u16 presence flag then the value when the flag is 1
@@ -324,10 +326,13 @@ byte-identical to PE-DESIGN's outside these documented differences
   one-axis growth are not reproduced).
 - **+162:** PE-DESIGN points this thread index at 800 RED whatever is sewn; OpenStitch points it
   at the line colour.
-- **Header:** the hoop fields are the baseline's (150 × 150 mm, `nv880e-M`, multi-needle, code
-  `10`) whatever the design's machine settings; only the page size is the design's. Files made
-  on a Hoop-Size page also differ in a u16 28 bytes after the machine string (r27: 5, the
-  custom-page files: 10).
+- **Header:** a design on a 100 × 100 mm page is written on PE-DESIGN's default page, a Hoop
+  Size page (r27's fields: page mode 0, hoop 15, 100 × 100 mm `nv880e-S`, and a u16 of 5 where
+  custom pages have 10); any other page as a Custom Size page with r01's hoop fields (150 × 150
+  mm, `nv880e-M`, multi-needle) and the page size. PE-DESIGN shows a Custom Size page with a
+  Hoop Settings tab, 290 × 190 mm section outlines and no stitch count in the status bar until
+  something is selected; its own Hoop Size page file (r27) shows none of them. The machine type
+  and hoop of the design's machine settings are not mapped yet.
 - **Text:** the letter field at +14 (OpenStitch writes r12's −0.0) and the last sewing-order
   field of the line-spacing files (PE-DESIGN leaves it unset, `08 CE 53 00`; OpenStitch writes
   1). A text written from the letter defaults gives r12's object section byte for byte
@@ -336,13 +341,11 @@ byte-identical to PE-DESIGN's outside these documented differences
   the thread table lists only the colours sewn (PE-DESIGN's also lists the Text tool's unused
   line colour, 900).
 - **PEC section:** the stitch stream is byte-identical for a file re-written from its own
-  stitches. The header fields PE-DESIGN writes with this object header are written as it writes
-  them (0x1F `FF`, 0x24–0x2F `20 FF 00 00 64 00 00 00 00 FF 20 20`, 2900 × 1900 at 0x208:
-  r01, r12, r14, text-defaults-h; `the_pec_header_carries_pe_designs_fields`). With the PEC
-  writer's own values there PE-DESIGN showed a Hoop Settings tab and a 290 × 190 mm section
-  outline on the text file. PE-DESIGN's Hoop-Size page files (r27, `nv880e-S` in the object header)
-  carry another form, with the design's size at 0x208. The label, the thumbnails, the icons
-  (blank) and the preview images (none) still differ.
+  stitches. The PEC header fields follow the page mode, as in all of PE-DESIGN's own `#PES0110`
+  files: 0x1F `FF`; a Custom Size page 0x24–0x2F `20 FF 00 00 64 00 00 00 00 FF 20 20` and
+  2900 × 1900 at 0x208 (663 files), a Hoop Size page `20 20 20 20 64 20 00 20 00 FF 20 20` and
+  the design's size at 0x208 (46 files; `the_pec_header_carries_pe_designs_fields`). The label,
+  the thumbnails, the icons (blank) and the preview images (none) still differ.
 
 **PE-DESIGN's check (2026-10-29, compat `pes-0110-editable-shapes`, reference tier):** PE-DESIGN
 11.50 opens the written rectangle with no warning and the shape editable (handles, Shapes tab,
@@ -353,10 +356,11 @@ OpenStitch's chart colours as `16 / Brother` with no thread chart. **The text fi
 `pes-0110-editable-text`, reference tier):** PE-DESIGN opens it with no warning as editable text
 (Lato 10, Satin red, line not sewn, every Text Attribute at its default, the baseline at the
 written click point) and retyping works; its re-save keeps the object section but for the text
-box's right edge, which it takes from its own layout (787 → 793). It showed a Hoop Settings tab
-(fixed since: the PEC header fields above), and a plain click on the letters did not select the
-text (a drag selection did): the cause is not known yet; two probe files ask whether PE-DESIGN's
-own PEC stitches change it (round4/pr158-probes). Version 6 stays the default export until the
+box's right edge, which it takes from its own layout (787 → 793). It showed a Hoop Settings tab and no
+stitch count in the status bar: the file was on a Custom Size page (with PE-DESIGN's own PEC
+stitches too, probe p2), so a 100 × 100 mm design is now written on PE-DESIGN's default Hoop Size
+page (probe p3 asks PE-DESIGN to confirm). A plain click on a stroke selects the text, as for
+PE-DESIGN's own text (a click inside the A's counter selects neither). Version 6 stays the default export until the
 coordinator decides otherwise.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
