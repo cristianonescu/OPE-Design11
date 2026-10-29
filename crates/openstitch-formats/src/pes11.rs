@@ -19,7 +19,7 @@
 
 use crate::io::{ByteReader, ByteWriter};
 use crate::{FormatError, Result, pec};
-use openstitch_core::{PEC_CHART, StitchPattern, Thread, nearest_index};
+use openstitch_core::{PEC_CHART, StitchPattern, Thread, nearest_index, round_coordinate};
 use std::borrow::Cow;
 
 #[path = "pes11_template.rs"]
@@ -29,6 +29,9 @@ const EMB_LINE: &str = "CEmbLine";
 /// A shape from the Shapes gallery: a `CEmbLine` record under its own class name (o-gallery-heart).
 const EMB_SPECIAL: &str = "CEmbSpecialShape";
 const GROUP_OBJECT: &str = "CGroupObject";
+/// A stitch group (a stitch pattern: an imported file, a converted shape) and its runs.
+const EMB_ONE: &str = "CEmbOne";
+const SEW_SEG: &str = "CSewSeg";
 const EMB_TEXT: &str = "CEmbNText";
 /// Text with a Text Transform: a `CEmbNText` with the transform after its tail.
 const EMB_TEXT_TRANSFORM: &str = "CEmbDText";
@@ -116,12 +119,23 @@ pub struct Objects {
     /// shows a Custom Size page with a Hoop Settings tab and section outlines; a new design in
     /// PE-DESIGN starts on a Hoop Size page.
     pub hoop_page: bool,
+    /// The header fields between the metadata strings and the thread table, as read: written
+    /// back verbatim when present (hoop and machine fields not all mapped yet), so a PE-DESIGN
+    /// file keeps its page and hoop; `None` writes the mapped templates from `page_mm` and
+    /// `hoop_page`.
+    pub header: Option<Vec<u8>>,
+    /// The two characters after the signature's `01 00`: `10` in the multi-needle files, `01`
+    /// in the single-needle ones (o-machine-single-100x100, PE-DESIGN's re-saves of version 6
+    /// files); `None` writes `10`.
+    pub code: Option<[u8; 2]>,
     /// The thread table, in its file order (the shapes' colour indexes point into it).
     pub threads: Vec<Thread>,
     pub shapes: Vec<Shape>,
     /// Texts (`CEmbNText`), each at its [`Text::position`] in the object list; the shapes fill
-    /// the other positions in order.
+    /// the positions no text or stitch group takes, in order.
     pub texts: Vec<Text>,
+    /// Stitch groups (`CEmbOne`), each at its [`StitchGroup::position`].
+    pub stitch_groups: Vec<StitchGroup>,
     /// Groups (`CGroupObject` after the list): each the positions of its member objects.
     pub groups: Vec<Vec<u16>>,
     /// The first object class that was not read, if any.
@@ -332,6 +346,75 @@ impl Text {
     }
 }
 
+/// A `CEmbOne` stitch group in a `#PES0110` file: fixed needle points, as in version 6 but with
+/// the group's bounds filled in and a longer run header (pes-default-v6, pes-csewseg-trims,
+/// pes-design-properties and sew-a-moved10, PE-DESIGN's re-saves of OpenStitch's v6 files).
+#[derive(Clone, Debug, PartialEq)]
+pub struct StitchGroup {
+    /// Index of the group in the object list.
+    pub position: u16,
+    /// `x0, y0, x1, y1` of the needle points in file units.
+    pub bounds: [i16; 4],
+    /// `a b c d tx ty`: the translation is the bounds' bottom-left corner.
+    pub transform: [f32; 6],
+    pub width: u16,
+    pub height: u16,
+    /// The runs (`CSewSeg`): `flag` 0 stitches, 1 a jump; `color` a thread-table index; points
+    /// relative to the bottom-left corner (y ≤ 0).
+    pub segments: Vec<crate::pes::SewSegment>,
+    /// `(first run, thread)` at each colour change.
+    pub color_log: Vec<(u16, u16)>,
+}
+
+impl StitchGroup {
+    /// The group of `pattern`'s needle points (0.1 mm, page coordinates without the file
+    /// offset) at `position`, runs as the version 6 writer cuts them, each colour block's
+    /// thread given by `thread` (a thread-table index for block k).
+    pub fn from_pattern(
+        pattern: &StitchPattern,
+        position: u16,
+        thread: impl Fn(usize) -> u16,
+    ) -> Option<StitchGroup> {
+        let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+        for st in &pattern.stitches {
+            let (x, y) = (round_coordinate(st.x) as f64, round_coordinate(st.y) as f64);
+            x0 = x0.min(x);
+            x1 = x1.max(x);
+            y0 = y0.min(y);
+            y1 = y1.max(y);
+        }
+        if pattern.stitches.is_empty() {
+            return None;
+        }
+        let mut segments = crate::pes::segments(pattern, crate::pes::Version::V6, x0, y1);
+        // The v6 writer numbers the colours by the pattern's own threads: map them.
+        let mut block = 0;
+        let mut color_log: Vec<(u16, u16)> = Vec::new();
+        let mut last = None;
+        for (k, seg) in segments.iter_mut().enumerate() {
+            if last.is_some_and(|c| c != seg.color) {
+                block += 1;
+            }
+            last = Some(seg.color);
+            seg.color = thread(block);
+            if color_log.last().is_none_or(|&(_, c)| c != seg.color) {
+                color_log.push((k as u16, seg.color));
+            }
+        }
+        let o = f64::from(PAGE_ORIGIN);
+        let file = |v: f64| (v + o).round().clamp(-32768.0, 32767.0) as i16;
+        Some(StitchGroup {
+            position,
+            bounds: [file(x0), file(y0), file(x1), file(y1)],
+            transform: [1.0, 0.0, 0.0, 1.0, (x0 + o) as f32, (y1 + o) as f32],
+            width: (x1 - x0).round().clamp(0.0, 65535.0) as u16,
+            height: (y1 - y0).round().clamp(0.0, 65535.0) as u16,
+            segments,
+            color_log,
+        })
+    }
+}
+
 // MARK: Reading
 
 /// Locates the object list after the header strings: the u16 count right before the first
@@ -375,7 +458,7 @@ fn read_page(data: &[u8], from: usize) -> Option<(u16, u16)> {
 /// string), brand and chart name, strings as MFC strings. The fields between the header
 /// strings and the table are not all mapped (their length varies: a machine-model string), so
 /// this tries each start and keeps the one that parses to exactly `list`.
-fn read_threads(data: &[u8], from: usize, list: usize) -> Option<Vec<Thread>> {
+fn read_threads(data: &[u8], from: usize, list: usize) -> Option<(usize, Vec<Thread>)> {
     let parse = |start: usize| -> Result<Vec<Thread>> {
         let mut r = ByteReader::new(&data[..list]);
         r.offset = start;
@@ -385,12 +468,15 @@ fn read_threads(data: &[u8], from: usize, list: usize) -> Option<Vec<Thread>> {
             let catalog = crate::pes::read_string8(&mut r)?;
             let rgb = r.read(4)?;
             let kind = r.u32le()?;
-            let _pec_index = crate::pes::read_string8(&mut r)?;
+            // PE-DESIGN's own colours carry their PEC chart index here; a thread it kept from
+            // another file keeps its name (pes-default-v6: Red, Black).
+            let name = crate::pes::read_string8(&mut r)?;
             let brand = crate::pes::read_string8(&mut r)?;
             let chart = crate::pes::read_string8(&mut r)?;
             let mut t =
                 Thread::rgb(u32::from(rgb[0]) << 16 | u32::from(rgb[1]) << 8 | u32::from(rgb[2]));
             t.catalog_number = catalog.map(Cow::Owned);
+            t.name = name.map(Cow::Owned);
             t.brand = brand.map(Cow::Owned);
             t.chart = chart.map(Cow::Owned);
             t.kind = Some(kind).filter(|&k| k != Thread::CUSTOM_KIND);
@@ -404,7 +490,7 @@ fn read_threads(data: &[u8], from: usize, list: usize) -> Option<Vec<Thread>> {
     };
     (from..list.saturating_sub(2))
         .rev()
-        .find_map(|s| parse(s).ok())
+        .find_map(|s| parse(s).ok().map(|t| (s, t)))
 }
 
 /// Reads the thread table and the object list's shapes. `from` is the offset after the header
@@ -413,16 +499,23 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
     let Some(at) = list_offset(data, from, end) else {
         return Ok(Objects::default());
     };
-    let threads = read_threads(data, from, at).unwrap_or_default();
+    let (threads, header) = match read_threads(data, from, at) {
+        Some((start, threads)) => (threads, Some(data[from..start].to_vec())),
+        None => (Vec::new(), None),
+    };
     let page_mm = read_page(data, from);
     let hoop_page = data.get(from + 2..from + 4) == Some(&[0, 0][..]);
-    let done = |shapes, texts, groups, unparsed| {
+    let mut stitch_groups: Vec<StitchGroup> = Vec::new();
+    let done = |shapes, texts, stitch_groups, groups, unparsed| {
         Ok(Objects {
             page_mm,
             hoop_page,
+            header: header.clone(),
+            code: data.get(14..16).map(|c| [c[0], c[1]]),
             threads: threads.clone(),
             shapes,
             texts,
+            stitch_groups,
             groups,
             unparsed,
         })
@@ -444,6 +537,7 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
                 return done(
                     shapes,
                     texts,
+                    stitch_groups,
                     Vec::new(),
                     Some(format!("object tag {tag:#06x}")),
                 );
@@ -458,6 +552,7 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
                     return done(
                         shapes,
                         texts,
+                        stitch_groups,
                         Vec::new(),
                         Some(format!("{EMB_TEXT} (unmapped variant)")),
                     );
@@ -465,8 +560,23 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             }
             continue;
         }
+        if class == EMB_ONE {
+            match read_stitch_group(&mut r, &mut map, position as u16)? {
+                Some(g) => stitch_groups.push(g),
+                None => {
+                    return done(
+                        shapes,
+                        texts,
+                        stitch_groups,
+                        Vec::new(),
+                        Some(format!("{EMB_ONE} (unmapped variant)")),
+                    );
+                }
+            }
+            continue;
+        }
         if class != EMB_LINE && class != EMB_SPECIAL {
-            return done(shapes, texts, Vec::new(), Some(class));
+            return done(shapes, texts, stitch_groups, Vec::new(), Some(class));
         }
         match read_line(&mut r)? {
             Some(shape) => shapes.push(Shape {
@@ -477,6 +587,7 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
                 return done(
                     shapes,
                     texts,
+                    stitch_groups,
                     Vec::new(),
                     Some(format!("{EMB_LINE} (unmapped variant)")),
                 );
@@ -484,7 +595,7 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
         }
     }
     let groups = read_groups(&mut r, &mut map).unwrap_or_default();
-    done(shapes, texts, groups, None)
+    done(shapes, texts, stitch_groups, groups, None)
 }
 
 /// An MFC object tag: `Ok(class name)`, or `Err(tag)` for a tag that refers to no class.
@@ -534,6 +645,71 @@ fn read_groups(r: &mut ByteReader<'_>, map: &mut Vec<Option<String>>) -> Result<
         groups.push(members);
     }
     Ok(groups)
+}
+
+/// One `CEmbOne` at the reader's offset: bounds, extent, transform, u16 1 0 0 width height,
+/// 8 zero bytes, the u16 run count, the runs (each a `CSewSeg`: u16 flag, u16 thread, u16
+/// `FFFF`, u32 point count, i16 x y points), then the colour log (u16 count, (run, thread)
+/// pairs). `None` (reader unchanged) when a run is not a `CSewSeg`.
+fn read_stitch_group(
+    r: &mut ByteReader<'_>,
+    map: &mut Vec<Option<String>>,
+    position: u16,
+) -> Result<Option<StitchGroup>> {
+    let start = r.offset;
+    let head = r.read(16)?;
+    let bounds = [0, 1, 2, 3].map(|k| u16_at(head, 2 * k) as i16);
+    let mut transform = [0_f32; 6];
+    for v in &mut transform {
+        *v = r.f32le()?;
+    }
+    let fields = r.read(10)?;
+    let (width, height) = (u16_at(fields, 6), u16_at(fields, 8));
+    r.skip(8)?;
+    let n = r.u16le()? as usize;
+    let mut segments = Vec::with_capacity(n);
+    for _ in 0..n {
+        match read_tag(r, map)? {
+            Ok(class) if class == SEW_SEG => {}
+            _ => {
+                r.offset = start;
+                return Ok(None);
+            }
+        }
+        map.push(None);
+        let flag = r.u16le()? as u16;
+        let color = r.u16le()? as u16;
+        r.u16le()?; // FFFF
+        let count = r.u32le()? as usize;
+        if count.saturating_mul(4) > r.remaining() {
+            r.offset = start;
+            return Ok(None);
+        }
+        let mut points = Vec::with_capacity(count);
+        for _ in 0..count {
+            let (x, y) = (r.u16le()? as u16 as i16, r.u16le()? as u16 as i16);
+            points.push((x, y));
+        }
+        segments.push(crate::pes::SewSegment {
+            flag,
+            color,
+            points,
+        });
+    }
+    let logs = r.u16le()? as usize;
+    let mut color_log = Vec::with_capacity(logs);
+    for _ in 0..logs {
+        color_log.push((r.u16le()? as u16, r.u16le()? as u16));
+    }
+    Ok(Some(StitchGroup {
+        position,
+        bounds,
+        transform,
+        width,
+        height,
+        segments,
+        color_log,
+    }))
 }
 
 fn f32_at(b: &[u8], i: usize) -> f32 {
@@ -732,13 +908,39 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
             objects.threads.len()
         )));
     }
-    let total = Text::count(objects);
+    let total = Text::count(objects) + objects.stitch_groups.len();
     if total == 0 || total > 0x3FFF {
         return Err(FormatError::ValueOutOfRange(format!(
             "PES 0110: {total} objects (1 to 16383)"
         )));
     }
     let mut at_position: Vec<Option<&Text>> = vec![None; total];
+    let mut group_at: Vec<Option<&StitchGroup>> = vec![None; total];
+    for g in &objects.stitch_groups {
+        let slot = group_at.get_mut(usize::from(g.position)).ok_or_else(|| {
+            FormatError::ValueOutOfRange(format!(
+                "PES 0110: stitch group at position {}",
+                g.position
+            ))
+        })?;
+        if slot.replace(g).is_some() || at_position_has_text(objects, g.position) {
+            return Err(FormatError::ValueOutOfRange(format!(
+                "PES 0110: two objects at position {}",
+                g.position
+            )));
+        }
+        if g.segments.is_empty()
+            || g.segments.len() > 0x7FFF
+            || g.segments
+                .iter()
+                .any(|s| usize::from(s.color) >= objects.threads.len())
+        {
+            return Err(FormatError::ValueOutOfRange(format!(
+                "PES 0110: stitch group at position {} has no runs or a thread outside the table",
+                g.position
+            )));
+        }
+    }
     for t in &objects.texts {
         let slot = at_position
             .get_mut(usize::from(t.position))
@@ -810,23 +1012,32 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     let pec_placeholder = w.len();
     w.u32le(0);
     w.u16le(1);
-    w.ascii("10");
+    w.append(&objects.code.unwrap_or(*b"10"));
     for key in crate::pes::METADATA_KEYS {
         crate::pes::write_string8(&mut w, pattern.metadata.get(key).map(String::as_str));
     }
     let page = objects.page_mm.unwrap_or((100, 100));
-    if objects.hoop_page && page != (100, 100) {
+    if let Some(h) = &objects.header {
+        w.append(h);
+    } else if objects.hoop_page && page != (100, 100) {
         return Err(FormatError::ValueOutOfRange(format!(
             "PES 0110: a Hoop Size page of {} x {} mm (only PE-DESIGN's 100 x 100 mm hoop page is mapped)",
             page.0, page.1
         )));
+    } else {
+        write_header(&mut w, page, objects.hoop_page);
     }
-    write_header(&mut w, page, objects.hoop_page);
     write_threads(&mut w, &objects.threads);
     w.u16le(total as i64);
     let mut archive = Archive::default();
     let mut shapes = objects.shapes.iter();
-    for slot in &at_position {
+    for (i, slot) in at_position.iter().enumerate() {
+        if let Some(g) = group_at[i] {
+            archive.tag(&mut w, EMB_ONE);
+            archive.objects.push(archive.next);
+            write_stitch_group(&mut w, &mut archive, g);
+            continue;
+        }
         match slot {
             Some(text) => {
                 let class = match (&text.fit, &text.envelope) {
@@ -846,7 +1057,7 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
             }
         }
     }
-    write_trailer(&mut w, &mut archive, objects, &at_position);
+    write_trailer(&mut w, &mut archive, objects, &at_position, &group_at);
     w.patch32le(pec_placeholder, w.len() as i64);
     let pec_start = w.len();
     let list = pec::write_section(&pattern, &mut w)?;
@@ -873,6 +1084,43 @@ fn patch_pec_header(pec: &mut [u8], hoop_page: bool) {
     ]);
     pec[0x208..0x20A].copy_from_slice(&2900_u16.to_le_bytes());
     pec[0x20A..0x20C].copy_from_slice(&1900_u16.to_le_bytes());
+}
+
+fn at_position_has_text(objects: &Objects, position: u16) -> bool {
+    objects.texts.iter().any(|t| t.position == position)
+}
+
+/// One `CEmbOne` and its `CSewSeg` runs, as [`read_stitch_group`] reads them.
+fn write_stitch_group(w: &mut ByteWriter, archive: &mut Archive, g: &StitchGroup) {
+    for _ in 0..2 {
+        for v in g.bounds {
+            w.u16le(i64::from(v));
+        }
+    }
+    for v in g.transform {
+        w.f32le(f64::from(v));
+    }
+    for v in [1, 0, 0, g.width, g.height] {
+        w.u16le(i64::from(v));
+    }
+    w.fill(0, 8);
+    w.u16le(g.segments.len() as i64);
+    for seg in &g.segments {
+        archive.tag(w, SEW_SEG);
+        w.u16le(i64::from(seg.flag));
+        w.u16le(i64::from(seg.color));
+        w.u16le(0xFFFF);
+        w.u32le(seg.points.len() as i64);
+        for &(x, y) in &seg.points {
+            w.u16le(i64::from(x));
+            w.u16le(i64::from(y));
+        }
+    }
+    w.u16le(g.color_log.len() as i64);
+    for &(run, thread) in &g.color_log {
+        w.u16le(i64::from(run));
+        w.u16le(i64::from(thread));
+    }
 }
 
 /// MFC `CArchive` numbering while writing: classes and objects share one count from 1.
@@ -1055,42 +1303,54 @@ pub const BROTHER_EMBROIDERY: [(usize, &str); 25] = [
     (61, "027"),
 ];
 
-/// Catalogue number, brand and chart name for `t` in a PE-DESIGN 11 thread table. A colour from
-/// OpenStitch's Brother PEC chart (brand `Brother`, its chart number as the catalogue number,
-/// the chart's exact RGB) is written as PE-DESIGN writes that colour, from its BROTHER EMBROIDERY
-/// chart: PE-DESIGN shows `16 / Brother` with no thread chart otherwise (compat
-/// pes-0110-editable-shapes, the owner's check of 2026-10-29). Any other thread keeps its own
-/// strings.
-fn pe_thread_strings(t: &Thread, index: usize) -> (&str, &str, &str) {
-    let own = (
-        t.catalog_number.as_deref().unwrap_or(""),
-        t.brand.as_deref().unwrap_or(""),
-        t.chart.as_deref().unwrap_or(""),
-    );
+/// `t` as PE-DESIGN writes the colour in its thread tables. A colour from OpenStitch's Brother
+/// PEC chart (brand `Brother`, its chart number as the catalogue number, the chart's exact RGB)
+/// gets the BROTHER EMBROIDERY catalogue number and brand `EMBROIDERY` (PE-DESIGN showed
+/// `16 / Brother` with no thread chart otherwise: compat pes-0110-editable-shapes, the owner's
+/// check of 2026-10-29); every thread gets its nearest PEC chart index as its name, where
+/// PE-DESIGN writes it for its own colours. For a design's threads:
+/// [`write`] writes a thread table as given, so a PE-DESIGN file keeps its own strings.
+pub fn as_pe_writes(t: &Thread) -> Thread {
+    let Some(index) = nearest_index(t, &PEC_CHART) else {
+        return t.clone();
+    };
+    // PE-DESIGN writes its colours' PEC chart index where a thread's name goes.
+    let t = &Thread {
+        name: Some(Cow::Owned(index.to_string())),
+        ..t.clone()
+    };
     let from_pec_chart = t.brand.as_deref() == Some("Brother")
         && t.catalog_number.as_deref() == Some(index.to_string().as_str())
         && PEC_CHART[index]
             .as_ref()
             .is_some_and(|c| c.rgb_value() == t.rgb_value());
     match BROTHER_EMBROIDERY.iter().find(|&&(i, _)| i == index) {
-        Some(&(_, catalog)) if from_pec_chart => (catalog, "EMBROIDERY", ""),
-        _ => own,
+        Some(&(_, catalog)) if from_pec_chart => Thread {
+            catalog_number: Some(Cow::Borrowed(catalog)),
+            brand: Some(Cow::Borrowed("EMBROIDERY")),
+            chart: None,
+            ..t.clone()
+        },
+        _ => t.clone(),
     }
 }
 
-/// The thread table: catalogue number, RGB and a pad byte, colour type, the PEC chart index of
-/// the nearest chart colour as a string, brand and chart name.
+/// The thread table: catalogue number, RGB and a pad byte, colour type, the thread's name (the
+/// PEC chart index of the nearest chart colour when it has none, as PE-DESIGN writes its own
+/// colours), brand and chart name.
 fn write_threads(w: &mut ByteWriter, threads: &[Thread]) {
     w.u16le(threads.len() as i64);
     for t in threads {
         let index = nearest_index(t, &PEC_CHART).unwrap_or(0);
-        let (catalog, brand, chart) = pe_thread_strings(t, index);
-        write_mfc_unicode(w, catalog);
+        write_mfc_unicode(w, t.catalog_number.as_deref().unwrap_or(""));
         w.append(&[t.red, t.green, t.blue, 0]);
         w.u32le(i64::from(t.kind.unwrap_or(Thread::CUSTOM_KIND)));
-        write_mfc_unicode(w, &index.to_string());
-        write_mfc_unicode(w, brand);
-        write_mfc_unicode(w, chart);
+        match t.name.as_deref() {
+            Some(name) => write_mfc_unicode(w, name),
+            None => write_mfc_unicode(w, &index.to_string()),
+        }
+        write_mfc_unicode(w, t.brand.as_deref().unwrap_or(""));
+        write_mfc_unicode(w, t.chart.as_deref().unwrap_or(""));
     }
 }
 
@@ -1268,6 +1528,7 @@ fn write_trailer(
     archive: &mut Archive,
     objects: &Objects,
     at_position: &[Option<&Text>],
+    group_at: &[Option<&StitchGroup>],
 ) {
     w.fill(0, 10);
     w.u16le(objects.groups.len() as i64);
@@ -1283,6 +1544,11 @@ fn write_trailer(
     w.u32le(1);
     for (i, slot) in at_position.iter().enumerate() {
         let parts: Vec<i64> = match slot {
+            // A stitch group lists its colour blocks (one block: none for the first object).
+            None if group_at[i].is_some() => {
+                let blocks = group_at[i].map_or(1, |g| g.color_log.len().max(1)) as i64;
+                (0..blocks).skip(usize::from(i == 0)).collect()
+            }
             None if i == 0 => vec![2, 1],
             None => vec![0, 2, 1],
             Some(t) => {
@@ -1344,20 +1610,35 @@ mod tests {
 
     #[test]
     fn brother_chart_colours_get_pe_designs_embroidery_numbers() {
+        let strings = |t: &Thread| {
+            let t = as_pe_writes(t);
+            (t.catalog_number, t.brand, t.chart)
+        };
         let silver = PEC_CHART[16].clone().expect("silver");
-        assert_eq!(pe_thread_strings(&silver, 16), ("005", "EMBROIDERY", ""));
+        assert_eq!(
+            strings(&silver),
+            (Some("005".into()), Some("EMBROIDERY".into()), None)
+        );
         let red = PEC_CHART[5].clone().expect("red");
-        assert_eq!(pe_thread_strings(&red, 5), ("800", "EMBROIDERY", ""));
-        // A custom colour, and a chart colour with no owner sample, keep their own strings.
+        assert_eq!(strings(&red).0.as_deref(), Some("800"));
+        // A custom colour, and a chart colour with no owner sample, keep their own strings
+        // (every thread gets its chart index as its name, as PE-DESIGN writes its colours).
         let mut custom = Thread::rgb(0x12_34_56);
         custom.catalog_number = Some("42".into());
-        assert_eq!(pe_thread_strings(&custom, 16), ("42", "", ""));
+        assert_eq!(strings(&custom), (Some("42".into()), None, None));
         let unsampled = PEC_CHART[6].clone().expect("chart colour");
-        assert_eq!(pe_thread_strings(&unsampled, 6), ("6", "Brother", ""));
+        assert_eq!(
+            strings(&unsampled),
+            (Some("6".into()), Some("Brother".into()), None)
+        );
+        assert_eq!(as_pe_writes(&unsampled).name.as_deref(), Some("6"));
         // A chart RGB under another brand is not relabelled.
         let mut other = silver.clone();
         other.brand = Some("Madeira".into());
-        assert_eq!(pe_thread_strings(&other, 16), ("16", "Madeira", ""));
+        assert_eq!(
+            strings(&other),
+            (Some("16".into()), Some("Madeira".into()), None)
+        );
     }
 
     #[test]

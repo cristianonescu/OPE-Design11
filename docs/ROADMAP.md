@@ -174,13 +174,13 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    editable (compat `pes-0110-editable-shapes`, the owner's check); turn the `#PES0110` shapes
    the reader parses into editable OpenStitch objects; write text (`CEmbNText`/`CTTFLetter`), the
    other region and line types, hole-sewing pairs and several outlines per object; the hoop
-6. **PES:** editable shapes and Lato Bold text are written (`pesVersion` 11 writes `CEmbLine`
-   and `CEmbNText` objects in PE-DESIGN 11.50's layout, 2026-10-29; issue #120; PE-DESIGN opens
+6. **PES:** editable shapes, Lato Bold text and stitch patterns are written (`pesVersion` 11
+   writes `CEmbLine`, `CEmbNText` and `CEmbOne` objects in PE-DESIGN 11.50's layout, 2026-10-29; issue #120; PE-DESIGN opens
    the shapes and the text editable, references `pes-0110-editable-shapes`,
    `pes-0110-editable-text`). Left: PE-DESIGN's confirmation of the Hoop Size page (probe p3);
    the design's machine type and hoop in the header; BROTHER EMBROIDERY numbers for the chart colours with no owner sample; turn the `#PES0110` shapes and texts the reader
    parses into editable OpenStitch objects; PE-DESIGN opening text fitted to an outline
-   (`pes-0110-editable-text-fit`); right-aligned and vertical text; Manual Punch blocks and the appliqué's objects (owner files
+   (`pes-0110-editable-text-fit`) and a written stitch group (`pes-0110-stitches`); right-aligned and vertical text; Manual Punch blocks and the appliqué's objects (owner files
    requested); the other region and line types, hole-sewing pairs and several outlines per object; the hoop
    fields; PES v7–v10 (from the owner's own files only, as
    [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).

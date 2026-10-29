@@ -362,7 +362,10 @@ fn round_3_object_files_read_their_stitches_and_stop_cleanly() {
 
 /// The owner files whose object list the reader parses completely (every object a `CEmbLine`
 /// or a `CEmbNText`, groups included): the writer's round-trip and byte-comparison set.
-const FULLY_PARSED: [&str; 99] = [
+const FULLY_PARSED: [&str; 102] = [
+    "pes-default-v6",
+    "pes-csewseg-trims",
+    "pes-design-properties",
     "o-gallery-heart",
     "shape-start-points",
     "text-fit-ahhhh",
@@ -464,11 +467,21 @@ const FULLY_PARSED: [&str; 99] = [
     "o-rounded-rect",
 ];
 
-/// The fixture's stitches with the PEC label dropped: it becomes the pattern's `name`, which
-/// the writer would put in the (empty) Design Property name.
+/// The fixture's stitches with the header's own name (the PEC label would otherwise become the
+/// pattern's `name`, which the writer puts in the Design Property name).
 fn stitches_of(bytes: &[u8]) -> openstitch_core::StitchPattern {
     let mut p = pes::read(bytes).expect("stitches");
-    p.metadata.remove("name");
+    // The name is the header's Design Property name when it has one, else nothing (the PEC
+    // label is not written into the header).
+    match pes::read_objects(bytes)
+        .ok()
+        .and_then(|s| s.metadata.get("name").cloned())
+    {
+        Some(name) => p.set_name(name),
+        None => {
+            p.metadata.remove("name");
+        }
+    }
     p
 }
 
@@ -478,9 +491,12 @@ fn objects_of(bytes: &[u8]) -> Objects {
     Objects {
         page_mm: s.page_mm,
         hoop_page: s.hoop_page,
+        header: s.header,
+        code: s.code,
         threads: s.threads,
         shapes: s.shapes,
         texts: s.texts,
+        stitch_groups: s.stitch_groups,
         groups: s.groups,
         unparsed: s.unparsed,
     }
@@ -488,6 +504,13 @@ fn objects_of(bytes: &[u8]) -> Objects {
 
 /// An owner file: `text-*` from compat/reference/text, the others from tests/fixtures/pe11.
 fn owner_file(name: &str) -> Vec<u8> {
+    if name.starts_with("pes-") {
+        let path = format!(
+            "{}/../../compat/reference/pes/{name}.pes",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        return std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
+    }
     if name == "shape-start-points" {
         let path = format!(
             "{}/../../compat/reference/stitches/{name}.pes",
@@ -629,28 +652,22 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
         let written = pes11::write(&objects, &pattern).expect("write");
         let pec = u32::from_le_bytes(fixture[8..12].try_into().expect("offset")) as usize;
         let pec_w = u32::from_le_bytes(written[8..12].try_into().expect("offset")) as usize;
-        // The header up to the object list: identical, except that the 200 × 200 page file
-        // carries an optional hoop field (4 bytes) the writer leaves absent (2 bytes).
+        // The header up to the object list: the fields after the metadata strings are the
+        // file's own, written back verbatim (page, hoop and machine fields). The metadata
+        // strings are written in Windows-1252 with CR LF, as PE-DESIGN shows them;
+        // pes-design-properties holds OpenStitch's former UTF-8 bytes, which PE-DESIGN kept
+        // (FILE_FORMATS, header strings), so its list and PEC offsets move by the difference.
         let (list, list_w) = (list_offset(&fixture), list_offset(&written));
-        if name == "o-page-200x200" {
-            assert_eq!(list - list_w, 2, "{name}");
-            assert_eq!(pec - pec_w, 2, "{name}");
-        } else {
-            assert_eq!(list, list_w, "{name}");
-            assert_eq!(pec, pec_w, "{name}: PEC offset");
-            // The hoop fields up to the end of the machine string are the baseline's (150 ×
-            // 150 mm, `nv880e-M`) whatever the owner's hoop was (o-text-*: 100 × 100 `nv880e-S`).
-            let machine = |b: &[u8]| {
-                b.windows(7)
-                    .position(|w| w == b"nv880e-")
-                    .expect("machine string")
-                    + 8
-            };
-            assert_eq!(machine(&written), machine(&fixture), "{name}");
-            let m = machine(&fixture);
-            assert_eq!(&written[12..21], &fixture[12..21], "{name}: header");
-            assert_eq!(&written[m..list], &fixture[m..list], "{name}: header");
+        assert_eq!(&written[12..21], &fixture[12..21], "{name}: header");
+        assert_eq!(
+            objects_of(&written).header,
+            objects_of(&fixture).header,
+            "{name}: header"
+        );
+        if name != "pes-design-properties" {
+            assert_eq!(&written[12..list_w], &fixture[12..list], "{name}: header");
         }
+        assert_eq!(list - list_w, pec - pec_w, "{name}: PEC offset");
         // The object list and the trailer, compared from the list start.
         let (fixture, written) = (&fixture[list..pec], &written[list_w..pec_w]);
         let bodies = body_offsets(fixture, objects.shapes.len());
@@ -744,9 +761,12 @@ fn an_openstitch_shape_with_curves_round_trips() {
     let objects = Objects {
         page_mm: Some((130, 180)),
         hoop_page: false,
+        header: None,
+        code: None,
         threads: vec![openstitch_core::Thread::rgb(0x12_34_56)],
         shapes: vec![shape, second],
         texts: Vec::new(),
+        stitch_groups: Vec::new(),
         groups: vec![vec![0], vec![1]],
         unparsed: None,
     };
@@ -764,7 +784,16 @@ fn an_openstitch_shape_with_curves_round_trips() {
     pattern.metadata.insert("name".into(), "curve".into());
     pattern.metadata.insert("author".into(), "Ana Pérez".into());
     let written = pes11::write(&objects, &pattern).expect("write");
-    assert_eq!(objects_of(&written), objects);
+    let mut back = objects_of(&written);
+    back.header = None;
+    back.code = None;
+    // A thread with no name is written with its chart index, as PE-DESIGN writes its colours.
+    for (b, t) in back.threads.iter_mut().zip(&objects.threads) {
+        if t.name.is_none() {
+            b.name = None;
+        }
+    }
+    assert_eq!(back, objects);
     let back = pes::read(&written).expect("read");
     assert_eq!(
         back.metadata.get("author").map(String::as_str),
@@ -795,15 +824,27 @@ fn texts_between_shapes_and_in_groups_round_trip() {
     let objects = Objects {
         page_mm: Some((100, 100)),
         hoop_page: false,
+        header: None,
+        code: None,
         threads: r01.threads.clone(),
         shapes: vec![r01.shapes[0].clone(), second],
         texts: vec![text],
+        stitch_groups: Vec::new(),
         groups: vec![vec![1, 2]],
         unparsed: None,
     };
     let pattern = stitches_of(&owner_file("r01-rect"));
     let written = pes11::write(&objects, &pattern).expect("write");
-    assert_eq!(objects_of(&written), objects);
+    let mut back = objects_of(&written);
+    back.header = None;
+    back.code = None;
+    // A thread with no name is written with its chart index, as PE-DESIGN writes its colours.
+    for (b, t) in back.threads.iter_mut().zip(&objects.threads) {
+        if t.name.is_none() {
+            b.name = None;
+        }
+    }
+    assert_eq!(back, objects);
     // Two texts at one position, or a text past the end of the list, are refused.
     let mut clash = objects.clone();
     clash.texts.push(clash.texts[0].clone());
@@ -821,6 +862,8 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
     let objects = Objects {
         page_mm: Some((100, 100)),
         hoop_page: false,
+        header: None,
+        code: None,
         threads: read.threads.clone(),
         shapes: Vec::new(),
         texts: vec![Text {
@@ -840,6 +883,7 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
             char_spacing: 0.0,
             fit: None,
         }],
+        stitch_groups: Vec::new(),
         groups: Vec::new(),
         unparsed: None,
     };
@@ -987,4 +1031,67 @@ fn gallery_shapes_read_as_shapes() {
         5,
         "three Shape-tool shapes, five gallery shapes"
     );
+}
+
+#[test]
+fn stitch_groups_read_in_pes_0110() {
+    // PE-DESIGN's re-saves of OpenStitch's v6 files hold their stitches as a CEmbOne group with
+    // CSewSeg runs: flag, thread, FFFF, a u32 point count, points from the bottom-left corner.
+    let g = objects_of(&owner_file("pes-default-v6"))
+        .stitch_groups
+        .remove(0);
+    assert_eq!(g.position, 0);
+    assert_eq!(g.bounds, [800, 850, 1200, 1150]);
+    assert_eq!(g.transform[4..], [800.0, 1150.0]);
+    assert_eq!((g.width, g.height), (400, 300));
+    let runs: Vec<(u16, u16, usize)> = g
+        .segments
+        .iter()
+        .map(|s| (s.flag, s.color, s.points.len()))
+        .collect();
+    assert_eq!(runs, [(0, 0, 49), (1, 1, 2), (0, 1, 17)]);
+    assert_eq!(g.color_log, [(0, 0), (1, 1)]);
+}
+
+#[test]
+fn a_stitch_group_built_from_stitches_round_trips() {
+    use openstitch_core::{Command, Stitch, StitchPattern, Thread};
+    let mut p = StitchPattern::new();
+    p.threads = vec![Thread::rgb(0xFF0000), Thread::rgb(0x0000FF)];
+    for (x, y, c) in [
+        (100.0, 100.0, Command::Stitch),
+        (200.0, 100.0, Command::Stitch),
+        (200.0, 200.0, Command::Stitch),
+        (200.0, 200.0, Command::ColorChange),
+        (300.0, 300.0, Command::Jump),
+        (300.0, 300.0, Command::Stitch),
+        (400.0, 300.0, Command::Stitch),
+    ] {
+        p.stitches.push(Stitch::new(x, y, c));
+    }
+    let g = pes11::StitchGroup::from_pattern(&p, 0, |k| k as u16).expect("group");
+    assert_eq!(g.bounds, [600, 600, 900, 800]);
+    let objects = Objects {
+        page_mm: Some((100, 100)),
+        hoop_page: true,
+        header: None,
+        code: None,
+        threads: p.threads.clone(),
+        shapes: Vec::new(),
+        texts: Vec::new(),
+        stitch_groups: vec![g],
+        groups: Vec::new(),
+        unparsed: None,
+    };
+    let written = pes11::write(&objects, &p).expect("write");
+    let mut back = objects_of(&written);
+    back.header = None;
+    back.code = None;
+    // A thread with no name is written with its chart index, as PE-DESIGN writes its colours.
+    for (b, t) in back.threads.iter_mut().zip(&objects.threads) {
+        if t.name.is_none() {
+            b.name = None;
+        }
+    }
+    assert_eq!(back, objects);
 }

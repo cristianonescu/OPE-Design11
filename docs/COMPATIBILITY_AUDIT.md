@@ -76,7 +76,7 @@ dearest:
 | 2 | Default PES is truncated v1 with no object section (**fixed**, internal regression; open test pending) | PES | 5 | Documented, unverified | Black-box open test |
 | 3 | Trims and jumps inside one fill or satin region; no Running Stitch Path (**fixed**, internal regression) | Stitches | 5 | Documented difference | No |
 | 4 | Trims between underlay, top stitching and outline of one object | Stitches | 4 | Documented, unverified | Single-needle policy |
-| 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes shapes as `CEmbLine`, which PE-DESIGN 11.50 opens editable, and Lato Bold text as `CEmbNText`, which it opens editable and retypable (both reference)) | PES | 5 | Reference | Yes (the Hoop Size page check; Text Transform and text on an outline) |
+| 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes shapes as `CEmbLine`, which PE-DESIGN 11.50 opens editable, and Lato Bold text as `CEmbNText`, which it opens editable and retypable (both reference); stitch patterns as `CEmbOne` stitch groups (reference pending, `pes-0110-stitches`)) | PES | 5 | Reference | Yes (the Hoop Size page check; Text Transform and text on an outline) |
 | 6 | One sewing direction per text instead of per stroke | Fonts | 5 | Documented difference | Angles |
 | 7 | Auto direction is one fixed angle (**fixed**, internal regression) | Stitches | 4 | Documented difference | No |
 | 8 | Underlay model differs (**partly fixed**: PE's two region types, Density Dense / Medium / Light, the Manual Punch column's edge / piping / zigzag); zigzag lines have no underlay | Stitches | 4 | Documented difference | Geometry |
@@ -584,7 +584,8 @@ Line references are relative to `crates/`.
     unchanged at export, write the bytes back and recompute the PEC offset only. Otherwise
     warn and fall back.
   - Since 2026-10-29 the `#PES0110` writer (item 5) writes back everything the reader parses
-    (`CEmbLine` shapes, thread table, groups, page), so once the import turns the reader's shapes
+    (`CEmbLine` shapes, texts, `CEmbOne` stitch groups, thread table with its names, groups, the
+    header's page and hoop fields verbatim), so once the import turns the reader's shapes
     into design objects (ROADMAP item 6) a PE-DESIGN file of shapes re-saves with its objects.
 
 ## 10. Hoop and Design Page fields are hard-coded in PES
