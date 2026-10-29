@@ -259,22 +259,31 @@ Verified Compatible).
   allocation limit is set too. Each conversion then works on a capped grid (Auto Punch at most
   2048 px per side, 5000 regions; Cross Stitch 160 000 cells; Photo Stitch 400 000 samples)
   and at most 500 000 needle points.
-- **Colours.** Weighted median cut to N box colours; each box maps to its nearest PEC chart
-  thread (red-mean distance); boxes with the same thread merge. Pixels are classified against
-  the box colours. "Skip background" leaves out the thread covering more than half of the
-  image border.
-- **Auto Punch.** Majority smoothing (3×3), 4-connected regions, regions under the minimum
-  area merged into the neighbour with the longest shared border, marching squares on pixel
-  centres (saddles split, so outlines match 4-connectivity; holes come out as inner
-  contours), Douglas–Peucker, then optional least-squares cubic fitting per segment (tangents
-  from neighbouring vertices, corners above 55° kept sharp, three Newton reparameterisation
-  rounds; a curve wherever the points are not straight and it fits within the tolerance, at
-  least one pixel). A region is satin when its longest stitch
-  across its principal axis would be at most `satinMaxWidth`, otherwise fill along the axis.
-  Colours sew largest area first.
-- **Cross Stitch.** The image's colours are reduced first; each cell of a square grid
-  (1–10 mm) takes the thread most of its pixels have (transparent cells stay empty). Each colour is one stitch object; each run of cells in a row is sewn "/"
-  going right and "\" coming back, stepping along the shared cell sides.
+- **Colours.** Auto Punch's prepass (#127, shared with Cross Stitch): every opaque pixel
+  takes the modal colour of its 3×3 window (ties keep the pixel's own colour), and the modal
+  colours are counted into a census of at most 100 tracked colours (later colours count under
+  their nearest tracked one). The census is weighted-median cut to N box colours; each box
+  maps to its nearest PEC chart thread (`openstitch-core`'s distance); boxes with the same
+  thread merge. Pixels are classified by their modal colour against the box colours. "Skip
+  background" leaves out the thread covering more than half of the image border.
+- **Auto Punch.** Optional extra majority smoothing of the labels (3×3, default none),
+  4-connected regions, regions of at most the small-region floor
+  `max(4, round(minArea / mmPerPx²))` pixels (#127's `max(4, round(param · 100 / mmPerPx²))`
+  with `param` in cm²) recoloured into the neighbour with the longest shared border, marching
+  squares on pixel centres (saddles split, so outlines match 4-connectivity; holes come out as
+  inner contours), Douglas–Peucker, then optional least-squares cubic fitting per segment
+  (tangents from neighbouring vertices, corners above 55° kept sharp, three Newton
+  reparameterisation rounds; a curve wherever the points are not straight and it fits within
+  the tolerance, at least one pixel). A region is satin across its principal axis when it is a
+  stroke: its width at its deepest point (twice the chamfer distance to the outside) is at most
+  `satinMaxWidth`; a region keeping area beyond that is fill along the axis (#127's
+  centerline-thinness test). Colours sew largest area first.
+- **Cross Stitch.** The image's colours are reduced through the same census prepass; each
+  cell of a square grid (`round(width / cell) × round(height / cell)`, cells 1–10 mm, default
+  2.5 mm) takes the thread most of its modal pixels have (ties to the lower thread; cells
+  mostly transparent stay empty). Each colour is one stitch object; each run of cells in a row
+  is sewn "/" going right and "\" coming back, stepping along the shared cell sides, every
+  diagonal once or, with Triple, there, back and there again (#132).
 - **Photo Stitch.** *Fill* (after Photo Stitch 1): a grid of row spacing × stitch length is
   error-diffused onto the threads plus the fabric colour; fabric cells stay unsewn, so tone
   becomes coverage; rows are staggered by thirds. *Lines* (after Photo Stitch 2): zigzag rows
