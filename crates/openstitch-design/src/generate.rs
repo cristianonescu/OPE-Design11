@@ -36,14 +36,20 @@ pub fn along(contour: &Contour, pitch: f64) -> Vec<Vec2> {
     out
 }
 
-/// Most halvings of a curve's parameter when sampling it for stitches (2^8 chords).
-const MAX_CURVE_HALVINGS: u32 = 8;
+/// Most halvings of a curve's parameter when sampling it for stitches (2^16 chords): a
+/// safety stop far beyond any curve a design page holds (an 800 mm circle's quarter arc at a
+/// 2 mm pitch takes 9 halvings), so a chord longer than the pitch never survives on a long or
+/// tight curve. Until 2026-10-29 the stop was 2^8 chords, which left 2.6 mm stitches on that
+/// circle (#121); no PE-DESIGN reference reaches that far, its page being at most 360 mm.
+const MAX_CURVE_HALVINGS: u32 = 16;
 
 /// Needle points on the cubic Bézier `a`, `c1`, `c2`, `b` at equal parameter steps, the
 /// parameter halved until every chord is no longer than `pitch`: PE-DESIGN 11.50 sews a
 /// 60 mm circle's running stitch (pitch 2 mm) as 4 × 32 chords of 1.44-1.60 mm whose needle
 /// points lie at the quarter arcs' parameters k/32 (compat text-fit-default), not at equal
-/// arc length.
+/// arc length and not on a flatness-tolerance polyline resampled at the pitch (#121: that
+/// would move every needle point off PE's). Outlines, by contrast, are flattened adaptively to
+/// [`crate::geometry::FLATNESS`], where no reference pins the sampling.
 pub fn halve_curve(a: Vec2, c1: Vec2, c2: Vec2, b: Vec2, pitch: f64) -> Vec<Vec2> {
     let at = |t: f64| {
         let u = 1.0 - t;
