@@ -329,7 +329,7 @@ level on `Agjy 123`.
 |---|---|
 | +0 | u16 PE-DESIGN's code of the preset. By palette place 1–26: 24, 25, 0, 1, 8, 9, 4, 5, 10, 11, 3, 2, 7, 6, 18, 19, 12, 14, 20, 21, 17, 16, 22, 23, 13, 15 (the same on all three texts) |
 | +2 | f32 strength from the level slider. Default level: 30 (presets 1, 2, 13, 14), 50 (3, 4, 7, 8, 11, 12, 17, 18, 21, 22, 25, 26), 20 (5, 6, 15, 16, 19, 20, 23, 24), 10 (9, 10). Preset 3 reads 0 at level 0 and 100 at level 100; preset 1 falls from 41.2 at level 0 to 1.15 at 100 |
-| +6 | 4 × f32. For the arches (presets 1 and 2): the circle's radius, the straight text's centre x, and the circle's centre y, a radius below the baseline for 1 and a radius above the size's top for 2. The radius is the straight text's width over 1.887 on all three texts, and grows with the level (10000 at level 100: flat). For the fans (13, 14): 1000 and zeros in the file made before any arch. For every other preset: the last arch's numbers, carried over from file to file in one session, so not read by PE-DESIGN |
+| +6 | 4 × f32. For the arches (presets 1 and 2): the circle's radius, the straight text's centre x, and the circle's centre y, a radius below the baseline for 1 and a radius above the size's top for 2. The radius is the straight text's advance width (its letters' advances, as PE-DESIGN measures its text box, not their ink) over 1.887 on all three texts, and grows with the level (10000 at level 100: flat). For the fans (13, 14): 1000 and zeros in the file made before any arch. For every other preset: the last arch's numbers, carried over from file to file in one session, so not read by PE-DESIGN |
 
 Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
 segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
@@ -379,12 +379,16 @@ byte-identical to PE-DESIGN's outside these documented differences
   Hoop Settings tab, 290 × 190 mm section outlines and no stitch count in the status bar until
   something is selected; its own Hoop Size page file (r27) shows none of them. The machine type
   and hoop of the design's machine settings are not mapped yet.
-- **Text Transform:** from a design, the arch circle comes from OpenStitch's straight layout:
-  HHHHHHH's radius is 39.6 mm where PE-DESIGN, measuring its own box, stores 40.8; the other
-  presets carry zeros where PE-DESIGN leaves its last arch's numbers. The text box of an arch is
-  PE-DESIGN's straight box (ascent line to baseline) bent round the arch's circle: for HHHHHHH
-  OpenStitch writes 551..1449 × 841..1164 where PE-DESIGN writes 552..1441 × 841..1170 (it
-  recomputes the box when it opens the file). Other presets: the letters' extent, the top at most
+- **Text Transform:** from a design, the arch circle is the straight text's advance width
+  over 1.887, measured on OpenStitch's layout as the shift between a left and a right aligned
+  setting: HHHHHHH's radius 40.83 mm against PE-DESIGN's 40.80; the other presets carry zeros
+  where PE-DESIGN leaves its last arch's numbers. The text box of an arch is PE-DESIGN's straight
+  box (ascent line to baseline) bent round the arch's circle: for HHHHHHH OpenStitch writes
+  541..1459 × 841..1169 where PE-DESIGN writes 552..1441 × 841..1170 (it recomputes the box when
+  it opens the file). OpenStitch's own arch layout uses the same circle since 2026-10-29 (its
+  text-transform-1 and -2 references still pass at 0.5 mm) but sews HHHHHHH 79.9 mm wide where
+  PE-DESIGN sews this object 79.2 mm: an open difference in how the letters are placed round the
+  circle (COMPATIBILITY_AUDIT item 5). Other presets: the letters' extent, the top at most
   the ascent line.
 - **Text:** the letter field at +14 (OpenStitch writes r12's −0.0) and the last sewing-order
   field of the line-spacing files (PE-DESIGN leaves it unset, `08 CE 53 00`; OpenStitch writes

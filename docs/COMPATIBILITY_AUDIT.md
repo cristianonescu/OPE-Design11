@@ -343,7 +343,11 @@ Line references are relative to `crates/`.
   Spaces are letters (r27). Centred text is written as PE-DESIGN writes it (alignment field
   and click point), and Text Transform text as `CEmbDText` with PE-DESIGN's preset code and
   default strength (FILE_FORMATS "`CEmbDText`"; spec `pes-0110-editable-text-transform`,
-  reference tier: PE-DESIGN opens it editable with the preset at its default level, retypable). Refused for now: right-aligned and vertical text, text on an outline,
+  reference tier: PE-DESIGN opens it editable with the preset at its default level, retypable;
+  **open:** OpenStitch's arch sews HHHHHHH 79.9 mm wide where PE-DESIGN sews the same object
+  79.2 mm (its own text-transform-1: 79.3) round the same 40.8 mm circle, so the spec's width
+  check stays at the internal tier until the letters' placement round the circle matches at
+  0.3 mm). Refused for now: right-aligned and vertical text, text on an outline,
   rotation, letter spacing, kerning, per-character edits, other fonts.
   **PE-DESIGN's check (reference tier, `pes-0110-editable-text`):** it opens the file as
   editable text with every attribute as written and retyping works. Two differences came with

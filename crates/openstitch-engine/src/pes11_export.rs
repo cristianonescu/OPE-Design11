@@ -382,8 +382,8 @@ const ENVELOPES: [(u16, f32); 26] = [
     (15, 50.0),
 ];
 
-/// The arch presets bend the text round a circle whose radius is the straight text's width
-/// over this angle (HHHHHHH, OpenStitch and Agjy 123 in the owner files: 1.887).
+/// The arch presets bend the text round a circle whose radius is the straight text's advance
+/// width over this angle (HHHHHHH, OpenStitch and Agjy 123 in the owner files: 1.887).
 const ARCH_RADIANS: f64 = 1.887;
 
 /// The `CEmbDText` transform of preset `preset` at the default level. The arches (1 over, 2
@@ -402,12 +402,27 @@ fn envelope(spec: &TextSpec, preset: u8) -> Result<Envelope, String> {
                 transform: Transform::IDENTITY,
                 ..spec.clone()
             };
-            let layout = text::layout(&straight, None).map_err(|e| e.to_string())?;
-            let b = Rect::enclosing(layout.contours().iter().flat_map(Contour::outline_points))
-                .ok_or_else(|| "the text has no outline".to_string())?;
+            // The straight text's advance width, as PE-DESIGN measures its box: the shift of the
+            // letters between a left and a right aligned layout.
+            let min_x = |align: TextAlign| -> Result<f64, String> {
+                let probe = TextSpec {
+                    align,
+                    ..straight.clone()
+                };
+                let layout = text::layout(&probe, None).map_err(|e| e.to_string())?;
+                Rect::enclosing(layout.contours().iter().flat_map(Contour::outline_points))
+                    .map(|b| b.min_x)
+                    .ok_or_else(|| "the text has no outline".to_string())
+            };
+            let advance = min_x(TextAlign::Left)? - min_x(TextAlign::Right)?;
+            let start = match spec.align {
+                TextAlign::Left => 0.0,
+                TextAlign::Center => -advance / 2.0,
+                TextAlign::Right => -advance,
+            };
             let (tx, ty) = (spec.transform.tx, spec.transform.ty);
-            let r = (b.max_x - b.min_x) / ARCH_RADIANS;
-            let cx = tx + (b.min_x + b.max_x) / 2.0 + f64::from(PAGE_ORIGIN);
+            let r = advance / ARCH_RADIANS;
+            let cx = tx + start + advance / 2.0 + f64::from(PAGE_ORIGIN);
             let baseline = ty + f64::from(PAGE_ORIGIN);
             let cy = if preset == 1 {
                 baseline + r
