@@ -1052,8 +1052,35 @@ Line references are relative to `crates/`.
   modal colours, and its defaults are explicit: 2.5 mm cells (0.4 per mm), 8 colours, full
   crosses, each diagonal once (`times: triple` sews it three times), border colour left out.
   On the synthetic grids the cells are the same as before (8 × 4 cells, 6 + 1 coloured);
-  what changes is the palette's weighting. Left for #132: PE-DESIGN's recorded defaults from
-  the capture, which may move the cell size or the times.
+  what changes is the palette's weighting.
+  Compared with PE-DESIGN 11.50 on 2026-10-29 (round-4 captures from the owner's
+  four-shape image `owner-shapes.bmp`, 240 × 240 px placed at 84.7 mm: a red disc, a green
+  triangle, a yellow rectangle and a blue square on white, every wizard at its defaults):
+  - **Auto Punch** (`autopunch-default.pes`; Max. Number of Colors 5, white omitted): PE
+    makes 4 fill regions (none satin; OpenStitch agrees) of 4482 stitches, each starting with
+    the 1 mm edge run, at 45° except the triangle at 90°. OpenStitch had 4241 (−5.4 %) at 0°
+    (the principal axis); with fill at 45° and 5 colours it has 4387 (−2.1 %): red 1481 / 1485,
+    blue 1279 / 1329, yellow 851 / 881, green 776 / 787 (PE's at 90°). Open: PE's colour order
+    (yellow, blue, red, green, the same in its Cross Stitch; not area, position or chart order)
+    and the triangle's 90°, which one image cannot pin down.
+  - **Cross Stitch** (`crossstitch-default.pes`; Cross size 2.5 mm, 5 colours, Times Single):
+    2866 stitches. PE's grid matches OpenStitch's (cells red 161 / 162, blue 143 / 143, green
+    75 / 74; yellow 94 / 88 at the rectangle's partial edge cells). PE sews six stitches per
+    cell, all on the diagonals: each diagonal once whole and once in halves through the cell
+    centre (median stitch 1.77 mm). OpenStitch sewed four diagonals and two cell-side steps
+    (1907 stitches, −33 %); it now sews PE's six (2841, −0.9 %). Open: PE travels from run to
+    run along the diagonals with one jump per colour, where OpenStitch jumps between row runs.
+  - **Photo Stitch 1** (`photostitch1-default-plus-cross.pes`, items 5–14; Max. Number of
+    Colors 10, Run Pitch 3.0 mm, Sew Page Color ticked): 12 255 stitches in 10 threads, the
+    page colour (White) first over the white areas (7212), every tone band sewn at 160–210
+    needle points per cm². PE's path is not row-based: contour-following meanders of ~3.2 mm
+    runs, 1–5 jumps per colour. OpenStitch had 5235 stitches with the white bare (14 per cm²,
+    stray dither tints) and 2 mm stitches; with Sew Page Color on by default, 3.0 mm stitches,
+    10 colours and 0.25 mm rows it has 12 767 (+4 %): white 157 / 162, yellow 185 / 170, green
+    245 / 211, red 176 / 175, blue 211 / 176 needle points per cm² (OpenStitch / PE). Open:
+    the path (OpenStitch trims at every run end, about 1100 times here) and PE's thread choice
+    (it mixes two or three threads per colour area); both are the stitch-path model of #129,
+    which the patent note in docs/research/beyond/patents.md bears on.
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.

@@ -36,8 +36,13 @@ pub fn image_wizard_window(app: &mut EditorApp, ctx: &egui::Context) {
             });
             ui.separator();
             for m in Method::ALL {
-                ui.radio_value(&mut w.method, m, m.label())
-                    .on_hover_text(m.hint());
+                if ui
+                    .radio_value(&mut w.method, m, m.label())
+                    .on_hover_text(m.hint())
+                    .changed()
+                {
+                    w.colors = m.default_colors();
+                }
             }
             ui.weak(w.method.hint());
             ui.separator();

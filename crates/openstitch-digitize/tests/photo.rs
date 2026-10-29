@@ -31,11 +31,19 @@ fn black() -> Thread {
     Thread::rgb(0)
 }
 
+/// Settings that leave the fabric bare (Sew Page Color off), so tone shows as coverage.
+fn bare(style: PhotoStyle, mode: PhotoMode) -> PhotoStitch {
+    PhotoStitch {
+        sew_page: false,
+        ..PhotoStitch::new(style, mode)
+    }
+}
+
 #[test]
 fn mono_fill_density_follows_tone() {
     // 50 mm wide: x 0..500 in 0.1 mm.
     let frame = Frame::new(0.0, 0.0, 50.0, 100);
-    let p = PhotoStitch::new(PhotoStyle::Fill, PhotoMode::Mono(black()));
+    let p = bare(PhotoStyle::Fill, PhotoMode::Mono(black()));
     let out = photo::convert(&gradient(), &frame, &p).expect("converts");
     assert_eq!(out.objects.len(), 1);
     let pts = needles(&out.objects[0]);
@@ -70,7 +78,12 @@ fn mono_fill_density_follows_tone() {
 fn colour_fill_separates_threads() {
     let img = rects(40, 20, RED, &[(20, 0, 40, 20, BLUE)]);
     let frame = Frame::new(0.0, 0.0, 40.0, 40);
-    let p = PhotoStitch::new(PhotoStyle::Fill, PhotoMode::Color(2));
+    // 2 mm cells, so the colour edge at 20 mm falls between cells.
+    let p = PhotoStitch {
+        stitch_mm: 2.0,
+        row_spacing_mm: 0.4,
+        ..bare(PhotoStyle::Fill, PhotoMode::Color(2))
+    };
     let out = photo::convert(&img, &frame, &p).expect("converts");
     assert_eq!(out.objects.len(), 2);
     for (o, t) in out.objects.iter().zip(&out.threads) {
@@ -126,7 +139,7 @@ fn colour_lines_one_layer_per_thread() {
 
 #[test]
 fn hostile_inputs_fail_cleanly() {
-    let p = PhotoStitch::new(PhotoStyle::Fill, PhotoMode::Mono(black()));
+    let p = bare(PhotoStyle::Fill, PhotoMode::Mono(black()));
     let img = rects(4, 4, BLACK, &[]);
     assert!(matches!(
         photo::convert(&img, &Frame::new(0.0, 0.0, 2000.0, 4), &p),
@@ -199,7 +212,7 @@ fn mono_stretch_is_full_range_auto_levels() {
 #[test]
 fn low_contrast_gradient_sews_like_the_full_one() {
     let frame = Frame::new(0.0, 0.0, 50.0, 100);
-    let p = PhotoStitch::new(PhotoStyle::Fill, PhotoMode::Mono(black()));
+    let p = bare(PhotoStyle::Fill, PhotoMode::Mono(black()));
     // 40..=200 against 0..=255: after the stretch they are the same grey ramp.
     let narrow = Raster::from_fn(100, 20, |x, _| {
         let v = 40 + (f64::from(x) / 99.0 * 160.0).round() as u8;
@@ -230,4 +243,49 @@ fn low_contrast_gradient_sews_like_the_full_one() {
         assert!(pts.iter().any(|p| p.0 < 10.0), "dark edge sewn");
         assert!(pts.iter().all(|p| p.0 < 495.0), "light edge bare");
     }
+}
+
+/// PE-DESIGN 11.50's Photo Stitch 1 defaults (round-4 capture `photostitch1-default-plus-cross.pes`):
+/// Run Pitch 3.0 mm, 10 colours, Sew Page Color ticked: the page colour is a thread of its own,
+/// sewn first, and every opaque cell is sewn.
+#[test]
+fn page_colour_is_sewn_first_by_default() {
+    let p = PhotoStitch::new(PhotoStyle::Fill, PhotoMode::Color(photo::COLORS));
+    assert!(p.sew_page);
+    assert_eq!(p.stitch_mm, photo::RUN_PITCH_MM);
+    assert_eq!(photo::RUN_PITCH_MM, 3.0);
+    assert_eq!(photo::COLORS, 10);
+    assert!(!PhotoStitch::new(PhotoStyle::Lines, PhotoMode::Color(4)).sew_page);
+    // A red square on white: the white is sewn in the chart's White, before the red.
+    let img = rects(40, 40, WHITE, &[(10, 10, 30, 30, RED)]);
+    let frame = Frame::new(0.0, 0.0, 40.0, 40);
+    let out = photo::convert(&img, &frame, &p).expect("converts");
+    assert!(out.threads.len() >= 2, "{:?}", out.threads);
+    assert_eq!(out.threads[0].hex(), "#f0f0f0", "page colour first");
+    let white = needles(&out.objects[0]);
+    let colour: Vec<(f64, f64)> = out.objects[1..].iter().flat_map(needles).collect();
+    let inside = |p: &&(f64, f64)| p.0 > 110.0 && p.0 < 290.0 && p.1 > 110.0 && p.1 < 290.0;
+    assert!(
+        white.iter().filter(inside).count() * 20 < white.len(),
+        "white stays outside"
+    );
+    // Run ends sit on the square's edges, so allow one cell of slack there.
+    let on_square = |p: &&(f64, f64)| p.0 > 70.0 && p.0 < 330.0 && p.1 > 95.0 && p.1 < 305.0;
+    assert!(
+        colour.iter().filter(on_square).count() * 10 > colour.len() * 9,
+        "red stays inside"
+    );
+    // Both areas sewn about equally densely: 1200 mm² of white around 400 mm² of red.
+    let (w, r) = (white.len() as f64 / 1200.0, colour.len() as f64 / 400.0);
+    assert!(
+        (w / r - 1.0).abs() < 0.3,
+        "{w} vs {r} needle points per mm²"
+    );
+    // Off, the white stays bare.
+    let off = PhotoStitch {
+        sew_page: false,
+        ..p
+    };
+    let bare_out = photo::convert(&img, &frame, &off).expect("converts");
+    assert!(bare_out.threads.iter().all(|t| t.hex() != "#f0f0f0"));
 }

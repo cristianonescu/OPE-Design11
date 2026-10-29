@@ -26,8 +26,9 @@ fn grid_cells_colours_and_crosses() {
     assert_eq!(out.objects.len(), 2);
     assert!(out.background.is_some());
     let red = out.objects[0].stitch_block.as_ref().expect("block");
-    // 2 runs of 3 cells: jump + anchor + 3×2 forward + 3×2 back = 14 each.
-    assert_eq!(red.stitches.len(), 2 * 14);
+    // 2 runs of 3 cells: jump + anchor + 3×3 forward + 3×3 back = 20 each (six stitches a
+    // cell, as PE-DESIGN 11.50 sews them).
+    assert_eq!(red.stitches.len(), 2 * 20);
     assert_eq!(
         red.stitches
             .iter()
@@ -35,27 +36,36 @@ fn grid_cells_colours_and_crosses() {
             .count(),
         2
     );
-    // Every needle point is on the 2.5 mm grid inside the frame.
+    // Every needle point is a cell corner or a cell centre inside the frame, and every
+    // stitch lies on a diagonal.
     for s in &red.stitches {
+        let (u, v) = ((s.x - 50.0) / 12.5, (s.y - 50.0) / 12.5);
         assert!(
-            (s.x - 50.0) % 25.0 == 0.0 && (s.y - 50.0) % 25.0 == 0.0,
+            u.fract() == 0.0 && v.fract() == 0.0 && (u as i64 % 2 == v as i64 % 2),
             "{s:?}"
         );
         assert!(s.x >= 50.0 && s.x <= 50.0 + 100.0 && s.y >= 50.0 && s.y <= 150.0);
     }
+    for w in red.stitches.windows(2) {
+        if w[1].command == Command::Stitch && (w[0].x, w[0].y) != (w[1].x, w[1].y) {
+            assert_eq!((w[1].x - w[0].x).abs(), (w[1].y - w[0].y).abs(), "{w:?}");
+        }
+    }
     let blue = out.objects[1].stitch_block.as_ref().expect("block");
     let pts: Vec<(f64, f64)> = blue.stitches.iter().map(|s| (s.x, s.y)).collect();
-    // Cell (6, 1) with the frame at (5, 5) mm: BL (200,100) → TR (225,75) → BR (225,100) →
-    // TL (200,75) → BL.
+    // Cell (6, 1) with the frame at (5, 5) mm: TL (200,75) → centre → BL (200,100) → "/" to
+    // TR (225,75) → centre → BR (225,100) → "\" to TL.
     assert_eq!(
         pts,
         vec![
-            (200.0, 100.0),
+            (200.0, 75.0),
+            (200.0, 75.0),
+            (212.5, 87.5),
             (200.0, 100.0),
             (225.0, 75.0),
+            (212.5, 87.5),
             (225.0, 100.0),
-            (200.0, 75.0),
-            (200.0, 100.0)
+            (200.0, 75.0)
         ]
     );
 }
@@ -137,22 +147,22 @@ fn defaults_are_documented_and_configurable() {
     let d = CrossStitch::default();
     assert_eq!(d.cell_mm, 2.5);
     assert_eq!(d.cell_mm, CrossStitch::CELL_MM);
-    assert_eq!(d.colors, 8);
+    assert_eq!(d.colors, 5, "PE-DESIGN's Max. Number of Colors");
     assert_eq!(d.colors, CrossStitch::COLORS);
     assert_eq!(d.kind, CrossType::Full);
     assert!(!d.triple);
     assert!(d.skip_background);
-    assert_eq!(d.stitches_per_cell(), 2);
+    assert_eq!(d.stitches_per_cell(), 6, "PE-DESIGN's six stitches a cell");
     let triple = CrossStitch {
         triple: true,
         ..Default::default()
     };
-    assert_eq!(triple.stitches_per_cell(), 6);
+    assert_eq!(triple.stitches_per_cell(), 10);
     let half = CrossStitch {
         kind: CrossType::Half,
         ..Default::default()
     };
-    assert_eq!(half.stitches_per_cell(), 1);
+    assert_eq!(half.stitches_per_cell(), 2);
 }
 
 /// #132: the grid of a sample image is stable: 20 × 10 mm at 2.5 mm cells is 8 × 4 cells, and
@@ -212,8 +222,8 @@ fn colours_come_from_the_shared_census() {
     assert_eq!(out.cells, vec![4]);
 }
 
-/// #132: triple sews every diagonal there, back and there again; the needle still ends where
-/// the single cross does, so the run continues the same way.
+/// #132: triple sews every full diagonal there, back and there again; the needle still ends
+/// where the single cross does, so the run continues the same way.
 #[test]
 fn triple_sews_each_diagonal_three_times() {
     let img = rects(10, 10, WHITE, &[(0, 0, 5, 5, BLACK)]);
@@ -249,31 +259,68 @@ fn triple_sews_each_diagonal_three_times() {
             .map(|s| (s.x, s.y))
             .collect()
     };
-    // One cell: BL anchor, "/" to TR, down to BR, "\" to TL, down to BL.
+    // One cell: TL anchor, halves through the centre to BL, "/" to TR, halves through the
+    // centre to BR, "\" to TL.
     assert_eq!(
         pts(&single),
         vec![
-            (0.0, 50.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (25.0, 25.0),
             (0.0, 50.0),
             (50.0, 0.0),
+            (25.0, 25.0),
             (50.0, 50.0),
-            (0.0, 0.0),
-            (0.0, 50.0)
+            (0.0, 0.0)
         ]
     );
     assert_eq!(
         pts(&triple),
         vec![
-            (0.0, 50.0),
+            (0.0, 0.0),
+            (0.0, 0.0),
+            (25.0, 25.0),
             (0.0, 50.0),
             (50.0, 0.0),
             (0.0, 50.0),
             (50.0, 0.0),
+            (25.0, 25.0),
             (50.0, 50.0),
             (0.0, 0.0),
             (50.0, 50.0),
-            (0.0, 0.0),
-            (0.0, 50.0)
+            (0.0, 0.0)
         ]
     );
+}
+
+/// PE-DESIGN 11.50's Cross Stitch on the owner's four-shape image (round-4 capture
+/// `crossstitch-default.pes`): six stitches on the diagonals per cell, half of them halves
+/// through the centre, none along a cell side.
+#[test]
+fn cells_are_six_diagonal_stitches_as_pe_design_sews_them() {
+    let img = rects(30, 30, WHITE, &[(5, 5, 25, 25, RED)]);
+    let out = cross::convert(
+        &img,
+        &Frame::new(0.0, 0.0, 30.0, 30),
+        &CrossStitch::default(),
+    )
+    .expect("converts");
+    let cells: usize = out.cells.iter().sum();
+    let b = out.objects[0].stitch_block.as_ref().expect("block");
+    let mut halves = 0;
+    let mut fulls = 0;
+    for w in b.stitches.windows(2) {
+        if w[1].command != Command::Stitch || (w[0].x, w[0].y) == (w[1].x, w[1].y) {
+            continue;
+        }
+        let (dx, dy) = ((w[1].x - w[0].x).abs(), (w[1].y - w[0].y).abs());
+        assert_eq!(dx, dy, "only diagonals: {w:?}");
+        if dx == 12.5 {
+            halves += 1;
+        } else {
+            assert_eq!(dx, 25.0);
+            fulls += 1;
+        }
+    }
+    assert_eq!((fulls, halves), (2 * cells, 4 * cells));
 }
