@@ -3,18 +3,22 @@
 //! colours, median cut; #127 #132), each cell of a square grid takes the thread most of its
 //! modal pixels have, and each thread becomes one stitch object of crosses.
 //!
-//! Defaults, documented and configurable (#132): grid cell 2.5 mm (0.4 cells per mm), 8
-//! colours, full crosses, each diagonal sewn once (`triple` sews it three times, as the Cross
-//! Stitch region type's Triple does), the border-majority colour left out. The grid is
+//! Defaults, documented and configurable (#132), as PE-DESIGN 11.50's Cross Stitch wizard
+//! shows them (round-4 capture `crossstitch-default.pes`): Cross size 2.5 mm (0.4 cells per
+//! mm), Max. Number of Colors 5, full crosses, Cross Stitch Times Single (`triple` sews each
+//! full diagonal three times, as the Cross stitch region type's Triple does), the
+//! border-majority colour left out (PE omits the white ground the same way). The grid is
 //! `round(width / cell) × round(height / cell)` cells over the placed image. Colour → cell:
 //! the cell's pixels (about 8 per cell side on the working raster) vote with their modal
 //! colour's thread; most votes wins, ties go to the lower thread, a cell most of whose pixels
-//! are transparent stays empty. PE-DESIGN's own defaults are not yet confirmed from a capture.
+//! are transparent stays empty. On the owner's four-shape test image this grid gives PE's cells
+//! to within one per colour on three of the four colours.
 //!
 //! Specified from PE-DESIGN 11's public guide (Cross Stitch converts an image into cross
-//! stitches on a grid with a chosen cell size and colour count); the sewing order is this
-//! project's own: each run of neighbouring cells in a row is sewn with "/" diagonals going
-//! right and "\" diagonals coming back, stepping along the shared cell sides.
+//! stitches on a grid with a chosen cell size and colour count) and PE-DESIGN 11.50's output:
+//! each cell is six stitches on its diagonals (see `sew_run`); the order of the runs is this
+//! project's own (each run of a row, top to bottom, with a jump between runs, where PE-DESIGN
+//! travels along the diagonals instead).
 
 use crate::DigitizeError;
 use crate::autopunch::border_majority;
@@ -49,15 +53,16 @@ impl CrossStitch {
     /// Default grid cell, mm.
     pub const CELL_MM: f64 = 2.5;
     /// Default thread colours.
-    pub const COLORS: usize = 8;
+    pub const COLORS: usize = 5;
 
-    /// Needle points per cell for these settings: 1 or 3 per diagonal, 1 or 2 diagonals.
+    /// Stitches per cell for these settings: a full cross is two full diagonals (1 or 3
+    /// stitches each) and four half diagonals; a half cross one "/" and a step along the bottom.
     pub fn stitches_per_cell(&self) -> usize {
-        let diagonals = match self.kind {
-            CrossType::Full => 2,
-            CrossType::Half => 1,
-        };
-        diagonals * if self.triple { 3 } else { 1 }
+        let full = if self.triple { 3 } else { 1 };
+        match self.kind {
+            CrossType::Full => 2 * full + 4,
+            CrossType::Half => full + 1,
+        }
     }
 }
 
@@ -205,9 +210,15 @@ pub fn convert(image: &Raster, frame: &Frame, p: &CrossStitch) -> Result<Convert
     })
 }
 
-/// Cells `a..b` of grid row `row`: jump to the run's bottom-left corner, "/" diagonals
-/// left to right, then (full crosses) "\\" diagonals right to left. With `triple` every
-/// diagonal is sewn there, back and there again before moving on.
+/// Cells `a..b` of grid row `row`. Full crosses are sewn as PE-DESIGN 11.50 sews them
+/// (reference `crossstitch-default.pes`): every needle point is a cell corner or a cell
+/// centre and every stitch lies on a diagonal, six per cell. Going right from the run's
+/// top-left corner, each cell is sewn top-left → centre → bottom-left (two half diagonals),
+/// then "/" in full to its top-right corner, the next cell's top-left; coming back from the
+/// last cell's top-right corner, each cell is sewn top-right → centre → bottom-right, then
+/// "\" in full to its top-left corner. Each diagonal is so covered twice, once whole and once
+/// in halves, and nothing runs along a cell side. With `triple` every full diagonal is sewn
+/// there, back and there again. Half crosses are one "/" per cell, stepping along the bottom.
 #[allow(clippy::too_many_arguments)]
 fn sew_run(
     out: &mut Vec<Stitch>,
@@ -219,16 +230,11 @@ fn sew_run(
     kind: CrossType,
     triple: bool,
 ) {
-    let at = |col: usize, r: usize| {
-        let x = frame.origin.x + col as f64 * cell;
-        let y = frame.origin.y + r as f64 * cell;
-        (x, y)
-    };
-    let (top, bottom) = (row, row + 1);
+    let at = |col: f64, r: f64| (frame.origin.x + col * cell, frame.origin.y + r * cell);
     let put = |out: &mut Vec<Stitch>, (x, y): (f64, f64), command| {
         out.push(Stitch::new(x, y, command));
     };
-    // A diagonal from the needle's current point `from` to `to`, sewn once or three times.
+    // A full diagonal from the needle's current point `from` to `to`, once or three times.
     let diagonal = |out: &mut Vec<Stitch>, from: (f64, f64), to: (f64, f64)| {
         put(out, to, Command::Stitch);
         if triple {
@@ -236,18 +242,31 @@ fn sew_run(
             put(out, to, Command::Stitch);
         }
     };
-    put(out, at(a, bottom), Command::Jump);
-    put(out, at(a, bottom), Command::Stitch);
-    for i in a..b {
-        diagonal(out, at(i, bottom), at(i + 1, top));
-        if i + 1 < b || kind == CrossType::Full {
-            put(out, at(i + 1, bottom), Command::Stitch);
+    let (top, bottom) = (row as f64, row as f64 + 1.0);
+    if kind == CrossType::Half {
+        put(out, at(a as f64, bottom), Command::Jump);
+        put(out, at(a as f64, bottom), Command::Stitch);
+        for i in a..b {
+            let i = i as f64;
+            diagonal(out, at(i, bottom), at(i + 1.0, top));
+            if i + 1.0 < b as f64 {
+                put(out, at(i + 1.0, bottom), Command::Stitch);
+            }
         }
+        return;
     }
-    if kind == CrossType::Full {
-        for i in (a..b).rev() {
-            diagonal(out, at(i + 1, bottom), at(i, top));
-            put(out, at(i, bottom), Command::Stitch);
-        }
+    put(out, at(a as f64, top), Command::Jump);
+    put(out, at(a as f64, top), Command::Stitch);
+    for i in a..b {
+        let i = i as f64;
+        put(out, at(i + 0.5, top + 0.5), Command::Stitch);
+        put(out, at(i, bottom), Command::Stitch);
+        diagonal(out, at(i, bottom), at(i + 1.0, top));
+    }
+    for i in (a..b).rev() {
+        let i = i as f64;
+        put(out, at(i + 0.5, top + 0.5), Command::Stitch);
+        put(out, at(i + 1.0, bottom), Command::Stitch);
+        diagonal(out, at(i + 1.0, bottom), at(i, top));
     }
 }

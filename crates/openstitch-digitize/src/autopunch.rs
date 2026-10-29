@@ -17,7 +17,7 @@ use openstitch_design::{DesignObject, RegionSewing, RegionType};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AutoPunch {
-    /// Thread colours to reduce to (1–64).
+    /// Thread colours to reduce to (1–64); PE-DESIGN 11.50's Max. Number of Colors default is 5.
     pub colors: usize,
     /// Longest side of the working raster, pixels.
     pub resolution: u32,
@@ -40,7 +40,7 @@ pub struct AutoPunch {
 impl Default for AutoPunch {
     fn default() -> Self {
         AutoPunch {
-            colors: 8,
+            colors: 5,
             resolution: 400,
             min_area_mm2: 1.0,
             smooth: 0,
@@ -50,6 +50,9 @@ impl Default for AutoPunch {
         }
     }
 }
+
+/// Fill direction of Auto Punch regions, degrees (PE-DESIGN 11.50's, from the round-4 capture).
+pub const FILL_ANGLE: f64 = 45.0;
 
 /// Most regions one conversion may produce.
 pub const MAX_REGIONS: usize = 5000;
@@ -185,9 +188,16 @@ pub fn convert(image: &Raster, frame: &Frame, p: &AutoPunch) -> Result<Converted
                 },
                 thread.clone(),
             );
-            // The axis is measured with the design's y pointing down; region angles are stored
-            // counter-clockwise on screen, as PE-DESIGN gives them.
-            region.angle = normalize(-if satin { across } else { axis }) + 0.0;
+            // Satin runs across the stroke. The axis is measured with the design's y pointing
+            // down; region angles are stored counter-clockwise on screen, as PE-DESIGN gives
+            // them. Fill sews at PE-DESIGN's 45° (round-4 capture `autopunch-default.pes`: the
+            // disc, square and rectangle at 45°; its triangle at 90°, a rule one image does not
+            // pin down).
+            region.angle = if satin {
+                normalize(-across) + 0.0
+            } else {
+                FILL_ANGLE
+            };
             let mut o = DesignObject::shape(contours, Some(region), None);
             o.name = Some(format!(
                 "Auto Punch {} {}",

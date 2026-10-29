@@ -59,6 +59,17 @@ impl Method {
     }
 }
 
+impl Method {
+    /// PE-DESIGN 11.50's Max. Number of Colors default for the method's wizard (round-4
+    /// captures): Auto Punch 5, Cross Stitch 5, Photo Stitch 10.
+    pub fn default_colors(self) -> u32 {
+        match self {
+            Method::PhotoFill | Method::PhotoLines => 10,
+            _ => 5,
+        }
+    }
+}
+
 pub const LINE_SEWS: [&str; 4] = ["running", "triple", "zigzag", "none"];
 pub const REGION_SEWS: [&str; 4] = ["auto", "fill", "satin", "none"];
 
@@ -95,7 +106,7 @@ impl Default for ImageWizard {
             path: None,
             method: Method::AutoPunch,
             width_mm: None,
-            colors: 8,
+            colors: Method::AutoPunch.default_colors(),
             skip_background: true,
             min_area: 1.0,
             satin_max: 6.0,
