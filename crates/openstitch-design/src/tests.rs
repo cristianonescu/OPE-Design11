@@ -623,6 +623,8 @@ fn programmable_fill_sews_embossed_and_engraved_tile_areas() {
     let plain = sew(&[]);
     let embossed = sew(&[at(RegionEffect::Emboss)]);
     let engraved = sew(&[at(RegionEffect::Engrave)]);
-    assert!(embossed < plain * 9 / 10, "{embossed} vs {plain}");
+    // PE-DESIGN's programmable fill has no needle points between the pattern lines, so an
+    // embossed area (no needle points inside) never adds any.
+    assert!(embossed <= plain, "{embossed} vs {plain}");
     assert!(engraved > plain * 11 / 10, "{engraved} vs {plain}");
 }

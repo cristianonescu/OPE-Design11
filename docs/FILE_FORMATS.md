@@ -822,14 +822,36 @@ rows, used by the bundled library (`crates/openstitch-design/patterns/`, generat
 
 Coordinates are in the pattern's unit box: motif x −0.5…1.5 (along the line), y −1…1
 (across, scaled by the motif height), one path from (0, 0) to (1, 0); fill x, y 0…1 (the
-tile; programmable fill puts needle points where its rows cross the lines); decorative x
+tile; programmable fill puts needle points where its rows cross the lines, see below); decorative x
 −0.5…1.5, y 0…1, every path from (0, y) to (1, y) so tiles chain into rows. Unknown fields
 are refused. A region's area is found on a 64 × 64 grid over the tile that wraps at its sides
 (the tile repeats); a point on a line or in an area the lines do not close names nothing, and a
 later region of the same area replaces an earlier one. Programmable fill sews engraved areas
-with 1 mm stitches and drops needle points inside embossed areas (stitches up to 7 mm), like
-the stamp effects. Designs carry the user patterns they define in `design.patterns` (same document
-shape), so a project sews the same everywhere.
+with 1 mm stitches and drops needle points inside embossed areas, like the stamp effects.
+Designs carry the user patterns they define in `design.patterns` (same document shape), so a
+project sews the same everywhere.
+
+How the tiles are sewn (pinned 2026-10-29 against PE-DESIGN 11.50's own fills of owner-made
+patterns, `compat/reference/stitches/prog-fill-*.pes`, `motif-fill-2pt.pes`,
+`line-motif-zigzag-3pt.pes`):
+
+- **Programmable fill:** the tile lies on the page axes (pattern direction 0), its grid starting
+  at the region's top-left corner, or at the reference point when one is set. Rows run at the
+  region's direction and density. A row's needle points are its two ends and every point where
+  it crosses a tile line, nothing else; consecutive rows share their turning point. Gaps
+  between crossings stay one stitch up to 12 mm (PE-DESIGN leaves 8 mm gaps whole) and are
+  split evenly beyond. Frequency staggers the base sewing only. On the 40 × 40 mm square at
+  45° and a 7.5 mm tile, PE-DESIGN sews 2355 and 1638 needle points with the square and line
+  tiles, OpenStitch 2329 and 1636; every OpenStitch needle point lies within 0.2 mm of one of
+  PE-DESIGN's (mean 0.10 and 0.11 mm).
+- **Motif fill:** the same grid origin; each motif's base line runs through the middle of its
+  row band, so the first row lies half a motif below the region's top edge.
+- **Motif line:** a whole number of motifs, stretched along the line to fill it from end to end,
+  on open and closed lines alike (8 motifs of 4.94 mm on a 39.5 mm line at the 5 mm size).
+
+Not yet the same: PE-DESIGN's motif fill travels between rows along the outline at 2 mm
+(130 needle points against OpenStitch's 103, which joins rows with one stitch), and its motif
+line adds tie-in and tie-off stitches (23 against 16).
 
 ### Text pattern sources (`.pas`, `.pmf`, `.plf`)
 
@@ -845,10 +867,10 @@ Layout (ASCII, CRLF or LF, one directive per line, a trailing `\` continues the 
 
 | Directive | Meaning |
 |---|---|
-| `@VERSION n` | file version, returned as read |
-| `@UNIT n`, `@COOD …` | header values, read and ignored |
-| `@SYSENV n` | one number: a fill/stamp tile (`.pas`, the fill subtype) or, when the file holds exactly one `@LINE` and no tile geometry, a motif (`.pmf`, the motif height in cell units) |
-| `@SYSENV w h r` | three numbers: a decorative-fill row (`.plf`): tile width and height in 0.1 mm and the repeat flag, returned as read |
+| `@VERSION n` | file version, returned as read (PE-DESIGN 11.50 writes `10000`) |
+| `@UNIT n`, `@COOD …` | header values, read and ignored (PE-DESIGN 11.50 writes neither) |
+| `@SYSENV n` | one number: a fill/stamp tile (`.pas`) or, when the file holds exactly one `@LINE` and no tile geometry, a motif (`.pmf`); PE-DESIGN 11.50 writes `1` for both, returned as read |
+| `@SYSENV w h r` | three numbers: a decorative-fill tile (`.plf`): width and height in 0.01 mm and a flag; PE-DESIGN 11.50 writes `10000 10000 1`, its 100 mm Default Size, returned as read |
 | `@TILE n` | number of `@TILELINE`s that follow (checked when present) |
 | `@TILELINE i npts x0 y0 …` | tile line `i` (0, 1, … in order), `npts` ≥ 2 points |
 | `@TILEAREA npts x0 y0 …` | a stamp outline, ≥ 3 points, kept as a closed path of the tile |
@@ -858,14 +880,23 @@ Every coordinate is an integer in the 0…1024 cell (anything outside is refused
 directives, a `@TILE` count that disagrees, lines out of order, a missing `@SYSENV` or one given
 twice, non-ASCII bytes and more than 64 paths or 4000 points). Mapping into
 `openstitch.pattern`: cell x and y divided by 1024 (y down); a motif stroke is turned so its first
-and last points sit at (0, 0) and (1, 0), and 512 cell units across it are one motif height; a
-decorative row must run from x = 0 to x = 1024 at one height. The resulting pattern obeys the
-`openstitch.pattern` rules above and sews with the design's own tile size, motif size and row
-settings. The physical size the `@SYSENV` numbers stand for, and which of the three layouts
-PE-DESIGN's Programmable Stitch Creator writes for an owner-drawn pattern, are pinned only by
-owner-made files (requested from the reference round: a 2-point line, a 4-point square, two
-separate lines, a motif, a decorative row, and the programmable/motif fills PE-DESIGN sews
-from them); until then the numbers are returned as read. Writing these files is not planned.
+and last points sit at (0, 0) and (1, 0) and is scaled the same way across (PE-DESIGN's base
+line spans the cell, so 1024 cell units are one motif size: a point 256 units off the line sews
+1.25 mm off it at 5 mm). A decorative tile whose lines all run from x = 0 to x = 1024 at one
+height becomes a decorative row; one with free lines (PE-DESIGN's editor draws anywhere on a
+16 × 16 grid) is kept as a fill tile, because OpenStitch's decorative fill chains rows and how
+PE-DESIGN sews free decorative lines has no reference yet. The pattern then obeys the
+`openstitch.pattern` rules above and sews at the design's own tile and motif size (PE-DESIGN's
+Default Sizes: 7.5 mm fill/stamp, 5.0 mm motif, 100 mm decorative fill).
+
+What PE-DESIGN 11.50's Programmable Stitch Creator writes (owner-made files, 2026-10-29,
+`crates/openstitch-design/tests/fixtures/patterns/` with `PROVENANCE.md`): each editor mode
+offers exactly one Save type (`.pas`, `.pmf`, `.plf`), so these text files are PE-DESIGN's own
+format for user patterns, not only Brother's shipped ones; CRLF; points snap to the grid
+(8 × 8 cells of 128 units for fill/stamp); a closed shape is written with its closing point (a
+square has 5 points); each separate line is its own `@TILELINE`, with nothing marking the move
+between them; the motif editor starts from a fixed base line (0, 512)–(1024, 512). Writing these
+files is not planned.
 
 ## OpenStitch sewing stitches (`openstitch.sewing`)
 

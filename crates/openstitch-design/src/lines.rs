@@ -66,9 +66,9 @@ pub struct MotifLine<'a> {
     pub arrange: Arrange,
 }
 
-/// Motif line: copies of a library motif along the path, joined by running stitches. On a
-/// closed path the copies are stretched to fit a whole number; on an open path they are
-/// centred and the remainder is running stitch.
+/// Motif line: copies of a library motif along the path, joined by running stitches over the
+/// gaps. The copies (and gaps) are stretched along the path to fit a whole number of them
+/// from end to end, on open and closed paths alike.
 pub fn motif(path: &[Vec2], closed: bool, m: &MotifLine) -> Run {
     let w = Walker::new(path);
     let len = w.length();
@@ -77,12 +77,15 @@ pub fn motif(path: &[Vec2], closed: bool, m: &MotifLine) -> Run {
     if len <= 0.0 || period <= 0.0 || m.width > len {
         return subdivide(path, m.pitch);
     }
+    // A whole number of motifs, scaled along the line so they fill it from end to end
+    // (PE-DESIGN 11.50 sews 8 motifs of 4.94 mm on a 39.5 mm line at the 5 mm size:
+    // compat/reference/stitches/line-motif-zigzag-3pt.pes).
     let (n, scale) = if closed {
         let n = (len / period).round().max(1.0);
         (n as usize, len / (n * period))
     } else {
-        let n = ((len + m.gap) / period).floor().max(1.0);
-        (n as usize, 1.0)
+        let n = ((len + m.gap) / period).round().max(1.0);
+        (n as usize, (len + m.gap) / (n * period))
     };
     let (mw, mg) = (m.width * scale, m.gap * scale);
     let used = n as f64 * mw + (n as f64 - 1.0) * mg;

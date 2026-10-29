@@ -270,13 +270,16 @@ mod tests {
     fn reference_point_moves_the_pattern_grid() {
         let square = Contour::rectangle(3.3, 7.1, 300.7, 290.3);
         let mut r0 = sewing(RegionType::ProgrammableFill);
-        // The tile grid lines up with the region's axes at 0°.
+        // The tile grid lines up with the region's axes at 0°. Without a reference point it
+        // starts at the region's top-left corner (3.3, 7.1), as in PE-DESIGN.
         r0.angle = 0.0;
+        r0.pattern = Some("diamonds".into());
         let (pw, ph) = r0.pattern_size_mm();
+        let corner = v2(3.3, 7.1);
         let mut whole = r0.clone();
-        whole.reference = Some(v2(pw * 20.0, ph * 20.0));
+        whole.reference = Some(corner + v2(pw * 20.0, ph * 20.0));
         let mut half = r0.clone();
-        half.reference = Some(v2(pw * 5.0, 0.0));
+        half.reference = Some(corner + v2(pw * 5.0, 0.0));
         let base = layers(&square, &r0);
         let same = layers(&square, &whole);
         let moved = layers(&square, &half);

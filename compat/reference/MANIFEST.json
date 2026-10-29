@@ -866,6 +866,18 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "stitches/line-motif-zigzag-3pt.pes",
+      "spec": "line-motif-zigzag-3pt",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Programmable Stitch Creator: New Motif Pattern, a point added on the base line and dragged to (512,768), Save As psc-motif-zigzag-3pt.pmf (repository copy: crates/openstitch-design/tests/fixtures/patterns/psc-motif-zigzag-3pt.pmf). Layout & Editing: New, Shapes > Outline > Open Straight Line click (10,30) double-click (50,30) mm (snapped to 39,5 mm), line Motif Stitch > psc-motif-zigzag-3pt at 5,0 x 5,0 mm, Offset 0,0, Spacing 0,0, Run pitch 5,0, Start/End Feed. Save As PES (default type).",
+      "sha256": "107c4a56294d106a5d11da5cdba989aba542e76b921face40914ae0cccdda0c2",
+      "notes": "23 stitches in the status bar."
+    },
+    {
       "file": "stitches/line-running-default.pes",
       "spec": "line-running-default",
       "reference": "pe-design",
@@ -974,6 +986,18 @@
       "notes": "Header #PES0110."
     },
     {
+      "file": "stitches/motif-fill-2pt.pes",
+      "spec": "motif-fill-2pt",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Programmable Stitch Creator: New Motif Pattern, the fixed base line (0,512)-(1024,512) saved untouched as psc-motif-2pt.pmf (repository copy: crates/openstitch-design/tests/fixtures/patterns/psc-motif-2pt.pmf). Layout & Editing: the same 40 x 40 rectangle, region Motif Stitch, Pattern1 browser > psc-motif-2pt at 5,0 x 5,0 mm, H/V-Arrange first buttons, offsets/spacing 0, Direction 0, Row offset 0,0, Run pitch 5,0, under sewing off. Save As PES (default type).",
+      "sha256": "bbf2cd5652185f700ef2a85e4c71a6dcb5ad45e666717f5902db7a7efc187bf9",
+      "notes": "130 stitches, 40,00 x 37,50 mm in the status bar."
+    },
+    {
       "file": "stitches/optimize-entry-exit.pes",
       "spec": "optimize-entry-exit",
       "reference": "pe-design",
@@ -984,6 +1008,30 @@
       "settings": "File > New, Design Page Custom Size 100 x 100 mm; grid 1 mm, Snap to Grid on; Rectangle tool: line Not Sewn (Line), region Fill Stitch with Under sewing unticked and every other attribute at its default (density 4.5 line/mm, Manual straight line 45 degrees, step pitch 4.0 mm, frequency 30 %, pull compensation 0.0 mm), colour BROTHER EMBROIDERY 800 RED; three 10 x 10 mm squares drawn with top-left corners at (0,0), (50,0), (25,0) mm in that order; Optimize Sewing Order clicked (Sewing Order pane); Save As PES (default type: Layout & Editing Ver.11.0 File, header #PES0110)",
       "sha256": "b892b243d2561ec410799385e69fc8ad1589b207a524f5b0a37eb07c168bedec",
       "notes": "Option > Options > Optimize Entry/Exit Points was ON (default here, not changed). 182 stitches per square. The squares sew in drawing order (x 0, 50, 25); the exit of each square and the entry of the next are on the facing corners (jumps 40.0 and 15.0 mm). Black-box tests of the command (gui-optimize-findings in the track notes): with or without the option, Optimize Sewing Order keeps drawing order within a colour, groups colours (red 0, blue 50, red 25 became red 0, red 25, blue 50), and links entry/exit only between same-colour neighbours. Round 1 (PR #34) made the same design with under sewing on: same order, gaps 41.3 and 16.3 mm, because the under sewing starts 1 mm inside the outline."
+    },
+    {
+      "file": "stitches/prog-fill-line-2pt.pes",
+      "spec": "prog-fill-line-2pt",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Programmable Stitch Creator: New Fill/Stamp Pattern, one line (0,0)-(1024,1024) cell units, Save As psc-line-2pt.pas (repository copy: crates/openstitch-design/tests/fixtures/patterns/psc-line-2pt.pas). Layout & Editing: the same rectangle and Prog. Fill settings as prog-fill-square-4pt with pattern psc-line-2pt at 7,5 x 7,5 mm. Save As PES (default type, #PES0110).",
+      "sha256": "72a6940ed7c410e0d9c16f10802e492725dda7778398f41310a1063dbb327f75",
+      "notes": "1638 stitches in the status bar."
+    },
+    {
+      "file": "stitches/prog-fill-square-4pt.pes",
+      "spec": "prog-fill-square-4pt",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Programmable Stitch Creator: New Fill/Stamp Pattern, closed square (128,128) (896,128) (896,896) (128,896) cell units on the 8 x 8 grid, Save As psc-square-4pt.pas (repository copy: crates/openstitch-design/tests/fixtures/patterns/psc-square-4pt.pas). Layout & Editing: New, Rectangle (10,10)-(50,50) mm (Size dialog 40,00 x 40,00), line Not Sewn, region Prog. Fill Stitch, 007 PRUSSIAN BLUE, under sewing off, density 4,5, direction 45, pattern browser > psc-square-4pt at 7,5 x 7,5 mm, Direction 0, Offset row 0 %, Base Sewing off. Save As PES (default type, #PES0110).",
+      "sha256": "2c5109773417a05ecb6c445b2fe2a3f7e276ddd28cbd7abf2db7f893655d71d3",
+      "notes": "2355 stitches in the status bar. The pattern file and this design are the owner's own drawings; no Brother pattern was used."
     },
     {
       "file": "stitches/programmable-fill-45.pes",

@@ -1429,7 +1429,7 @@ const NEW_REGION_TYPES: [RegionType; 12] = [
 fn stitch_limit(r: &RegionSewing) -> f64 {
     let pitch = r.run_pitch_mm() * 10.0;
     match r.kind {
-        RegionType::ProgrammableFill => r.stitch_length * 10.0,
+        RegionType::ProgrammableFill => crate::regions::PROGRAMMABLE_MAX_STITCH,
         RegionType::CrossStitch => (r.spacing_mm() * 10.0 * std::f64::consts::SQRT_2).max(pitch),
         RegionType::ZigzagNetFill => {
             let w = r.pattern_size_mm().0 * 10.0;
@@ -1809,10 +1809,12 @@ fn motif_fill_repeats_the_motif_in_rows() {
     r.running_stitch_path = None;
     let runs = crate::region::layers(&c, &r, &[]).pop().expect("top");
     let pts: Vec<&Vec2> = runs.iter().flatten().collect();
-    // Peaks are 3 mm (0.9 of the height) above each row baseline: rows every 4 mm.
+    // Rows every 4 mm (a 3 mm motif and 1 mm spacing), each base line half the motif below
+    // its band's top (the bands starting at the region's top edge); peaks are 2.7 mm (0.9 of
+    // the height) above the base line.
     let peaks = pts
         .iter()
-        .filter(|p| ((p.y + 27.0) / 40.0).fract().abs() < 1e-6)
+        .filter(|p| ((p.y + 12.0) / 40.0).fract().abs() < 1e-6)
         .count();
     assert!(peaks >= 25, "{peaks}");
 }

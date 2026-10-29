@@ -1238,6 +1238,24 @@ Line references are relative to `crates/`.
     the path (OpenStitch trims at every run end, about 1100 times here) and PE's thread choice
     (it mixes two or three threads per colour area); both are the stitch-path model of #129,
     which the patent note in docs/research/beyond/patents.md bears on.
+  `openstitch.pattern` fill, motif and decorative patterns. Brother's bundled patterns are
+  never read.
+- **Programmable fill, motif fill and motif line from owner-made patterns (reference,
+  2026-10-29, #130/#131):** PE-DESIGN 11.50's fills of six owner-made Programmable Stitch
+  Creator files showed OpenStitch's own model was off: PE-DESIGN tiles the pattern on the page
+  axes from the region's top-left corner and sews only the row ends and the crossings with the
+  tile lines (rows sharing their turning points, 8 mm gaps unsplit); OpenStitch tiled in the
+  row's frame and added a staggered grid (3392 and 3209 needle points against PE-DESIGN's 2355
+  and 1638, mean distance to PE-DESIGN's nearest needle point 0.63 and 1.03 mm). Now 2329 and
+  1636, within 0.2 mm (mean 0.10 and 0.11 mm); specs `prog-fill-square-4pt`,
+  `prog-fill-line-2pt`. Motif fill rows now start half a motif below the top edge (bounds
+  40 × 37.5 mm as PE-DESIGN, `motif-fill-2pt`); motif lines fit a whole number of stretched
+  motifs (`line-motif-zigzag-3pt`). The import mapped a motif's cross offset at twice its size
+  (fixed: 1024 cell units are one motif size). A reference point was ignored for programmable
+  and motif fills, and a user pattern fell back to the default with a reference point or a
+  curved direction (both fixed). Left: the motif fill's travel between rows (PE-DESIGN walks the
+  outline at 2 mm: 130 needle points against 103) and the motif line's tie stitches (23
+  against 16).
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.
