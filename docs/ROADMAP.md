@@ -209,6 +209,18 @@ files from stitch data and for tracing a bitmap of stitch data, which concern
 `object.toShapes`, B12 on stitch blocks and B14's fill fallback; the rest shown expired or
 ceased). Not legal advice: the list for the owner's lawyer.
 
+## Pattern and font files (Phase 6, #130 #131 #134)
+
+Only files the owner makes in PE-DESIGN's own tools (Programmable Stitch Creator, Stitch
+Design Factory, Font Creator) and saves through the normal interface are studied; Brother's
+bundled patterns, motifs and fonts are never read. Done: import of `.pas`/`.pmf`/`.plf` text
+sources in the documented `@DIRECTIVE` layout (2026-10-29). Waiting for the owner-made samples:
+Programmable Stitch Creator saves (a 2-point line, a 4-point square, two separate lines; a
+motif; a decorative-fill row) with a programmable fill and a motif fill sewn from them (to pin
+the physical size and the tiling), PE-DESIGN's own PMV files, and a Font Creator font of one
+and two owner-drawn glyphs with text set in it. Each lands as its own PR with the fixtures'
+provenance in a MANIFEST.
+
 ## Blocked
 
 Wireless transfer, Link, USB Link, network machine settings and the Design Database's Card

@@ -638,8 +638,41 @@ with 1 mm stitches and drops needle points inside embossed areas (stitches up to
 the stamp effects. Designs carry the user patterns they define in `design.patterns` (same document
 shape), so a project sews the same everywhere.
 
-Brother's `.pas`, `.pmf` and `.plf` pattern files are undocumented and cannot be read or
-written (Blocked: no public description, and reverse engineering is ruled out).
+### Text pattern sources (`.pas`, `.pmf`, `.plf`)
+
+PE-DESIGN's pattern families are text files in a `@DIRECTIVE` layout. OpenStitch imports a
+source in that layout when the user made it in their own Programmable Stitch Creator
+(`pattern.import`, since 2026-10-29, #131; `openstitch_design::pattern_text`). Brother's
+bundled patterns are copyrighted content: they are never read, copied or shipped; the importer
+cannot tell them apart from the user's own files, so importing only one's own files is the
+user's responsibility.
+
+Layout (ASCII, CRLF or LF, one directive per line, a trailing `\` continues the line, at most
+1 MiB and 10 000 directives):
+
+| Directive | Meaning |
+|---|---|
+| `@VERSION n` | file version, returned as read |
+| `@UNIT n`, `@COOD …` | header values, read and ignored |
+| `@SYSENV n` | one number: a fill/stamp tile (`.pas`, the fill subtype) or, when the file holds exactly one `@LINE` and no tile geometry, a motif (`.pmf`, the motif height in cell units) |
+| `@SYSENV w h r` | three numbers: a decorative-fill row (`.plf`): tile width and height in 0.1 mm and the repeat flag, returned as read |
+| `@TILE n` | number of `@TILELINE`s that follow (checked when present) |
+| `@TILELINE i npts x0 y0 …` | tile line `i` (0, 1, … in order), `npts` ≥ 2 points |
+| `@TILEAREA npts x0 y0 …` | a stamp outline, ≥ 3 points, kept as a closed path of the tile |
+| `@LINE npts x0 y0 …` | a motif stroke |
+
+Every coordinate is an integer in the 0…1024 cell (anything outside is refused, as are unknown
+directives, a `@TILE` count that disagrees, lines out of order, a missing `@SYSENV` or one given
+twice, non-ASCII bytes and more than 64 paths or 4000 points). Mapping into
+`openstitch.pattern`: cell x and y divided by 1024 (y down); a motif stroke is turned so its first
+and last points sit at (0, 0) and (1, 0), and 512 cell units across it are one motif height; a
+decorative row must run from x = 0 to x = 1024 at one height. The resulting pattern obeys the
+`openstitch.pattern` rules above and sews with the design's own tile size, motif size and row
+settings. The physical size the `@SYSENV` numbers stand for, and which of the three layouts
+PE-DESIGN's Programmable Stitch Creator writes for an owner-drawn pattern, are pinned only by
+owner-made files (requested from the reference round: a 2-point line, a 4-point square, two
+separate lines, a motif, a decorative row, and the programmable/motif fills PE-DESIGN sews
+from them); until then the numbers are returned as read. Writing these files is not planned.
 
 ## OpenStitch sewing stitches (`openstitch.sewing`)
 

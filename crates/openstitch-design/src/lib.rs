@@ -18,6 +18,7 @@ pub mod model;
 pub mod monogram;
 pub mod ornament;
 pub mod paths;
+pub mod pattern_text;
 pub mod patterns;
 pub mod project;
 mod provenance;
