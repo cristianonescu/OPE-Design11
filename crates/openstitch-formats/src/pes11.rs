@@ -835,18 +835,75 @@ fn write_mfc_unicode(w: &mut ByteWriter, s: &str) {
     }
 }
 
+/// The BROTHER EMBROIDERY catalogue number of the PEC chart colours PE-DESIGN 11.50 writes in its
+/// thread tables, as `(PEC index, catalogue number)`: every pair found in the owner's own
+/// `#PES0110` files (compat/reference, tests/fixtures/pe11 and the round-4 captures, 2026-10-29;
+/// each with brand `EMBROIDERY`, an empty chart name and exactly the PEC chart's RGB). The other
+/// 39 chart colours have no owner sample yet.
+pub const BROTHER_EMBROIDERY: [(usize, &str); 25] = [
+    (1, "007"),
+    (2, "405"),
+    (3, "534"),
+    (4, "070"),
+    (5, "800"),
+    (12, "208"),
+    (13, "205"),
+    (14, "513"),
+    (16, "005"),
+    (20, "900"),
+    (22, "869"),
+    (24, "058"),
+    (25, "086"),
+    (28, "030"),
+    (29, "001"),
+    (32, "019"),
+    (33, "126"),
+    (37, "509"),
+    (48, "807"),
+    (50, "519"),
+    (51, "107"),
+    (55, "614"),
+    (56, "515"),
+    (58, "206"),
+    (61, "027"),
+];
+
+/// Catalogue number, brand and chart name for `t` in a PE-DESIGN 11 thread table. A colour from
+/// OpenStitch's Brother PEC chart (brand `Brother`, its chart number as the catalogue number,
+/// the chart's exact RGB) is written as PE-DESIGN writes that colour, from its BROTHER EMBROIDERY
+/// chart: PE-DESIGN shows `16 / Brother` with no thread chart otherwise (compat
+/// pes-0110-editable-shapes, the owner's check of 2026-10-29). Any other thread keeps its own
+/// strings.
+fn pe_thread_strings(t: &Thread, index: usize) -> (&str, &str, &str) {
+    let own = (
+        t.catalog_number.as_deref().unwrap_or(""),
+        t.brand.as_deref().unwrap_or(""),
+        t.chart.as_deref().unwrap_or(""),
+    );
+    let from_pec_chart = t.brand.as_deref() == Some("Brother")
+        && t.catalog_number.as_deref() == Some(index.to_string().as_str())
+        && PEC_CHART[index]
+            .as_ref()
+            .is_some_and(|c| c.rgb_value() == t.rgb_value());
+    match BROTHER_EMBROIDERY.iter().find(|&&(i, _)| i == index) {
+        Some(&(_, catalog)) if from_pec_chart => (catalog, "EMBROIDERY", ""),
+        _ => own,
+    }
+}
+
 /// The thread table: catalogue number, RGB and a pad byte, colour type, the PEC chart index of
 /// the nearest chart colour as a string, brand and chart name.
 fn write_threads(w: &mut ByteWriter, threads: &[Thread]) {
     w.u16le(threads.len() as i64);
     for t in threads {
-        write_mfc_unicode(w, t.catalog_number.as_deref().unwrap_or(""));
+        let index = nearest_index(t, &PEC_CHART).unwrap_or(0);
+        let (catalog, brand, chart) = pe_thread_strings(t, index);
+        write_mfc_unicode(w, catalog);
         w.append(&[t.red, t.green, t.blue, 0]);
         w.u32le(i64::from(t.kind.unwrap_or(Thread::CUSTOM_KIND)));
-        let index = nearest_index(t, &PEC_CHART).unwrap_or(0);
         write_mfc_unicode(w, &index.to_string());
-        write_mfc_unicode(w, t.brand.as_deref().unwrap_or(""));
-        write_mfc_unicode(w, t.chart.as_deref().unwrap_or(""));
+        write_mfc_unicode(w, brand);
+        write_mfc_unicode(w, chart);
     }
 }
 
@@ -1096,6 +1153,24 @@ mod tests {
         );
         assert_eq!(PATTERN_START, template::BODY_HEAD.len());
         assert_eq!(template::BODY_TAIL[..4], [0xE8, 0x03, 0xE8, 0x03]);
+    }
+
+    #[test]
+    fn brother_chart_colours_get_pe_designs_embroidery_numbers() {
+        let silver = PEC_CHART[16].clone().expect("silver");
+        assert_eq!(pe_thread_strings(&silver, 16), ("005", "EMBROIDERY", ""));
+        let red = PEC_CHART[5].clone().expect("red");
+        assert_eq!(pe_thread_strings(&red, 5), ("800", "EMBROIDERY", ""));
+        // A custom colour, and a chart colour with no owner sample, keep their own strings.
+        let mut custom = Thread::rgb(0x12_34_56);
+        custom.catalog_number = Some("42".into());
+        assert_eq!(pe_thread_strings(&custom, 16), ("42", "", ""));
+        let unsampled = PEC_CHART[6].clone().expect("chart colour");
+        assert_eq!(pe_thread_strings(&unsampled, 6), ("6", "Brother", ""));
+        // A chart RGB under another brand is not relabelled.
+        let mut other = silver.clone();
+        other.brand = Some("Madeira".into());
+        assert_eq!(pe_thread_strings(&other, 16), ("16", "Madeira", ""));
     }
 
     #[test]

@@ -315,8 +315,11 @@ the preview images.
 `pes11::write` (`design.export` `pesVersion` 11; `openstitch_engine::pes11_export` maps the
 design) writes the layout above: the header with the metadata strings and the Design Page size,
 the thread table in sewing order (region thread, then line thread, per object; strings in the
-MFC Unicode form, the PEC chart index of the nearest chart colour, `kind` 10 and the brand and
-chart as the thread has them), one `CEmbLine` per visible shape with every mapped field set, the
+MFC Unicode form, the PEC chart index of the nearest chart colour, `kind` 10; a colour from
+OpenStitch's Brother PEC chart gets the BROTHER EMBROIDERY catalogue number and brand
+`EMBROIDERY` PE-DESIGN writes for it, from the 25 pairs found in the owner's files
+(`pes11::BROTHER_EMBROIDERY`: 1 → 007, 5 → 800, 16 → 005, 20 → 900 …), any other thread its own
+catalogue number, brand and chart), one `CEmbLine` per visible shape with every mapped field set, the
 groups, the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
 as `CEmbNText` (letters at the text's size, Satin or Fill, an optional running, triple or
 zigzag line at PE's defaults, line breaks of left-aligned text, the line spacing %, and the
@@ -353,9 +356,14 @@ byte-identical to PE-DESIGN's outside these documented differences
   writes the design size, and `0x1F`–`0x2E`), the thumbnails, the icons (blank) and the preview
   images (none) differ.
 
-Done when PE-DESIGN confirms: whether it opens these files with the shapes and texts editable
-(compat specs `pes-0110-editable-shapes` and `pes-0110-editable-text`, owner's check pending).
-Version 6 stays the default export until then.
+**PE-DESIGN's check (2026-10-29, compat `pes-0110-editable-shapes`, reference tier):** PE-DESIGN
+11.50 opens the written rectangle with no warning and the shape editable (handles, Shapes tab,
+Sewing Attributes; the region type can be changed), shows the attributes the file holds, and
+re-saves the object section unchanged except the pattern block, where it writes its own default
+pattern over OpenStitch's placeholder. Before the catalogue mapping above, PE-DESIGN showed
+OpenStitch's chart colours as `16 / Brother` with no thread chart. The text file's check
+(`pes-0110-editable-text`) is pending. Version 6 stays the default export until the coordinator
+decides otherwise.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
 
