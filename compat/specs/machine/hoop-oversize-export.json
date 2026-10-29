@@ -1,0 +1,241 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "hoop-oversize-export",
+  "area": "machine",
+  "title": "A design larger than the 100 x 100 mm hoop exported by PE-DESIGN 11",
+  "description": "The twelve-swatch design scaled to 150 % (129 x 105 mm) on a Design Page set to Hoop Size 100 x 100 mm. PE-DESIGN 11.50 warns on Save As ('Please keep all designs within the Design Page. Saved data cannot be sent to the original card or the embroidery machine. Do you want to save the data anyway?') and saves on Yes; its Export to DST writes the file with no warning at all. It neither rejects the design nor promotes it to a larger hoop (issue #125). OpenStitch builds the same squares on a 100 x 100 page and exports DST; the bounds are compared. PE-DESIGN's PES of the design is parked (owner's notes): OpenStitch's PES reader gives it 211 x 229 mm bounds, so that file holds something the reader does not decode (a sectioned layout for the hoop is the suspicion).",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "Large designs split into several files on export when they exceed"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/machine/hoop-oversize-100.dst (PE-DESIGN 11.50, 2026-10-29): 129.00 x 105.00 mm, 17225 stitches; DST header +X 645 -X 645 +Y 525 -Y 525"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": -17.5,
+        "y": -10.0,
+        "width": 30,
+        "height": 30,
+        "fill": "#ff0000"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 15.5,
+        "y": -10.0,
+        "width": 30,
+        "height": 30,
+        "fill": "#00ff00"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 48.5,
+        "y": -10.0,
+        "width": 30,
+        "height": 30,
+        "fill": "#0000ff"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 81.5,
+        "y": -10.0,
+        "width": 30,
+        "height": 30,
+        "fill": "#ffff00"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": -17.5,
+        "y": 27.5,
+        "width": 30,
+        "height": 30,
+        "fill": "#00ffff"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 15.5,
+        "y": 27.5,
+        "width": 30,
+        "height": 30,
+        "fill": "#ff00ff"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 48.5,
+        "y": 27.5,
+        "width": 30,
+        "height": 30,
+        "fill": "#808080"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 81.5,
+        "y": 27.5,
+        "width": 30,
+        "height": 30,
+        "fill": "#c89664"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": -17.5,
+        "y": 65.0,
+        "width": 30,
+        "height": 30,
+        "fill": "#326496"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 15.5,
+        "y": 65.0,
+        "width": 30,
+        "height": 30,
+        "fill": "#f0c8dc"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 48.5,
+        "y": 65.0,
+        "width": 30,
+        "height": 30,
+        "fill": "#145028"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 81.5,
+        "y": 65.0,
+        "width": 30,
+        "height": 30,
+        "fill": "#ff8000"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "type": "fill",
+        "angle": 45,
+        "underlay": true
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "big.dst"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design-dst",
+      "file": "machine/hoop-oversize-100.dst",
+      "make": "The same design, App menu > Export, Tajima (*.DST): no warning."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "dst-bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "big.dst"
+      },
+      "evidence": "PE-DESIGN's DST of the oversized design",
+      "reference": {
+        "id": "pe-design-dst",
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "dst-bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "big.dst"
+      },
+      "evidence": "PE-DESIGN's DST of the oversized design",
+      "reference": {
+        "id": "pe-design-dst",
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    }
+  ]
+}

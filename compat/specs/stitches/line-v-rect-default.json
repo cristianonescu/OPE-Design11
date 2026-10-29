@@ -1,0 +1,112 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "line-v-rect-default",
+  "area": "stitches",
+  "title": "V stitch at PE-DESIGN's defaults around a 30 x 20 mm rectangle",
+  "description": "A closed rectangle (20, 20)-(50, 40) mm with line V/V Stitch = V Stitch at the defaults PE-DESIGN 11.50 shows: stroke spacing 5.0 mm, arm 2.5 mm, width 2.0 mm, Run time(s) 1, Stroke time(s) 1 (greyed for V), Arrange first button. The open-polyline references line-v-default pin the shape; this one adds the closed outline and the corners. The defaults are recorded for the line-stitch issues.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Line sew types",
+        "feature": "Motif (OpenStitch's own motif library"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/line-v-rect-default.pes (PE-DESIGN 11.50, 2026-10-29): 87 stitches; Sewing Attributes > Line sew: list E Stitch / V Stitch, diagram fields 5.0 mm (along the line), 2.5 mm (arm), 2.0 mm (width), Run time(s) 1, Stroke time(s) 1, Arrange two buttons"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 20,
+        "y": 20,
+        "width": 30,
+        "height": 20,
+        "outline": "Red"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "ids": [
+          1
+        ],
+        "type": "vStitch",
+        "color": "Red"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "line.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/line-v-rect-default.pes",
+      "make": "Shapes > Rectangle dragged (20, 20)-(50, 40) mm; Shapes tab line E/V Stitch, Sewing Attributes list V Stitch at its defaults (5.0 / 2.5 / 2.0 mm, Run time(s) 1, Stroke time(s) 1, Arrange first button), region Not Sewn (Region), 800 RED. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "percent": 10
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    }
+  ]
+}

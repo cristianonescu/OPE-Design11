@@ -1,0 +1,125 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "satin-col-us-type-3",
+  "area": "stitches",
+  "title": "Satin column under sewing type 3 (second row, first button (outline icon))",
+  "description": "A 39.5 x 6 mm satin column (density 4.5) with PE-DESIGN's under sewing type 3: second row, first button (outline icon). One of six files that differ only in the under sewing button (types 1-5 and off); OpenStitch maps the button to its underlay style 'edge'. Issue #124.",
+  "covers": {
+    "audit": [
+      1
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Satin: a zigzag across the column"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 (pe-refs-4, 2026-10-29): for a Satin region all five under sewing type buttons are enabled (Fill enables only the first row) and they are exclusive radio buttons: no combination of types is possible. On this 39.5 x 6 mm column: type 1 287 st, type 2 287, type 3 226, type 4 250, type 5 226, off 186 (issue #124)"
+    },
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/satin-col-us-type-3.pes: 226 stitches"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 39.5,
+        "height": 6
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "satin",
+        "angle": 90,
+        "density": 4.5,
+        "underlay": true,
+        "underlayStyle": "edge"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "satin.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/satin-col-us-type-3.pes",
+      "make": "Shapes > Manual Punch > Straight Block, clicks (10,10) (10,16) (50,10), double-click (50,16) mm (PE-DESIGN makes a 39.5 x 6 mm satin block: line Not Sewn, region Satin Stitch, density 4.5, Half Stitch on, pull 0.0, direction across the block); Sewing Attributes > Region sew > Under sewing ticked, type button second row, first button (outline icon), Density Medium. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "satin.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference",
+      "reference": {
+        "tolerance": {
+          "percent": 8
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "satin.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "satin.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    }
+  ]
+}
