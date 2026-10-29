@@ -297,7 +297,8 @@ r26 (clicked 10 mm further right), o-text-10-letters (size 8), o-text-vertical a
 | tail +78 | transform again, 6 × f32 | r13 |
 | tail +104 | f32 x, y: the click, the left end of the first baseline (file units) | r12 (600, 700), r26 (700, 700), r15 (900, 1000) |
 
-The tail is 112 bytes; the fields not listed (Text Attributes such as kerning, character spacing,
+A space is a letter like any other, with the same attributes (r27, `A B`), and is listed in the
+sewing order. The tail is 112 bytes; the fields not listed (Text Attributes such as kerning, character spacing,
 alignment, rotation) are zero or constant in every file. The colour of a text is in the thread
 table: r24 changes only the table. In the sewing-order list a text of n letters lists the
 connections into its letters (parts 0, 2 … 2n − 2, the first object's first skipped), then the
@@ -305,8 +306,7 @@ letters (1, 3 … 2n − 1); a sewn line adds no parts (text-sewing-order).
 
 Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
 segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
-(kerning, character spacing, alignment, rotation), how a space is stored (no owner file has one),
-the letter's line width and pitch fields, `CEmbDText` (Text Transform), `CEmbAText` (text on an
+(kerning, character spacing, alignment, rotation), the letter's line width and pitch fields, `CEmbDText` (Text Transform), `CEmbAText` (text on an
 outline), `CEmbSpecialShape`, Manual Punch blocks (a `CEmbLine` variant the reader refuses) and
 the preview images.
 
@@ -326,8 +326,8 @@ zigzag line at PE's defaults, line breaks of left-aligned text, the line spacing
 click point: the first line's start, measured on OpenStitch's layout for centred and
 right-aligned text). What it cannot hold fails with the object named: stitch patterns, several
 outlines in one object, programmable, motif and the other region types, motif, stem,
-candlewicking, chain and cutting lines; text in another font, with a space, vertical, on an
-outline, with a Text Transform, rotated or scaled, with letter spacing, kerning, per-character
+candlewicking, chain and cutting lines; text in another font, with white space other than
+spaces and line breaks, vertical, on an outline, with a Text Transform, rotated or scaled, with letter spacing, kerning, per-character
 edits or under sewing. Checks: the 55 owner files whose list the reader parses completely (37
 with shapes, 18 with text) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
@@ -343,7 +343,9 @@ byte-identical to PE-DESIGN's outside these documented differences
 - **+162:** PE-DESIGN points this thread index at 800 RED whatever is sewn; OpenStitch points it
   at the line colour.
 - **Header:** the hoop fields are the baseline's (150 × 150 mm, `nv880e-M`, multi-needle, code
-  `10`) whatever the design's machine settings; only the page size is the design's.
+  `10`) whatever the design's machine settings; only the page size is the design's. Files made
+  on a Hoop-Size page also differ in a u16 28 bytes after the machine string (r27: 5, the
+  custom-page files: 10).
 - **Text:** the letter field at +14 (OpenStitch writes r12's −0.0) and the last sewing-order
   field of the line-spacing files (PE-DESIGN leaves it unset, `08 CE 53 00`; OpenStitch writes
   1). A text written from the letter defaults gives r12's object section byte for byte
@@ -352,18 +354,28 @@ byte-identical to PE-DESIGN's outside these documented differences
   the thread table lists only the colours sewn (PE-DESIGN's also lists the Text tool's unused
   line colour, 900).
 - **PEC section:** the stitch stream is byte-identical for a file re-written from its own
-  stitches; the label, two header fields (PE-DESIGN writes 2900 × 1900 at 0x208 where OpenStitch
-  writes the design size, and `0x1F`–`0x2E`), the thumbnails, the icons (blank) and the preview
-  images (none) differ.
+  stitches. The header fields PE-DESIGN writes with this object header are written as it writes
+  them (0x1F `FF`, 0x24–0x2F `20 FF 00 00 64 00 00 00 00 FF 20 20`, 2900 × 1900 at 0x208:
+  r01, r12, r14, text-defaults-h; `the_pec_header_carries_pe_designs_fields`). With the PEC
+  writer's own values there PE-DESIGN showed a Hoop Settings tab and a 290 × 190 mm section
+  outline on the text file. PE-DESIGN's Hoop-Size page files (r27, `nv880e-S` in the object header)
+  carry another form, with the design's size at 0x208. The label, the thumbnails, the icons
+  (blank) and the preview images (none) still differ.
 
 **PE-DESIGN's check (2026-10-29, compat `pes-0110-editable-shapes`, reference tier):** PE-DESIGN
 11.50 opens the written rectangle with no warning and the shape editable (handles, Shapes tab,
 Sewing Attributes; the region type can be changed), shows the attributes the file holds, and
 re-saves the object section unchanged except the pattern block, where it writes its own default
 pattern over OpenStitch's placeholder. Before the catalogue mapping above, PE-DESIGN showed
-OpenStitch's chart colours as `16 / Brother` with no thread chart. The text file's check
-(`pes-0110-editable-text`) is pending. Version 6 stays the default export until the coordinator
-decides otherwise.
+OpenStitch's chart colours as `16 / Brother` with no thread chart. **The text file (2026-10-29,
+`pes-0110-editable-text`, reference tier):** PE-DESIGN opens it with no warning as editable text
+(Lato 10, Satin red, line not sewn, every Text Attribute at its default, the baseline at the
+written click point) and retyping works; its re-save keeps the object section but for the text
+box's right edge, which it takes from its own layout (787 → 793). It showed a Hoop Settings tab
+(fixed since: the PEC header fields above), and a plain click on the letters did not select the
+text (a drag selection did): the cause is not known yet; two probe files ask whether PE-DESIGN's
+own PEC stitches change it (round4/pr158-probes). Version 6 stays the default export until the
+coordinator decides otherwise.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
 

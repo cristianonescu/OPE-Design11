@@ -332,18 +332,34 @@ fn pes_version_11_writes_editable_shapes_and_text_and_refuses_what_it_cannot_hol
         text.origin
     );
 
-    // A space is refused with the object named, and nothing is written.
+    // A space is a letter, as in PE-DESIGN's r27.
     run(
         &mut s,
         "text.add",
         json!({"text": "A B", "x": 40, "y": 80, "size": 10}),
     );
+    run(
+        &mut s,
+        "design.export",
+        json!({"path": "c.pes", "pesVersion": "11"}),
+    );
+    let objects =
+        pes::read_objects(&std::fs::read(dir.join("c.pes")).expect("c.pes")).expect("objects");
+    let chars: Vec<u16> = objects.texts[1].letters.iter().map(|l| l.ch).collect();
+    assert_eq!(chars, [65, 32, 66]);
+
+    // Vertical text is refused with the object named, and nothing is written.
+    run(
+        &mut s,
+        "text.add",
+        json!({"text": "AB", "x": 40, "y": 30, "size": 10, "direction": "vertical"}),
+    );
     let err = s
         .execute(
             "design.export",
-            Some(&json!({"path": "c.pes", "pesVersion": "11"})),
+            Some(&json!({"path": "d.pes", "pesVersion": "11"})),
         )
-        .expect_err("spaces are not written yet");
-    assert!(err.to_string().contains("space"), "{err}");
-    assert!(!dir.join("c.pes").exists());
+        .expect_err("vertical text is not written yet");
+    assert!(err.to_string().contains("vertical"), "{err}");
+    assert!(!dir.join("d.pes").exists());
 }

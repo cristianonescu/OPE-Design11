@@ -3,7 +3,7 @@
   "id": "pes-0110-editable-text",
   "area": "pes",
   "title": "PES 0110 writes a Lato Bold text as an editable CEmbNText object",
-  "description": "design.export with pesVersion 11 writes a text as PE-DESIGN 11's CEmbNText with one CTTFLetter per character: the font (Lato), the size, Satin at 5.0 line/mm, the line not sewn, and the click point at the left end of the baseline. The design is the owner's r14 (tests/fixtures/pe11/PROVENANCE.md): AB in Lato Bold at the Text tool's defaults, size 10, clicked at (10,20) mm, in Red. PE-DESIGN stores no outlines: it lays the letters out again from the installed font, so the reference check is PE-DESIGN opening the file with the text editable and re-saving it.",
+  "description": "design.export with pesVersion 11 writes a text as PE-DESIGN 11's CEmbNText with one CTTFLetter per character: the font (Lato), the size, Satin at 5.0 line/mm, the line not sewn, and the click point at the left end of the baseline. The design is the owner's r14 (tests/fixtures/pe11/PROVENANCE.md): AB in Lato Bold at the Text tool's defaults, size 10, clicked at (10,20) mm, in Red. PE-DESIGN stores no outlines: it lays the letters out again from the installed font, so the reference check is PE-DESIGN opening the file with the text editable and re-saving it: it does (retyping works), and keeps the object section but for the text box's right edge from its own layout.",
   "covers": {
     "audit": [
       5
@@ -23,6 +23,10 @@
     {
       "kind": "measured",
       "note": "docs/FILE_FORMATS.md, PES 0110 object list, CEmbNText: mapped from the owner's PE-DESIGN 11.50 text files (r12-r15, r23-r26, o-text-*, compat/reference/text/text-*); the writer rewrites all 18 byte-identical outside the documented differences, and builds r12's object section byte for byte from the letter defaults (pes11.rs)"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 opening a.pes (MANIFEST pes-0110-editable-text, 2026-10-29): editable text AB, Lato 10, Satin red, retypable; the PES section re-saved unchanged but for the text box's right edge"
     }
   ],
   "script": [
@@ -69,7 +73,8 @@
         "export": "a.pes"
       },
       "expected": "0110",
-      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature"
+      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature",
+      "reference": {}
     },
     {
       "id": "classes",
@@ -82,32 +87,36 @@
       "expected": [
         "CEmbNText"
       ],
-      "evidence": "r14-text-ab.pes: one CEmbNText (its two CTTFLetters belong to it); the reader parses the whole list"
+      "evidence": "r14-text-ab.pes: one CEmbNText (its two CTTFLetters belong to it); the reader parses the whole list",
+      "reference": {}
     },
     {
-      "id": "reopened-by-pe-design",
+      "id": "colour-blocks",
       "measure": {
-        "kind": "compare",
-        "options": {
-          "origin": "boundsCenter",
-          "positionMm": 1.0,
-          "boundsMm": 1.0,
-          "threads": {
-            "name": false,
-            "catalog": false,
-            "brand": false,
-            "chart": false,
-            "kind": false
-          },
-          "metadata": false,
-          "pesObjects": false
-        }
+        "kind": "colorBlocks"
       },
       "source": {
         "export": "a.pes"
       },
-      "evidence": "PE-DESIGN 11 opens a.pes as an editable text and re-sews it from the font; only the sewn extent and colours are compared",
+      "expected": 1,
+      "evidence": "one red block; PE-DESIGN re-sews the editable text in one block",
       "reference": {}
+    },
+    {
+      "id": "height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN re-sews the letters from the font at the same size: 10.30 mm",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
     }
   ]
 }

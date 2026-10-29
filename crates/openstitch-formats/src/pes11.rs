@@ -723,9 +723,27 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     }
     write_trailer(&mut w, &mut archive, objects, &at_position);
     w.patch32le(pec_placeholder, w.len() as i64);
+    let pec_start = w.len();
     let list = pec::write_section(&pattern, &mut w)?;
+    patch_pec_header(&mut w.bytes[pec_start..]);
     write_addendum(&mut w, &list, &pattern.threads);
     Ok(w.bytes)
+}
+
+/// The PEC header fields PE-DESIGN 11.50 writes in its own `#PES0110` files with the header
+/// OpenStitch writes (a 150 × 150 mm multi-needle hoop and a custom page: r01, r12, r14,
+/// text-defaults-h): 0x1F `FF`; 0x24–0x2F `20 FF 00 00 64 00 00 00 00 FF 20 20`; and
+/// 2900 × 1900 at 0x208, where the PEC writer puts the design's size. PE-DESIGN opened a text
+/// file with the PEC writer's values with a Hoop Settings tab and a 290 × 190 mm section
+/// outline its own files do not show (pes-0110-editable-text, 2026-10-29). Its Hoop-Size page
+/// files (r27, `nv880e-S`) carry another form, with the design's size at 0x208.
+fn patch_pec_header(pec: &mut [u8]) {
+    pec[0x1F] = 0xFF;
+    pec[0x24..0x30].copy_from_slice(&[
+        0x20, 0xFF, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x20, 0x20,
+    ]);
+    pec[0x208..0x20A].copy_from_slice(&2900_u16.to_le_bytes());
+    pec[0x20A..0x20C].copy_from_slice(&1900_u16.to_le_bytes());
 }
 
 /// MFC `CArchive` numbering while writing: classes and objects share one count from 1.
