@@ -63,7 +63,9 @@ pub struct ObjectSection {
     pub objects: Vec<EmbOne>,
     /// PE-DESIGN 11 (`#PES0110`) editable shapes (`CEmbLine`), in file order.
     pub shapes: Vec<crate::pes11::Shape>,
-    /// PE-DESIGN 11 groups: the member indexes of each `CGroupObject`.
+    /// PE-DESIGN 11 texts (`CEmbNText`), each with its position in the object list.
+    pub texts: Vec<crate::pes11::Text>,
+    /// PE-DESIGN 11 groups: the member positions of each `CGroupObject`.
     pub groups: Vec<Vec<u16>>,
     /// PE-DESIGN 11 Design Page size in mm, when the header had the mapped layout.
     pub page_mm: Option<(u16, u16)>,
@@ -297,6 +299,7 @@ pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
             let objects = crate::pes11::read_objects(data, r.offset, pec_offset)?;
             section.threads = objects.threads;
             section.shapes = objects.shapes;
+            section.texts = objects.texts;
             section.groups = objects.groups;
             section.page_mm = objects.page_mm;
             section.unparsed = objects.unparsed;

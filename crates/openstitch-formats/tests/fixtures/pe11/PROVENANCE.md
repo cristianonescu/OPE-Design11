@@ -37,6 +37,10 @@ policy: docs/LEGAL_AND_LICENSING.md. Each rN file is the baseline B with one pro
 | `r20-line-running-pitch.pes` | `87ee85d649052fc934e9e019e5e1b64eb8df5720f155c3f6a11f7f4f5b78e1b6` | r19 (same design), Run pitch 3.0 mm. 10,00 x 10,00 mm, 251 st. |
 | `r21-zigzag-width.pes` | `4217cc26142986c7a81a40b69befdc0995ca8a6d538a14f0cbec2c73f85242ce` | B, line Zigzag width 3.0 mm (default 2.0). 13,00 x 13,00 mm, 484 st. |
 | `r22-line-noUnder.pes` | `84a72272dd2b3d7fefa688f7e453822c121e478721460d0ce2c36e3570259b0e` | B, Sewing Attributes > Line sew > Under sewing unticked. 12,00 x 12,00 mm, 426 st. |
+| `r23-text-fill.pes` | `f7e7e2b6d7799c46139981403bd4db7b0dd7081472c5bf2b020d80d1c0e27e61` | r12's text `A` (Text tool, Lato, size 10, click (10,20)), region Fill Stitch (the text fill defaults: under sewing off, density 5.0). 187 st. Copied into the repo 2026-10-29 for the `#PES0110` text writer (#120). |
+| `r24-text-blue.pes` | `8c8c7fef1f2d2d1a69300b7fb484a9f8c7e431e5c27bd84db96319528dc0914c` | r12's text `A`, region Satin, region colour 007 EMBROIDERY PRUSSIAN BLUE. 155 st. |
+| `r25-text-b.pes` | `e5e0bc6b7e8b545e3bde1944852c661789279882ad5032b7c6f9d399d5203063` | r12 but the letter `B`. 7,70 x 10,30 mm, 207 st. |
+| `r26-text-moved.pes` | `1450b6f8f655ec92a930c10be2afcf489e7cab43e24c9e1adea2a4c083c2861f` | r12 with the click 10 mm further right, at (20,20): box about (20,9.7)-(30.1,20). 155 st. |
 
 ## Round 3 (2026-10-28): the remaining object kinds
 
