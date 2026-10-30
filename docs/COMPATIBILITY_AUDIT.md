@@ -1269,7 +1269,17 @@ Line references are relative to `crates/`.
   crosses, each diagonal once (`times: triple` sews it three times), border colour left out.
   On the synthetic grids the cells are the same as before (8 × 4 cells, 6 + 1 coloured);
   what changes is the palette's weighting. Left for #132: PE-DESIGN's recorded defaults from
-  the capture, which may move the cell size or the times.
+  the capture, which may move the cell size or the times. Done 2026-10-30 (round-5 test
+  images): the census took colours in scan order, so on an anti-aliased image its 100 slots
+  filled with edge shades of the top rows (by row 31 of the generated emblem `g01`) and a large
+  orange or yellow area counted as grey; PE-DESIGN keeps all four colours. It now takes
+  colours most frequent first and counts a colour within RGB distance 32 under a tracked one,
+  and the automatic colour count stops at 10 as PE's. Automatic counts against PE: g01 4/4,
+  g13 mosaic 10/10, g14 two colours 2/2, g15 folk bird 5/5, every photo 10/10, g05 robot 7/8,
+  g08 lettering 4/3, g02 balloon 6/9, g12 stencil 2/4, g11 mandala 5/9. Cross Stitch on the
+  pixel-art strawberry sews 6 threads where it sewed 4 (PE 7). Left: PE sews g01's white sun
+  rays, where OpenStitch leaves out every region of the background colour, not only those
+  touching the border.
   optional graph-cut foreground step. #132 follows in its own PR.
   land; #127 and #132 follow in their own PRs.
   Compared with PE-DESIGN 11.50 on 2026-10-29 (round-4 captures from the owner's

@@ -262,10 +262,12 @@ Verified Compatible).
 - **Colours.** Auto Punch's prepass (#127, shared with Cross Stitch): the working copy keeps
   each source box's most common colour (`Raster::fit_mode`), so no blended edge colour
   appears; every opaque pixel takes the modal colour of its 3×3 window (ties keep the pixel's
-  own colour), and the modal colours are counted into a census of at most 100 tracked colours
-  (later colours count under their nearest tracked one). The colour count is automatic by
-  default, as PE-DESIGN fills in Max. Number of Colors: the census colours holding at least
-  0.5 % of the pixels, at most 16. The census is weighted-median cut to N box colours; each
+  own colour), and the modal colours are counted into a census of at most 100 tracked colours.
+  Colours are taken most frequent first: one within RGB distance 32 of a tracked colour counts
+  under it, any other is tracked while there is room (then counts under its nearest), so an
+  anti-aliased image's many small edge shades cannot crowd out a large colour. The colour count
+  is automatic by default, as PE-DESIGN fills in Max. Number of Colors: the census colours
+  holding at least 0.5 % of the pixels, at most 10. The census is weighted-median cut to N box colours; each
   box maps to its nearest PEC chart thread (equal-weight squared-Euclidean distance,
   `openstitch-core`, #119); boxes with the same thread merge. Pixels are classified by their
   modal colour against the box colours. "Skip background" leaves out the thread covering more
