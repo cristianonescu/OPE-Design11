@@ -32,8 +32,11 @@ the project keeps:
   and cleaned by `tools/clean_icons.py`. Every prompt is in `assets/icons/commands/prompts.tsv`:
   each describes a generic object (a folder, scissors, a needle) in OpenStitch's own palette,
   and none names or describes Brother, PE-DESIGN or their icons; no reference images were
-  used. The vector shapes in `crates/openstitch-app/src/icons.rs` are the fallback when an SVG
-  cannot be rendered. The OpenStitch logo (the app icon `assets/icons/openstitch*`, the
+  used. On 2026-10-30 93 icons were added the same way in two rounds (commands that showed
+  another command's icon, and the suite windows' own commands; rows from `connect` on in
+  `prompts.tsv`; see [research/asset-audit.md](research/asset-audit.md)), with each Higgsfield
+  job id in `higgsfield-jobs.tsv` next to the SVGs. The vector shapes in
+  `crates/openstitch-app/src/icons.rs` are the fallback when an SVG cannot be rendered. The OpenStitch logo (the app icon `assets/icons/openstitch*`, the
   Application button mark, the About window, the startup splash and the README header, all
   from `assets/brand`) is the project's own: it was generated for OpenStitch with Higgsfield
   (Recraft V4.1, vector output) under the project owner's account, from the two prompts in
@@ -48,7 +51,25 @@ the project keeps:
   account, in the command icons' style. Every prompt is in `assets/illustrations/prompts.tsv`
   and `assets/illustrations/README.md`: each describes a generic object (a hoop, a folder, a
   spool, a woven cotton surface) and none names or describes Brother, PE-DESIGN or their
-  artwork; no reference images were used. Without them the editor shows the text alone.
+  artwork; no reference images were used. Seven empty-state and dialog illustrations
+  (`sew_empty`, `no_media`, `no_image`, `objects_empty`, `update_available`, `update_current`,
+  `update_failed`) were added the same way on 2026-10-30 (job ids in
+  `assets/illustrations/higgsfield-jobs.tsv`). Without them the editor shows
+  the text alone.
+- **Test images:** the images in `examples/images` (photos, illustrations, line art, pixel
+  art, lettering), which test the image wizards and fill the README's "From image to
+  embroidery" gallery, were generated for OpenStitch with Higgsfield (GPT Image 2.5) under the
+  project owner's account on 2026-10-30, with no reference images. `examples/images/PROVENANCE.md`
+  lists every prompt and Higgsfield job id. Each prompt describes original content: invented
+  people (no real person's likeness), no brands, logos or copyrighted characters, and nothing
+  modelled on Brother's or PE-DESIGN's samples. PE-DESIGN's conversions of these images are
+  references kept in the owner's notes folder, outside the repository; the gallery shows
+  OpenStitch's results only.
+  artwork; no reference images were used. Seven empty-state and dialog illustrations
+  (`sew_empty`, `no_media`, `no_image`, `objects_empty`, `update_available`, `update_current`,
+  `update_failed`) were added the same way on 2026-10-30 (job ids in
+  `assets/illustrations/higgsfield-jobs.tsv`). Without them the editor shows
+  the text alone.
 - **Never in the repository:** Brother artwork, icons, logos, fonts or screenshots of
   PE-DESIGN. Documentation screenshots show OpenStitch only.
 - **Naming:** "PE-DESIGN" is not used as product branding in the user interface. Compatibility

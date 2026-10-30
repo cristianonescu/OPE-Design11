@@ -5,6 +5,7 @@
 
 use crate::raster::Raster;
 use openstitch_core::{PEC_CHART, Thread, color_distance, nearest_index, pec_basic_chart};
+use std::collections::HashMap;
 
 pub type Rgb = [u8; 3];
 
@@ -31,6 +32,11 @@ pub fn nearest_pec(c: Rgb) -> (usize, Thread) {
 
 /// Most distinct colours the census tracks; later colours join their nearest tracked one.
 pub const CENSUS_COLORS: usize = 100;
+
+/// RGB distance within which a census colour counts under a more frequent tracked colour.
+/// 32 matches PE-DESIGN's automatic colour count on the round-5 images best (g01 4, g13 10,
+/// g14 2, g15 5, the photos 10); 16 keeps edge shades as colours, 48 merges distinct ones.
+pub const MERGE_DIST: u32 = 32;
 
 /// The colour census of an image: the 3×3 modal colour of every opaque pixel (alpha ≥ 128),
 /// counted into at most [`CENSUS_COLORS`] tracked colours, in the order they were first met.
@@ -64,8 +70,9 @@ impl Census {
 
 /// Smallest share of the opaque pixels a colour needs to count in [`Census::auto_colors`].
 pub const AUTO_SHARE: f64 = 0.005;
-/// Most colours [`Census::auto_colors`] picks.
-pub const AUTO_MAX: usize = 16;
+/// Most colours [`Census::auto_colors`] picks: PE-DESIGN fills in at most 10 (round 5: 10 for
+/// the twelve-colour mosaic `g13` and for every photo).
+pub const AUTO_MAX: usize = 10;
 
 /// Thread indices of `palette` in PE-DESIGN's colour order (round-4 captures
 /// `autopunch-default.pes` and `autopunch-owner-shapes-moved.pes`, the same in Cross Stitch):
@@ -132,33 +139,54 @@ fn sq_dist(a: Rgb, b: Rgb) -> u32 {
 }
 
 /// The colour census of `image` (#127): every opaque pixel takes its 3×3 modal colour, and the
-/// modal colours are counted into a histogram of at most [`CENSUS_COLORS`] tracked colours.
-/// Once the cap is reached a new colour is counted under its nearest tracked colour (ties to
-/// the earlier one). Deterministic for a given image.
+/// modal colours are counted into at most [`CENSUS_COLORS`] tracked colours. Colours are taken
+/// most frequent first (ties to the first met): one within [`MERGE_DIST`] of a tracked colour
+/// counts under the nearest tracked one, any other is tracked while there is room and counted
+/// under the nearest tracked one after that. Tracked colours are listed in the order first met.
+///
+/// Taking the colours by frequency, not in scan order, matters on anti-aliased images (round 5,
+/// `examples/images/g01-emblem.png`): their many small edge shades filled all 100 slots by the
+/// 32nd row, so the emblem's orange and yellow counted as grey. PE-DESIGN keeps all four
+/// colours (4 automatic colours), as this census does. Deterministic for a given image.
 pub fn census(image: &Raster) -> Census {
-    let mut colors: Vec<(Rgb, u64)> = Vec::new();
+    let mut seen: HashMap<Rgb, usize> = HashMap::new();
+    let mut all: Vec<(Rgb, u64)> = Vec::new();
     let mut modal = Vec::with_capacity(image.width() as usize * image.height() as usize);
     for y in 0..image.height() {
         for x in 0..image.width() {
             let m = modal_at(image, x, y);
             modal.push(m);
             let Some(c) = m else { continue };
-            if let Some(k) = colors.iter_mut().find(|k| k.0 == c) {
-                k.1 += 1;
-            } else if colors.len() < CENSUS_COLORS {
-                colors.push((c, 1));
-            } else {
-                let mut best = (u32::MAX, 0);
-                for (i, k) in colors.iter().enumerate() {
-                    let d = sq_dist(c, k.0);
-                    if d < best.0 {
-                        best = (d, i);
-                    }
-                }
-                colors[best.1].1 += 1;
-            }
+            let i = *seen.entry(c).or_insert_with(|| {
+                all.push((c, 0));
+                all.len() - 1
+            });
+            all[i].1 += 1;
         }
     }
+    // Most frequent first: a colour within MERGE_DIST of a tracked colour counts under the
+    // nearest one; otherwise it is tracked while there is room, else counted under the nearest.
+    let mut rank: Vec<usize> = (0..all.len()).collect();
+    rank.sort_by_key(|&i| (std::cmp::Reverse(all[i].1), i));
+    // (first-met index, colour, count)
+    let mut tracked: Vec<(usize, Rgb, u64)> = Vec::new();
+    for &i in &rank {
+        let (c, n) = all[i];
+        let mut best = (u32::MAX, 0);
+        for (j, k) in tracked.iter().enumerate() {
+            let d = sq_dist(c, k.1);
+            if d < best.0 {
+                best = (d, j);
+            }
+        }
+        if best.0 <= MERGE_DIST * MERGE_DIST || tracked.len() >= CENSUS_COLORS {
+            tracked[best.1].2 += n;
+        } else {
+            tracked.push((i, c, n));
+        }
+    }
+    tracked.sort_by_key(|k| k.0);
+    let colors = tracked.into_iter().map(|(_, c, n)| (c, n)).collect();
     Census { colors, modal }
 }
 

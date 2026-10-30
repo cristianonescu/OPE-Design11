@@ -423,7 +423,9 @@ fn modify_image_window(app: &mut EditorApp, ctx: &egui::Context) {
         .default_width(300.0)
         .show(ctx, |ui| {
             let Some(b) = app.session.design().background.clone() else {
-                ui.label("No background image. Use Image ▸ Open Image first.");
+                crate::art::header(ui, crate::art::Art::NoImage, |ui| {
+                    ui.label("No background image. Use Image ▸ Open Image first.");
+                });
                 return;
             };
             let now = ImageDraft::of(&b);

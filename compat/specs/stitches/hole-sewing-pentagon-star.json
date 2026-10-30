@@ -130,6 +130,27 @@
         "height": 4,
         "fill": "Red"
       }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "angle": 0
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 2,
+        "angle": 0
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 3,
+        "angle": 0
+      }
     }
   ],
   "exports": [

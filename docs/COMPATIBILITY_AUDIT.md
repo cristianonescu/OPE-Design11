@@ -85,8 +85,8 @@ dearest:
 | 11 | No Connection Points (Default / Closest / Farther) for text | Fonts | 4 | Documented difference | Geometry |
 | 12 | No minimum font sizes or small-text fonts | Fonts | 4 | Documented difference | No |
 | 13 | No per-character colour or multi-character selection | Fonts | 4 | Documented difference | Colour grouping |
-| 14 | Programmable fill defaults to 0° instead of 45° (**fixed**, internal regression; type change rule pending) | Stitches | 3 | Documented difference | No |
-| 15 | Missing fill, satin and zigzag attributes; wrong ranges (**partly fixed**: Frequency and ranges; Stitch Type, Half Stitch, Miter limit pending) | Stitches | 3 | Documented difference | Geometry |
+| 14 | Programmable fill and fill default to 0° instead of 45° (**fixed**: programmable fill internal regression, fill 2026-10-30 from pes-objects r01; type change rule pending) | Stitches | 3 | Documented difference | No |
+| 15 | Missing fill, satin and zigzag attributes; wrong ranges (**partly fixed**: Frequency and ranges; Stitch Type 1 = OpenStitch's fill, Stitch Type 2, Half Stitch, Miter limit pending) | Stitches | 3 | Documented difference | Geometry |
 | 16 | Optimize Sewing Order does not move entry and exit points (**fixed**, reference) | Stitches | 3 | Documented difference | No |
 | 17 | Hole sewing not validated or paired (**fixed**, internal regression) | Stitches | 3 | Documented difference | No |
 | 18 | PES thread table drops chart names and colour type (**fixed**: round trip; chart strings pending) | PES | 3 | Documented difference | Chart strings |
@@ -774,6 +774,14 @@ Line references are relative to `crates/`.
   the file (y down), because PE-DESIGN's angles turn counter-clockwise on screen. Since `.osd`
   version 2 OpenStitch stores every direction angle that way too (version-1 files are
   migrated on load), so the stored 45° sews at 135° in the file, as PE's does.
+  **Fill Stitch too (2026-10-30):** PE-DESIGN 11.50's shape tools start Fill Stitch at 45° as
+  well (pes-objects r01, a fresh design: "Fill … 45 deg"; r08 had to set 90 to differ), so new
+  fill regions now start at 45° (`RegionSewing::default_angle`), and an outline change resets
+  the direction to its type's default instead of 0°. Saved designs are unaffected: every
+  `.osd` region stores its angle (a region without one does not load), so no migration is
+  needed; `new_fills_start_at_45_degrees_and_saved_designs_keep_their_angle` pins both. The one
+  spec that relied on the old default, hole-sewing-pentagon-star (PE-DESIGN made it at 0°),
+  now sets its angle.
 - **Test:** `shape.rectangle 40×40` → `object.setRegion {type:"programmableFill"}`. Assert the
   stored angle is 45 and the dominant row direction in the file is 135° ±1° (compat
   programmable-fill-45, reference tier).
@@ -834,8 +842,25 @@ Line references are relative to `crates/`.
     the older nearest-row order with PE's row ends and grid.
   - Tests: `frequency_and_run_times_follow_the_guide_ranges`,
     `fill_frequency_sets_the_row_to_row_needle_shift` (0, 25 and 50 %, ±2 % of the stitch).
-  - Not implemented, needs reference geometry (method 1): Stitch Type (turning ends), Half
-    Stitch for regions, and zigzag Sharp Corners / Miter limit.
+  - Not implemented, needs reference geometry (method 1): Half Stitch for regions, and zigzag
+    Sharp Corners / Miter limit.
+  - **Stitch Type (measured 2026-10-30, round-5 captures `tatami-40-st{1,2}-dir{0,30,90}.pes`,
+    `tatami-40-st2-dir45-freq0.pes`, with round 4's 45° pair; a 40 × 40 mm Fill square, density
+    4.5, step 4.0, Frequency 30 %, under sewing off):**
+    - *Type 1* (the default) is OpenStitch's fill. At 90° it is identical, phase for phase. At
+      0°, 30° and 45° the rows step 1.2 mm each, as OpenStitch's, with a constant offset of at
+      most 0.3 mm (the angled-fill anchor difference below). Stitches: 2006 (0°), 2032 (30°),
+      2068 (45°), 2036 (90°).
+    - *Type 2* sews sloped rows. Each pass runs from one edge at row k's line to the other edge
+      at row k+1's, rising one row spacing over its length (0.20 mm at 0° and 90°, 0.21 at 45°,
+      0.22 at 30°, against 0 for Type 1's flat rows), so consecutive passes meet at the edges in
+      one continuous zigzag, with no step at the row ends. The needle grid along each pass follows
+      the same Frequency rule as Type 1 (at 0°: 1.2 + 4k, then 2.4 + 4k, then 3.6 + 4k mm from the
+      left edge). Stitches: 2001 (0°), 2041 (30°), 2054 (45°), 1989 (90°), 2056 (45°,
+      Frequency 0).
+    - Not implemented: Type 2 needs sloped rows in the fill generator (each row's line tilted by
+      one spacing across the region, joined at the edges), planned after alpha.7 with these
+      seven files as its specs. Fill keeps sewing Type 1.
 - **Test:**
   - `object.setRegion {type:"fill",frequency:60}` and `object.setLine {type:"eStitch",runTimes:6}`
     are refused.
@@ -1294,7 +1319,17 @@ Line references are relative to `crates/`.
   crosses, each diagonal once (`times: triple` sews it three times), border colour left out.
   On the synthetic grids the cells are the same as before (8 × 4 cells, 6 + 1 coloured);
   what changes is the palette's weighting. Left for #132: PE-DESIGN's recorded defaults from
-  the capture, which may move the cell size or the times.
+  the capture, which may move the cell size or the times. Done 2026-10-30 (round-5 test
+  images): the census took colours in scan order, so on an anti-aliased image its 100 slots
+  filled with edge shades of the top rows (by row 31 of the generated emblem `g01`) and a large
+  orange or yellow area counted as grey; PE-DESIGN keeps all four colours. It now takes
+  colours most frequent first and counts a colour within RGB distance 32 under a tracked one,
+  and the automatic colour count stops at 10 as PE's. Automatic counts against PE: g01 4/4,
+  g13 mosaic 10/10, g14 two colours 2/2, g15 folk bird 5/5, every photo 10/10, g05 robot 7/8,
+  g08 lettering 4/3, g02 balloon 6/9, g12 stencil 2/4, g11 mandala 5/9. Cross Stitch on the
+  pixel-art strawberry sews 6 threads where it sewed 4 (PE 7). Left: PE sews g01's white sun
+  rays, where OpenStitch leaves out every region of the background colour, not only those
+  touching the border.
   optional graph-cut foreground step. #132 follows in its own PR.
   land; #127 and #132 follow in their own PRs.
   Compared with PE-DESIGN 11.50 on 2026-10-29 (round-4 captures from the owner's
@@ -1326,6 +1361,18 @@ Line references are relative to `crates/`.
     the path (OpenStitch trims at every run end, about 1100 times here) and PE's thread choice
     (it mixes two or three threads per colour area); both are the stitch-path model of #129,
     which the patent note in docs/research/beyond/patents.md bears on.
+  - **Test images (2026-10-30).** `examples/images` holds 30 generated test images: photos,
+    illustrations, line art, pixel art, lettering, transparency, noise and sizes. Each is
+    mapped to its wizards in docs/research/test-images.md, and PE-DESIGN captures of each are
+    requested. The first finding is on the generated flat emblem
+    `g01-emblem.png` (navy, orange, yellow, white, anti-aliased). Auto Punch at defaults sews
+    its orange as Silver and its yellow as Lavender. The 100-colour census is full by the
+    32nd row of the working image, with near-white and navy edge shades, before the orange and
+    yellow are reached. Those colours then join their nearest tracked shade. PE-DESIGN's
+    round-5 capture keeps all four colours (4 automatic colours, 11 342 stitches), so this is
+    a difference; the fix is its own PR. The rest of round 5's first captures are in
+    docs/research/test-images.md (Auto Select's four threads on a two-colour image, the
+    Color Set threads, Cross Stitch on pixel art).
   `openstitch.pattern` fill, motif and decorative patterns. Brother's bundled patterns are
   never read.
 - **Programmable fill, motif fill and motif line from owner-made patterns (reference,

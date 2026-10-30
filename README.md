@@ -23,6 +23,7 @@ Not affiliated with Brother Industries. No Brother code or assets are included; 
 
 - [Status at a glance](#status-at-a-glance)
 - [Screenshots](#screenshots)
+- [From image to embroidery](#from-image-to-embroidery)
 - [Features](#features)
 - [Not yet implemented](#not-yet-implemented)
 - [Known issues](#known-issues)
@@ -37,7 +38,7 @@ Not affiliated with Brother Industries. No Brother code or assets are included; 
 
 ## Status at a glance
 
-Current release: **v0.1.0-alpha.6** ([notes](docs/releases/v0.1.0-alpha.6.md)).
+Current release: **v0.1.0-alpha.7** ([notes](docs/releases/v0.1.0-alpha.7.md)).
 
 OpenStitch is checked against PE-DESIGN 11.50 itself. Simple test designs made in a licensed copy
 through its normal interface are committed under `compat/reference/`. The compatibility harness
@@ -46,7 +47,7 @@ through its normal interface are committed under `compat/reference/`. The compat
 <!-- status:glance -->
 | | |
 |---|---|
-| Feature matrix rows | 168: 142 implemented (2 of them partially compatible), 2 documented only, 10 blocked, 14 planned beyond PE-DESIGN |
+| Feature matrix rows | 170: 143 implemented (2 of them partially compatible), 3 documented only, 10 blocked, 14 planned beyond PE-DESIGN |
 | Compatibility specs | 386: 386 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
 | Matrix rows covered by specs | 32: 25 at the reference tier, 5 at the internal-regression tier, 2 at the oracle tier |
 | Open audit differences | 11 ([audit](docs/COMPATIBILITY_AUDIT.md#summary)) |
@@ -73,6 +74,32 @@ yet). Every feature and its evidence is in [docs/FEATURE_MATRIX.md](docs/FEATURE
 | **Programmable Stitch Creator:** draw your own fill and motif stitch patterns. | **Machine transfer:** write the design to a USB stick or SD card. |
 | ![Update dialog with the release notes and the Update button](docs/images/readme/update.png) | ![The editor in the dark theme](docs/images/readme/dark-theme.png) |
 | **Updates:** the editor updates itself from GitHub releases. | **Light or dark** theme. |
+
+## From image to embroidery
+
+Test images from [examples/images](examples/images), generated for OpenStitch (see their
+[provenance](examples/images/PROVENANCE.md)), converted by the image wizards and shown in the
+editor's Realistic view. These are OpenStitch's PE-DESIGN-compatible results at the settings
+named; `python3 tools/gallery.py` regenerates them.
+
+<!-- gallery:start -->
+| Image | OpenStitch (Realistic view) | Wizard and result |
+|---|---|---|
+| <img src="examples/images/p01-portrait.jpg" width="200"> | <img src="docs/images/readme/gallery/p01.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>12,512 stitches, 7 colours |
+| <img src="examples/images/p02-mono-portrait.jpg" width="200"> | <img src="docs/images/readme/gallery/p02.png" width="260"> | **Photo Stitch 2, mono, defaults**<br>19,991 stitches, 1 colour |
+| <img src="examples/images/p04-cat-fur.jpg" width="200"> | <img src="docs/images/readme/gallery/p04.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>21,077 stitches, 8 colours |
+| <img src="examples/images/p06-sunset.jpg" width="200"> | <img src="docs/images/readme/gallery/p06.png" width="260"> | **Photo Stitch 2, Auto Select**<br>18,514 stitches, 4 colours |
+| <img src="examples/images/p08-poppies.jpg" width="200"> | <img src="docs/images/readme/gallery/p08.png" width="260"> | **Photo Stitch 2, Color Set CMYK**<br>35,725 stitches, 4 colours |
+| <img src="examples/images/p12-backlit-tree.jpg" width="200"> | <img src="docs/images/readme/gallery/p12.png" width="260"> | **Photo Stitch 1, mono, defaults**<br>3,585 stitches, 1 colour |
+| <img src="examples/images/p03-storybook.jpg" width="200"> | <img src="docs/images/readme/gallery/p03.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>16,018 stitches, 8 colours |
+| <img src="examples/images/g01-emblem.png" width="200"> | <img src="docs/images/readme/gallery/g01.png" width="260"> | **Auto Punch, defaults**<br>8,688 stitches, 3 colours |
+| <img src="examples/images/g02-balloon.png" width="200"> | <img src="docs/images/readme/gallery/g02.png" width="260"> | **Auto Punch, defaults**<br>7,926 stitches, 5 colours |
+| <img src="examples/images/g05-robot-cartoon.png" width="200"> | <img src="docs/images/readme/gallery/g05.png" width="260"> | **Auto Punch, defaults**<br>11,897 stitches, 6 colours |
+| <img src="examples/images/g08-lettering.png" width="200"> | <img src="docs/images/readme/gallery/g08.png" width="260"> | **Auto Punch, defaults**<br>1,982 stitches, 3 colours |
+| <img src="examples/images/g04-butterfly-outline.png" width="200"> | <img src="docs/images/readme/gallery/g04.png" width="260"> | **Design Center, running line**<br>1,271 stitches, 1 colour |
+| <img src="examples/images/g07-pixel-strawberry.png" width="200"> | <img src="docs/images/readme/gallery/g07.png" width="260"> | **Cross Stitch, defaults**<br>3,931 stitches, 6 colours |
+| <img src="examples/images/g15-folk-bird.png" width="200"> | <img src="docs/images/readme/gallery/g15.png" width="260"> | **Cross Stitch, defaults**<br>4,467 stitches, 4 colours |
+<!-- gallery:end -->
 
 ## Features
 
@@ -197,6 +224,7 @@ PE-DESIGN 11 features OpenStitch does not have yet, from the feature matrix:
 <!-- status:not-implemented -->
 - **Export CSD, SHV** (Files)
 - **Import WMF/EMF** (Files)
+- **Fill Stitch Type 2** (Region sew types)
 <!-- /status:not-implemented -->
 
 Also missing, from the [roadmap](docs/ROADMAP.md#still-to-do):
@@ -501,7 +529,8 @@ including the README refresh done at every release, is in [docs/RELEASING.md](do
 - [Roadmap](docs/ROADMAP.md)
 - [Distribution and packaging](docs/DISTRIBUTION.md)
 - [Releasing](docs/RELEASING.md) and the [release notes](docs/releases/)
-- Handoffs (history): [2026-10-29](docs/HANDOFF-2026-10-29.md),
+- [Test images for the image wizards](docs/research/test-images.md)
+- Handoffs (history): [2026-10-30](docs/HANDOFF-2026-10-30.md), [2026-10-29](docs/HANDOFF-2026-10-29.md),
   [2026-10-28](docs/HANDOFF-2026-10-28.md), [2026-10-27](docs/HANDOFF-2026-10-27.md),
   [2026-10-19](docs/HANDOFF-2026-10-19.md), [2026-10-18](docs/HANDOFF-2026-10-18.md)
 

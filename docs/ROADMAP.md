@@ -93,17 +93,27 @@ harness. The details per item are in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDI
 
 ## Still to do
 
+Assets (owner's rule of 2026-10-30, [research/asset-audit.md](research/asset-audit.md)): the
+audit is done in two rounds (93 command icons for commands that showed another command's icon,
+including the suite windows' own commands, and seven empty-state and dialog illustrations, all
+generated with Higgsfield, 265 credits). New windows and commands get their icon the same way
+when they are added.
+
 Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDIT.md):
 
 Done 2026-10-30: stitch generation is bit-identical on Windows, macOS and Linux (transcendental
 math through the `libm` crate instead of each platform's C library); the arched Text Transform
 spec, deferred at alpha.6 because Linux measured it 0.2 mm lower, has its PE-DESIGN reference
 back.
+Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tools do
+(pes-objects r01); saved designs keep their stored angle.
 
 1. **Fill:** Round 4 (2026-10-29) confirmed PE-DESIGN has no random tatami stagger
    (Frequency and two Stitch Type buttons only) and a 0.1 lines/mm density floor. PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
-   Frequency default); the programmable fill density; Stitch Type (turning ends) and Half
-   Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
+   Frequency default); the programmable fill density; Stitch Type 2 (measured 2026-10-30:
+   sloped rows, each pass rising one row spacing from edge to edge so the passes join in one
+   continuous zigzag; Type 1 is OpenStitch's fill already) after alpha.7, with the round-5
+   captures as specs; Half Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
    rows follow PE-DESIGN's cumulative-density placement since 2026-10-28 (#95: every row of
    the U within 0.12 mm, overlap 0.83 → 0.89); left for the U: PE's section order for fills in
    several parts (right leg, left leg, then the top bar ending at the first vertex). Under
@@ -233,6 +243,9 @@ back.
     2026-10-30 (largest row spread; scan order alternating by colour; specks kept and dropped
     as PE; PE's thread picks after reduction checked on 20 flat colours: a per-colour mapping
     no tested distance reproduces, kept as a documented difference). Compared with
+    as PE), and its census keeps large colours behind anti-aliased edge shades since
+    2026-10-30 (taken most frequent first, colours within RGB 32 merged, at most 10 automatic
+    colours: PE's count on 4 of 9 flat round-5 test images and all 4 photos). Compared with
     PE-DESIGN 11.50's round-4 captures on 2026-10-29: Cross Stitch's six diagonal stitches per
     cell (−0.9 % stitches), Photo Stitch 1's Sew Page Color, 3.0 mm Run Pitch and 10 colours
     (+5 %); second round (bars, moved shapes, mono, Photo Stitch 2): Auto Punch's satin/fill
@@ -247,7 +260,12 @@ back.
     screen, #129, is built since 2026-10-30 after the owner's decision: −3.1 % stitches, angles,
     spacing and densities as PE's; named Color Sets, Direction, interval/density and Mono's
     tone ramp as PE's; harness `tools/screencmp.py`, design note
-    docs/research/photo-stitch-2-halftone.md).
+    docs/research/photo-stitch-2-halftone.md). Test images since 2026-10-30: 30 generated
+    images in `examples/images` covering photos, illustrations, line art, pixel art, lettering,
+    transparency, noise and sizes, with PE captures requested and a README gallery
+    (`tools/gallery.py`, part of the release checklist in docs/RELEASING.md). They found that
+    Auto Punch's 100-colour census fills with edge shades on anti-aliased images, so orange
+    and yellow become grey, where PE-DESIGN keeps them (round-5 capture); the fix is next.
 
 ## Beyond PE-DESIGN
 
