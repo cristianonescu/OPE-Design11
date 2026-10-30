@@ -478,9 +478,19 @@ Line references are relative to `crates/`.
 - **Bend sweep (2026-10-28, references `satin-auto-bend-30/45/75/90.pes` and their `-nohalf` twins):**
   PE-DESIGN's count is the same at 30°, 45°, 60° and 75° (171–177 stitches on the 5 mm band) and the
   same with Half Stitch on or off; OpenStitch is within 10 % and the longest crossing within 0.5 mm
-  at all three (reference tier). At 120° PE-DESIGN sews 161 stitches with a 10 mm longest crossing
-  where OpenStitch sews 267 with a 13 mm one: the fan rule breaks down on a sharp turn (file
-  parked with the parked-references session; its spec is not in the repository).
+  at all three (reference tier). **120° (landed 2026-10-30, `satin-auto-bend-120` and `-nohalf`,
+  reference tier):** PE-DESIGN sews 161 stitches: square rungs on both legs, a fan of crossings up
+  to 9.6 mm (two band widths) round the bend whose inner ends crowd within 2 mm of the inner
+  corner, and its needle points 1/3 mm apart along the whole 47.3 mm outer edge. The derived
+  skeleton's rungs swap sides round a bend this sharp, so past 100° (`SHARP_BEND`, between the
+  90° references the skeleton lattice matches and this one) Auto satin rebuilds its rungs on the
+  outer edge (`region::even_outer`: stations every spacing from the far end along the stretch of
+  outline that does not pass the reflex corner, each rung square to that edge), and the corner
+  fan fans only corners that turn as the inner corner does (not the end cap's, which lie within
+  two widths on this band), keeps the rung end nearer the corner, and ends a crossing longer
+  than two widths at the inner corner. pescmp: 273 → 171 stitches to PE's 161, mean needle
+  distance 0.36 → 0.23 mm, coverage 0.614 → 0.699; the longest crossing 9.7 mm to PE's 9.6.
+  Bends up to 90° and the bent band sew exactly as before.
 - **Status:** fixed; the corner fan, end reach, forward start travel, the far-end needle lattice
   and the end on the start point follow PE-DESIGN (reference tier: satin-auto-bend-90-nohalf,
   satin-auto-bend-60, satin-auto-bend-30/45/75 (±nohalf), auto-satin-bent-band;
