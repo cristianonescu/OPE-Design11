@@ -1464,9 +1464,27 @@ fn envelope_layout(spec: &TextSpec, preset: u8, fonts: &[DesignFont]) -> Result<
         let k = spec
             .envelope_level
             .map_or(1.0, |level| envelope_scale(preset, level));
+        // PE-DESIGN warps the cap-height box, from the capital line to the baseline (y = 0):
+        // the envelopes were fitted on HHHHHHH, whose box it is, and letters below the
+        // baseline go on below the bottom edge (round-4 captures: "OpenStitch", "Agjy 123").
+        // A text of several lines keeps its own box.
+        let cap = TextSpec {
+            text: "H".into(),
+            characters: Vec::new(),
+            ..plain.clone()
+        };
+        let cap_top = layout_in(&cap, None, fonts)
+            .ok()
+            .as_ref()
+            .and_then(layout_bounds)
+            .map(|c| c.min_y);
+        let (cap_y, cap_h) = match cap_top {
+            Some(t) if t < 0.0 && !spec.text.contains('\n') => (t, -t),
+            _ => (b.min_y, b.height()),
+        };
         let warp = |p: Vec2| {
             let u = ((p.x - b.min_x) / b.width().max(1e-9)).clamp(0.0, 1.0);
-            let v = (p.y - b.min_y) / b.height().max(1e-9);
+            let v = (p.y - cap_y) / cap_h.max(1e-9);
             let (t, bt) = (edge_at(top, u), edge_at(bottom, u));
             let (t, bt) = (
                 v2(u + k * (t.x - u), k * t.y),
@@ -1474,7 +1492,7 @@ fn envelope_layout(spec: &TextSpec, preset: u8, fonts: &[DesignFont]) -> Result<
             );
             v2(
                 b.min_x + b.width() * (t.x + v * (bt.x - t.x)),
-                b.min_y + b.height() * (t.y + v * (bt.y - t.y)),
+                cap_y + cap_h * (t.y + v * (bt.y - t.y)),
             )
         };
         for g in &mut l.glyphs {
