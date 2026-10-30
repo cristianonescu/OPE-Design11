@@ -1164,18 +1164,42 @@ Line references are relative to `crates/`.
   Status: reference tier, all 14 specs pass. Stitch counts within 3 %, bounds within 0.35 mm,
   mean stitch length within 0.15 mm. Open (count checks kept out of the reference tier, not
   loosened):
-  - `spiral-circle40-pitch3p0`: PE 1354 stitches, OpenStitch 1284 (−5.2 %). Suspected cause:
-    at a 3 mm pitch PE puts more needle points on the inner turns than the 4·2ⁿ rule gives (it
-    matches within 2 % at 2 mm). The count is an internal-tier check pinning OpenStitch's 1284
-    at 3 %; bounds and stitch lengths stay at the reference tier.
-  - `spiral-ring40-hole15`: PE 1952 stitches, OpenStitch 1473 (−24.5 %), because PE sews the
-    band where the outline's and the hole's spirals meet as about 30 trimmed pieces (64 trims).
-    The spec compares bounds and stitch lengths only.
+  - `spiral-circle40-pitch3p0`: PE 1354 stitches, OpenStitch 1284 (−5.2 %). The count is an
+    internal-tier check pinning OpenStitch's 1284 at 3 %; bounds and stitch lengths stay at the
+    reference tier. Investigated 2026-10-30, turn by turn: PE's outer turns have 64 needle
+    points like OpenStitch's (the 4·2ⁿ rule), but below the radius where the rule halves the
+    count PE's turns fall off gradually instead of in powers of two: 64 down to r = 16.2 mm,
+    then 56, 44, 38, 39, 40, 40, 36, 34, 33, 32 … 28, 25, 22, 19, 18, 16 against OpenStitch's
+    32 from r = 15.3 mm and 16 from 7.7 mm. Inside a turn PE splits some base pieces in half and
+    not others (adaptive halving per piece), and the pieces next to the axis directions are
+    narrower than the rest (about 8.8° against 11–12° at r = 12 mm, pitch 2), although the turns
+    are true circles (radius within 0.04 mm all round): the parameterisation is not uniform in
+    angle. Neither a cubic Bézier quarter (11.0–11.6° for 8 equal steps) nor a rational
+    quadratic one (10.5–11.8°) reproduces it, so the rule is still open. The same pattern shows
+    at pitch 2 (turn counts 60, 62, 55, 60 … in the 64 band; 42, 39, 36 … in the 32 band), where
+    it cancels out in the total (within 2 %).
+  - `spiral-ring40-hole15`: PE 1952 stitches, OpenStitch 1473 (−24.5 %). The spec compares
+    bounds and stitch lengths only. Investigated 2026-10-30: PE sews the outline's spiral from
+    19.85 mm in to 13.6 mm (908 needle points), then 31 separate pieces round the middle of the
+    band (r 13.4–14.0 mm, 397 needle points, 64 trims), then the hole's spiral from 13.6 mm in
+    to the hole (647 points). The pieces are wedges about 5.5° wide repeating every 11.25°;
+    each has a tie-in and a lock (0.3 mm back-and-forth), 13 of them nothing else, the others
+    up to 37 stitches zigzagging inside their 1.3 mm wedge. They are PE filling leftover slivers
+    between its two spirals one by one. OpenStitch does not copy them: 64 trims in a 25 mm²
+    band is a defect a user would not want, and the band is covered by the two spirals' last
+    turns. Kept as a documented difference.
 
-  Other known differences: PE splits
-  more chords inside each concentric circle (2.0 / 1.0 + 1.0 / 1.33 × 3 mm runs) than the 0.1 mm
-  rounding explains; the concentric seam on a Bézier circle; the spiral's winding on a circle
-  (PE turns against the outline there and with it on the rectangle).
+  Other known differences:
+  - Concentric chord splits: inside each circle PE's stitches come as single 2.0 mm stitches,
+    pairs of 1.0 mm and triples of 1.33 mm: key spans of about 2 and 4 mm split into
+    ceil(length / pitch) equal stitches. Rounding the 4·2ⁿ points to 0.1 mm explains only part
+    of it (OpenStitch's counts are within 3 %); where PE's key points come from is open.
+  - The concentric seam on a Bézier circle, the spiral's winding on a circle (PE turns against
+    the outline there and with it on the rectangle, although its running stitch goes the same
+    way round both) and the return run PE sews after the rectangle spiral's middle (trim, jump to
+    the bottom-left corner, running stitches along the bottom edge to R1): new captures were
+    requested from the reference session on 2026-10-30 (round 5: square, portrait rectangle,
+    reversed drags, ellipse, moved R1 and R2, triangle).
 - **Image digitizing (Phase 6, issues #127, #128, #132, #129):** the Auto Punch, Cross Stitch
   and Photo Stitch pipelines were this project's own approximations; the Phase 6 gap analysis
   pins their arithmetic. Done 2026-10-29 (#128): mono Photo Stitch uses integer Rec. 601
