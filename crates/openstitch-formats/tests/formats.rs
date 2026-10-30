@@ -1435,3 +1435,46 @@ fn shv_reads_pe_design_export_like_its_dst() {
     };
     assert_eq!(points(&h, false), points(&d, true));
 }
+
+/// The v6 header's "Design Page Is Custom" and "Hoop Rotation" fields (the second and fifth
+/// u16 after the metadata strings, EduTechWiki) follow `WriteOptions`; both stay 0 by default.
+#[test]
+fn pes_v6_header_carries_the_custom_page_and_rotation_flags() {
+    let mut p = with_threads(&[0]);
+    p.stitch_to(0.0, 0.0);
+    p.stitch_to(100.0, 50.0);
+    p.push(Command::End);
+    // "#PES0060", u32 PEC offset, u16 hoop, "02", five empty strings, then the u16 fields.
+    let at = 8 + 4 + 2 + 2 + 5;
+    let fields = |b: &[u8]| -> Vec<u16> {
+        (0..7)
+            .map(|k| u16::from_le_bytes([b[at + 2 * k], b[at + 2 * k + 1]]))
+            .collect()
+    };
+    assert_eq!(
+        fields(&pes::write(&p).expect("write")),
+        [0, 0, 100, 100, 0, 200, 200]
+    );
+    let options = pes::WriteOptions {
+        hoop_mm: Some((180, 130)),
+        hoop_rotated: true,
+        custom_page: false,
+        ..pes::WriteOptions::default()
+    };
+    assert_eq!(
+        fields(&pes::write_with(&p, &options).expect("write")),
+        [0, 0, 180, 130, 1, 200, 200]
+    );
+    // PE-DESIGN reads a custom page's size from the sixth and seventh fields (it showed the
+    // constant 200, 200 as a 200 x 200 Custom Size page).
+    let custom = pes::WriteOptions {
+        hoop_mm: Some((300, 200)),
+        custom_page: true,
+        page_mm: Some((300, 200)),
+        ..pes::WriteOptions::default()
+    };
+    assert_eq!(
+        fields(&pes::write_with(&p, &custom).expect("write")),
+        [0, 1, 300, 200, 0, 300, 200]
+    );
+}

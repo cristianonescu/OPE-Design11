@@ -175,7 +175,9 @@ back.
    (2026-10-29/30). PE-DESIGN opens the shapes, the text, the Text Transform and the fitted text
    editable (references `pes-0110-editable-shapes`, `-text`, `-text-transform`, `-text-fit`). The
    selected hoop is written to the v6 header in mm and an over-size export warns instead of
-   failing, as PE-DESIGN does (2026-10-29, #125). Round 4 added owner-drawn Programmable Stitch
+   failing, as PE-DESIGN does (2026-10-29, #125), with its "Design Page Is Custom" and "Hoop
+   Rotation" flags and a custom page's size since 2026-10-30 (opened in PE-DESIGN 11.50 as the
+   hoop and page they describe). Round 4 added owner-drawn Programmable Stitch
    Creator sources (`.pas`, `.pmf`, `.plf`), imported since 2026-10-29 (#131); Font Creator fonts
    wait for the owner (#134). Left: PE-DESIGN opening a written stitch group
    (`pes-0110-stitches`), Straight and Curve Block (`pes-0110-manual-punch`,
@@ -184,8 +186,8 @@ back.
    on opening); PE-DESIGN's confirmation of the Hoop Size page (probe p3); the design's machine
    type and hoop in the header; turn the `#PES0110` shapes and texts the reader parses into
    editable OpenStitch objects; right-aligned and vertical text; the other region and line types,
-   hole-sewing pairs and several outlines per object; the v6 page and grid fields and the hoop in
-   v1; PES v7–v10 (from the owner's own files only, as
+   hole-sewing pairs and several outlines per object; the hoop in v1 (the public
+   description contradicts itself); PES v7–v10 (from the owner's own files only, as
    [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
    stroke only) and an exact medial axis instead of the grid approximation.

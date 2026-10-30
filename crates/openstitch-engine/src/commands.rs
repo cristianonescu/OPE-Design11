@@ -2734,6 +2734,13 @@ fn codec_commands() -> Vec<CommandSpec> {
                     )
                 })?;
                 pes_options.hoop_mm = Some(crate::machine::hoop_mm(&s.design));
+                // A Brother or user hoop gives the page; none is a custom Design Page size.
+                pes_options.custom_page = s.design.machine.hoop.is_none();
+                pes_options.hoop_rotated = s.design.machine.rotate90;
+                // PE-DESIGN reads a custom page's size from the design-size fields.
+                if pes_options.custom_page {
+                    pes_options.page_mm = Some(crate::machine::hoop_mm(&s.design));
+                }
                 if !ty.can_write() {
                     let names: Vec<_> = FileType::writable().map(|t| t.extension()).collect();
                     return Err(p.invalid(
