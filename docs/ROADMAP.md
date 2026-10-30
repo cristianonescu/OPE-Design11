@@ -168,31 +168,24 @@ back.
    file; `stitches.import` of a DST merges its two colours; the CSD reader misreads a real
    file; SHV one colour change over), PE-DESIGN's PES of the 350 mm move (PEC encoding
    beyond 204.7 mm unknown) and of the oversize design (211 x 229 mm read for 129 x 105).
-6. **PES:** turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects
-   (round 4 added programmable-fill, motif-fill and motif-line samples with an owner pattern,
-   and the `.pas` / `.pmf` pattern sources for an importer, #131);
-6. **PES:** Round 4 added owner-drawn Programmable Stitch Creator sources (`.pas`, `.pmf`,
-   `.plf`) for an importer (#131); Font Creator fonts wait for the owner (#134). turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
-6. **PES:** the selected hoop is written to the v6 header in mm and an over-size export
-   warns instead of failing, as PE-DESIGN does (2026-10-29, #125); left: the v6 page and grid
-   fields and the hoop in v1. Turn the `#PES0110` shapes the reader now parses into editable OpenStitch objects;
-   write editable shapes and text; PES v7–v11 and the hoop and Design Page fields (from the
-   owner's own files only, as [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
-6. **PES:** editable shapes are written (`pesVersion` 11 writes `CEmbLine` objects in PE-DESIGN
-   11.50's layout, 2026-10-29; issue #120). Left: PE-DESIGN opening such a file with the shape
-   editable (compat `pes-0110-editable-shapes`, the owner's check); turn the `#PES0110` shapes
-   the reader parses into editable OpenStitch objects; write text (`CEmbNText`/`CTTFLetter`), the
-   other region and line types, hole-sewing pairs and several outlines per object; the hoop
-6. **PES:** editable shapes, Lato Bold text and stitch patterns are written (`pesVersion` 11
-   writes `CEmbLine`, `CEmbNText` and `CEmbOne` objects in PE-DESIGN 11.50's layout, 2026-10-29; issue #120; PE-DESIGN opens
-   the shapes and the text editable, references `pes-0110-editable-shapes`,
-   `pes-0110-editable-text`). Left: PE-DESIGN's confirmation of the Hoop Size page (probe p3);
-   the design's machine type and hoop in the header; BROTHER EMBROIDERY numbers for the chart colours with no owner sample; turn the `#PES0110` shapes and texts the reader
-   parses into editable OpenStitch objects; the fitted text's box as PE-DESIGN computes it
-   (`pes-0110-editable-text-fit`: PE-DESIGN opens the fit editable and recomputes the box); PE-DESIGN opening a written stitch group (`pes-0110-stitches`); right-aligned and vertical text; PE-DESIGN opening a written Straight and Curve Block
-   (`pes-0110-manual-punch`, `pes-0110-curve-block`, written since 2026-10-30); PE-DESIGN opening a written appliqué (`pes-0110-applique`, written since 2026-10-30; the
-   covering line's fields of unused sew types not mapped); the other region and line types, hole-sewing pairs and several outlines per object; the hoop
-   fields; PES v7–v10 (from the owner's own files only, as
+6. **PES:** PE-DESIGN 11's own `#PES0110` layout is written (`pesVersion` 11, issue #120):
+   shapes as `CEmbLine`, Lato Bold text as `CEmbNText`, Text Transform text as `CEmbDText`,
+   fitted text as `CEmbAText`, gallery shapes as `CEmbSpecialShape`, stitch patterns as `CEmbOne`
+   stitch groups, Manual Punch Straight and Curve Blocks and the Applique Wizard's objects
+   (2026-10-29/30). PE-DESIGN opens the shapes, the text, the Text Transform and the fitted text
+   editable (references `pes-0110-editable-shapes`, `-text`, `-text-transform`, `-text-fit`). The
+   selected hoop is written to the v6 header in mm and an over-size export warns instead of
+   failing, as PE-DESIGN does (2026-10-29, #125). Round 4 added owner-drawn Programmable Stitch
+   Creator sources (`.pas`, `.pmf`, `.plf`), imported since 2026-10-29 (#131); Font Creator fonts
+   wait for the owner (#134). Left: PE-DESIGN opening a written stitch group
+   (`pes-0110-stitches`), Straight and Curve Block (`pes-0110-manual-punch`,
+   `pes-0110-curve-block`) and appliqué (`pes-0110-applique`; the covering line's fields of unused
+   sew types not mapped); the fitted text's box as PE-DESIGN computes it (PE-DESIGN recomputes it
+   on opening); PE-DESIGN's confirmation of the Hoop Size page (probe p3); the design's machine
+   type and hoop in the header; turn the `#PES0110` shapes and texts the reader parses into
+   editable OpenStitch objects; right-aligned and vertical text; the other region and line types,
+   hole-sewing pairs and several outlines per object; the v6 page and grid fields and the hoop in
+   v1; PES v7–v10 (from the owner's own files only, as
    [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
    stroke only) and an exact medial axis instead of the grid approximation.
