@@ -9,7 +9,7 @@
 //! order of appearance. `CEmbLine` (shapes and lines drawn with the shape and line tools) and
 //! `CEmbNText` with its `CTTFLetter`s (text from the Text tool) are read. Reading stops at the
 //! first other class, or at a `CEmbLine` whose geometry doesn't fit its bounds (a variant not
-//! mapped yet; Manual Punch blocks are read, see [`Shape::punch_lines`]), and records the class in
+//! mapped yet; Manual Punch blocks are read, see [`Shape::punch`]), and records the class in
 //! [`super::ObjectSection::unparsed`].
 //!
 //! [`write`] is the inverse: a `#PES0110` file whose object list holds the same `CEmbLine`
@@ -176,12 +176,28 @@ pub struct Shape {
     pub under_sewing: bool,
     /// Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline.
     pub running_path: u16,
+    /// Region under sewing type, PE-DESIGN's code (body +182): 2 for its default type, 4, 0, 1, 3
+    /// for the second to fifth (satin-col-us-type-2 … -5); 0 on Convert to Blocks' blocks.
+    pub under_sewing_type: u16,
+    /// Body +178: 1 in PE-DESIGN's tool defaults, 0 in the owner's machine-* files and on Convert
+    /// to Blocks' blocks (meaning not mapped).
+    pub flag_178: u16,
     /// From the Shapes gallery (`CEmbSpecialShape`): the same record, kept under that class.
     pub gallery: bool,
-    /// A Manual Punch object (Straight or Curve Block): the number of sewing-direction lines,
-    /// 0 for every other shape. Line k joins vertex k and vertex 2n − 1 − k: the outline is
-    /// the lines' first ends in order, then their second ends back (m01, m03, o-manual-*).
-    pub punch_lines: u16,
+    /// A Manual Punch block (Straight or Curve Block, and PE-DESIGN's Convert to Blocks):
+    /// its sewing-direction lines in order, each as the vertices of its two ends, empty on every
+    /// other shape. The Manual Punch tool's blocks join vertex k and 2n − 1 − k (the outline is
+    /// the first ends in click order, then the second ends back: m01, m03, o-manual-*); Convert
+    /// to Blocks also puts outline points between line ends (stroke-blocks-A: [0, 11], [1, 10],
+    /// [4, 7], [5, 6]).
+    pub punch: Vec<[u32; 2]>,
+    /// The vertex a block's sewing ends at: one end of its last line (tail +4426; m01: 2,
+    /// stroke-blocks-H's first block: 2 of [2, 3]). Not decided by the geometry.
+    pub punch_exit: u16,
+    /// Both of the geometry header's position lists empty: the running pieces PE-DESIGN's
+    /// Convert to Blocks writes between blocks (stroke-blocks-H, -A). Every other shape has one
+    /// position in each.
+    pub no_positions: bool,
     pub vertices: Vec<Vertex>,
 }
 
@@ -215,8 +231,12 @@ impl Shape {
             frequency: 30,
             under_sewing: true,
             running_path: 0,
+            under_sewing_type: 2,
+            flag_178: 1,
             gallery: false,
-            punch_lines: 0,
+            punch: Vec::new(),
+            punch_exit: 0,
+            no_positions: false,
             vertices: Vec::new(),
         }
     }
@@ -894,26 +914,31 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         r.offset = start;
         return Ok(None);
     }
-    // One entry per list on every shape; a Manual Punch object lists the lines' ends, in the
-    // vertex order its outline has (anything else is not mapped).
-    let punch_lines = match &lists {
-        [a, b] if a.len() == 1 && b.len() == 1 => 0,
+    // One entry per list on a shape, none on Convert to Blocks' running pieces; a Manual
+    // Punch block lists its lines' two ends, at t 0 (anything else is not mapped).
+    let (punch, no_positions) = match &lists {
+        [a, b] if a.len() == 1 && b.len() == 1 => (Vec::new(), false),
+        [a, b] if a.is_empty() && b.is_empty() => (Vec::new(), true),
         [a, b] => {
-            let k = a.len();
-            let punch = k >= 2
-                && b.len() == k
-                && n == 2 * k
-                && a.iter().chain(b).all(|&(_, t)| t == 0.0)
-                && a.iter().enumerate().all(|(i, &(v, _))| v as usize == i)
-                && b.iter()
-                    .enumerate()
-                    .all(|(i, &(v, _))| v as usize == n - 1 - i);
-            if !punch || k > usize::from(u16::MAX) {
+            let block = a.len() >= 2
+                && b.len() == a.len()
+                && a.iter()
+                    .chain(b)
+                    .all(|&(v, t)| t == 0.0 && (v as usize) < n);
+            if !block {
                 r.offset = start;
                 return Ok(None);
             }
-            k as u16
+            (
+                a.iter().zip(b).map(|(&(p, _), &(q, _))| [p, q]).collect(),
+                false,
+            )
         }
+    };
+    let punch_exit = if punch.is_empty() {
+        0
+    } else {
+        u16_at(body, body.len() - template::BODY_TAIL.len() + 66)
     };
     Ok(Some(Shape {
         bounds,
@@ -933,8 +958,12 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         frequency: u16_at(body, 174),
         under_sewing: u16_at(body, 180) != 0,
         running_path: u16_at(body, 186),
+        under_sewing_type: u16_at(body, 182),
+        flag_178: u16_at(body, 178),
         gallery: false,
-        punch_lines,
+        punch,
+        punch_exit,
+        no_positions,
         vertices,
     }))
 }
@@ -1504,7 +1533,9 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     put16(&mut head, 168, s.direction);
     put16(&mut head, 170, s.region_color);
     put16(&mut head, 174, s.frequency);
+    put16(&mut head, 178, s.flag_178);
     put16(&mut head, 180, u16::from(s.under_sewing));
+    put16(&mut head, 182, s.under_sewing_type);
     put16(&mut head, 186, s.running_path);
     // Reference points: five at the bounds' top-left corner, two at their centre (i32 x, y).
     for at in [204, 262, 286, 354, 378] {
@@ -1524,11 +1555,11 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
         put32(&mut tail, at - base + 4, cy);
     }
     // Two outline positions (segment, f32 t): the end of the last segment, twice; a Manual
-    // Punch object's second is the start of its second side (line count, t 0).
+    // Punch block's second is the vertex its sewing ends at (t 0).
     let segments = s.vertices.len() - usize::from(!s.closed);
     put16(&mut tail, 4414 - base, segments.saturating_sub(1) as u16);
-    if s.punch_lines > 0 {
-        put16(&mut tail, 4426 - base, s.punch_lines);
+    if !s.punch.is_empty() {
+        put16(&mut tail, 4426 - base, s.punch_exit);
         put32(&mut tail, 4428 - base, 0);
     } else {
         put16(&mut tail, 4426 - base, segments.saturating_sub(1) as u16);
@@ -1559,7 +1590,7 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
 /// the height. The segment and parameter fields are the baseline file's (open lines: the
 /// open-line file's). Manual Punch objects: [`write_punch_geometry_header`].
 fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
-    if s.punch_lines > 0 {
+    if !s.punch.is_empty() {
         return write_punch_geometry_header(w, s);
     }
     let [x0, y0, x1, y1] = s.bounds.map(f64::from);
@@ -1574,12 +1605,18 @@ fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
     } else {
         (0, 0.0, 0, 0.0, 0)
     };
-    w.u32le(1);
-    w.u32le(0);
-    w.append(&t_ab.to_le_bytes());
-    w.u32le(1);
-    w.u32le(seg_b);
-    w.append(&t_ab.to_le_bytes());
+    if s.no_positions {
+        // Convert to Blocks' running pieces: both lists empty.
+        w.u32le(0);
+        w.u32le(0);
+    } else {
+        w.u32le(1);
+        w.u32le(0);
+        w.append(&t_ab.to_le_bytes());
+        w.u32le(1);
+        w.u32le(seg_b);
+        w.append(&t_ab.to_le_bytes());
+    }
     w.f32le(left.0);
     w.f32le(left.1);
     w.u32le(flag_c);
@@ -1594,45 +1631,42 @@ fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
     w.u16le(0);
 }
 
-/// A Manual Punch object's geometry header: the lists of its lines' ends, then the three marks.
-/// The marks hang off the two straight edges that close the block (the left one from the last
-/// vertex to the first, the right one from the first side's last vertex to the second side's
-/// first), cut at the height midway between the outline's top and bottom as its curves reach
-/// them ([`outline_extent`]: m11's sag to 970.25): mark A at the left cut offset by a tenth of
-/// the bounds' width outward and a tenth of their height down, C likewise at the right cut,
-/// and B midway between the cuts a quarter of the height up, each tenth and quarter in whole
-/// units (rounded down). The left cut's parameter runs up its edge, the right's down (m01 …
-/// m11, o-manual-*: 0.5 on a straight block, 0.25 / 0.75 on m09, 0.074375 / 0.925625 on m11).
+/// A Manual Punch block's geometry header: the lists of its lines' ends, then the three marks.
+/// The marks hang off the outline where the horizontal line midway between its top and bottom
+/// (as its curves reach them: [`outline_extent`], m11's sag to 970.25) crosses it furthest left
+/// and furthest right, each crossing given as a segment and a parameter along it (a crossing at
+/// a vertex as the end of the segment before it, t 1). Mark A is the left crossing offset by a
+/// tenth of the bounds' width outward and a tenth of their height down, C likewise at the right,
+/// and B midway between them a quarter of the height up, each tenth and quarter in whole units
+/// (rounded down); the parameters are single-precision values (m11: 0.07437500357627869). On
+/// the Manual Punch tool's blocks the crossings are the edges that close the block (m01 … m11,
+/// o-manual-*); Convert to Blocks' blocks cross on their sides too (stroke-blocks-H, -A).
 fn write_punch_geometry_header(w: &mut ByteWriter, s: &Shape) {
-    let k = usize::from(s.punch_lines);
-    let n = s.vertices.len();
-    w.u32le(k as i64);
-    for i in 0..k {
-        w.u32le(i as i64);
-        w.append(&0f64.to_le_bytes());
-    }
-    w.u32le(k as i64);
-    for i in 0..k {
-        w.u32le((2 * k - 1 - i) as i64);
-        w.append(&0f64.to_le_bytes());
+    for end in 0..2 {
+        w.u32le(s.punch.len() as i64);
+        for line in &s.punch {
+            w.u32le(i64::from(line[end]));
+            w.append(&0f64.to_le_bytes());
+        }
     }
     let [_, y_top, _, y_bottom] = outline_extent(&s.vertices);
     let cut_y = (y_top + y_bottom) / 2.0;
-    let at = |i: usize| (f64::from(s.vertices[i].x), f64::from(s.vertices[i].y));
-    // A cut on the edge from `a` to `b` at height `cut_y`: its parameter and point.
-    let cut = |a: (f64, f64), b: (f64, f64)| {
-        let t = if b.1 == a.1 {
-            0.5
-        } else {
-            (cut_y - a.1) / (b.1 - a.1)
-        };
-        // PE-DESIGN stores the parameter as computed in single precision (m11:
-        // 0.07437500357627869).
-        let point = (a.0 + t * (b.0 - a.0), a.1 + t * (b.1 - a.1));
-        (f64::from(t as f32), point)
+    let crossings = crossings_at(&s.vertices, cut_y);
+    let leftmost = crossings
+        .iter()
+        .copied()
+        .min_by(|a, b| a.2.0.total_cmp(&b.2.0));
+    let rightmost = crossings
+        .iter()
+        .copied()
+        .max_by(|a, b| a.2.0.total_cmp(&b.2.0));
+    let ((seg_l, t_l, left), (seg_r, t_r, right)) = match (leftmost, rightmost) {
+        (Some(l), Some(r)) => (l, r),
+        _ => {
+            let at = (f64::from(s.vertices[0].x), f64::from(s.vertices[0].y));
+            ((0, 0.0, at), (0, 0.0, at))
+        }
     };
-    let (t_left, left) = cut(at(n - 1), at(0));
-    let (t_right, right) = cut(at(k - 1), at(k));
     let [x0, y0, x1, y1] = s.bounds.map(i32::from);
     let (tenth_w, tenth_h, quarter_h) = (
         f64::from((x1 - x0) / 10),
@@ -1641,16 +1675,73 @@ fn write_punch_geometry_header(w: &mut ByteWriter, s: &Shape) {
     );
     w.f32le(left.0 - tenth_w);
     w.f32le(left.1 + tenth_h);
-    w.u32le((n - 1) as i64);
-    w.append(&t_left.to_le_bytes());
+    w.u32le(seg_l as i64);
+    w.append(&f64::from(t_l as f32).to_le_bytes());
     w.u16le(1);
     w.f32le((left.0 + right.0) / 2.0);
     w.f32le((left.1 + right.1) / 2.0 - quarter_h);
-    w.u32le((k - 1) as i64);
-    w.append(&t_right.to_le_bytes());
+    w.u32le(seg_r as i64);
+    w.append(&f64::from(t_r as f32).to_le_bytes());
     w.f32le(right.0 + tenth_w);
     w.f32le(right.1 + tenth_h);
     w.u16le(0);
+}
+
+/// Where the closed outline crosses the height `y`: (segment, parameter, point) for each
+/// crossing, a crossing at a vertex counted once, as the end of the segment before it (t 1). A
+/// curved segment is searched along its Bézier curve.
+fn crossings_at(vertices: &[Vertex], y: f64) -> Vec<(usize, f64, (f64, f64))> {
+    let n = vertices.len();
+    let mut out = Vec::new();
+    for i in 0..n {
+        let (a, b) = (&vertices[i], &vertices[(i + 1) % n]);
+        let p0 = (f64::from(a.x), f64::from(a.y));
+        let p3 = (f64::from(b.x), f64::from(b.y));
+        let curved = a.kind & KIND_CURVE_AFTER != 0 || b.kind & KIND_CURVE_BEFORE != 0;
+        let point = |t: f64| {
+            if !curved {
+                return (p0.0 + t * (p3.0 - p0.0), p0.1 + t * (p3.1 - p0.1));
+            }
+            let p1 = (f64::from(a.handles[1].0), f64::from(a.handles[1].1));
+            let p2 = (f64::from(b.handles[0].0), f64::from(b.handles[0].1));
+            let u = 1.0 - t;
+            let c = |k0: f64, k1: f64, k2: f64, k3: f64| {
+                u * u * u * k0 + 3.0 * u * u * t * k1 + 3.0 * u * t * t * k2 + t * t * t * k3
+            };
+            (c(p0.0, p1.0, p2.0, p3.0), c(p0.1, p1.1, p2.1, p3.1))
+        };
+        if !curved {
+            if p0.1 == p3.1 {
+                continue;
+            }
+            let t = (y - p0.1) / (p3.1 - p0.1);
+            if t > 0.0 && t <= 1.0 {
+                out.push((i, t, point(t)));
+            }
+            continue;
+        }
+        // A curve: bracket each sign change on 64 steps, then bisect.
+        const STEPS: usize = 64;
+        let f = |t: f64| point(t).1 - y;
+        let mut prev = f(0.0);
+        for k in 1..=STEPS {
+            let (mut lo, mut hi) = ((k - 1) as f64 / STEPS as f64, k as f64 / STEPS as f64);
+            let cur = f(hi);
+            if prev != 0.0 && (prev < 0.0) != (cur < 0.0) || cur == 0.0 {
+                for _ in 0..60 {
+                    let mid = (lo + hi) / 2.0;
+                    if (f(lo) < 0.0) == (f(mid) < 0.0) {
+                        lo = mid;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                out.push((i, hi, point(hi)));
+            }
+            prev = cur;
+        }
+    }
+    out
 }
 
 /// `x0, y0, x1, y1` of a closed outline as its segments reach (file units, unrounded): a
