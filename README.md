@@ -8,19 +8,54 @@
 # OpenStitch
 
 An independent, cross-platform (macOS, Windows, Linux) embroidery design application written in
-Rust. It is built to be interoperable with Brother machines and with designs made in Brother
-PE-DESIGN 11.
+Rust. It aims to work like Brother PE-DESIGN 11 and to read and write the same files, so designs
+move between the two and onto Brother machines.
+
+OpenStitch is an **alpha**: good for trying out and testing, not for production work. Do a test
+sew-out on scrap fabric first.
 
 Not affiliated with Brother Industries. No Brother code or assets are included; see
 [docs/LEGAL_AND_LICENSING.md](docs/LEGAL_AND_LICENSING.md).
 
-OpenStitch's stitching and files are checked against PE-DESIGN 11.50 itself: simple test designs
-made in a licensed copy through its normal interface are committed under `compat/reference/`,
-and the compatibility harness (`stitchtool compat`) compares OpenStitch's output with them spec
-by spec. [docs/COMPATIBILITY_STATUS.md](docs/COMPATIBILITY_STATUS.md) shows how far each
-feature has been verified.
-
 ![The OpenStitch editor: Application menu, Quick Access Toolbar and ribbon at the top, sewing order on the left, the design page in the middle, sewing attributes on the right and the stitch simulator below](docs/images/readme/editor.png)
+
+## Contents
+
+- [Status at a glance](#status-at-a-glance)
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Not yet implemented](#not-yet-implemented)
+- [Known issues](#known-issues)
+- [Planned](#planned)
+- [Download a build](#download-a-build)
+- [Build from source](#build-from-source)
+- [MCP server](#mcp-server-claude-code-and-other-mcp-clients)
+- [Contributing](#contributing)
+- [Releases](#releases)
+- [Documents](#documents)
+- [License](#license)
+
+## Status at a glance
+
+Current release: **v0.1.0-alpha.6** ([notes](docs/releases/v0.1.0-alpha.6.md)).
+
+OpenStitch is checked against PE-DESIGN 11.50 itself. Simple test designs made in a licensed copy
+through its normal interface are committed under `compat/reference/`. The compatibility harness
+(`stitchtool compat`) compares OpenStitch's output with them spec by spec.
+
+<!-- status:glance -->
+| | |
+|---|---|
+| Feature matrix rows | 168: 142 implemented (2 of them partially compatible), 2 documented only, 10 blocked, 14 planned beyond PE-DESIGN |
+| Compatibility specs | 384: 384 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
+| Matrix rows covered by specs | 32: 25 at the reference tier, 5 at the internal-regression tier, 2 at the oracle tier |
+| Open audit differences | 11 ([audit](docs/COMPATIBILITY_AUDIT.md#summary)) |
+| Open GitHub issues | 7 ([list](https://github.com/cristianonescu/OpenStitch/issues)) |
+<!-- /status:glance -->
+
+Tiers, weakest first: *internal regression* (our own earlier output), *oracle* (an independent
+implementation), *reference* (PE-DESIGN 11.50's own output), *machine* (a recorded sew-out; none
+yet). Every feature and its evidence is in [docs/FEATURE_MATRIX.md](docs/FEATURE_MATRIX.md).
 
 ## Screenshots
 
@@ -28,45 +63,264 @@ feature has been verified.
 |---|---|
 | ![Realistic view of a satin-stitched star](docs/images/readme/realistic-view.png) | ![Stitch simulator part-way through sewing a design](docs/images/readme/stitch-simulator.png) |
 | **Realistic view:** see how the stitches will look on fabric. | **Stitch simulator:** play the design back stitch by stitch, with jumps and trims. |
-| ![Drawing tools with shapes, hearts and a boolean merge](docs/images/readme/drawing.png) | ![Monograms with decorative frames and the Monogram dialog](docs/images/readme/monogram.png) |
-| **Drawing and editing:** shapes, Bézier outlines, arranged copies and shape operations. | **Lettering:** text, monograms and frames with open-licence or your own fonts. |
-| ![Auto Punch turning an image into embroidery regions](docs/images/readme/auto-punch.png) | ![Design Database browsing folders of designs as thumbnails](docs/images/readme/design-database.png) |
-| **Image to embroidery:** Auto Punch, Cross Stitch and Photo Stitch-style conversion. | **Design Database:** browse, search, organise and convert your design files. |
-| ![Programmable Stitch Creator drawing a fill pattern](docs/images/readme/stitch-creator.png) | |
-| **Programmable Stitch Creator:** draw your own fill and motif stitch patterns. | |
+| ![Drawing tools with shapes, hearts and a boolean merge](docs/images/readme/drawing.png) | ![Text in several fonts with the Text Attributes pane](docs/images/readme/lettering.png) |
+| **Drawing and editing:** shapes, Bézier outlines, arranged copies and shape operations. | **Lettering:** TrueType text with PE-DESIGN's size, spacing and transforms. |
+| ![Monograms with decorative frames and the Monogram dialog](docs/images/readme/monogram.png) | ![Auto Punch turning an image into embroidery regions](docs/images/readme/auto-punch.png) |
+| **Monograms:** letters in a frame, kept editable. | **Image to embroidery:** Auto Punch, Cross Stitch and Photo Stitch-style conversion. |
+| ![Appliqué wizard with material, position and tack-down lines](docs/images/readme/applique.png) | ![Design Database browsing folders of designs as thumbnails](docs/images/readme/design-database.png) |
+| **Wizards:** appliqué, patch, cutwork, background fill and split designs. | **Design Database:** browse, search, organise and convert your design files. |
+| ![Programmable Stitch Creator drawing a fill pattern](docs/images/readme/stitch-creator.png) | ![Sending a design to a USB stick for the machine](docs/images/readme/usb-transfer.png) |
+| **Programmable Stitch Creator:** draw your own fill and motif stitch patterns. | **Machine transfer:** write the design to a USB stick or SD card. |
+| ![Update dialog with the release notes and the Update button](docs/images/readme/update.png) | ![The editor in the dark theme](docs/images/readme/dark-theme.png) |
+| **Updates:** the editor updates itself from GitHub releases. | **Light or dark** theme. |
 
-## What it does today
+## Features
 
-- **Desktop editor** (`openstitch`), laid out like PE-DESIGN 11's Layout & Editing window
-  (Application menu, Home / Image / View ribbon with contextual tabs, Quick Access Toolbar,
-  Sewing Order and attribute panes; [docs/UI_LAYOUT.md](docs/UI_LAYOUT.md)), light or dark:
-  - drawing tools (rectangle, ellipse, polygon, arcs and preset shapes, Bézier pen, point editing)
-  - selection and transforms, grouping, arranged copies
-  - sewing attributes and sewing order
-  - rulers, grid and measure tool
-  - undo, stitch simulator and realistic preview
-- **Stitches**, with PE-DESIGN 11.50's defaults, tie-in and lock, measured from its files:
-  - fill (under sewing, density, Frequency, gradation, feathered edge), satin (PE-DESIGN's
-    sawtooth, Auto direction) and running/triple
-  - zigzag, motif, stem, candlewicking, E/V, chain and cutting lines
-  - hole sewing and shape operations (merge, boolean, split, offset)
-- **Lettering** with bundled open-licence fonts or your own: PE-DESIGN's text size and line
-  spacing, Fit Text to Outline, Text Transform presets, monograms and Name Drop.
-- **Image to embroidery:** Auto Punch-, Cross Stitch- and Photo Stitch-like conversion. These
-  are independent approximations of PE-DESIGN's wizards.
-- **Files:**
-  - read/write: PES, PEC, DST, EXP, JEF, PCS, SEW, XXX, HUS, VIP
-  - read only: SHV, PHC, CSD
-  - PES files from PE-DESIGN 11 (`#PES0110`): metadata, thread table and shapes read; OpenStitch's
-    own PES files open in PE-DESIGN 11 as stitch patterns, with their colours and Design
-    Property ([docs/FILE_FORMATS.md](docs/FILE_FORMATS.md))
-  - editable `.osd` projects
-- **Automation:** a scripting CLI (`stitchtool`) and an MCP server (`openstitch-mcp`). Both run
-  the same commands as the editor.
+Features marked **➕** go beyond PE-DESIGN 11: they are off unless you choose them, so
+PE-DESIGN-compatible output stays the default.
 
-See [docs/FEATURE_MATRIX.md](docs/FEATURE_MATRIX.md) for the full status of every feature and
-[docs/COMPATIBILITY_AUDIT.md](docs/COMPATIBILITY_AUDIT.md) for the known differences from
-PE-DESIGN 11 and which of them are fixed.
+### Editing
+
+- **Editor window laid out like PE-DESIGN 11's Layout & Editing window:** Application menu,
+  Home / Image / View ribbon with contextual tabs, Quick Access Toolbar, Sewing Order and
+  attribute panes ([docs/UI_LAYOUT.md](docs/UI_LAYOUT.md)). Light or dark theme.
+- **Drawing:** rectangle, ellipse, polygon, Pencil (freehand), Bézier pen, arcs and preset
+  shapes (stars, hearts, arrows and more), Manual Punch columns and curved blocks.
+- **Shape editing:** point editing, move/scale/rotate/flip, group, cut and paste, arranged copies
+  (mirror, circle, matrix), merge, remove overlap, boolean operations, split, offset lines.
+  Bézier curves survive these operations.
+- **Sewing attributes and order:** thread colour from the Brother chart or your own charts, sew
+  type, direction (straight, auto or curved), entry and exit points, hole sewing, saved
+  attribute sets, Copy Sewing Attributes. Sewing order by drag, by colour or optimised as
+  PE-DESIGN does, plus a **➕** shortest-jump order (`minJump`).
+- **Stitch pattern editing:** move, insert and delete needle points; split, connect, divide by
+  colour and change a block's colour.
+- **Conversions:** text and shapes to stitches, stitches back to shapes, text to outlines, region
+  to line.
+- **Ornaments:** floral patterns, decorative frames, stamps, embossing and engraving, using
+  OpenStitch's own designs.
+- **Workspace:** rulers, grid, measure tool, Reference window, Design Page and Brother hoop list
+  with user hoops, undo/redo, stitch simulator, realistic and solid views, Fabric Selector.
+
+### Stitch types
+
+PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
+
+- **Regions:** fill (tatami with Frequency, under sewing, gradation and feathered edge), satin
+  (PE-DESIGN's sawtooth and Auto satin), programmable fill, motif fill, concentric circle,
+  radial and spiral.
+- **➕ Contour fill:** rows that follow the outline (rings, single or double spiral, echo
+  lines, round or mitred corners).
+- **➕ Random tatami stagger,** seeded and reproducible, beside PE-DESIGN's Frequency brick.
+- **Lines:** running, triple, zigzag, motif, stem, candlewicking, E and V, chain and cutting
+  (cutwork needles), with Start/End Feed or Run as PE-DESIGN sews them.
+- **Patterns:** OpenStitch's own fill, stamp and motif library, or your own patterns drawn in
+  the Programmable Stitch Creator or imported from PE-DESIGN's `.pas`, `.pmf` and `.plf` files.
+- **➕ Skeleton satin:** a satin column sewn along a derived centre line.
+
+### Lettering
+
+- **Text:** multi-line TrueType/OpenType text with PE-DESIGN's text size, character and line
+  spacing, alignment and Satin or Fill sewing. Bundled open-licence fonts (Lato Bold, Pacifico)
+  or your own fonts, embedded in the design. Complex scripts (Arabic, Indic, right-to-left) are
+  shaped.
+- **Fit Text to Outline** and all 26 **Text Transform** presets, checked against PE-DESIGN.
+- **Monograms**, **templates** with a Template Wizard, and **Name Drop** (one design, a list of
+  names).
+- **Your own embroidery fonts:** map stitch designs to characters, or build a font from TrueType
+  glyphs and drawn shapes (Font Creator).
+
+### Image digitizing
+
+- **Auto Punch**, **Cross Stitch** and **Photo Stitch 1 and 2**: an image becomes embroidery
+  regions, cross stitches or photo-style lines. These are independent approximations of
+  PE-DESIGN's wizards, compared with its output.
+- **Design Center** pipeline (image → outline → figure → sew settings) and the Stitch Wizard.
+- **Background images** (PNG, JPEG, BMP or the clipboard): place, crop, rotate, adjust and trace
+  over.
+
+### Wizards and tools
+
+- **Appliqué, embroidered patch, cutwork and background fill** wizards (approximations of
+  PE-DESIGN's).
+- **Split designs** for large designs, **multi-position hoops** and the **jumbo frame**.
+- **Design Database:** browse folders as thumbnails, search, organise, convert formats in batch
+  and print catalogues.
+- **Programmable Stitch Creator** and **Stitch Design Factory** (sewing-machine stitches; PMV
+  export is experimental).
+- **Printing:** actual-size sheets, PDF, and the operating system's printer.
+
+### Files and formats
+
+- **Read and write:** PES, PEC, DST, EXP, JEF, PCS, SEW, XXX, HUS, VIP. The machine formats match
+  PE-DESIGN 11.50's own exports record for record or byte for byte.
+- **Read only:** SHV, PHC (read only in PE-DESIGN too) and CSD.
+- **PE-DESIGN 11 PES (`#PES0110`):** OpenStitch reads the metadata, thread table and shapes. Saved
+  as "PE-DESIGN 11", its shapes and Lato Bold text open **editable** in PE-DESIGN 11.50 (text
+  retypable), including Fit Text to Outline and Text Transform. Details in
+  [docs/FILE_FORMATS.md](docs/FILE_FORMATS.md).
+- **PES versions 1, 6 and 11** on export, with Design Property (category, author, keywords,
+  comments). Version 6 with its stitch group is the default.
+- **SVG import** as editable shapes, colours snapped to the Brother chart.
+- **Editable `.osd` projects**, and large designs split into several files when a format's limits
+  are exceeded.
+- **Thread charts:** Brother's 64-colour PEC chart with its catalogue numbers, PE-DESIGN's
+  colour matching, and your own charts as CSV.
+
+### Machine transfer
+
+- **USB stick or SD card:** the editor and the Design Database find removable drives on every OS
+  and write the machine file to them, asking before overwriting.
+- Wireless transfer and Link are not available; see [Not yet implemented](#not-yet-implemented).
+
+### Scripting and MCP
+
+- **➕ `stitchtool`:** run JSON command scripts, list every command, or drive a JSON-lines
+  control channel. Every editor action is the same engine command.
+- **➕ `openstitch-mcp`:** an MCP server for Claude Code and other MCP clients, with one tool per
+  command, batches and PNG previews; file access only to folders you grant.
+- **➕ Live editor socket:** `openstitch --listen` lets scripts and MCP act on the running editor
+  (127.0.0.1 only, per-launch token).
+
+### Installation and updates
+
+- **Packages** for macOS (universal `.app`), Windows (MSI and portable zip) and Linux (AppImage,
+  tarball, Flatpak), with `.osd` and `.pes` file associations.
+- **➕ Linux file-manager thumbnails** for `.osd` and `.pes` files.
+- **➕ Self-update** from GitHub releases, checked against the release's checksums (see
+  [Updates](#updates)).
+
+## Not yet implemented
+
+PE-DESIGN 11 features OpenStitch does not have yet, from the feature matrix:
+
+<!-- status:not-implemented -->
+- **Export CSD, SHV** (Files)
+- **Import WMF/EMF** (Files)
+<!-- /status:not-implemented -->
+
+Also missing, from the [roadmap](docs/ROADMAP.md#still-to-do):
+
+- **Stroke-wise lettering:** PE-DESIGN splits every letter into strokes, each sewn as a column;
+  OpenStitch sews a whole letter in one direction.
+- **Text details:** per-character colour, multi-character selection, Connection Points, minimum
+  font sizes and small-text fonts, kerning that reflows the line.
+- **Satin and fill details:** Half Stitch for Auto satin, Miter limit, Stitch Type (turning
+  ends), gradation per-step editing and Blend.
+- **PES:** opening PE-DESIGN's editable shapes and texts as editable OpenStitch objects (they come
+  in as stitches); the other region and line types, right-aligned and vertical text in the
+  editable PES 11 writer; PES versions 4, 5 and 7–10; CSD and SHV export.
+
+**Not planned, by design:**
+
+- **PE-DESIGN's bundled fonts, motifs, stamps, floral and decorative patterns** are Brother's
+  content. OpenStitch ships its own designs and open-licence fonts instead, and imports patterns
+  you draw yourself.
+
+**Blocked:**
+
+<!-- status:blocked -->
+- **Import PHX** (Files)
+- **Import PEN** (Files)
+- **Background image from a scanner** (Files)
+- **ScanNCut FCM export/import** (Files)
+- **Transfer directly to machine memory, wireless network, original card** (Machine)
+- **Link function** (Machine)
+- **Transfer by wireless network, USB cable to machine memory, original card, USB/Wireless Link** (Design Database)
+- **Brother PMP and PSF files** (Stitch Design Factory)
+- **File-manager thumbnails, macOS Quick Look and Windows Explorer** (OS integration)
+- **PEN thumbnails** (OS integration)
+<!-- /status:blocked -->
+
+Wireless transfer, Link, card reading and PHX use undocumented protocols or formats that the
+project will not reverse-engineer. PEN is an encrypted purchase format: reading it would
+circumvent its protection. ScanNCut FCM has no Brother specification and malformed files can
+reboot the machine. Scanners, Quick Look and Explorer thumbnails need native code (`unsafe`),
+which the workspace forbids for now.
+
+## Known issues
+
+Open differences from PE-DESIGN 11 that you may notice, from the
+[compatibility audit](docs/COMPATIBILITY_AUDIT.md):
+
+<!-- status:known-issues -->
+- [Trims between underlay, top stitching and outline of one object](docs/COMPATIBILITY_AUDIT.md#4-trims-between-underlay-top-stitching-and-outline-of-one-object)
+- [Every design is written as one stitch group, nothing editable](docs/COMPATIBILITY_AUDIT.md#5-every-design-is-written-as-one-stitch-group-nothing-stays-editable-in-pe-design) (partly fixed)
+- [One sewing direction per text instead of per stroke](docs/COMPATIBILITY_AUDIT.md#6-one-sewing-direction-per-text-instead-of-per-stroke)
+- [Underlay model differs](docs/COMPATIBILITY_AUDIT.md#8-underlay-model-differs-zigzag-lines-have-no-underlay) (partly fixed)
+- [PE-DESIGN-made PES files lose objects, properties and colours on re-save](docs/COMPATIBILITY_AUDIT.md#9-pe-design-made-pes-files-lose-objects-properties-and-colours-on-re-save)
+- [Hoop and Design Page fields hard-coded in PES](docs/COMPATIBILITY_AUDIT.md#10-hoop-and-design-page-fields-are-hard-coded-in-pes)
+- [No Connection Points (Default / Closest / Farther) for text](docs/COMPATIBILITY_AUDIT.md#11-no-connection-points-default--closest--farther-for-text)
+- [No minimum font sizes or small-text fonts](docs/COMPATIBILITY_AUDIT.md#12-no-minimum-font-sizes-or-small-text-fonts)
+- [No per-character colour or multi-character selection](docs/COMPATIBILITY_AUDIT.md#13-no-per-character-colour-or-multi-character-selection)
+- [Missing fill, satin and zigzag attributes; wrong ranges](docs/COMPATIBILITY_AUDIT.md#15-missing-fill-satin-and-zigzag-attributes-wrong-ranges) (partly fixed)
+- [Character kerning moves one glyph without reflowing the line](docs/COMPATIBILITY_AUDIT.md#20-character-kerning-moves-one-glyph-without-reflowing-the-line)
+<!-- /status:known-issues -->
+
+Other things to know:
+
+- **No sew-out yet:** no OpenStitch-written file has a recorded sew-out on a Brother machine.
+- **Image digitizing is approximate:** Auto Punch, Cross Stitch and Photo Stitch are compared with
+  PE-DESIGN but do not sew the same stitches.
+- **Builds are not code-signed:** macOS and Windows warn on first launch (see
+  [Download a build](#download-a-build)).
+- **macOS:** double-clicking a `.osd` or `.pes` file in Finder does not open it; use File ▸ Open.
+- **Updates:** versions before v0.1.0-alpha.4 have no updater and must be replaced by hand.
+
+Bugs reported on GitHub:
+
+<!-- status:issues-bugs -->
+_None._
+<!-- /status:issues-bugs -->
+
+[Report a bug](https://github.com/cristianonescu/OpenStitch/issues/new).
+
+## Planned
+
+Next, from [docs/ROADMAP.md](docs/ROADMAP.md):
+
+- **Lettering:** stroke-wise sewing of TrueType text, as PE-DESIGN does it.
+- **PES:** PE-DESIGN's shapes and text opened as editable objects; more object types in the PES 11
+  writer; the hoop and Design Page fields.
+- **Stitches:** the remaining fill, satin and line details listed above, and branching skeletons.
+- **Machine tier:** a first recorded sew-out on a Brother machine.
+- **Image digitizing:** run-to-run travel in Cross Stitch and closer Photo Stitch output.
+- **Distribution:** code signing and a Flathub listing.
+
+Open enhancement issues:
+
+<!-- status:issues-planned -->
+- [#120](https://github.com/cristianonescu/OpenStitch/issues/120) Add a `#PES0110` editable-object-section writer
+- [#124](https://github.com/cristianonescu/OpenStitch/issues/124) Support a combinable underlay bitmask with a lattice/net mode and density selector
+- [#127](https://github.com/cristianonescu/OpenStitch/issues/127) Rework auto-punch colour reduction, small-region removal, and the satin-vs-fill decision
+- [#129](https://github.com/cristianonescu/OpenStitch/issues/129) (Optional, larger) Photo-stitch rotating-line coverage density model
+- [#130](https://github.com/cristianonescu/OpenStitch/issues/130) Add a PMV motif/pattern reader
+- [#131](https://github.com/cristianonescu/OpenStitch/issues/131) Import PAS / PMF / PLF ASCII pattern sources and tile them into fills
+- [#134](https://github.com/cristianonescu/OpenStitch/issues/134) Import external scalable embroidery font containers
+<!-- /status:issues-planned -->
+
+### Beyond PE-DESIGN
+
+After PE-DESIGN compatibility, OpenStitch adds what other digitizing programs offer and
+PE-DESIGN 11 does not. Each item is sketched in
+[docs/research/beyond](docs/research/beyond/readiness.md) and will be off unless chosen:
+
+<!-- status:beyond-planned -->
+- Density profiles on fills and satin columns, two-colour blend command, hidden travel for open fills (B6)
+- 3D puff satin mode: density, caps, no underlay or pull compensation, foam stop, ordering (B7)
+- Crosshatch, curved crosshatch and double-zigzag lace as a region type (B8)
+- Carving lines drawn on fills; knockdown (laydown) fill sewn first (B12)
+- Satin corner handling (mitre / cap / lap) and short stitches on inner curves for columns and regions (B3)
+- Pull compensation in mm per side and %, push compensation, automatic underlay by width with first and second underlay, editable fabric table (B5)
+- Satin line with variable width: width keys, two rails, tapered ends (B10)
+- Auto-routed running stitches (Euler path), Redwork, satin branching with one entry and exit (B4)
+- Closest join per object, auto start/end, continue digitizing, automatic overlap removal (B11)
+- Guided fill with two guides; stitch-angle maps with several direction lines per region (B2)
+- Maze and tiled meander fills, zigzag (fur) variant, seeded hand-stitch randomisation (B9)
+- Quality tools: density map, troubleshoot rules, thread-brand conversion, automatic hoop selection (B13)
+- Stitch-file resize with density recalculation and density tuning (B14)
+- Lettering: baseline model, saved kerning pairs, team names from CSV, closest-point letter connections (B15)
+<!-- /status:beyond-planned -->
 
 ## Download a build
 
@@ -96,21 +350,21 @@ The builds are not code-signed yet:
   time (or run `xattr -dr com.apple.quarantine OpenStitch.app`).
 - **Windows:** choose *More info → Run anyway* in the SmartScreen prompt.
 
-Stable releases and pre-releases (alpha, beta, rc) are published from tags; see
-[Releases](#releases).
-
 ### Updates
 
 The editor keeps itself current. At a plain start it asks GitHub whether a newer release
-exists; if so, a dialog shows the release notes with three choices: **Dismiss**, **Don't remind
-me about this version** (quiet until a newer one appears) and **Update**, which downloads the
-package for your system, checks it against the release's `SHA256SUMS`, installs it and restarts
-OpenStitch. The portable zip, the MSI (Windows Installer asks for permission), the macOS app and
-the Linux AppImage and tarball all update in place; a Flatpak updates through Flatpak. Options ▸
+exists. If so, a dialog shows the release notes with three choices:
+
+- **Dismiss.**
+- **Don't remind me about this version:** quiet until a newer one appears.
+- **Update:** downloads the package for your system, checks it against the release's
+  `SHA256SUMS`, installs it and restarts OpenStitch.
+
+The portable zip, the MSI (Windows Installer asks for permission), the macOS app and the Linux
+AppImage and tarball all update in place; a Flatpak updates through Flatpak. In Options,
 *Check for updates at startup* turns the check off, *Include pre-releases* opts a stable build
 into alphas and betas, and *Check for Updates Now* asks right away. Builds from source and the
-artifacts of `main` have no release tag and never check. The first version with the updater is
-v0.1.0-alpha.4: earlier alphas must be replaced by hand once more. Details:
+artifacts of `main` have no release tag and never check. Details:
 [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md#updates).
 
 ## Build from source
@@ -163,10 +417,6 @@ The socket listens on 127.0.0.1 only and every request must carry the per-launch
 editor prints and writes to `automation.json` (readable by you only) in the OpenStitch config
 directory; clients read it from there. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#automation-socket-live-editor).
 
-```bash
-cargo run -p openstitch-mcp -- --root ~/Embroidery     # MCP server on stdio (see below)
-```
-
 A command script is a JSON array of `{"command": …, "params": {…}}` steps; see `examples/`.
 Lengths are in millimetres and angles in degrees. Sewing directions turn counter-clockwise on
 screen, as in PE-DESIGN (45 = rows rising to the right); `.osd` files from before format
@@ -213,15 +463,16 @@ claude mcp add openstitch -- "$PWD/target/release/openstitch-mcp" --root ~/Embro
 
 Then ask Claude, for example, to "make a 60 × 40 mm badge with a red satin border, preview it and
 export badge.pes". `--read-only` blocks every editing command and `--no-files` blocks all file
-access; run `openstitch-mcp --help` for these and the size-limit flags. Other
-clients (Claude Desktop, IDEs) take the same command and arguments in their MCP server
-configuration.
+access; run `openstitch-mcp --help` for these and the size-limit flags. Other clients (Claude
+Desktop, IDEs) take the same command and arguments in their MCP server configuration.
 
 ## Contributing
 
 - Work on a branch and open a pull request to `main`; nobody pushes to `main` directly.
 - A PR is merged once CI is green on all three operating systems.
 - Every merge to `main` builds the executables (see [Download a build](#download-a-build)).
+- Every PR that changes a feature updates [docs/FEATURE_MATRIX.md](docs/FEATURE_MATRIX.md); the
+  README's status lists are generated from it (`python -I tools/readme_status.py --write`).
 - Rules for the code (clean-room boundaries, command registry, golden tests) are in
   [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/LEGAL_AND_LICENSING.md](docs/LEGAL_AND_LICENSING.md).
 
@@ -232,37 +483,10 @@ Only the maintainer creates release tags:
 - `vX.Y.Z` is a stable release.
 - `vX.Y.Z-alpha.N`, `-beta.N` and `-rc.N` are pre-releases, marked as such on GitHub.
 
-To release:
-
-1. Set `version` in the root `Cargo.toml` (for example `0.2.0`) through a normal pull request.
-   A pre-release of that version uses the same number: `0.2.0` → `v0.2.0-beta.1`.
-2. Optionally add release notes as `docs/releases/<tag>.md`, also through a pull request.
-3. Smoke-test the macOS package from the latest `main` run (download the
-   `openstitch-main-<sha>-macos-universal` artifact first):
-
-   ```bash
-   tools/smoke-macos.sh artifact
-   ```
-
-   Launch the Windows and Linux packages once by hand; there is no script for them yet.
-4. After both pull requests are merged, tag that commit on `main` and push the tag:
-
-   ```bash
-   git tag v0.2.0-beta.1
-   ```
-
-   ```bash
-   git push origin v0.2.0-beta.1
-   ```
-
-5. The **Release** workflow then:
-   - checks the tag's form, that `X.Y.Z` matches the workspace version, and that the tag is on
-     `main`;
-   - runs the full test suite and builds all three platforms;
-   - creates a **draft** GitHub release with the packages. The notes start with
-     `docs/releases/<tag>.md` when it exists, followed by the generated list of changes.
-
-   Review the draft and publish it.
+Pushing a tag on `main` runs the **Release** workflow: it checks the tag against the workspace
+version, runs the full test suite, builds all three platforms and creates a **draft** GitHub
+release with the packages and the notes from `docs/releases/<tag>.md`. The full procedure,
+including the README refresh done at every release, is in [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Documents
 
@@ -273,17 +497,18 @@ To release:
 - [File formats](docs/FILE_FORMATS.md)
 - [Compatibility tests](docs/COMPATIBILITY_TESTS.md) and the generated
   [compatibility status](docs/COMPATIBILITY_STATUS.md)
-- [Compatibility audit: top 20 differences and the next 11](docs/COMPATIBILITY_AUDIT.md)
+- [Compatibility audit](docs/COMPATIBILITY_AUDIT.md)
 - [Adding a PE-DESIGN reference file](compat/reference/README.md)
 - [Legal and licensing](docs/LEGAL_AND_LICENSING.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Distribution and packaging](docs/DISTRIBUTION.md)
-- [Release notes](docs/releases/)
-- [Handoff 2026-10-19](docs/HANDOFF-2026-10-19.md) and [2026-10-18](docs/HANDOFF-2026-10-18.md)
-  (history)
+- [Releasing](docs/RELEASING.md) and the [release notes](docs/releases/)
+- Handoffs (history): [2026-10-29](docs/HANDOFF-2026-10-29.md),
+  [2026-10-28](docs/HANDOFF-2026-10-28.md), [2026-10-27](docs/HANDOFF-2026-10-27.md),
+  [2026-10-19](docs/HANDOFF-2026-10-19.md), [2026-10-18](docs/HANDOFF-2026-10-18.md)
 
-`tools/` holds the Python scripts that generate fixtures and data tables
-(`pip install pyembroidery`, run with `python -I`).
+`tools/` holds the Python scripts that generate fixtures, data tables, screenshots and the
+README's status lists (`pip install pyembroidery pillow`, run with `python -I`).
 
 ## License
 
