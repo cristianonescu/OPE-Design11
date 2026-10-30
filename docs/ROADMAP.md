@@ -223,7 +223,8 @@ back.
     satin bounds hold at every working resolution since 2026-10-30 (exact stroke widths for
     even pixel counts), its fill direction and region order are PE's on every capture since
     2026-10-30 (largest row spread; scan order alternating by colour; specks kept and dropped
-    as PE). Compared with
+    as PE; PE's thread picks after reduction checked on 20 flat colours: a per-colour mapping
+    no tested distance reproduces, kept as a documented difference). Compared with
     PE-DESIGN 11.50's round-4 captures on 2026-10-29: Cross Stitch's six diagonal stitches per
     cell (−0.9 % stitches), Photo Stitch 1's Sew Page Color, 3.0 mm Run Pitch and 10 colours
     (+5 %); second round (bars, moved shapes, mono, Photo Stitch 2): Auto Punch's satin/fill

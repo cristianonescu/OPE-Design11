@@ -1364,6 +1364,29 @@ Line references are relative to `crates/`.
     bottom first: regions in scan order, reversed for the 1st, 3rd, … colour; it replaces
     "largest first". Counts: shapes 4384 / 4482, moved 4358 / 4436, specks 2355 / 2365,
     right triangle 2502 / 2547, bars 3094 / 3197 and 2011 / 2018.
+  - **Thread picks after colour reduction (documented difference, 2026-10-30; pe-refs-4's
+    round-5 `four-colours`, `ap-solo-*`, `ap-four-max10`, `ap-grid16-brother/-ver4` captures):**
+    Auto Punch's BROTHER EMBROIDERY picks are not always the nearest thread.
+    - The picks are a fixed per-colour mapping. Each colour gets the same thread alone as among
+      others, and Max. Number of Colors does not change them, so the colour reduction does not
+      move flat colours.
+    - The Omit Region Colors swatches show the matched threads, not the reduced colours.
+    - On 20 flat colours (four squares, a 16-colour grid of primaries, half levels, tints and
+      greys), OpenStitch's equal-weight RGB match (#119) gives PE's thread for 13.
+    - PE's misses go both ways, so no colour shift explains them:
+      - (128, 0, 0) gets 49 Amber Red (181, 75, 100) over 13 nearer threads, four of them PE's
+        own picks elsewhere;
+      - (128, 128, 255) gets the darker 4 Cornflower Blue;
+      - (192, 192, 192) gets the darker 16 Silver;
+      - (200, 40, 120) gets 51 rather than 49;
+      - (240, 160, 40) gets 12 rather than 52.
+    - Twelve distances (RGB variants, YUV, HSV, CIELAB 1976 with and without gamma, CIE94,
+      CIEDE2000) were tried, each after 22 pre-shifts (channel quantisation and bin centres,
+      saturation, gamma, normalisation). The best explains 15 of 20, so none is adopted.
+    - With the Ver4 Option Color chart, PE's picks depend on the other colours in the image
+      ((200, 40, 120) gets red2 alone and magenta2 among others) and turn greys into navy,
+      maroon and teal. That is treated as a PE-DESIGN quirk, not a model.
+    OpenStitch keeps the equal-weight nearest thread.
   - **Colour order** (`autopunch-owner-shapes-moved.pes`, the same four colours with every
     shape moved and recoloured): PE sews yellow, blue, red, green again, so the order is a
     property of the colours. It is the reduced colour's R + G + B, highest first (yellow 480,
