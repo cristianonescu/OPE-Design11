@@ -1118,7 +1118,12 @@ Line references are relative to `crates/`.
   "OpenStitch") keep the box within 0.5 mm (specs `text-transform-N-openstitch[-lL]`,
   `text-transform-N-agjy[-lL]`). Parked (round4\text, not in the repository): arch 2 on
   "Agjy 123" at the default level (minX 0.6 mm) and on "OpenStitch" at level 25 (minX
-  0.6 mm), taper 4 at level 100 (maxX 1.1 mm) and slant 9 at level 100 (maxX 0.6 mm).
+  0.6 mm), taper 4 at level 100 (maxX 1.1 mm) and slant 9 at level 100 (maxX 0.6 mm). Checked
+  across the levels (2026-10-30), no single rule fixes them: arch 2 sits 0.3-0.6 mm left
+  (minX) at every level while its right edge moves from -0.2 to +0.3 mm, so a shift would push
+  level 100 out; taper 4 is within 0.1 mm at every level but 100 (the full taper); slant 9's
+  right edge is already 0.4 mm short at the default and 0.6 mm at level 100 (the fitted envelope,
+  not the level scaling). Left parked.
 - **Sewing order inside a text (checked 2026-10-27):** not a gap. PE-DESIGN 11.50 also sews
   every letter's region first, then every letter's outline, one colour block each (spec
   text-sewing-order, reference tier). Still open: the guide disables "some editing of
