@@ -1578,7 +1578,10 @@ Line references are relative to `crates/`.
   "Ver4 Option Color" chart has exactly 29 rows, and its own file of them
   (`ver4-option-color-29.pes`, reference session) writes ids 66–94, type `0x0B`, brand
   "Option Color" and RGB on a 0/85/170/255 grid: 61 basic + 4 reserved (shown nowhere) + 29,
-  as the issue said. The matcher (`sew_palette_index`) follows the issue's dual rule and is
+  as the issue said. The `#PES0110` writer writes an Option Color thread with that record
+  (id string 66–94, empty code and chart, type `0x0B`; `as_pe_writes`,
+  `option_colours_are_written_with_their_sew_palette_ids` against PE's own file) instead of the
+  nearest PEC index it gave before. The matcher (`sew_palette_index`) follows the issue's dual rule and is
   **not verified against PE-DESIGN**: no capture shows where PE-DESIGN matches colours to this
   palette (its vector import does not: the swatch capture sent rgb(0, 0, 255) to 405 BLUE, not
   to the identical Option colour blue2). No default path calls it, so no output a PE

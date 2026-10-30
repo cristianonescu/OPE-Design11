@@ -1284,7 +1284,10 @@ BROTHER EMBROIDERY chart (PEC entries 1–61, with their codes), 62–65 reserve
 them nowhere), 66–94 PE-DESIGN 11.50's "Ver4 Option Color" chart: 29 rows with an empty code,
 brand "Option Color", type `0x0B` and RGB on a 0/85/170/255 grid, written in a `#PES0110`
 thread table with the id string (66–94) where a BROTHER EMBROIDERY thread has its PEC index
-(`tests/fixtures/pe11/ver4-option-color-29.pes`). `sew_palette_index` matches a colour to it
+(`tests/fixtures/pe11/ver4-option-color-29.pes`). OpenStitch's `#PES0110` writer
+(`pes11::as_pe_writes`) writes such a thread (brand "Option Color", one of the 29 RGB values)
+the same way since 2026-10-30: id string, empty code and chart, type `0x0B`; any other colour
+gets its nearest PEC index there. `sew_palette_index` matches a colour to it
 with #119's dual squared-Euclidean / city-block rule (`approximate_index`), skipping the
 reserved ids, or to ids 1–61 alone; that rule is the issue's and not verified against
 PE-DESIGN (no capture shows where PE-DESIGN matches to this palette; its vector import uses the

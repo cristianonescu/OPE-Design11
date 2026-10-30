@@ -20,8 +20,9 @@
 use crate::io::{ByteReader, ByteWriter};
 use crate::{FormatError, Result, pec};
 use openstitch_core::{
-    BROTHER_EMBROIDERY_BRAND, PEC_CHART, StitchPattern, Thread, brother_embroidery_code,
-    nearest_index, pec_basic_chart, round_coordinate,
+    BROTHER_EMBROIDERY_BRAND, OPTION_COLOR_BRAND, OPTION_COLOR_KIND, PEC_CHART, StitchPattern,
+    Thread, VER4_OPTION_COLORS, brother_embroidery_code, nearest_index, pec_basic_chart,
+    round_coordinate,
 };
 use std::borrow::Cow;
 
@@ -1375,9 +1376,24 @@ fn write_mfc_unicode(w: &mut ByteWriter, s: &str) {
 /// (`openstitch_core::BROTHER_EMBROIDERY`; PE-DESIGN showed
 /// `16 / Brother` with no thread chart otherwise: compat pes-0110-editable-shapes, the owner's
 /// check of 2026-10-29); every thread gets its nearest PEC chart index as its name, where
-/// PE-DESIGN writes it for its own colours. For a design's threads:
+/// PE-DESIGN writes it for its own colours. A Ver4 Option Color thread (brand `Option Color`,
+/// one of [`VER4_OPTION_COLORS`]' RGB) gets its sew palette id 66–94 there instead, an empty
+/// code and chart and type 0x0B, as in PE-DESIGN's own file of the 29 colours
+/// (`tests/fixtures/pe11/ver4-option-color-29.pes`, #136). For a design's threads:
 /// [`write`] writes a thread table as given, so a PE-DESIGN file keeps its own strings.
 pub fn as_pe_writes(t: &Thread) -> Thread {
+    if let Some(&(id, _, _)) = (t.brand.as_deref() == Some(OPTION_COLOR_BRAND))
+        .then(|| VER4_OPTION_COLORS.iter().find(|c| c.2 == t.rgb_value()))
+        .flatten()
+    {
+        return Thread {
+            name: Some(Cow::Owned(id.to_string())),
+            catalog_number: None,
+            chart: None,
+            kind: Some(OPTION_COLOR_KIND),
+            ..t.clone()
+        };
+    }
     // PE-DESIGN matches to its 61-entry chart only (#119).
     let Some(index) = nearest_index(t, pec_basic_chart()) else {
         return t.clone();
