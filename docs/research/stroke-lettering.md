@@ -194,8 +194,21 @@ not before, so every reference in the repository has a spec that reads it.
    at one crossing; O: one ring). Which stroke owns a junction and when two strokes through it are
    sewn as one stay with the order (step 4); step 0's blocks will check the cut once the reader
    maps them.
-2. **Satin per stroke.** Use the column satin of `column.rs` along each stroke's centre line,
-   crossings perpendicular to it. Spec: `text-defaults-h` checks 4 strokes in PE-DESIGN's order
+   **PE-DESIGN's own cut** (Convert to Blocks, `stroke-blocks-H/-A`, read with the PES 0110
+   reader's `Shape::punch`, #184 follow-up): H = the left stem's top part (3 direction lines,
+   y 0-8.8 mm), its bottom part (4 lines, 20.6 up to 11.6), the junction square (2 lines,
+   8.8-11.6), the bar (4 vertical lines, x 3.8-13.6) and the whole right stem (7 lines, 0-20.6),
+   with running pieces between; A = the left leg's upper part (apex side to the bar), its lower
+   part, its junction (2 lines), the bar (3 lines) and the whole right leg (8 lines, the apex
+   included). The cutter's strokes are those pieces; the first stroke split at its junction into
+   a part on each side and the junction square, the second sewn whole through its junction, is
+   the order's rule (step 4).
+2. **Satin per stroke.** Use the column satin of `column.rs` between rungs. PE-DESIGN's rungs are
+   not perpendicular to the centre line: they join the stroke's two side edges at equal fractions
+   of each side's length (A's right leg: every line about horizontal, (12.0, 0)-(8.1, 0) …
+   (20.1, 20.6)-(16.7, 20.5), although the leg slants at 60°; the left leg's lines slant at 61°
+   because its sides start and end at different heights). So the rungs come from the stroke's two
+   side polylines, paired by length. Spec: `text-defaults-h` checks 4 strokes in PE-DESIGN's order
    and the crossings' directions (a per-run direction-cluster measure), with the count within the
    satin family's tolerance.
 3. **Fill per stroke.** Rows across the stroke, turning along curved strokes (the "column fill"
