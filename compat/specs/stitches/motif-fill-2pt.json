@@ -3,7 +3,7 @@
   "id": "motif-fill-2pt",
   "area": "stitches",
   "title": "Motif fill with the owner's straight psc-motif-2pt.pmf",
-  "description": "A 40 x 40 mm square sewn as motif fill with an owner-made straight motif (psc-motif-2pt.pmf) at 5 x 5 mm, spacing 0, row offset 0: rows 5 mm apart, each motif's base line in the middle of its band, the bands starting at the region's top edge, so the stitches span 37.5 mm (2.5 to 40 mm).",
+  "description": "A 40 x 40 mm square sewn as motif fill with an owner-made straight motif (psc-motif-2pt.pmf) at 5 x 5 mm, spacing 0, row offset 0: rows 5 mm apart, each motif's base line in the middle of its band, the bands starting at the region's top edge, so the stitches span 37.5 mm (2.5 to 40 mm). Travel between rows and to and from the start point walks the outline in even steps of at most 2 mm, with PE-DESIGN's tie-in and lock.",
   "covers": {
     "audit": [],
     "featureMatrix": [
@@ -95,6 +95,21 @@
     }
   ],
   "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "motif.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 sews 130 needle points: a 0.3 mm tie-in at the start point, travel along the outline in even steps of at most 2 mm to the nearest row, the 8 rows joined by 5 mm walks along the outline in three steps, the walk back to the start point and a 0.3 mm lock",
+      "reference": {
+        "tolerance": {
+          "percent": 3
+        }
+      }
+    },
     {
       "id": "height",
       "measure": {

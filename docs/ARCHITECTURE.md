@@ -680,7 +680,11 @@ openstitch_app::editor (lib, no egui, unit-tested)
   chrome; screenshots ignore the saved window preferences). `python3 tools/screenshots.py`
   rebuilds the editor screenshots from examples/ in a temporary folder with a stand-in home
   folder, so no local path shows, and downscales and quantises them. The
-  images in `docs/images/rust-editor-*.png` are made this way on macOS (Metal).
+  images in `docs/images/rust-editor-*.png` are made this way on macOS (Metal). The stitch plots
+  in `docs/images/engine-*.png` need no window: `python3 tools/engine_image.py
+  examples/NAME.json docs/images/engine-NAME.png` runs the example with `stitchtool exec`,
+  exports PES and draws the stitches in their thread colours with the needle points as dots
+  (engine-programmable-fill.png regenerated this way, 2026-10-30).
 
 ## Decisions
 

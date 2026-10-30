@@ -1248,9 +1248,11 @@ Line references are relative to `crates/`.
   motifs (`line-motif-zigzag-3pt`). The import mapped a motif's cross offset at twice its size
   (fixed: 1024 cell units are one motif size). A reference point was ignored for programmable
   and motif fills, and a user pattern fell back to the default with a reference point or a
-  curved direction (both fixed). Left: the motif fill's travel between rows (PE-DESIGN walks the
-  outline at 2 mm: 130 needle points against 103) and the motif line's tie stitches (23
-  against 16).
+  curved direction (both fixed). The motif fill's travel is PE-DESIGN's since 2026-10-30: rows
+  from the one nearest the start point, travel along the outline in even steps of at most
+  2 mm, the fill's tie-in and lock (130 needle points against PE-DESIGN's 130, was 103; spec
+  `motif-fill-2pt` now checks the count within 3 %). Left: the motif line's tie stitches (23
+  against 16) and which way PE-DESIGN walks when both ends of the first row are as near.
   Second round of captures, 2026-10-29 (pe-refs-4, inputs drawn by its `wizimg.py`):
   - **Auto Punch bars** (`autopunch-thin-strokes.pes`, nine black 40 mm bars 0.5–4 mm wide;
     `autopunch-thin-strokes-wide.pes`, seven 30 mm bars 5–14 mm; Max. Number of Colors filled
