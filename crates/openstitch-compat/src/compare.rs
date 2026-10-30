@@ -184,6 +184,18 @@ impl Summary {
     }
 }
 
+/// How many zero-length stitches [`CompareOptions::drop_repeats`] removed from each side. The
+/// report lists them for every compare that drops any, passing or failing, so the stitches it
+/// leaves out of the comparison stay on record.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DroppedRepeats {
+    /// In the expected file (the reference).
+    pub expected: usize,
+    /// In OpenStitch's file.
+    pub actual: usize,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Comparison {
@@ -194,6 +206,9 @@ pub struct Comparison {
     pub differences: Vec<Difference>,
     /// Differences found past `maxDifferences` and not listed.
     pub unlisted: usize,
+    /// Set when `dropRepeats` was asked for: the zero-length stitches it removed per side.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dropped_repeats: Option<DroppedRepeats>,
 }
 
 impl Comparison {
@@ -254,22 +269,27 @@ fn normalised(trace: &Trace, collapse_jumps: bool) -> Vec<Entry> {
     out
 }
 
-/// `p` without its zero-length stitches (see [`CompareOptions::drop_repeats`]).
-fn without_repeats(p: &StitchPattern) -> StitchPattern {
+/// `p` without its zero-length stitches (see [`CompareOptions::drop_repeats`]), and how many
+/// were removed.
+fn without_repeats(p: &StitchPattern) -> (StitchPattern, usize) {
     let mut out = StitchPattern {
         stitches: Vec::with_capacity(p.stitches.len()),
         ..p.clone()
     };
     let mut at: Option<(f64, f64)> = None;
+    let mut dropped = 0;
     for s in &p.stitches {
         match s.command {
-            Command::Stitch if at == Some((s.x, s.y)) => continue,
+            Command::Stitch if at == Some((s.x, s.y)) => {
+                dropped += 1;
+                continue;
+            }
             Command::Stitch | Command::Jump => at = Some((s.x, s.y)),
             _ => {}
         }
         out.stitches.push(*s);
     }
-    out
+    (out, dropped)
 }
 
 pub fn compare_patterns(
@@ -282,11 +302,13 @@ pub fn compare_patterns(
             drop_repeats: false,
             ..options.clone()
         };
-        return compare_patterns(
-            &without_repeats(expected),
-            &without_repeats(actual),
-            &options,
-        );
+        let ((e, de), (a, da)) = (without_repeats(expected), without_repeats(actual));
+        let mut c = compare_patterns(&e, &a, &options);
+        c.dropped_repeats = Some(DroppedRepeats {
+            expected: de,
+            actual: da,
+        });
+        return c;
     }
     let mut out = Out {
         options,
@@ -384,6 +406,7 @@ pub fn compare_patterns(
         origin_shift_mm: shift,
         differences: out.list,
         unlisted: out.unlisted,
+        dropped_repeats: None,
     }
 }
 

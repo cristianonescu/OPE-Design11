@@ -514,6 +514,8 @@ Shared by every format:
   (`pec::restore_jump_landings`), and a stitch block keeps a stitch on its landing, so the
   folding formats fold the move onto the same point as PE-DESIGN (`machine-sample-basic`, #135).
   A stitch file PE-DESIGN only opened has none (`machine-formats`), nor has OpenStitch's PEC.
+  PE's PCS and HUS write such a landing twice (two zero-length records), OpenStitch's once
+  (open difference; `machine-sample-basic` counts it among the dropped repeats).
 - A stitch longer than a record holds is one needle penetration: the full-size pieces are
   jumps and only the remainder is a stitch (HUS alone writes two stitches).
 - A frame move is a run of jumps with no trim record of its own; the formats that have a trim

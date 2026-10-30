@@ -353,6 +353,7 @@ fn base_check(m: &MeasurementSpec, tier: Tier) -> Check {
         differences: Vec::new(),
         unlisted_differences: 0,
         note: None,
+        dropped_repeats: None,
     }
 }
 
@@ -480,6 +481,7 @@ impl Ctx<'_> {
                 c.actual = Some(json!(cmp.total()));
                 c.unlisted_differences = cmp.unlisted;
                 c.differences = cmp.differences;
+                c.dropped_repeats = cmp.dropped_repeats;
                 c.status = if c.unlisted_differences == 0 && c.differences.is_empty() {
                     CheckStatus::Pass
                 } else {
@@ -602,6 +604,7 @@ impl Ctx<'_> {
             differences: Vec::new(),
             unlisted_differences: 0,
             note: None,
+            dropped_repeats: None,
         };
         let path = match safe_relative(&machine.record) {
             Ok(p) => self.config.machine_root.join(p),

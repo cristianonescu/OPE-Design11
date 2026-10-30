@@ -349,3 +349,48 @@ fn pes_object_sections_and_bytes() {
     // A file that is not what its type says is an error, not a match.
     assert!(compare_files((&v6, FileType::Pes), (b"junk", FileType::Pes), &o).is_err());
 }
+
+/// `dropRepeats` leaves zero-length stitches out on both sides and says how many per side;
+/// without it they are a count difference. A repeat after a jump (the landing) counts too.
+#[test]
+fn drop_repeats_counts_what_it_leaves_out() {
+    use openstitch_compat::compare::DroppedRepeats;
+    let base = pattern();
+    // Two repeats in the expected design: one after the jump (a landing), one mid-run.
+    let mut expected = base.clone();
+    let landing = expected
+        .stitches
+        .iter()
+        .position(|s| s.command == Command::Jump)
+        .expect("jump");
+    let j = expected.stitches[landing];
+    expected.stitches.insert(
+        landing + 1,
+        openstitch_core::Stitch::new(j.x, j.y, Command::Stitch),
+    );
+    let s5 = expected.stitches[5];
+    expected
+        .stitches
+        .insert(6, openstitch_core::Stitch::new(s5.x, s5.y, Command::Stitch));
+    let plain = compare_patterns(&expected, &base, &exact());
+    assert!(
+        whats(&plain).contains(&"total.stitches"),
+        "{:?}",
+        whats(&plain)
+    );
+    assert_eq!(plain.dropped_repeats, None);
+    let dropping = CompareOptions {
+        drop_repeats: true,
+        ..exact()
+    };
+    let c = compare_patterns(&expected, &base, &dropping);
+    assert!(c.is_match(), "{:?}", whats(&c));
+    // `base` already has a zero-length stitch on its own landing (jump then a stitch there).
+    assert_eq!(
+        c.dropped_repeats,
+        Some(DroppedRepeats {
+            expected: 3,
+            actual: 1
+        })
+    );
+}
