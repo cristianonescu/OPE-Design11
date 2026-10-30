@@ -267,7 +267,7 @@ before any code; the ranking and the proposed tracks are in
 
 | Item | Feature | Phase | Sketch | Status |
 |---|---|---|---|---|
-| B1 | Contour (offset) fill | A | [research/beyond/contour-fill.md](research/beyond/contour-fill.md) | Sketched. The single spiral exists as PE-DESIGN's own Spiral Stitch (an offset spiral, calibrated 2026-10-29, #138, `crate::spiral`); offset rings, double spiral, echo rings and join styles remain |
+| B1 | Contour (offset) fill | A | [research/beyond/contour-fill.md](research/beyond/contour-fill.md) | Done 2026-10-30: region type `contour` with rings, single and double spiral, echo lines (0–30) and round or mitred corners, on the ring tree of PE-DESIGN's Spiral Stitch (`crate::spiral`); open: repeats, bevel join, compat specs |
 | B2 | Two-guide fills and stitch-angle maps | D | [research/beyond/guided-fill-and-angle-maps.md](research/beyond/guided-fill-and-angle-maps.md) | Sketched; not started |
 | B3 | Satin corners and short stitches | B | [research/beyond/satin-corners-and-short-stitches.md](research/beyond/satin-corners-and-short-stitches.md) | Sketched; not started |
 | B4 | Auto-routed running stitches, Redwork, satin branching | C | [research/beyond/auto-route-and-branching.md](research/beyond/auto-route-and-branching.md) | Sketched; not started |
