@@ -138,8 +138,8 @@ pub(crate) fn read_stitches(reader: &mut ByteReader<'_>) -> Result<Vec<Stitch>> 
 
 /// Puts back the needle point at each jump's landing that PE-DESIGN 11.50's PEC writer leaves
 /// out. PE-DESIGN's stitch data has a stitch where a jump run lands (its DST, EXP, JEF and other
-/// exports all carry it, as a zero-length stitch), but its PEC section holds no zero-length
-/// stitch at all: the sample of issue #135 has 471 needle points in its PEC and 475 in its DST,
+/// exports all carry it, as a zero-length stitch), but its PEC section can leave it out: the
+/// sample of issue #135 has 471 needle points in its PEC and 475 in its DST,
 /// 2 of them at the jump landings. A jump followed by a stitch elsewhere gets a stitch at the
 /// jump's end, so the writers fold their frame moves onto the same point PE-DESIGN's do. Only for
 /// PE-DESIGN's own `#PES0110` files (OpenStitch's PEC keeps its landing stitches, and the

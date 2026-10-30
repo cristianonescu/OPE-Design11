@@ -508,7 +508,8 @@ Shared by every format:
   record (`machine-formats.dst`); a longer way back is its pieces alone (`sample-basic.DST` 2,
   `hoop-oversize-100.dst` 3, `long-jump-300.dst` 12 records), so it reads as no trim.
 - A design PE-DESIGN generated has a zero-length stitch at each jump's landing, which its
-  machine exports write and its PEC section leaves out (PE's PEC holds no zero-length stitch).
+  machine exports write and its PEC section can leave out (`sample-basic`'s PEC has none of
+  its 4 zero-length stitches; other PE files do keep some, see the PEC section).
   `stitches.import` of a PE-DESIGN `#PES0110` file puts it back
   (`pec::restore_jump_landings`), and a stitch block keeps a stitch on its landing, so the
   folding formats fold the move onto the same point as PE-DESIGN (`machine-sample-basic`, #135).
