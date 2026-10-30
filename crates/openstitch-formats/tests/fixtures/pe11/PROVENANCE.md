@@ -127,3 +127,22 @@ not kept.
 | `m09-curve-bent.pes` | `9cc2dee22b3f5821ec5671751016e35cd6d580d4fc296a903fb991b5a3189f66` | Curve Block: clicks (10,10) (10,30) (30,20) (30,40) (50,10), double-click (50,30); the block sags through the middle pair. 40,00 x 30,00 mm, 421 st. |
 | `m10-curve-uneven.pes` | `ba4087375f473715217951a32b1b1f54f9cdcaac387e76dcb96c213c06124142` | Curve Block: clicks (10,10) (10,30) (20,25) (20,45) (60,10), double-click (60,30); unequal chords. 50,80 x 35,00 mm, 529 st. |
 | `m11-curve-4.pes` | `ce26049eadee96817d4bb716df8dc7bc2af4597a7762e7afc934820cef72d837` | Curve Block: clicks (10,10) (10,30) (25,25) (25,45) (45,25) (45,45) (60,10), double-click (60,30); four lines. 50,00 x 37,00 mm, 537 st. |
+
+## Round 4 (2026-10-30): Applique Wizard
+
+Made by the owner's PE-DESIGN 11.50 (Layout & Editing) on Windows 11 Pro 10.0.26300,
+2026-10-30 09:06-09:10, by black-box GUI use only (session pe-refs-4, round4/log.txt). App menu
+> New (Hoop Size 100 x 100 mm); Rectangle tool (10,10)-(30,30) mm at the tool state (line Not
+Sewn, region Satin Stitch, Direction 45, under sewing on, density 4,5, 007), 280 st; Ctrl+A,
+Home > Wizards > Applique Wizard; Save As "Layout & Editing Ver.11.0 File" (#PES0110); Ctrl+Z
+back to the square before the next variant. Dialog defaults: Applique Material Yes / Running
+Stitch, Applique Position, Tack down Yes / V Stitch, Covering Stitch Zigzag 3,0 mm / 4,5
+line/mm, Output Pattern Add, Distance 3,0 mm.
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `a01-rect-applique.pes` | `5d93cddbf8afad0f280a7f3b4a931a8473fe7c2692763c7ef017232e75e95931` | Dialog defaults: four Sewing Order items (square; material; position; covering group with the tack-down). 32,60 x 32,80 mm, 1063 st; PEC colours 1, 62, 63, 64. |
+| `a02-applique-cutting.pes` | `15ffc177e7850e94283a37f6d996fe44927374d6b674e1a0bb1295ab3c5e6c3b` | Applique Material Cutting: 1390 st; PEC colours 1, 65 (four cutting blocks), 63, 64. |
+| `a03-applique-no-tackdown.pes` | `fee6f2f751623e9ebeb3701ac6c5e00e1b97bd50b51d3775d178b005f28a5b7e` | Tack down No: 970 st; PEC colours 1, 62, 63, 64. |
+| `a04-applique-cover-4mm.pes` | `d446d00ea341cdcd5953d0c86530e77ef810391ac513e51d35300196b8d3c021` | Covering width 4,0 mm: 34,60 x 34,70 mm, 1107 st. |
+| `a05-applique-replace.pes` | `ed820109683b353ef717c697dcffcc280a15598a7399b7e56dcbc55226121ad1` | Output Pattern Replace (distance greyed): the square replaced; three items, 23,00 x 23,00 mm, 537 st; PEC colours 62, 63, 64. |

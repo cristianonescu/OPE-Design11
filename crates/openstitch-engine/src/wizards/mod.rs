@@ -7,7 +7,7 @@
 //! machine stops, as PE-DESIGN does with its appliqué and cutwork colours. The behaviour comes
 //! from the public PE-DESIGN guide; the geometry is this project's own.
 
-mod applique;
+pub(crate) mod applique;
 mod background;
 mod cutwork;
 mod patch;
