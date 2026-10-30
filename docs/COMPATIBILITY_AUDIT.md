@@ -1263,6 +1263,13 @@ Line references are relative to `crates/`.
     averaged the bar edges into greys that became extra threads and thin grey regions (3446 /
     4639 stitches, 2 and 4 threads). The working copy now keeps each box's most common colour,
     and the colour count is automatic as PE's is (2 for the bars, 5 for the shapes).
+    At other working resolutions the choices did not hold (checked 2026-10-30): the chamfer
+    width read an even-width stroke one pixel short, so the 0.75 mm bar turned fill at 300,
+    350, 500, 700, 800 and 960 px (the 1 mm bar too at 300) and the 7 mm bar satin at 250 px;
+    only 400 and 600 px matched PE. `regions::thickness` now adds the pixel when the deepest
+    pixels form a two-pixel ridge (a stroke centred between two pixel rows), and every
+    resolution from 250 to 960 px gives PE's choice on all 16 bars; widths of 1 to 12 px
+    measure exactly. Counts at the default resolution are unchanged (3094 / 4373 on main).
   - **Colour order** (`autopunch-owner-shapes-moved.pes`, the same four colours with every
     shape moved and recoloured): PE sews yellow, blue, red, green again, so the order is a
     property of the colours. It is the reduced colour's R + G + B, highest first (yellow 480,
