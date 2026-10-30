@@ -1418,9 +1418,13 @@ Line references are relative to `crates/`.
       4665 stitches, every grey band within 6 % but 150–179.
 
     Left (open):
-    - The mixing law within a set. PE gives an area's main thread nearly full coverage, and its
-      choices are neither nearest-thread nor least squares; OpenStitch's named sets sew 8–15 %
-      fewer stitches.
+    - The mixing law within a set, now narrowed by the colour-ramp captures (hue 0–300° through
+      CMYK and RGBK). PE sews the most-used thread first, which OpenStitch now does too: every
+      set's thread order matches on the shapes and the ramp. A saturated colour's chromatic
+      threads sum to about full coverage, which OpenStitch now applies over its least squares
+      (`screen::saturate`). The named sets moved from −8 to −15 % stitches against PE to −1.8
+      to −6.4 %. Left: the exact transitions between neighbouring colours, for example the
+      CMYK ramp's red, which PE splits evenly between yellow and magenta (−11 % stitches).
     - Auto Select's thread choice. PE always picks four threads; OpenStitch reduces to the
       image's colours, so where PE mixes green from blue and yellow, OpenStitch gives green its
       own thread.

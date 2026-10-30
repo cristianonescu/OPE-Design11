@@ -262,15 +262,6 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
         threads.push(palette::nearest_pec(p.fabric).1);
     }
     let dithered = palette::dither(&cells, cols, rows, &targets);
-    // Light threads first, so darker detail sews on top; a named Color Set keeps its order.
-    let mut order: Vec<usize> = (0..threads.len()).collect();
-    if fixed.is_none() {
-        order.sort_by(|&a, &b| {
-            luma(targets[b])
-                .total_cmp(&luma(targets[a]))
-                .then(a.cmp(&b))
-        });
-    }
     let mut objects = Vec::new();
     let mut counts = Vec::new();
     let mut sewn_threads = Vec::new();
@@ -289,6 +280,22 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
         };
         (shares, settings)
     });
+    let mut order: Vec<usize> = (0..threads.len()).collect();
+    match &screen {
+        // Fill: light threads first, so darker detail sews on top.
+        None => order.sort_by(|&a, &b| {
+            luma(targets[b])
+                .total_cmp(&luma(targets[a]))
+                .then(a.cmp(&b))
+        }),
+        // Lines: the thread the screen sews most first, as PE-DESIGN orders Photo Stitch 2
+        // (every round-4 capture, Auto Select and the named Color Sets alike: on the owner's
+        // shapes CMYK sews cyan, magenta, yellow, black; on the ramp cyan, yellow, magenta,
+        // black); the screen angles follow this order.
+        Some((shares, _)) => {
+            order.sort_by(|&a, &b| shares.usage(b).total_cmp(&shares.usage(a)).then(a.cmp(&b)))
+        }
+    }
     for (layer, &t) in order.iter().enumerate() {
         let stitches = match &screen {
             None => fill_layer(&dithered, cols, rows, t, frame, cw, ch),
