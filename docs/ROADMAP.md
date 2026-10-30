@@ -135,8 +135,9 @@ back.
 4. **Lettering:** stroke-wise sewing of TrueType text as PE-DESIGN does it (every letter is
    split into strokes, each sewn as a column with its rows across the stroke, for Fill and Satin
    text alike; the 'H' references match only because an H's stems are vertical; measured and
-   planned in [research/stroke-lettering.md](research/stroke-lettering.md), 2026-10-30, with the
-   captures it needs) — the structural
+   planned in [research/stroke-lettering.md](research/stroke-lettering.md), 2026-10-30; the
+   captures are in and the stroke cut (step 1, `strokes::strokes`) is done; next, satin and fill
+   per stroke, then the order, travel and trims) — the structural
    gap behind text-fit-*, text-transform-* and text-sewing-order; the fitted circle's running
    stitch follows PE-DESIGN's Bézier halving since 2026-10-28 (text-fit-default mean needle
    distance 0.27 → 0.20 mm); Text Transform presets 13 and 14 (fan out / in) done 2026-10-28; round 4 (2026-10-29)

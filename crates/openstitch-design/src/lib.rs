@@ -36,6 +36,7 @@ pub mod skeleton;
 pub mod spiral;
 pub mod stamp;
 pub mod stitch_edit;
+pub mod strokes;
 pub mod text;
 
 pub use compile::Compiler;

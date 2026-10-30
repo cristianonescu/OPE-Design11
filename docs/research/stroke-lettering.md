@@ -185,8 +185,40 @@ not before, so every reference in the repository has a spec that reads it.
    short column) and at crossings (X: two chevrons), keep turning corners as one column with a fan
    (L, V's right arm), and give each stroke the part of the outline around it. Unit-test on Lato's
    I, L, T, V, X, O, H and A against the stroke boxes measured above and step 0's blocks.
-2. **Satin per stroke.** Use the column satin of `column.rs` along each stroke's centre line,
-   crossings perpendicular to it. Spec: `text-defaults-h` checks 4 strokes in PE-DESIGN's order
+   **Done 2026-10-30** (`openstitch_design::strokes`): the glyph is thinned on a grid to a
+   one-cell skeleton (Zhang–Suen, staircases removed), read as a graph of free ends, junctions
+   and loops; thinning spurs are pruned, a crossing split in two is merged, a branch is cut where
+   it turns by more than 115° (V's foot, A's apex; L's right angle stays), and an i's dot is a
+   stroke of its own. Lato's I, L, T, H, X, V, O, A, S, e and i give PE-DESIGN's structure (H: the
+   stems cut at the bar, 3.8 mm stems and a 2.8 mm bar; T: the bar cut at the stem; X: four arms
+   at one crossing; O: one ring). Which stroke owns a junction and when two strokes through it are
+   sewn as one stay with the order (step 4); step 0's blocks will check the cut once the reader
+   maps them.
+   **PE-DESIGN's own cut** (Convert to Blocks, `stroke-blocks-H/-A`, read with the PES 0110
+   reader's `Shape::punch`, #184 follow-up): H = the left stem's top part (3 direction lines,
+   y 0-8.8 mm), its bottom part (4 lines, 20.6 up to 11.6), the junction square (2 lines,
+   8.8-11.6), the bar (4 vertical lines, x 3.8-13.6) and the whole right stem (7 lines, 0-20.6),
+   with running pieces between; A = the left leg's upper part (apex side to the bar), its lower
+   part, its junction (2 lines), the bar (3 lines) and the whole right leg (8 lines, the apex
+   included). The cutter's strokes are those pieces; the first stroke split at its junction into
+   a part on each side and the junction square, the second sewn whole through its junction, is
+   the order's rule (step 4).
+2. **Satin per stroke.** Use the column satin of `column.rs` between rungs. PE-DESIGN's rungs are
+   not perpendicular to the centre line: they join the stroke's two side edges at equal fractions
+   of each side's length (A's right leg: every line about horizontal, (12.0, 0)-(8.1, 0) …
+   (20.1, 20.6)-(16.7, 20.5), although the leg slants at 60°; the left leg's lines slant at 61°
+   because its sides start and end at different heights). So the rungs come from the stroke's two
+   side polylines, paired by length.
+   **Rungs done 2026-10-30** (`GlyphStrokes::sides`, `GlyphStrokes::rungs`; not used for sewing
+   yet): every outline point goes to the stroke whose centre line is nearest, on its left or
+   right; each side is ordered along the stroke (an end edge keeps only its corners), kept over
+   the stretch both sides cover, and the sides are joined at equal fractions of their lengths.
+   H: stem rungs within 2° of horizontal and 3.8 mm long, bar rungs vertical, as PE-DESIGN's
+   blocks; the stems stop at 8.3 and 12.2 mm against PE-DESIGN's 8.8 and 11.6 (the junction
+   square goes to a stroke in step 4). A: the crossbar vertical; the right leg's upper part
+   157-172° (PE-DESIGN 161-180°); the left leg's upper part 9-39° against PE-DESIGN's 32-61° and
+   the right leg's lower part 155-156° against 161-178°, because PE-DESIGN gives the apex to the
+   right leg and sews it whole through its junction (step 4 settles the ownership). Spec: `text-defaults-h` checks 4 strokes in PE-DESIGN's order
    and the crossings' directions (a per-run direction-cluster measure), with the count within the
    satin family's tolerance.
 3. **Fill per stroke.** Rows across the stroke, turning along curved strokes (the "column fill"
