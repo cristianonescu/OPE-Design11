@@ -519,6 +519,70 @@ fn region(kind: RegionType) -> RegionSewing {
 }
 
 #[test]
+fn auto_satin_on_a_sharp_bend_spaces_its_needle_points_along_the_outer_edge() {
+    // The 120 degree band of compat satin-auto-bend-120 (PE-DESIGN 11.50: 161 stitches, the
+    // longest crossing 9.6 mm, needle points 1/3 mm apart along the 47.3 mm outer edge): its
+    // rungs are rebuilt on the outer edge, square on the legs and fanned round the bend.
+    let band = Contour::new(
+        vec![
+            v2(0.0, 0.0),
+            v2(300.0, 0.0),
+            v2(213.4, 150.0),
+            v2(170.1, 125.0),
+            v2(213.4, 50.0),
+            v2(0.0, 50.0),
+        ],
+        true,
+    );
+    let mut r = region(RegionType::Satin);
+    r.auto_direction = true;
+    r.density = 3.0;
+    r.underlay = false;
+    let layers = crate::region::layers(std::slice::from_ref(&band), &r, &[]);
+    let run = layers.concat().concat();
+    let crossings: Vec<f64> = run
+        .windows(2)
+        .map(|w| w[0].distance(w[1]))
+        .filter(|&d| d >= 40.0)
+        .collect();
+    // About 3 per millimetre of outer edge (141 for PE-DESIGN), none longer than two widths.
+    assert!(
+        (130..=150).contains(&crossings.len()),
+        "{}",
+        crossings.len()
+    );
+    assert!(crossings.iter().all(|&d| d <= 100.0 + 1.0), "{crossings:?}");
+    // Every needle point inside the band.
+    for p in &run {
+        assert!(
+            crate::geometry::contains(*p, std::slice::from_ref(&band))
+                || band
+                    .edges()
+                    .iter()
+                    .any(|&(a, b)| crate::skeleton::segment_distance(*p, a, b) < 0.6),
+            "{p:?} outside"
+        );
+    }
+    // The 90 degree band keeps the skeleton's lattice (the outer-edge rebuild starts past 100
+    // degrees).
+    let right = Contour::new(
+        vec![
+            v2(0.0, 0.0),
+            v2(300.0, 0.0),
+            v2(300.0, 300.0),
+            v2(250.0, 300.0),
+            v2(250.0, 50.0),
+            v2(0.0, 50.0),
+        ],
+        true,
+    );
+    let turn = |c: &Contour| crate::region::sharpest_reflex_turn(c).to_degrees();
+    assert!((turn(&band) - 120.0).abs() < 0.1, "{}", turn(&band));
+    assert!((turn(&right) - 90.0).abs() < 0.1, "{}", turn(&right));
+    assert_eq!(turn(&Contour::rectangle(0.0, 0.0, 100.0, 50.0)), 0.0);
+}
+
+#[test]
 fn auto_direction_sews_across_the_narrow_side() {
     let wide = Contour::rectangle(0.0, 0.0, 200.0, 50.0);
     assert_eq!(crate::region::auto_angle(std::slice::from_ref(&wide)), 90.0);

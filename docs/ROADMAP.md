@@ -128,7 +128,8 @@ back.
    far end's single-line gap is crossed at 0.22–5 mm, pe-refs-4's satin-length-sweep), its
    lattice stretches to whole gaps, and a column started at one end is sewn from its far end
    back to the start point; left: PE's entry/exit optimisation between objects (it moves start
-   points) and the Auto satin fan on sharp bends (satin-auto-bend-120: PE 161 stitches, ours 273).
+   points). The Auto satin fan on sharp bends follows PE-DESIGN since 2026-10-30
+   (satin-auto-bend-120 at the reference tier: 171 stitches to PE's 161, was 273).
 3. **Lines:** Start/End Type Feed/Run for stem, candlewicking and chain, with the L2 marker and
    the Feed/Run choice in the editor; open lines and chain diamonds; candlewicking Low and
    High. The motif line cannot be compared: PE-DESIGN's default motif is Brother's own artwork.

@@ -1597,8 +1597,16 @@ fn auto_satin(closed: &[Contour], r: &RegionSewing, holes: &[Contour]) -> Option
     if area(&column) < AUTO_COVERAGE * area(&closed[0].outline_points()) {
         return None;
     }
-    let rungs = square_rungs(rungs, &edges);
-    let mut rungs = fan_corners(reach_ends(rungs, closed, spacing), &closed[0]);
+    let rungs = reach_ends(square_rungs(rungs, &edges), closed, spacing);
+    // Past 90 degrees the derived skeleton's rungs swap sides round the bend; the rungs are
+    // then rebuilt on the outer edge (bends up to 90 degrees keep the skeleton's lattice,
+    // which PE-DESIGN's 30 to 90 degree references pin).
+    let rungs = if sharpest_reflex_turn(&closed[0]) > SHARP_BEND {
+        even_outer(rungs, &closed[0], spacing)
+    } else {
+        rungs
+    };
+    let mut rungs = fan_corners(rungs, &closed[0]);
     // Sewn from the far end back to the start point: one needle point per rung, on the start
     // point's side for every other rung counted from the start, so the last needle point is
     // the start point itself (PE-DESIGN, satin-auto-bend-60 and -90-nohalf).
@@ -1641,6 +1649,167 @@ fn auto_satin(closed: &[Contour], r: &RegionSewing, holes: &[Contour]) -> Option
         run = lead;
     }
     Some(run)
+}
+
+/// The turn (radians) past which Auto satin's rungs are rebuilt on the outer edge
+/// ([`even_outer`]): 100 degrees, between PE-DESIGN's 90 degree references, which the
+/// skeleton's lattice matches, and its 120 degree one, which it does not.
+const SHARP_BEND: f64 = 100.0 * std::f64::consts::PI / 180.0;
+
+/// The largest turn (radians) at a reflex corner of the closed outline `c`; 0 without one.
+pub(crate) fn sharpest_reflex_turn(c: &Contour) -> f64 {
+    let pts = c.outline_points();
+    let m = pts.len();
+    if m < 3 {
+        return 0.0;
+    }
+    let ccw = (0..m)
+        .map(|i| crate::paths::cross(pts[i], pts[(i + 1) % m]))
+        .sum::<f64>()
+        > 0.0;
+    (0..m)
+        .filter_map(|k| {
+            let (a, v, b) = (pts[(k + m - 1) % m], pts[k], pts[(k + 1) % m]);
+            let (din, dout) = (crate::paths::unit(v - a), crate::paths::unit(b - v));
+            let cross = crate::paths::cross(din, dout);
+            (cross.abs() > 1e-9 && (cross > 0.0) != ccw)
+                .then(|| crate::paths::dot(din, dout).clamp(-1.0, 1.0).dacos())
+        })
+        .fold(0.0, f64::max)
+}
+
+/// The point of `c`'s closed outline at distance `s` along it from its first point.
+fn outline_point(c: &Contour, s: f64) -> Vec2 {
+    let path = c.path();
+    let total: f64 = path.windows(2).map(|w| w[0].distance(w[1])).sum();
+    let mut s = if total > 0.0 {
+        s.rem_euclid(total)
+    } else {
+        0.0
+    };
+    for w in path.windows(2) {
+        let len = w[0].distance(w[1]);
+        if s <= len && len > 0.0 {
+            return w[0].lerp(w[1], s / len);
+        }
+        s -= len;
+    }
+    path.last().copied().unwrap_or(v2(0.0, 0.0))
+}
+
+/// Auto satin's rungs rebuilt on the outline's outer side as PE-DESIGN 11.50 spaces them: the
+/// outer edge, from the far end (the last rung) towards the start, gets a needle station every
+/// `spacing`, each with a rung square to that edge reaching across to the outline (the corner
+/// fan then re-aims the rungs near a bend). Every bend from 30 to 120 degrees sews 3 needle
+/// points per millimetre of outer edge (satin-auto-bend-*; the 120 degree band: 161 stitches,
+/// where spacing by the derived skeleton's rungs gave 267, whose sides swap across a sharp
+/// bend). The outer side is the stretch of outline between the first and the last rung that
+/// does not pass a reflex corner (the longer one on a straight band). Fewer than three rungs
+/// come back unchanged.
+fn even_outer(rungs: Vec<[Vec2; 2]>, outline: &Contour, spacing: f64) -> Vec<[Vec2; 2]> {
+    let n = rungs.len();
+    if n < 3 || spacing.is_nan() || spacing <= 0.0 {
+        return rungs;
+    }
+    let total: f64 = outline.path().windows(2).map(|w| w[0].distance(w[1])).sum();
+    if total <= 0.0 {
+        return rungs;
+    }
+    let pts = outline.outline_points();
+    let m = pts.len();
+    let edges: Vec<(Vec2, Vec2)> = outline.edges();
+    let ccw = (0..m)
+        .map(|i| crate::paths::cross(pts[i], pts[(i + 1) % m]))
+        .sum::<f64>()
+        > 0.0;
+    let reflex: Vec<f64> = (0..m)
+        .filter(|&k| {
+            let (a, v, b) = (pts[(k + m - 1) % m], pts[k], pts[(k + 1) % m]);
+            let turn = crate::paths::cross(v - a, b - v);
+            turn.abs() > 1e-9 && (turn > 0.0) != ccw
+        })
+        .map(|k| outline_position(outline, pts[k]))
+        .collect();
+    let pos = |p: Vec2| outline_position(outline, p);
+    let (first, last) = (rungs[0], rungs[n - 1]);
+    // The stretch from each end of the first rung to the end of the last rung on its side,
+    // going round the way that does not cross the first rung's other end.
+    let chain = |s: usize| -> Option<(f64, f64, f64)> {
+        let (a, other) = (pos(first[s]), pos(first[1 - s]));
+        let forward = |x: f64| (x - a).rem_euclid(total);
+        let ends = [pos(last[0]), pos(last[1])];
+        for dir in [1.0, -1.0] {
+            let reach = |x: f64| {
+                if dir > 0.0 {
+                    forward(x)
+                } else {
+                    (total - forward(x)) % total
+                }
+            };
+            let (near, far) = if reach(ends[0]) <= reach(ends[1]) {
+                (ends[0], ends[1])
+            } else {
+                (ends[1], ends[0])
+            };
+            let _ = far;
+            if reach(near) < reach(other) {
+                return Some((a, dir, reach(near)));
+            }
+        }
+        None
+    };
+    let (Some(c0), Some(c1)) = (chain(0), chain(1)) else {
+        return rungs;
+    };
+    let passes_reflex = |(a, dir, len): (f64, f64, f64)| {
+        reflex.iter().any(|&r| {
+            let d = if dir > 0.0 {
+                (r - a).rem_euclid(total)
+            } else {
+                (a - r).rem_euclid(total)
+            };
+            d > 1.0 && d < len - 1.0
+        })
+    };
+    let o = match (passes_reflex(c0), passes_reflex(c1)) {
+        (false, true) => 0,
+        (true, false) => 1,
+        _ => usize::from(c1.2 > c0.2),
+    };
+    let (a, dir, len) = if o == 0 { c0 } else { c1 };
+    let mut out: Vec<[Vec2; 2]> = Vec::new();
+    let mut k = 0usize;
+    while k <= 1_000_000 {
+        let t = len - spacing * k as f64;
+        if t < -1e-9 {
+            break;
+        }
+        let s = a + dir * t.max(0.0);
+        let outer = outline_point(outline, s);
+        let tangent =
+            crate::paths::unit(outline_point(outline, s + dir) - outline_point(outline, s - dir))
+                * dir;
+        let inward = if ccw {
+            v2(-tangent.y, tangent.x)
+        } else {
+            v2(tangent.y, -tangent.x)
+        };
+        let inward =
+            if crate::geometry::contains(outer + inward * 1.0, std::slice::from_ref(outline)) {
+                inward
+            } else {
+                inward * -1.0
+            };
+        let start = outer + inward * 0.01;
+        if let Some(d) = ray_to(start, inward, &edges).filter(|&d| d > 0.5) {
+            let mut g = [outer, outer];
+            g[1 - o] = start + inward * d;
+            out.push(g);
+        }
+        k += 1;
+    }
+    out.reverse();
+    if out.len() < 3 { rungs } else { out }
 }
 
 /// Auto satin's travel to its far end runs this far inside the outline (0.1 mm; PE-DESIGN
@@ -1769,20 +1938,26 @@ fn fan_corners(mut rungs: Vec<[Vec2; 2]>, outline: &Contour) -> Vec<[Vec2; 2]> {
         let convex = (crate::paths::cross(din, dout) > 0.0) == ccw;
         (a, v, b, din, dout, turn, convex)
     };
-    // Inner corners of bends; a band's square end has outer corners but no inner one near.
-    let inner: Vec<Vec2> = (0..n)
+    // Inner corners of bends, with their turn; a band's square end has outer corners but no
+    // inner one near. An outer corner belongs to a bend when it turns as the inner corner
+    // beside it does: on a 120 degree band with a short second leg the end cap's square
+    // corners lie within two widths of the inner corner too (satin-auto-bend-120: PE-DESIGN
+    // fans the bend only).
+    let inner: Vec<(Vec2, f64)> = (0..n)
         .filter(|&k| {
             let (_, _, _, _, _, turn, convex) = corner(k);
             !convex && turn >= 15f64.to_radians()
         })
-        .map(|k| pts[k])
+        .map(|k| (pts[k], corner(k).5))
         .collect();
     let mut done = vec![false; rungs.len()];
     for k in 0..n {
         let (a, v, b, din, dout, turn, convex) = corner(k);
         if !convex
             || turn < 15f64.to_radians()
-            || !inner.iter().any(|&q| q.distance(v) <= 2.0 * width)
+            || !inner.iter().any(|&(q, t)| {
+                q.distance(v) <= 2.0 * width && (t - turn).abs() < 15f64.to_radians()
+            })
         {
             continue;
         }
@@ -1801,16 +1976,22 @@ fn fan_corners(mut rungs: Vec<[Vec2; 2]>, outline: &Contour) -> Vec<[Vec2; 2]> {
             if done[i] {
                 continue;
             }
-            let Some((side, u)) = (0..2).find_map(|s| {
-                let e = g[s];
-                if on(e, a, v) {
-                    Some((s, -e.distance(v)))
-                } else if on(e, v, b) {
-                    Some((s, e.distance(v)))
-                } else {
-                    None
-                }
-            }) else {
+            // The rung's end on the bend's outer edges; when both ends lie on them (a square
+            // rung near a sharp bend reaches the other leg's outer edge), the one nearer the
+            // corner, the rung's station.
+            let Some((side, u)) = (0..2)
+                .filter_map(|s| {
+                    let e = g[s];
+                    if on(e, a, v) {
+                        Some((s, -e.distance(v)))
+                    } else if on(e, v, b) {
+                        Some((s, e.distance(v)))
+                    } else {
+                        None
+                    }
+                })
+                .min_by(|x, y| x.1.abs().total_cmp(&y.1.abs()))
+            else {
                 continue;
             };
             if u.abs() > zone / 2.0 {
@@ -1819,7 +2000,17 @@ fn fan_corners(mut rungs: Vec<[Vec2; 2]>, outline: &Contour) -> Vec<[Vec2; 2]> {
             let angle = ain + sweep * (u + zone / 2.0) / zone;
             let dir = v2(angle.dcos(), angle.dsin());
             if let Some(d) = ray_to(g[side], dir, &edges) {
-                g[1 - side] = g[side] + dir * d;
+                // A crossing never runs past the bend's inner corner: one longer than two band
+                // widths ends there (PE-DESIGN 11.50's longest crossing on a 120 degree band is
+                // 9.6 mm, two widths, its inner ends within 2 mm of the inner corner).
+                let q = inner
+                    .iter()
+                    .map(|&(q, _)| q)
+                    .min_by(|a, b| a.distance(v).total_cmp(&b.distance(v)));
+                g[1 - side] = match q {
+                    Some(q) if d > 2.0 * width => q,
+                    _ => g[side] + dir * d,
+                };
                 done[i] = true;
             }
         }
