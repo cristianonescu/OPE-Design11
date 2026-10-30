@@ -764,6 +764,7 @@ fn under_sewing_density_sets_the_row_count_with_rows_on_the_inset_edges() {
     // Dense and 11 of 3.455 at Light.
     let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 400.0)];
     let mut r = region(RegionType::Fill);
+    r.angle = 0.0;
     r.underlay = true;
     for (density, rows) in [
         (crate::UnderlayDensity::Medium, 20),
@@ -826,6 +827,7 @@ fn under_sewing_parts_combine_and_name_themselves() {
     assert!(!UnderlayParts::default().any());
     let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 400.0)];
     let mut r = region(RegionType::Fill);
+    r.angle = 0.0;
     r.underlay = true;
     let with = |names: &[&str]| {
         let mut r = r.clone();
@@ -1047,6 +1049,7 @@ fn random_stagger_is_seeded_reproducible_and_does_not_repeat() {
     // needle points fall on three columns per 1.2 mm shift cycle, with the random one they do not.
     let c = vec![Contour::rectangle(100.0, 100.0, 400.0, 400.0)];
     let mut r = region(RegionType::Fill);
+    r.angle = 0.0;
     r.underlay = false;
     r.stagger = crate::StaggerKind::Random;
     r.stagger_seed = Some(3);
@@ -1081,6 +1084,27 @@ fn random_stagger_is_seeded_reproducible_and_does_not_repeat() {
     for l in &once {
         assert_inside(l, &c, "random stagger");
     }
+}
+
+#[test]
+fn new_fills_start_at_45_degrees_and_saved_designs_keep_their_angle() {
+    // PE-DESIGN 11.50's shape tools start Fill Stitch at 45 degrees (pes-objects r01) and the
+    // guide gives programmable fill 45; the other types start at 0.
+    assert_eq!(region(RegionType::Fill).angle, 45.0);
+    assert_eq!(region(RegionType::ProgrammableFill).angle, 45.0);
+    assert_eq!(region(RegionType::Satin).angle, 0.0);
+    assert_eq!(RegionSewing::default_angle(RegionType::NetFill), 0.0);
+    // Every saved region stores its angle, so a design saved with a 0-degree fill (the old
+    // default) loads at 0 degrees, and a region without one is not a valid file.
+    let mut r = region(RegionType::Fill);
+    r.angle = 0.0;
+    let json = serde_json::to_value(&r).expect("json");
+    assert_eq!(json["angle"], 0.0);
+    let back: RegionSewing = serde_json::from_value(json.clone()).expect("load");
+    assert_eq!(back.angle, 0.0);
+    let mut missing = json;
+    missing.as_object_mut().expect("object").remove("angle");
+    assert!(serde_json::from_value::<RegionSewing>(missing).is_err());
 }
 
 #[test]

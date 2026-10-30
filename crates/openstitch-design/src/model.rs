@@ -1263,11 +1263,7 @@ impl RegionSewing {
         RegionSewing {
             kind,
             thread,
-            // Guide: programmable fill "45° (default)"; the other types sew at 0°.
-            angle: match kind {
-                RegionType::ProgrammableFill => 45.0,
-                _ => 0.0,
-            },
+            angle: Self::default_angle(kind),
             // PE-DESIGN 11.50 Sewing Attributes (reference files, fill-analysis): fill and satin
             // 4.5 lines/mm with under sewing on.
             density: match kind {
@@ -1405,6 +1401,17 @@ impl RegionSewing {
     }
 
     /// Fill: needle shift from one row to the next, fraction of a stitch (default ⅓).
+    /// The sewing direction a new region of `kind` starts with, degrees: PE-DESIGN 11.50's
+    /// shape tools start Fill Stitch at 45° (reference pes-objects r01: Direction 45 on a fresh
+    /// design) and the guide gives programmable fill "45° (default)"; the other types sew at
+    /// 0°. Saved designs keep the angle they store (every `.osd` region stores one).
+    pub fn default_angle(kind: RegionType) -> f64 {
+        match kind {
+            RegionType::Fill | RegionType::ProgrammableFill => 45.0,
+            _ => 0.0,
+        }
+    }
+
     pub fn fill_shift(&self) -> Option<f64> {
         self.frequency.map(|f| f.clamp(0.0, 50.0) / 100.0)
     }
