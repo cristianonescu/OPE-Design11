@@ -1347,6 +1347,7 @@ fn empty_pes_reads_back_with_no_threads() {
     let back = pes::read(&pes::write_with(&p, &options).expect("write")).expect("read");
     assert!(back.threads.is_empty(), "{}", back.threads.len());
     assert_eq!(back.count(openstitch_core::Command::Stitch), 0);
+}
 /// Every BROTHER EMBROIDERY thread in PE-DESIGN 11.50's own `#PES0110` files (the pe11
 /// fixtures and `compat/reference`) has OpenStitch's PEC chart RGB for its code: the chart
 /// table agrees with PE wherever PE has written a colour (issues #119, #136; 42 LINEN from
