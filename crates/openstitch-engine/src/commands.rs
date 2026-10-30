@@ -1532,10 +1532,13 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         r.stagger = k;
                     }
                     if p.has("stitchType") {
-                        r.stitch_type = match p.req("stitchType", 1.0, 2.0)? {
-                            x if x == 1.0 => FillStitchType::One,
-                            x if x == 2.0 => FillStitchType::Two,
-                            _ => return Err(p.invalid("stitchType", "must be 1 or 2")),
+                        let t = p.req("stitchType", 1.0, 2.0)?;
+                        r.stitch_type = if t == 1.0 {
+                            FillStitchType::One
+                        } else if t == 2.0 {
+                            FillStitchType::Two
+                        } else {
+                            return Err(p.invalid("stitchType", "must be 1 or 2"));
                         };
                     }
                     if p.has("staggerSeed") {
