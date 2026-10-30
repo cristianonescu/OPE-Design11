@@ -1568,9 +1568,11 @@ Line references are relative to `crates/`.
 - **Readers against PE-DESIGN's ten-format export (2026-10-29, #135):** pe-refs-4's
   `sample-basic` (a satin S and a fill, exported to every type) found four reader problems.
   (1) PES "drops PE's tie-in records" (471 needle points against PE's 475): not a reader
-  bug. PE-DESIGN's PEC section has no zero-length stitch at all; its DST has the same 471
-  points plus 4 zero-length ones (2 jump landings, 2 repeats), and its status bar counts 1–9
-  more than the PEC in 99 of 114 references. The points are not in the file. (2) CSD read as
+  bug. That sample's PEC section has none of the 4 zero-length stitches its DST has (2 jump
+  landings, 2 repeats; the other 471 points equal), and the status bar counts 1–9 more than
+  the PEC in 99 of 114 references: the points are not in the file. (Corrected 2026-10-30: PE's
+  PEC writer does not drop zero-length stitches as a rule; 28 of 249 PE references carry them,
+  so OpenStitch's PEC writer keeps its own and the "drop them" follow-up was not done.) (2) CSD read as
   2 stitches and 51 colour changes: the mask index was the byte offset minus one; with the
   offset itself PE's CSD equals its DST needle for needle, with PE's colours and colour order
   (fixture `sample-basic.csd`, reference-checked). (3) SHV read an extra colour change at the
@@ -1606,7 +1608,9 @@ Line references are relative to `crates/`.
   Matched to the PEC chart by name, every code lands on one PEC entry 1–61 and all 30 pairs PE
   writes in the owner's `#PES0110` thread tables agree. pyembroidery's table names PEC 42 and 57
   both "Flesh Pink"; PE's files put 124 FLESH PINK at 57, so 307 LINEN is 42, and the chart
-  table now calls 42 "Linen" (PE's RGB for it is still pyembroidery's guess). The dialog's own
+  table now calls 42 "Linen", with PE's RGB (254, 227, 197) since 2026-10-30 (the reference
+  session's 307 LINEN sample; every coded thread in PE's own files now matches the chart,
+  `pe_design_thread_tables_match_the_pec_chart`). The dialog's own
   first column (1 BLACK, 2 WHITE, 3 RED, …) is not the PEC index. API:
   `openstitch_core::BROTHER_EMBROIDERY`, `brother_embroidery_code`, `pec_index_of_brother_code`.
 - **Contour fill (2026-10-30, B1):** an OpenStitch extension, region type `contour`. It

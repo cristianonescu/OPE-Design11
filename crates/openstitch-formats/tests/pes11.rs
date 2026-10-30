@@ -1347,4 +1347,58 @@ fn empty_pes_reads_back_with_no_threads() {
     let back = pes::read(&pes::write_with(&p, &options).expect("write")).expect("read");
     assert!(back.threads.is_empty(), "{}", back.threads.len());
     assert_eq!(back.count(openstitch_core::Command::Stitch), 0);
+/// Every BROTHER EMBROIDERY thread in PE-DESIGN 11.50's own `#PES0110` files (the pe11
+/// fixtures and `compat/reference`) has OpenStitch's PEC chart RGB for its code: the chart
+/// table agrees with PE wherever PE has written a colour (issues #119, #136; 42 LINEN from
+/// `thread-307-linen.pes`).
+#[test]
+fn pe_design_thread_tables_match_the_pec_chart() {
+    use openstitch_core::{PEC_CHART, pec_index_of_brother_code};
+    fn walk(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+        for e in std::fs::read_dir(dir).expect("dir").flatten() {
+            let p = e.path();
+            if p.is_dir() {
+                walk(&p, out);
+            } else if p.extension().is_some_and(|x| x.eq_ignore_ascii_case("pes")) {
+                out.push(p);
+            }
+        }
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let mut files = Vec::new();
+    walk(&root.join("tests/fixtures/pe11"), &mut files);
+    walk(&root.join("../../compat/reference"), &mut files);
+    let mut checked = std::collections::BTreeSet::new();
+    for path in &files {
+        let bytes = std::fs::read(path).expect("read");
+        if !bytes.starts_with(b"#PES0110") {
+            continue;
+        }
+        let Ok(section) = pes::read_objects(&bytes) else {
+            continue;
+        };
+        for t in &section.threads {
+            let (Some(code), Some("EMBROIDERY")) =
+                (t.catalog_number.as_deref(), t.brand.as_deref())
+            else {
+                continue;
+            };
+            let Some(i) = pec_index_of_brother_code(code) else {
+                continue;
+            };
+            let chart = PEC_CHART[i].as_ref().expect("chart entry");
+            assert_eq!(
+                chart.hex(),
+                t.hex(),
+                "{} code {code} (PEC {i})",
+                path.display()
+            );
+            checked.insert(i);
+        }
+    }
+    assert!(
+        checked.contains(&42) && checked.contains(&57),
+        "{checked:?}"
+    );
+    assert!(checked.len() >= 20, "{checked:?}");
 }

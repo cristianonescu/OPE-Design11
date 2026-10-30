@@ -157,3 +157,13 @@ The PEC section is the empty form: no colours, a 13-byte stitch block with the d
 | File | SHA-256 | Made as |
 |---|---|---|
 | `oversize-hoop100.pes` | `492bdbcbf6a1a3c7894104320d84cd80790e2bdb99d5f5dade593399d201a1fc` | as above |
+**Linen thread sample (#119/#136):** made by the owner's PE-DESIGN 11.50 (Layout & Editing),
+Windows 11 Pro 10.0.26300, 2026-10-30, black-box GUI use only (reference session). New (Hoop
+100 x 100), Rectangle (40,40)-(60,60) mm, line Not Sewn; Color tab, BROTHER EMBROIDERY, row
+307 LINEN; region Fill Stitch at defaults (under sewing on, Medium, density 4.5, 45 degrees,
+step 4.0, frequency 30 %); 20,00 x 20,00 mm, 707 st; Save As PES (#PES0110). Thread table:
+"307" / PEC index "42" / EMBROIDERY, RGB (254, 227, 197), plus the unsewn line slot 800.
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `thread-307-linen.pes` | `66ddd37bf00d39e984486a8368ad8cc2178575407c4cfecc068ce832590b7422` | as above |
