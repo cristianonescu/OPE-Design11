@@ -436,7 +436,9 @@ Line references are relative to `crates/`.
 - **Grade:** Documented difference. The per-stroke angles are measured on the H, A, B, x and g,
   and the round-5 captures settle the cut. Step 1 is in (2026-10-30, `openstitch_design::strokes`:
   a glyph's strokes, junctions and loops with PE-DESIGN's structure on Lato's I, L, T, H, X, V, O,
-  A, S, e, i); text is not sewn by stroke yet (steps 2-5 of the research note).
+  A, S, e, i), and the rungs from each stroke's side edges joined at equal fractions of their
+  lengths, as PE-DESIGN's Convert to Blocks lines (H within 2°; A's legs within 10-25° until the
+  apex ownership of step 4); text is not sewn by stroke yet (steps 2-5 of the research note).
 - **Test:**
   - Inputs: `text.add {"text":"AVOW","size":30,"x":50,"y":50}` →
     `object.setRegion {"id":1,"type":"satin"}` → `design.generate`.

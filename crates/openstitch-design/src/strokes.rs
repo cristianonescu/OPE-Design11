@@ -872,6 +872,158 @@ fn ray_to(p: Vec2, dir: Vec2, edges: &[(Vec2, Vec2)]) -> Option<f64> {
         .min_by(f64::total_cmp)
 }
 
+// ------------------------------------------------------------------ rungs
+
+/// Outline points are taken at most this far apart (0.1 mm) when the sides are found.
+const SIDE_STEP: f64 = 2.0;
+
+/// Where `p` projects onto the polyline `line`: (arc length along it, distance, signed side:
+/// positive on the left of its direction with +y down, i.e. counter-clockwise on screen).
+fn project(line: &[Vec2], closed: bool, p: Vec2) -> (f64, f64, f64) {
+    let n = line.len();
+    let segments = if closed { n } else { n.saturating_sub(1) };
+    let mut best = (0.0, f64::INFINITY, 0.0);
+    let mut at = 0.0;
+    for i in 0..segments {
+        let (a, b) = (line[i], line[(i + 1) % n]);
+        let d = b - a;
+        let len2 = d.x * d.x + d.y * d.y;
+        let t = if len2 > 0.0 {
+            (((p.x - a.x) * d.x + (p.y - a.y) * d.y) / len2).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        let q = a + d * t;
+        let dist = p.distance(q);
+        let len = len2.sqrt();
+        if dist < best.1 {
+            let cross = d.x * (p.y - a.y) - d.y * (p.x - a.x);
+            best = (at + t * len, dist, cross.signum());
+        }
+        at += len;
+    }
+    best
+}
+
+/// A polyline's point at arc length `s` (clamped to its ends).
+fn point_at(line: &[Vec2], s: f64) -> Vec2 {
+    let mut rest = s.max(0.0);
+    for w in line.windows(2) {
+        let len = w[0].distance(w[1]);
+        if rest <= len {
+            return if len > 0.0 {
+                w[0].lerp(w[1], rest / len)
+            } else {
+                w[0]
+            };
+        }
+        rest -= len;
+    }
+    line.last().copied().unwrap_or(v2(0.0, 0.0))
+}
+
+fn length(line: &[Vec2]) -> f64 {
+    line.windows(2).map(|w| w[0].distance(w[1])).sum()
+}
+
+impl GlyphStrokes {
+    /// Each stroke's two side edges (the outline that is nearer to this stroke than to any
+    /// other, on either side of its centre line), each ordered along the stroke and kept over
+    /// the stretch both sides cover. `[left, right]` per stroke; empty sides where the stroke
+    /// has no outline of its own.
+    pub fn sides(&self, contours: &[Contour]) -> Vec<[Vec<Vec2>; 2]> {
+        let mut sides: Vec<[Vec<(f64, f64, Vec2)>; 2]> = self
+            .strokes
+            .iter()
+            .map(|_| [Vec::new(), Vec::new()])
+            .collect();
+        for c in contours.iter().filter(|c| c.closed) {
+            let pts = c.outline_points();
+            let n = pts.len();
+            for i in 0..n {
+                let (a, b) = (pts[i], pts[(i + 1) % n]);
+                let pieces = (a.distance(b) / SIDE_STEP).ceil().max(1.0) as usize;
+                for k in 0..pieces {
+                    let p = a.lerp(b, k as f64 / pieces as f64);
+                    let Some((s, (at, dist, side))) = self
+                        .strokes
+                        .iter()
+                        .enumerate()
+                        .map(|(s, st)| (s, project(&st.centre, st.closed, p)))
+                        .min_by(|x, y| x.1.1.total_cmp(&y.1.1))
+                    else {
+                        continue;
+                    };
+                    let which = usize::from(side < 0.0);
+                    sides[s][which].push((at, dist, p));
+                }
+            }
+        }
+        sides
+            .into_iter()
+            .zip(&self.strokes)
+            .map(|([l, r], st)| {
+                let total = st.length();
+                // An end edge projects onto the centre line's end point: keep only its corner
+                // (the outermost point there) on each side, not the edge between the corners.
+                let tidy = |mut v: Vec<(f64, f64, Vec2)>| -> Vec<(f64, f64, Vec2)> {
+                    v.sort_by(|a, b| a.0.total_cmp(&b.0));
+                    if st.closed {
+                        return v;
+                    }
+                    let at_end = |at: f64| at <= 1e-6 || at >= total - 1e-6;
+                    let corner = |pick_start: bool| {
+                        v.iter()
+                            .filter(|q| at_end(q.0) && (q.0 <= 1e-6) == pick_start)
+                            .max_by(|a, b| a.1.total_cmp(&b.1))
+                            .copied()
+                    };
+                    let (first, last) = (corner(true), corner(false));
+                    let mut out: Vec<(f64, f64, Vec2)> = first.into_iter().collect();
+                    out.extend(v.iter().copied().filter(|q| !at_end(q.0)));
+                    out.extend(last);
+                    out
+                };
+                let (l, r) = (tidy(l), tidy(r));
+                // The stretch both sides cover.
+                let (lo, hi) = match (l.first(), l.last(), r.first(), r.last()) {
+                    (Some(a), Some(b), Some(c), Some(d)) => (a.0.max(c.0), b.0.min(d.0)),
+                    _ => return [Vec::new(), Vec::new()],
+                };
+                let keep = |v: Vec<(f64, f64, Vec2)>| -> Vec<Vec2> {
+                    v.into_iter()
+                        .filter(|&(at, _, _)| at >= lo - SIDE_STEP && at <= hi + SIDE_STEP)
+                        .map(|(_, _, p)| p)
+                        .collect()
+                };
+                [keep(l), keep(r)]
+            })
+            .collect()
+    }
+
+    /// Each stroke's rungs `spacing` apart (0.1 mm along its longer side): the two side edges
+    /// joined at equal fractions of their lengths, as PE-DESIGN 11.50 joins them (its Convert
+    /// to Blocks lines on A's slanted right leg are about horizontal, not across the leg).
+    pub fn rungs(&self, contours: &[Contour], spacing: f64) -> Vec<Vec<[Vec2; 2]>> {
+        self.sides(contours)
+            .into_iter()
+            .map(|[l, r]| {
+                if l.len() < 2 || r.len() < 2 || spacing <= 0.0 {
+                    return Vec::new();
+                }
+                let (ll, lr) = (length(&l), length(&r));
+                let n = (ll.max(lr) / spacing).ceil().clamp(1.0, 10_000.0) as usize;
+                (0..=n)
+                    .map(|k| {
+                        let f = k as f64 / n as f64;
+                        [point_at(&l, f * ll), point_at(&r, f * lr)]
+                    })
+                    .collect()
+            })
+            .collect()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1006,5 +1158,96 @@ mod tests {
         // A huge region is refused rather than sampled at a huge size.
         let huge = Contour::rectangle(0.0, 0.0, 1.0e9, 1.0e9);
         assert!(strokes(&[huge]).is_some_and(|g| g.strokes.len() <= 4));
+    }
+
+    /// Angle of a rung, degrees in 0..180 (y down).
+    fn angle(r: &[Vec2; 2]) -> f64 {
+        let d = r[1] - r[0];
+        d.y.datan2(d.x).to_degrees().rem_euclid(180.0)
+    }
+
+    /// Distance between two angles on the half circle.
+    fn off(a: f64, b: f64) -> f64 {
+        let d = (a - b).rem_euclid(180.0);
+        d.min(180.0 - d)
+    }
+
+    #[test]
+    fn rungs_join_the_sides_as_pe_designs_blocks_do() {
+        // PE-DESIGN's Convert to Blocks of the H (stroke-blocks-H, read with the PES 0110
+        // reader): horizontal lines across the stems from the top and the foot to the bar
+        // (8.8 and 11.6 mm below the top), vertical lines across the bar from x 3.8 to 13.6.
+        let spec = TextSpec::new("H", DEFAULT_FONT, 20.0);
+        let contours = layout(&spec, None).expect("layout").contours();
+        let b = Rect::enclosing(contours.iter().flat_map(Contour::outline_points)).expect("box");
+        let g = strokes(&contours).expect("strokes");
+        let rungs = g.rungs(&contours, 30.0);
+        assert_eq!(rungs.len(), g.strokes.len());
+        for (st, rs) in g.strokes.iter().zip(&rungs) {
+            assert!(rs.len() >= 3, "{st:?}");
+            let r = st.bounds().expect("bounds");
+            let bar = r.width() > r.height();
+            for rung in rs {
+                let want = if bar { 90.0 } else { 0.0 };
+                assert!(off(angle(rung), want) < 3.0, "{rung:?}");
+                if bar {
+                    let x = (rung[0].x - b.min_x) / 10.0;
+                    assert!((3.4..=14.0).contains(&x), "bar rung at x {x}");
+                } else {
+                    // Every stem rung spans the stem: 3.8 mm.
+                    assert!((rung[0].distance(rung[1]) - 38.0).abs() < 3.0, "{rung:?}");
+                }
+            }
+            if !bar {
+                // The stem's rungs stop near the bar's edges, where PE-DESIGN's do (8.8 and
+                // 11.6 mm): at the junction's clearance, 8.3 and 12.2 mm (the junction square
+                // is the order's to give to a stroke, step 4).
+                let ys: Vec<f64> = rs.iter().map(|r| (r[0].y - b.min_y) / 10.0).collect();
+                let near_bar = ys
+                    .iter()
+                    .map(|&y| (y - 8.8).abs().min((y - 11.6).abs()))
+                    .fold(f64::INFINITY, f64::min);
+                assert!(near_bar < 0.7, "{ys:?}");
+            }
+        }
+        // A: the crossbar's lines are vertical, as PE-DESIGN's; the slanted right leg's lines
+        // run near horizontal (PE-DESIGN: 161-180 degrees), not across the 60-degree leg
+        // (150 degrees would be across it).
+        let spec = TextSpec::new("A", DEFAULT_FONT, 20.0);
+        let contours = layout(&spec, None).expect("layout").contours();
+        let g = strokes(&contours).expect("strokes");
+        let rungs = g.rungs(&contours, 30.0);
+        let bar = g
+            .strokes
+            .iter()
+            .position(|s| s.ends.iter().all(|e| matches!(e, StrokeEnd::Junction(_))))
+            .expect("bar");
+        assert!(
+            rungs[bar].iter().all(|r| off(angle(r), 90.0) < 6.0),
+            "{:?}",
+            rungs[bar]
+        );
+        let right_upper = g
+            .strokes
+            .iter()
+            .position(|s| {
+                s.ends.contains(&StrokeEnd::Corner)
+                    && s.centre.iter().map(|p| p.x).sum::<f64>() / s.centre.len() as f64 > 100.0
+            })
+            .expect("right leg");
+        for r in &rungs[right_upper] {
+            assert!(off(angle(r), 170.0) < 15.0, "{r:?} {}", angle(r));
+        }
+    }
+
+    #[test]
+    fn rungs_of_degenerate_strokes_are_empty() {
+        let g = GlyphStrokes::default();
+        assert!(g.rungs(&[], 30.0).is_empty());
+        let spec = TextSpec::new("I", DEFAULT_FONT, 20.0);
+        let contours = layout(&spec, None).expect("layout").contours();
+        let g = strokes(&contours).expect("strokes");
+        assert!(g.rungs(&contours, 0.0).iter().all(Vec::is_empty));
+        assert!(g.rungs(&[], 30.0).iter().all(Vec::is_empty));
     }
 }

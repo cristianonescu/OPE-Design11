@@ -208,7 +208,17 @@ not before, so every reference in the repository has a spec that reads it.
    of each side's length (A's right leg: every line about horizontal, (12.0, 0)-(8.1, 0) …
    (20.1, 20.6)-(16.7, 20.5), although the leg slants at 60°; the left leg's lines slant at 61°
    because its sides start and end at different heights). So the rungs come from the stroke's two
-   side polylines, paired by length. Spec: `text-defaults-h` checks 4 strokes in PE-DESIGN's order
+   side polylines, paired by length.
+   **Rungs done 2026-10-30** (`GlyphStrokes::sides`, `GlyphStrokes::rungs`; not used for sewing
+   yet): every outline point goes to the stroke whose centre line is nearest, on its left or
+   right; each side is ordered along the stroke (an end edge keeps only its corners), kept over
+   the stretch both sides cover, and the sides are joined at equal fractions of their lengths.
+   H: stem rungs within 2° of horizontal and 3.8 mm long, bar rungs vertical, as PE-DESIGN's
+   blocks; the stems stop at 8.3 and 12.2 mm against PE-DESIGN's 8.8 and 11.6 (the junction
+   square goes to a stroke in step 4). A: the crossbar vertical; the right leg's upper part
+   157-172° (PE-DESIGN 161-180°); the left leg's upper part 9-39° against PE-DESIGN's 32-61° and
+   the right leg's lower part 155-156° against 161-178°, because PE-DESIGN gives the apex to the
+   right leg and sews it whole through its junction (step 4 settles the ownership). Spec: `text-defaults-h` checks 4 strokes in PE-DESIGN's order
    and the crossings' directions (a per-run direction-cluster measure), with the count within the
    satin family's tolerance.
 3. **Fill per stroke.** Rows across the stroke, turning along curved strokes (the "column fill"
