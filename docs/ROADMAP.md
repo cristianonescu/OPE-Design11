@@ -206,8 +206,10 @@ back.
    against the owner's twelve-swatch capture; the 61 BROTHER EMBROIDERY catalogue codes are known
    since the round-4 chart reading, PEC 42 (307 LINEN) has PE-DESIGN's RGB and every coded thread
    in PE's files matches the chart (2026-10-30), and SVG imports snap to them as PE-DESIGN's do
-   since 2026-10-30 (`thread-match-swatches` compares the thread table). Left: the sew palette
-   and user-chart CSV schema (#136), per-machine export limits and hoop codes (#125).
+   since 2026-10-30 (`thread-match-swatches` compares the thread table). The 94-entry sew palette is
+   listed since 2026-10-30 (PE's Ver4 Option Color chart as ids 66–94, `sewPalette`); where
+   PE-DESIGN matches colours to it is not verified (no capture). Left: the user-chart CSV schema
+   (#136), per-machine export limits and hoop codes (#125).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo

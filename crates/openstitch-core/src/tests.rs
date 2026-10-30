@@ -279,3 +279,29 @@ fn brother_embroidery_codes_cover_the_basic_chart_once() {
         assert_eq!(brother_embroidery_code(i), Some(code), "{i}");
     }
 }
+
+/// The 94-entry sew palette: ids 1–61 the Brother chart, 62–65 reserved, 66–94 the 29 Ver4
+/// Option colours with PE-DESIGN's names, RGB, brand and type.
+#[test]
+fn sew_palette_has_94_ids_with_four_reserved() {
+    let p = sew_palette();
+    assert_eq!(p.len(), 95);
+    assert!(p[0].is_none());
+    assert_eq!(p[5], PEC_CHART[5]);
+    assert_eq!(p[61], PEC_CHART[61]);
+    assert!(p[SEW_PALETTE_RESERVED].iter().all(Option::is_none));
+    let first = p[66].as_ref().expect("66");
+    assert_eq!(first.hex(), "#0000aa");
+    assert_eq!(first.name.as_deref(), Some("prussian blue2"));
+    assert_eq!(first.brand.as_deref(), Some(OPTION_COLOR_BRAND));
+    assert_eq!(first.kind, Some(OPTION_COLOR_KIND));
+    assert_eq!(p[94].as_ref().map(Thread::hex), Some("#ffaaff".into()));
+    assert_eq!(p.iter().flatten().count(), 61 + 29);
+    // Exact option colours match themselves; basic-only stays within 1–61.
+    for &(id, _, rgb) in &VER4_OPTION_COLORS {
+        assert_eq!(sew_palette_index(&Thread::rgb(rgb), false), Some(id));
+        let basic = sew_palette_index(&Thread::rgb(rgb), true).expect("basic");
+        assert!((1..=61).contains(&basic), "{id}: {basic}");
+    }
+    assert_eq!(sew_palette_index(&Thread::rgb(0xED171F), false), Some(5));
+}

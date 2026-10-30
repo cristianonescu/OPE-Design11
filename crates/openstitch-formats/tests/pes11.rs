@@ -1403,3 +1403,26 @@ fn pe_design_thread_tables_match_the_pec_chart() {
     );
     assert!(checked.len() >= 20, "{checked:?}");
 }
+
+/// PE-DESIGN 11.50's own file of the 29 Ver4 Option colours carries exactly OpenStitch's sew
+/// palette entries 66–94: the id where a BROTHER EMBROIDERY thread has its PEC index, the RGB,
+/// type 0x0B and brand "Option Color" (#136).
+#[test]
+fn ver4_option_colours_match_the_sew_palette() {
+    use openstitch_core::{OPTION_COLOR_BRAND, OPTION_COLOR_KIND, sew_palette};
+    let objects = pes::read_objects(&data("pe11/ver4-option-color-29.pes")).expect("objects");
+    let option: Vec<_> = objects
+        .threads
+        .iter()
+        .filter(|t| t.brand.as_deref() == Some(OPTION_COLOR_BRAND))
+        .collect();
+    assert_eq!(option.len(), 29);
+    for (k, t) in option.iter().enumerate() {
+        let id: usize = t.name.as_deref().and_then(|n| n.parse().ok()).expect("id");
+        assert_eq!(id, 66 + k);
+        let ours = sew_palette()[id].as_ref().expect("palette entry");
+        assert_eq!(ours.hex(), t.hex(), "{id}");
+        assert_eq!(t.kind, Some(OPTION_COLOR_KIND));
+        assert_eq!(t.catalog_number, None);
+    }
+}

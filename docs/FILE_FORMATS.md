@@ -1272,11 +1272,23 @@ with PE-DESIGN through files (round-4 check, issue #136). The `.btc2` format is 
 Earlier OpenStitch versions read the same six columns without quoting or a column row, so
 their files still import. The built-in charts (`threads.builtinCharts`: `brother` = the
 64-entry PEC chart, entries 1–61 marked `basic` as the ones PE-DESIGN matches to;
-`janomeJef`, `janomeSew`, `husqvarnaHus`, `husqvarnaShv`) export in the same schema
+`sewPalette` = the 94-entry sew palette below; `janomeJef`, `janomeSew`, `husqvarnaHus`,
+`husqvarnaShv`) export in the same schema
 (`threads.exportCsv {builtin}`), so any of them can be copied into a user chart and edited.
 Not adopted from #136, for want of any PE-DESIGN reference: the `#userchart` header with a
 chart code, the `id,R,G,B,attr,code,description` column order, the 6-character code and the
-1,499-colour cap, and the 94-entry "sew palette".
+1,499-colour cap.
+
+The sew palette (`openstitch_core::sew_palette`, #136): 94 ids, 1-based. Ids 1–61 are the
+BROTHER EMBROIDERY chart (PEC entries 1–61, with their codes), 62–65 reserved (PE-DESIGN shows
+them nowhere), 66–94 PE-DESIGN 11.50's "Ver4 Option Color" chart: 29 rows with an empty code,
+brand "Option Color", type `0x0B` and RGB on a 0/85/170/255 grid, written in a `#PES0110`
+thread table with the id string (66–94) where a BROTHER EMBROIDERY thread has its PEC index
+(`tests/fixtures/pe11/ver4-option-color-29.pes`). `sew_palette_index` matches a colour to it
+with #119's dual squared-Euclidean / city-block rule (`approximate_index`), skipping the
+reserved ids, or to ids 1–61 alone; that rule is the issue's and not verified against
+PE-DESIGN (no capture shows where PE-DESIGN matches to this palette; its vector import uses the
+BROTHER EMBROIDERY chart), and no default path calls it.
 
 ## OpenStitch template (`.ostemplate`)
 

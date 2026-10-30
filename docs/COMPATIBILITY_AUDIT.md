@@ -1573,7 +1573,25 @@ Line references are relative to `crates/`.
   `threads.exportCsv` for user and built-in charts and `threads.builtinCharts`, which marks
   Brother entries 1–61 as the ones PE matches to (#119). Charts cannot be exchanged with
   PE-DESIGN through files; `.btc2` is not decoded (obfuscated, kept in the program folder).
-  The 94-entry sew palette of the issue is not implemented: no PE-DESIGN capture shows it.
+  The 94-entry sew palette is implemented since 2026-10-30 (`openstitch_core::sew_palette`,
+  `threads.builtinCharts` `sewPalette`): PE-DESIGN 11.50 has no single 94-row list, but its
+  "Ver4 Option Color" chart has exactly 29 rows, and its own file of them
+  (`ver4-option-color-29.pes`, reference session) writes ids 66–94, type `0x0B`, brand
+  "Option Color" and RGB on a 0/85/170/255 grid: 61 basic + 4 reserved (shown nowhere) + 29,
+  as the issue said. The matcher (`sew_palette_index`) follows the issue's dual rule and is
+  **not verified against PE-DESIGN**: no capture shows where PE-DESIGN matches colours to this
+  palette (its vector import does not: the swatch capture sent rgb(0, 0, 255) to 405 BLUE, not
+  to the identical Option colour blue2). No default path calls it, so no output a PE
+  reference backs changes; it is an API for callers that ask for the palette. PE-DESIGN's
+  Auto Punch does match to Ver4 Option Color when it is chosen as the Thread Chart (reference
+  session, 2026-10-30, a 4-colour image of rgb(20,20,180), (100,200,60), (200,40,120),
+  (240,160,40) on white, default parameters): it picked 66, 69, 85, 84. Squared Euclidean,
+  city block, the issue's dual rule and red-mean all give 66, 81, 85, 89; CIE76 Lab gives 66,
+  69, 91, 84. The same image with BROTHER EMBROIDERY gave 406, 509, 107, 208 (PEC 21, 37, 51,
+  12) where squared Euclidean gives PEC 21, 37, 49, 52. So Auto Punch changes the colours
+  before matching (its colour reduction or segmentation), and these picks neither confirm nor
+  settle the palette rule; the issue's dual rule does not reproduce them. Left for the image
+  track: Auto Punch's colour reduction.
 - **Readers against PE-DESIGN's ten-format export (2026-10-29, #135):** pe-refs-4's
   `sample-basic` (a satin S and a fill, exported to every type) found four reader problems.
   (1) PES "drops PE's tie-in records" (471 needle points against PE's 475): not a reader

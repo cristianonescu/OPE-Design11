@@ -287,9 +287,14 @@ pub fn chart_csv<'a>(name: &str, threads: impl IntoIterator<Item = &'a Thread>) 
 
 /// Thread charts built into OpenStitch: id, display name, entries. The index of an entry is the
 /// format's colour number; `None` marks a number the format leaves unused.
-pub fn builtin_charts() -> [(&'static str, &'static str, &'static [Option<Thread>]); 5] {
+pub fn builtin_charts() -> [(&'static str, &'static str, &'static [Option<Thread>]); 6] {
     [
         ("brother", "Brother (PEC / PES chart)", &PEC_CHART),
+        (
+            "sewPalette",
+            "Brother sew palette (BROTHER EMBROIDERY 1-61, Ver4 Option Color 66-94)",
+            openstitch_core::sew_palette(),
+        ),
         ("janomeJef", "Janome (JEF chart)", &JEF_CHART),
         ("janomeSew", "Janome (SEW chart)", &SEW_CHART),
         ("husqvarnaHus", "Husqvarna Viking (HUS chart)", &HUS_CHART),
@@ -307,7 +312,7 @@ fn builtin_entries(id: &str, chart: &[Option<Thread>]) -> Vec<(usize, Thread)> {
         .enumerate()
         .filter_map(|(i, t)| {
             let mut t = t.clone()?;
-            if id == "brother"
+            if matches!(id, "brother" | "sewPalette")
                 && let Some(code) = brother_embroidery_code(i)
             {
                 t.catalog_number = Some(Cow::Borrowed(code));
