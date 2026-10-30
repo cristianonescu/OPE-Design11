@@ -90,6 +90,172 @@ enum Glyph {
     Flower,
     EntryExit,
     Hoop,
+    /// One of the icons added after the first set, by file name (see [`OWN`]).
+    Own(&'static str),
+}
+
+/// What a button shows: the icon of an editor command, or the icon of a suite window's command
+/// with the key `.0` (see [`suite_glyph`]), drawn like the editor command `.1` when it has none.
+#[derive(Clone, Copy)]
+pub enum Icon {
+    Command(Action),
+    Suite(&'static str, Action),
+}
+
+impl From<Action> for Icon {
+    fn from(a: Action) -> Self {
+        Icon::Command(a)
+    }
+}
+
+macro_rules! own {
+    ($($n:literal),* $(,)?) => {
+        /// The icons added after the first set, by file name.
+        const OWN: &[(&str, &str)] = &[$((
+            $n,
+            include_str!(concat!("../../../assets/icons/commands/", $n, ".svg")),
+        )),*];
+    };
+}
+
+own!(
+    "connect",
+    "divide_color",
+    "split_stitches",
+    "design_center",
+    "machine",
+    "stitch_creator",
+    "stitch_factory",
+    "font_creator",
+    "text_size",
+    "font_filter",
+    "running",
+    "feed",
+    "view_solid",
+    "view_stitch",
+    "view_realistic",
+    "thread_trim",
+    "pane_order",
+    "pane_simulator",
+    "pane_attributes",
+    "reference_window",
+    "dir_delete",
+    "dir_reverse",
+    "sewing_points",
+    "grid_axes",
+    "fabric",
+    "thread_chart",
+    "measure",
+    "refresh",
+    "parent_folder",
+    "new_folder",
+    "rename",
+    "thumbs_large",
+    "thumbs_small",
+    "details",
+    "status_bar",
+    "toolbar",
+    "usb",
+    "wireless",
+    "read_card",
+    "writing_list",
+    "csv",
+    "convert_format",
+    "print_preview",
+    "print_setup",
+    "flip_v",
+    "flip_h",
+    "region_engrave",
+    "region_emboss",
+    "swap",
+    "image_paste",
+    "image_save",
+    "image_modify",
+    "image_density",
+    "image_rotate_left",
+    "image_rotate_right",
+    "image_delete",
+    "split_point",
+    "point_delete",
+    "design_settings",
+    "attribute_sets",
+    "edge_radius",
+    "column_width",
+    "straight_block",
+    "curved_block",
+    "satin_skeleton",
+    "derive_skeleton",
+    "sections_export",
+    "photo_stitch2",
+    "edit_character",
+    "pencil_open",
+    "region_to_line",
+    "change_color",
+    "to_outlines",
+    "import_svg",
+    "attr_paste",
+    "open_curve",
+    "truetype_settings",
+    "grid_spacing",
+    "new_fill",
+    "new_motif",
+    "new_decorative",
+    "region_reset",
+    "add_to_design",
+    "image_html",
+    "dst_settings",
+    "network",
+    "support",
+    "needle_drop",
+    "orientation",
+    "preview",
+    "open_template",
+    "template_modify",
+    "stitch_simulator",
+);
+
+/// The own icon of the suite window command with the key `key`, if it has one.
+fn suite_glyph(key: &str) -> Option<Glyph> {
+    Some(Glyph::Own(match key {
+        "refresh" => "refresh",
+        "parent" => "parent_folder",
+        "newFolder" => "new_folder",
+        "rename" => "rename",
+        "large" => "thumbs_large",
+        "small" => "thumbs_small",
+        "details" => "details",
+        "statusBar" => "status_bar",
+        "toolbar" => "toolbar",
+        "usbLink" => "usb",
+        "wirelessLink" => "wireless",
+        "readCard" => "read_card",
+        "writingBox" => "writing_list",
+        "csv" => "csv",
+        "convertFormat" => "convert_format",
+        "printPreview" => "print_preview",
+        "printSetup" => "print_setup",
+        "flipVertical" => "flip_v",
+        "flipHorizontal" => "flip_h",
+        "regionEngrave" => "region_engrave",
+        "regionEmboss" => "region_emboss",
+        "swap" => "swap",
+        "newFill" => "new_fill",
+        "newMotif" => "new_motif",
+        "newDecorative" => "new_decorative",
+        "regionReset" => "region_reset",
+        "addToDesign" => "add_to_design",
+        "imageHtml" => "image_html",
+        "dstSettings" => "dst_settings",
+        "networkMachines" => "network",
+        "support" => "support",
+        "needleDrops" => "needle_drop",
+        "horizontal" => "orientation",
+        "preview" | "previewWindow" => "preview",
+        "openTemplate" => "open_template",
+        "modifyTemplate" => "template_modify",
+        "simulator" => "stitch_simulator",
+        _ => return None,
+    }))
 }
 
 fn glyph(a: Action) -> Glyph {
@@ -102,8 +268,11 @@ fn glyph(a: Action) -> Glyph {
         SaveAs => G::DiskPen,
         Print => G::Printer,
         DesignProperty => G::Info,
-        DesignSettings | Options => G::Gear,
-        FabricSelector | SelectColorPalette | UserThreadCharts => G::Palette,
+        DesignSettings => G::Own("design_settings"),
+        Options => G::Gear,
+        FabricSelector => G::Own("fabric"),
+        SelectColorPalette => G::Palette,
+        UserThreadCharts => G::Own("thread_chart"),
         Wizard => G::Wand,
         Export => G::Export,
         Exit => G::Exit,
@@ -111,38 +280,55 @@ fn glyph(a: Action) -> Glyph {
         Redo => G::Redo,
         Help => G::Help,
         DesignDatabase => G::Database,
-        StitchCreator | StitchDesignFactory => G::Needle,
-        FontCreator | TrueTypeAttributes => G::Font,
-        AttributeSets => G::SewType(true),
+        StitchCreator => G::Own("stitch_creator"),
+        StitchDesignFactory => G::Own("stitch_factory"),
+        FontCreator => G::Own("font_creator"),
+        TrueTypeAttributes => G::Own("truetype_settings"),
+        AttributeSets => G::Own("attribute_sets"),
         SelectTool => G::Cursor,
-        PointTool | EditPoint => G::PointEdit,
+        PointTool => G::PointEdit,
+        EditPoint => G::Point,
         SelectAll => G::SelectAll,
         Cut => G::Scissors,
         Copy => G::Copy,
         Paste => G::Clipboard,
         Duplicate => G::Duplicate,
-        Delete | DeleteImage => G::Trash,
+        Delete => G::Trash,
+        DeleteImage => G::Own("image_delete"),
         ArrangeCopy => G::ArrangeCopy,
-        CopyAttributes | PasteAttributes => G::Dropper,
+        CopyAttributes => G::Dropper,
+        PasteAttributes => G::Own("attr_paste"),
         TextTools | EditText => G::Text,
         ShapesTools => G::Shapes,
-        Rectangle | EdgeRadius => G::Rect,
+        Rectangle => G::Rect,
+        EdgeRadius => G::Own("edge_radius"),
         Ellipse => G::Ellipse,
-        ClosedStraight | StraightBlock | CurvedBlock => G::Polygon,
-        ClosedCurve | SatinSkeleton => G::Curve,
-        SkeletonWidth => G::Size,
-        DeriveSkeleton => G::Outline,
-        EditCharacter => G::Text,
-        PencilClosed | PencilOpen => G::Pencil,
-        OpenStraight | OpenCurve | Running | Feed => G::OpenLine,
+        ClosedStraight => G::Polygon,
+        StraightBlock => G::Own("straight_block"),
+        CurvedBlock => G::Own("curved_block"),
+        ClosedCurve => G::Curve,
+        SatinSkeleton => G::Own("satin_skeleton"),
+        SkeletonWidth => G::Own("column_width"),
+        DeriveSkeleton => G::Own("derive_skeleton"),
+        EditCharacter => G::Own("edit_character"),
+        PencilClosed => G::Pencil,
+        PencilOpen => G::Own("pencil_open"),
+        OpenStraight => G::OpenLine,
+        OpenCurve => G::Own("open_curve"),
+        Running => G::Own("running"),
+        Feed => G::Own("feed"),
         ZoomIn => G::ZoomIn,
         ZoomOut => G::ZoomOut,
         OtherZoom => G::Zoom,
         Pan => G::Hand,
-        Measure | Ruler => G::Ruler,
-        ImportPatterns | ImportSvg => G::Import,
+        Measure => G::Own("measure"),
+        Ruler => G::Ruler,
+        ImportPatterns => G::Import,
+        ImportSvg => G::Own("import_svg"),
         Arrange => G::Align,
-        RotateFlip | ImageRotateRight | ImageRotateLeft => G::Rotate,
+        RotateFlip => G::Rotate,
+        ImageRotateRight => G::Own("image_rotate_right"),
+        ImageRotateLeft => G::Own("image_rotate_left"),
         Size => G::Size,
         Group => G::Group,
         Ungroup => G::Ungroup,
@@ -154,31 +340,68 @@ fn glyph(a: Action) -> Glyph {
         Applique => G::Wizard(RED),
         Patch => G::Wizard(GOLD),
         Cutwork => G::Wizard(PURPLE),
-        SendEmbroidery => G::Needle,
-        OpenImage | PasteImage | SaveImage | ModifyImage | ImageDensity => G::Image,
-        AutoPunch | DesignCenter => G::Wand,
+        SendEmbroidery => G::Own("machine"),
+        OpenImage => G::Image,
+        PasteImage => G::Own("image_paste"),
+        SaveImage => G::Own("image_save"),
+        ModifyImage => G::Own("image_modify"),
+        ImageDensity => G::Own("image_density"),
+        AutoPunch => G::Wand,
+        DesignCenter => G::Own("design_center"),
         CrossStitch => G::Cross,
-        PhotoStitch1 | PhotoStitch2 => G::Photo,
-        SolidView | StitchView | RealisticView | RealisticSettings | ViewThreadTrimming => G::Eye,
-        PaneSewingOrder | PaneSimulator | PaneAttributes | PaneImport | ReferenceWindow => G::Pane,
-        ShowGrid | GridAxes | GridSpacing => G::Grid,
+        PhotoStitch1 => G::Photo,
+        PhotoStitch2 => G::Own("photo_stitch2"),
+        SolidView => G::Own("view_solid"),
+        StitchView => G::Own("view_stitch"),
+        RealisticView => G::Own("view_realistic"),
+        RealisticSettings => G::Eye,
+        ViewThreadTrimming => G::Own("thread_trim"),
+        PaneSewingOrder => G::Own("pane_order"),
+        PaneSimulator => G::Own("pane_simulator"),
+        PaneAttributes => G::Own("pane_attributes"),
+        PaneImport => G::Pane,
+        ReferenceWindow => G::Own("reference_window"),
+        ShowGrid => G::Grid,
+        GridSpacing => G::Own("grid_spacing"),
+        GridAxes => G::Own("grid_axes"),
         SnapToGrid => G::Magnet,
         Guideline => G::Guide,
-        Font | TextSize | FontFilter | FontFilterSettings => G::Font,
+        Font => G::Font,
+        TextSize => G::Own("text_size"),
+        FontFilter | FontFilterSettings => G::Own("font_filter"),
         LineColor => G::Swatch(false),
-        RegionColor | ChangeColor => G::Swatch(true),
+        RegionColor => G::Swatch(true),
+        ChangeColor => G::Own("change_color"),
         LineSewType => G::SewType(false),
         RegionSewType => G::SewType(true),
         ConvertToBlocks => G::Blocks,
         ConvertToStitches => G::Needle,
-        ConvertToOutline | ConvertToOutlines | ConvertRegionToLine => G::Outline,
-        SplitOutline | SplitStitchData | SplitAtPoint | DivideByColor | Connect => G::Split,
-        AddDirectionLine | DeleteDirectionLine | ReverseDirectionLine => G::Direction,
-        DeletePoint | SewingPoints => G::Point,
+        ConvertToOutline => G::Outline,
+        ConvertToOutlines => G::Own("to_outlines"),
+        ConvertRegionToLine => G::Own("region_to_line"),
+        SplitOutline => G::Split,
+        SplitAtPoint => G::Own("split_point"),
+        SplitStitchData => G::Own("split_stitches"),
+        DivideByColor => G::Own("divide_color"),
+        Connect => G::Own("connect"),
+        AddDirectionLine => G::Direction,
+        DeleteDirectionLine => G::Own("dir_delete"),
+        ReverseDirectionLine => G::Own("dir_reverse"),
+        DeletePoint => G::Own("point_delete"),
+        SewingPoints => G::Own("sewing_points"),
         OffsetLines => G::Offset,
         FloralPattern => G::Flower,
         EntryExit => G::EntryExit,
-        MoveSections | ExportSections => G::Hoop,
+        MoveSections => G::Hoop,
+        ExportSections => G::Own("sections_export"),
+    }
+}
+
+/// The glyph `icon` shows and the editor command whose code-drawn fallback stands in for it.
+fn glyph_of(icon: Icon) -> (Glyph, Action) {
+    match icon {
+        Icon::Command(a) => (glyph(a), a),
+        Icon::Suite(key, a) => (suite_glyph(key).unwrap_or_else(|| glyph(a)), a),
     }
 }
 
@@ -269,6 +492,10 @@ fn svg(g: Glyph) -> (&'static str, &'static str) {
         Flower => svg!("flower"),
         EntryExit => svg!("entry_exit"),
         Hoop => svg!("hoop"),
+        Own(n) => (
+            n,
+            OWN.iter().find(|(k, _)| *k == n).map_or("", |(_, src)| src),
+        ),
     }
 }
 
@@ -323,10 +550,11 @@ pub(crate) fn rasterize(src: &str, px: u32, fg: Color32) -> Option<egui::ColorIm
     ))
 }
 
-/// Draws the icon of `a` filling the square `r`.
-pub fn paint(painter: &egui::Painter, r: Rect, a: Action, fg: Color32, enabled: bool) {
+/// Draws `icon` filling the square `r`.
+pub fn paint(painter: &egui::Painter, r: Rect, icon: impl Into<Icon>, fg: Color32, enabled: bool) {
+    let (g, a) = glyph_of(icon.into());
     let px = (r.width() * painter.ctx().pixels_per_point()).round() as u32;
-    if let Some(t) = texture(painter.ctx(), glyph(a), px, fg) {
+    if let Some(t) = texture(painter.ctx(), g, px, fg) {
         let tint = if enabled {
             Color32::WHITE
         } else {
@@ -427,6 +655,8 @@ fn paint_shapes(painter: &egui::Painter, r: Rect, a: Action, fg: Color32, enable
         }
     };
     match glyph(a) {
+        // The later icons have no code-drawn shape; an empty tile keeps the button's place.
+        Glyph::Own(_) => boxed(0.14, 0.14, 0.86, 0.86, fade(Color32::WHITE)),
         Glyph::Page => {
             page(0.2, 0.1, 0.8, 0.9);
             poly(
@@ -1165,9 +1395,19 @@ mod tests {
 
     #[test]
     fn every_command_has_a_rendered_svg_and_every_svg_is_used() {
+        use openstitch_app::editor::suite::{Command, CreatorAction, DbAction, FactoryAction};
+        fn suite<A: Command>() -> impl Iterator<Item = Icon> {
+            A::ALL.iter().map(|&a| Icon::Suite(a.info().key, a.icon()))
+        }
+        let icons = Action::ALL
+            .iter()
+            .map(|&a| Icon::Command(a))
+            .chain(suite::<CreatorAction>())
+            .chain(suite::<FactoryAction>())
+            .chain(suite::<DbAction>());
         let mut used = std::collections::BTreeSet::new();
-        for &a in Action::ALL {
-            let (name, src) = svg(glyph(a));
+        for icon in icons {
+            let (name, src) = svg(glyph_of(icon).0);
             assert!(src.contains(OUTLINE), "{name}: no outline colour");
             let img = rasterize(src, 32, Color32::WHITE).unwrap_or_else(|| panic!("{name}"));
             let inked = img.pixels.iter().filter(|p| p.a() > 128).count();

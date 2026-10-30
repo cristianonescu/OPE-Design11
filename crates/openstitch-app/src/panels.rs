@@ -73,9 +73,11 @@ pub fn object_list(app: &mut EditorApp, ui: &mut egui::Ui) {
     }
     let rows = objects::rows(app.session.design(), &app.selection);
     if rows.is_empty() {
-        ui.label(
-            RichText::new("No objects. Draw with the shape tools or File > Import into design.")
-                .weak(),
+        crate::art::notice(
+            ui,
+            crate::art::Art::ObjectsEmpty,
+            64.0,
+            "No objects. Draw with the shape tools or File > Import into design.",
         );
         return;
     }

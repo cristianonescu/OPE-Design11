@@ -25,12 +25,17 @@ pub fn enabled<A: Command, H: Host<A>>(h: &H, a: A) -> bool {
     a.info().available && h.enabled(a)
 }
 
+/// The icon of `a`: its own when it has one, else its editor command's.
+fn icon<A: Command>(a: A) -> crate::icons::Icon {
+    crate::icons::Icon::Suite(a.info().key, a.icon())
+}
+
 /// A ribbon button of a suite window.
 pub fn command<A: Command, H: Host<A>>(h: &mut H, ui: &mut egui::Ui, a: A, large: bool) {
     let info = a.info();
     let on = enabled(h, a);
     let pressed = a.kind() == Kind::Toggle && on && h.active(a);
-    let resp = ribbon::button(ui, &info, a.icon(), large, on, pressed, a.is_menu());
+    let resp = ribbon::button(ui, &info, icon(a), large, on, pressed, a.is_menu());
     after_click(h, ui, a, on, &resp);
 }
 
@@ -140,7 +145,7 @@ pub fn ribbon<A: Command, H: Host<A>>(
         ui.spacing_mut().item_spacing.x = 2.0;
         for &a in w.qat {
             let on = enabled(h, a);
-            let resp = ribbon::qat_button(ui, &a.info(), a.icon(), on, false);
+            let resp = ribbon::qat_button(ui, &a.info(), icon(a), on, false);
             after_click(h, ui, a, on, &resp);
         }
         ui.add_space(12.0);
@@ -199,7 +204,7 @@ fn application_menu<A: Command, H: Host<A>>(h: &mut H, ui: &mut egui::Ui, w: &Ri
             crate::icons::paint(
                 ui.painter(),
                 r,
-                a.icon(),
+                icon(a),
                 ui.visuals().strong_text_color(),
                 on,
             );
@@ -263,11 +268,11 @@ pub fn toolbar<A: Command, H: Host<A>>(
                 let on = enabled(h, a);
                 let pressed = a.kind() == Kind::Toggle && on && h.active(a);
                 if !labelled(a) {
-                    let resp = ribbon::qat_button(ui, &a.info(), a.icon(), on, pressed);
+                    let resp = ribbon::qat_button(ui, &a.info(), icon(a), on, pressed);
                     after_click(h, ui, a, on, &resp);
                     continue;
                 }
-                let resp = ribbon::button(ui, &a.info(), a.icon(), false, on, pressed, a.is_menu());
+                let resp = ribbon::button(ui, &a.info(), icon(a), false, on, pressed, a.is_menu());
                 after_click(h, ui, a, on, &resp);
             }
         }

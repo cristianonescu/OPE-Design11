@@ -66,7 +66,9 @@ pub fn window(app: &mut EditorApp, ctx: &egui::Context) {
         .show(ctx, |ui| {
             let d = &mut app.workspace.usb;
             if d.volumes.is_empty() {
-                ui.label("No USB stick or SD card is mounted.");
+                crate::art::header(ui, crate::art::Art::NoMedia, |ui| {
+                    ui.label("No USB stick or SD card is mounted.");
+                });
             } else {
                 for (i, (path, name)) in d.volumes.iter().enumerate() {
                     ui.radio_value(&mut d.selected, i, format!("{name}   {path}"));
