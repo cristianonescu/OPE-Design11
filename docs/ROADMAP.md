@@ -139,10 +139,11 @@ back.
    stitch follows PE-DESIGN's Bézier halving since 2026-10-28 (text-fit-default mean needle
    distance 0.27 → 0.20 mm); Text Transform presets 13 and 14 (fan out / in) done 2026-10-28; round 4 (2026-10-29)
    showed PE-DESIGN's transform level is a dragged handle whose value is stored per file
-   (percent of the font size, degrees for slants, fans and arches): add a level parameter to
-   `text.add`, fit each preset's envelope as a function of the value from the parked
-   level files, and re-fit the cap-height box (presets 3, 9, 10, 14, 17 miss by up to 2 mm
-   on descender letters).
+   (percent of the font size, degrees for slants, fans and arches): the level parameter is in
+   since 2026-10-30 (`envelopeLevel`; 67 of 108 level captures at the reference tier); next,
+   re-fit the cap-height box (presets 3, 9, 10, 14, 17 and the bows at strong levels miss by
+   up to 2 mm on descender letters) and fit the slants' and fans' envelopes as a function of
+   the value from the parked level files.
    distance 0.27 → 0.20 mm; #121 kept it and lifted the 256-chord ceiling, 2026-10-29); Text
    Transform presets 13 and 14 (fan out / in) done 2026-10-28.
    Left: per-character colour and

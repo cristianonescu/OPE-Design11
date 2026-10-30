@@ -129,6 +129,12 @@ pub struct TextSpec {
     /// order), applied to straight horizontal text. See [`ENVELOPE_PRESETS`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub envelope: Option<u8>,
+    /// Text Transform strength, as PE-DESIGN 11.50 stores it (its canvas handle; there is no
+    /// numeric field): percent of the font size for the straight-edged presets, a percentage
+    /// for the bows and waves, degrees for the slants and fans, the arch's half-sweep in
+    /// degrees for 1 and 2. `None` is the preset's default ([`envelope_default_level`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub envelope_level: Option<f64>,
 }
 
 /// Text Transform presets OpenStitch lays out: all 26, 1 and 2 (arches over and under) by
@@ -137,6 +143,42 @@ pub struct TextSpec {
 pub const ENVELOPE_PRESETS: [u8; 26] = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
 ];
+
+/// PE-DESIGN 11.50's level of Text Transform preset `n` (1–26) when the preset is clicked
+/// (round-4 captures, read from the owner's files): 30 (degrees) for the arches 1 and 2 and
+/// the fans 13 and 14, 20 for the bows and waves 5, 6, 15, 16, 19, 20, 23 and 24, 10 (degrees)
+/// for the slants 9 and 10, 50 for the straight-edged presets.
+pub fn envelope_default_level(n: u8) -> f64 {
+    match n {
+        1 | 2 | 13 | 14 => 30.0,
+        5 | 6 | 15 | 16 | 19 | 20 | 23 | 24 => 20.0,
+        9 | 10 => 10.0,
+        _ => 50.0,
+    }
+}
+
+/// The levels accepted for preset `n`: PE-DESIGN's handle gives -100…100 for the
+/// straight-edged presets (100 is its stop), -100…100 for the bows, ±80 degrees for the slants
+/// and fans, and a half-sweep of 1…90 degrees for the arches (1.15 degrees is a 1000 mm
+/// radius, PE-DESIGN's stop).
+pub fn envelope_level_range(n: u8) -> (f64, f64) {
+    match n {
+        1 | 2 => (1.0, 90.0),
+        9 | 10 | 13 | 14 => (-80.0, 80.0),
+        _ => (-100.0, 100.0),
+    }
+}
+
+/// How far preset `n` at `level` bows from straight text, as a multiple of its default
+/// envelope: the level over the default (straight-edged, bows, fans), the shear's tangent over
+/// the default's (slants).
+fn envelope_scale(n: u8, level: f64) -> f64 {
+    let default = envelope_default_level(n);
+    match n {
+        9 | 10 => level.to_radians().dtan() / default.to_radians().dtan(),
+        _ => level / default,
+    }
+}
 
 /// The arches' angle: the straight text's advance width (its letters' advances, from the first
 /// pen position to the last, as PE-DESIGN measures its text box) over the radius of its inner
@@ -388,6 +430,7 @@ impl TextSpec {
             direction: TextDirection::Horizontal,
             characters: Vec::new(),
             envelope: None,
+            envelope_level: None,
         }
     }
 
@@ -1383,9 +1426,15 @@ fn envelope_layout(spec: &TextSpec, preset: u8, fonts: &[DesignFont]) -> Result<
         // The inner line keeps the text's width: the baseline over the top of a circle (1),
         // the capital line under the bottom of one (2), letters radial and turned with it.
         let (adv, start) = advance(&plain, fonts)?;
-        let r = adv / ARCH_ANGLE;
+        // The level is PE-DESIGN's half-sweep: the radius keeps the text length, so the arch's
+        // angle grows with it (30 degrees: 383.7, 41.2 degrees: 279.3 for OpenStitch at 10 mm).
+        let level = spec
+            .envelope_level
+            .unwrap_or_else(|| envelope_default_level(preset));
+        let angle = ARCH_ANGLE * level / envelope_default_level(preset);
+        let r = adv / angle;
         let cx = start + adv / 2.0 + ARCH_SHIFT * adv;
-        let reach = (ARCH_ANGLE / 2.0 + 0.6).min(std::f64::consts::PI * 0.98);
+        let reach = (angle / 2.0 + 0.6).min(std::f64::consts::PI * 0.98);
         let steps = 240;
         let at = |k: usize| -reach + 2.0 * reach * k as f64 / steps as f64;
         let (points, fit) = if preset == 1 {
@@ -1411,10 +1460,18 @@ fn envelope_layout(spec: &TextSpec, preset: u8, fonts: &[DesignFont]) -> Result<
         .iter()
         .find(|(n, _, _)| *n == preset)
     {
+        // The level scales how far the edges bow from the straight box (`envelope_scale`).
+        let k = spec
+            .envelope_level
+            .map_or(1.0, |level| envelope_scale(preset, level));
         let warp = |p: Vec2| {
             let u = ((p.x - b.min_x) / b.width().max(1e-9)).clamp(0.0, 1.0);
             let v = (p.y - b.min_y) / b.height().max(1e-9);
             let (t, bt) = (edge_at(top, u), edge_at(bottom, u));
+            let (t, bt) = (
+                v2(u + k * (t.x - u), k * t.y),
+                v2(u + k * (bt.x - u), 1.0 + k * (bt.y - 1.0)),
+            );
             v2(
                 b.min_x + b.width() * (t.x + v * (bt.x - t.x)),
                 b.min_y + b.height() * (t.y + v * (bt.y - t.y)),

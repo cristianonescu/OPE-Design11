@@ -2068,6 +2068,11 @@ fn text_docs(text_required: bool) -> Vec<ParamDoc> {
             "Text Transform preset, 1-26 in the palette's reading order; null turns it off. Not for text fitted to an outline",
         ),
         opt(
+            "envelopeLevel",
+            "number | null",
+            "Text Transform strength as PE-DESIGN stores it: % of the font size (straight-edged presets, default 50; -100...100), % (bows and waves 5, 6, 15, 16, 19, 20, 23, 24, default 20), degrees (slants 9, 10, default 10; fans 13, 14, default 30; -80...80), the arch's half-sweep in degrees (1, 2, default 30; 1...90). Choosing a preset resets it to the default unless given; null resets it",
+        ),
+        opt(
             "lineSpacing",
             "mm",
             "Extra space between lines on top of the %, -100...100 (default 0)",
@@ -2144,7 +2149,20 @@ fn text_params(
                 "Text Transform is not available for text fitted to an outline; release it first",
             ));
         }
+        if spec.envelope != Some(n) {
+            // Choosing a preset resets its level, as PE-DESIGN does.
+            spec.envelope_level = None;
+        }
         spec.envelope = Some(n);
+    }
+    if p.is_null("envelopeLevel") {
+        spec.envelope_level = None;
+    } else if p.has("envelopeLevel") {
+        let Some(n) = spec.envelope else {
+            return Err(p.invalid("envelopeLevel", "needs a Text Transform preset"));
+        };
+        let (lo, hi) = text::envelope_level_range(n);
+        spec.envelope_level = Some(p.req("envelopeLevel", lo, hi)?);
     }
     Ok(())
 }
@@ -2342,6 +2360,7 @@ fn text_commands() -> Vec<CommandSpec> {
                 if let Some(path) = path {
                     spec.path = Some(path);
                     spec.envelope = None;
+                    spec.envelope_level = None;
                     spec.transform = Transform::IDENTITY;
                 }
                 object.text = Some(spec);
@@ -2476,6 +2495,7 @@ fn text_commands() -> Vec<CommandSpec> {
                         t.path = Some(path);
                         // Fitting to an outline cancels Text Transform (the guide).
                         t.envelope = None;
+                        t.envelope_level = None;
                         t.fit = fit;
                         t.align = align;
                         t.transform = Transform::IDENTITY;

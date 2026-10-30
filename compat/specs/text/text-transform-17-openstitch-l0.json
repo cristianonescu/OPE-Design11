@@ -1,0 +1,136 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "text-transform-17-openstitch-l0",
+  "area": "text",
+  "title": "Text Transform preset 17 on \"OpenStitch\" at level 36",
+  "description": "\"OpenStitch\" in Lato Bold at 10 mm, fill, under sewing off, Text Transform preset 17 with the strength PE-DESIGN 11.50 stored for this handle position (36; the preset's default is the L50 capture): the stitch box within 0.5 mm of PE-DESIGN's.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Lettering",
+        "feature": "Text Transform"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Text Attributes > Transform: presets and the canvas handle"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference text/text-transform-17-openstitch-l0.pes (round 4, group A levels): level float 36 read from the file, 1201 stitches"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "text.add",
+      "params": {
+        "text": "OpenStitch",
+        "font": "lato-bold",
+        "size": 10,
+        "x": 50,
+        "y": 50,
+        "fill": "Red",
+        "envelope": 17,
+        "envelopeLevel": 36.0
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "underlay": false,
+        "density": 5
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "text.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "text/text-transform-17-openstitch-l0.pes",
+      "make": "As text-transform-17-openstitch (\"OpenStitch\", Lato 10.0, Fill, under sewing off, density 5, Alignment Center, clicked at (50, 50) mm), Transform preset 17, then the green diamond handle dragged to the position whose stored level is 36. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "bounds-minx",
+      "measure": {
+        "kind": "bounds",
+        "property": "minX"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN's box at this level",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "bounds-maxx",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxX"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN's box at this level",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "bounds-miny",
+      "measure": {
+        "kind": "bounds",
+        "property": "minY"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN's box at this level",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    },
+    {
+      "id": "bounds-maxy",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxY"
+      },
+      "source": {
+        "export": "text.pes"
+      },
+      "evidence": "PE-DESIGN's box at this level",
+      "reference": {
+        "tolerance": {
+          "mm": 0.5
+        }
+      }
+    }
+  ]
+}
