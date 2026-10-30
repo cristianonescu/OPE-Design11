@@ -237,6 +237,9 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
     2026-10-30 (largest row spread; scan order alternating by colour; specks kept and dropped
     as PE; PE's thread picks after reduction checked on 20 flat colours: a per-colour mapping
     no tested distance reproduces, kept as a documented difference). Compared with
+    as PE), and its census keeps large colours behind anti-aliased edge shades since
+    2026-10-30 (taken most frequent first, colours within RGB 32 merged, at most 10 automatic
+    colours: PE's count on 4 of 9 flat round-5 test images and all 4 photos). Compared with
     PE-DESIGN 11.50's round-4 captures on 2026-10-29: Cross Stitch's six diagonal stitches per
     cell (−0.9 % stitches), Photo Stitch 1's Sew Page Color, 3.0 mm Run Pitch and 10 colours
     (+5 %); second round (bars, moved shapes, mono, Photo Stitch 2): Auto Punch's satin/fill

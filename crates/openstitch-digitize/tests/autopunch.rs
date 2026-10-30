@@ -328,14 +328,15 @@ fn census_is_modal_and_capped_at_100_colours() {
     let c = palette::census(&clear);
     assert_eq!(c.colors, vec![([20, 40, 200], 1)]);
     assert_eq!(c.modal.iter().flatten().count(), 1);
-    // 400 distinct colours (one per 2×2 block of a 40×40 image) → 100 tracked, every opaque
-    // pixel counted under one of them, the first met first.
+    // 400 distinct colours, each further than MERGE_DIST from the others (one per 2×2 block of
+    // a 40×40 image, on a 36-step RGB lattice) → 100 tracked, every opaque pixel counted under
+    // one of them, equal counts tracked first met first.
     let many = Raster::from_fn(40, 40, |x, y| {
         let k = (y / 2) * 20 + x / 2;
         [
-            (k % 256) as u8,
-            (k / 2 % 256) as u8,
-            (k * 3 % 256) as u8,
+            (k % 8 * 36) as u8,
+            (k / 8 % 8 * 36) as u8,
+            (k / 64 * 36) as u8,
             255,
         ]
     })
@@ -349,6 +350,37 @@ fn census_is_modal_and_capped_at_100_colours() {
     let pal = Palette::from_census(&c, 4);
     assert!(pal.threads.len() <= 4 && !pal.threads.is_empty());
     assert_eq!(pal, Palette::from_census(&c, 4), "deterministic");
+}
+
+/// Round 5 (`examples/images/g01-emblem.png`): an anti-aliased image's many small edge shades,
+/// met first, do not crowd out a large colour met later. 200 near-white shades (3×3 blocks, so
+/// each survives the modal filter) fill the top half before any orange appears; scanning order
+/// alone filled the 100 slots with them and counted the orange as near-white.
+#[test]
+fn census_keeps_a_large_colour_behind_many_edge_shades() {
+    let orange = [253, 120, 11];
+    let img = Raster::from_fn(60, 60, |x, y| {
+        if y < 30 {
+            [255 - (x / 3) as u8, 255 - (y / 3) as u8, 250, 255]
+        } else {
+            [orange[0], orange[1], orange[2], 255]
+        }
+    })
+    .expect("size");
+    let c = palette::census(&img);
+    assert!(c.colors.len() <= CENSUS_COLORS);
+    assert_eq!(c.pixels(), 3600);
+    let kept = c
+        .colors
+        .iter()
+        .find(|k| k.0 == orange)
+        .expect("orange is tracked");
+    assert_eq!(kept.1, 1800, "every orange pixel counts as orange");
+    // The shades are one colour group, the orange another: two automatic colours, as PE-DESIGN
+    // fills in for a two-colour image (round 5, `g14-two-colour.png`).
+    assert_eq!(c.auto_colors(), 2);
+    let pal = Palette::from_census(&c, c.auto_colors());
+    assert_eq!(pal.threads.len(), 2);
 }
 
 /// #127: the small-region floor is `max(4, round(param · 100 / mmPerPx²))`, in pixels, with
