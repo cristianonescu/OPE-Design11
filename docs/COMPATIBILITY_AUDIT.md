@@ -843,15 +843,16 @@ Line references are relative to `crates/`.
       0°, 30° and 45° the rows step 1.2 mm each, as OpenStitch's, with a constant offset of at
       most 0.3 mm (the angled-fill anchor difference below). Stitches: 2006 (0°), 2032 (30°),
       2068 (45°), 2036 (90°).
-    - *Type 2* is a different traversal, not a grid phase. Each row is sewn in two pieces from two
-      side-by-side sections whose rows sit about half a row spacing apart. The seam between them
-      is staggered from row to row (pieces 16–36 mm long; at 90°, one row covers 16–40 mm and the
-      next 0–21.2 mm), and each section has its own needle grid. At Frequency 0 its grid is
-      regular, phase 0.12 mm against OpenStitch's 0.28. Stitches: 2001 (0°), 2041 (30°),
-      2054 (45°), 1989 (90°), 2056 (45°, Frequency 0).
-    - Not implemented: Type 2 needs a new fill traversal (the section split, the seam stagger
-      rule, the section order and the travel), planned after alpha.7 with these seven files as
-      its specs. Fill keeps sewing Type 1.
+    - *Type 2* sews sloped rows. Each pass runs from one edge at row k's line to the other edge
+      at row k+1's, rising one row spacing over its length (0.20 mm at 0° and 90°, 0.21 at 45°,
+      0.22 at 30°, against 0 for Type 1's flat rows), so consecutive passes meet at the edges in
+      one continuous zigzag, with no step at the row ends. The needle grid along each pass follows
+      the same Frequency rule as Type 1 (at 0°: 1.2 + 4k, then 2.4 + 4k, then 3.6 + 4k mm from the
+      left edge). Stitches: 2001 (0°), 2041 (30°), 2054 (45°), 1989 (90°), 2056 (45°,
+      Frequency 0).
+    - Not implemented: Type 2 needs sloped rows in the fill generator (each row's line tilted by
+      one spacing across the region, joined at the edges), planned after alpha.7 with these
+      seven files as its specs. Fill keeps sewing Type 1.
 - **Test:**
   - `object.setRegion {type:"fill",frequency:60}` and `object.setLine {type:"eStitch",runTimes:6}`
     are refused.

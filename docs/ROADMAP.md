@@ -103,9 +103,9 @@ back.
 1. **Fill:** Round 4 (2026-10-29) confirmed PE-DESIGN has no random tatami stagger
    (Frequency and two Stitch Type buttons only) and a 0.1 lines/mm density floor. PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
    Frequency default); the programmable fill density; Stitch Type 2 (measured 2026-10-30:
-   each row sewn in two pieces from two side-by-side sections offset half a row spacing, the
-   seam staggered row to row, each with its own grid; Type 1 is OpenStitch's fill already) as a
-   new fill traversal after alpha.7, with the round-5 captures as specs; Half Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
+   sloped rows, each pass rising one row spacing from edge to edge so the passes join in one
+   continuous zigzag; Type 1 is OpenStitch's fill already) after alpha.7, with the round-5
+   captures as specs; Half Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
    rows follow PE-DESIGN's cumulative-density placement since 2026-10-28 (#95: every row of
    the U within 0.12 mm, overlap 0.83 → 0.89); left for the U: PE's section order for fills in
    several parts (right leg, left leg, then the top bar ending at the first vertex). Under
