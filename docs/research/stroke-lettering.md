@@ -185,6 +185,15 @@ not before, so every reference in the repository has a spec that reads it.
    short column) and at crossings (X: two chevrons), keep turning corners as one column with a fan
    (L, V's right arm), and give each stroke the part of the outline around it. Unit-test on Lato's
    I, L, T, V, X, O, H and A against the stroke boxes measured above and step 0's blocks.
+   **Done 2026-10-30** (`openstitch_design::strokes`): the glyph is thinned on a grid to a
+   one-cell skeleton (Zhang–Suen, staircases removed), read as a graph of free ends, junctions
+   and loops; thinning spurs are pruned, a crossing split in two is merged, a branch is cut where
+   it turns by more than 115° (V's foot, A's apex; L's right angle stays), and an i's dot is a
+   stroke of its own. Lato's I, L, T, H, X, V, O, A, S, e and i give PE-DESIGN's structure (H: the
+   stems cut at the bar, 3.8 mm stems and a 2.8 mm bar; T: the bar cut at the stem; X: four arms
+   at one crossing; O: one ring). Which stroke owns a junction and when two strokes through it are
+   sewn as one stay with the order (step 4); step 0's blocks will check the cut once the reader
+   maps them.
 2. **Satin per stroke.** Use the column satin of `column.rs` along each stroke's centre line,
    crossings perpendicular to it. Spec: `text-defaults-h` checks 4 strokes in PE-DESIGN's order
    and the crossings' directions (a per-run direction-cluster measure), with the count within the
