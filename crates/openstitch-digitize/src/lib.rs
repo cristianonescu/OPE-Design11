@@ -14,6 +14,7 @@ pub mod palette;
 pub mod photo;
 pub mod raster;
 pub mod regions;
+pub mod screen;
 pub mod trace;
 
 pub use raster::{Frame, Raster};

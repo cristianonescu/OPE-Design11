@@ -1,8 +1,11 @@
 # Photo Stitch 2 as PE-DESIGN 11.50 sews it: a line screen (#129)
 
-Status (2026-10-30): **measured; generator on hold.** The owner decides whether to build it
-after a read of Brother's US 7,996,103 (see [Patent facts](#patent-facts)). This note and
-`tools/screencmp.py` are the harness and the acceptance criteria for when it is built.
+Status (2026-10-30): **built.** The owner approved the generator on 2026-10-30 ("Go ahead",
+asked whether the halftone model could go ahead despite Brother's US 7,996,103; see
+[Patent facts](#patent-facts)). It is `crates/openstitch-digitize/src/screen.rs`, behind
+`digitize.photoStitch` with `style: lines`. `tools/screencmp.py` and the test
+`line_screen_meets_pe_design_capture` check it against the capture. Results are under
+[Acceptance results](#acceptance-results).
 
 ## The capture
 
@@ -57,7 +60,7 @@ blue area (52).
 
 **Path:** one jump per thread and no trims. Every line is sewn end to end, serpentine.
 
-## What OpenStitch sews today (Lines style, for comparison)
+## What OpenStitch sewed before the generator (Lines style)
 
 `digitize.photoStitch` with `style: lines` at its defaults, on the same image and placement:
 7173 stitches, 9 threads, 173 trims.
@@ -102,6 +105,49 @@ and placement.
 - **Total stitches:** within 10 % of 14 133.
 - **Jumps:** at most one per thread.
 
+## Acceptance results
+
+Measured on 2026-10-30 with `tools/screencmp.py`. OpenStitch ran `digitize.photoStitch`
+`style: lines` at its defaults: 4 colours, Line interval 2.0 mm, Max. Density 4.5, Direction 0.
+Same image and placement as the capture.
+
+| Criterion | PE-DESIGN | OpenStitch | Met |
+|---|---|---|---|
+| Line angles | 0, 45, 88, 135 | 0, 45, 88, 135 (the lines run at exactly 90°; 88 is the histogram peak with the zigzag) | yes |
+| Line spacing | 2.0 mm | 2.0 mm | yes |
+| Own-area density | 297 / 298 / 296 | 280 / 281 / 292 / 290 | yes, within 6 % |
+| Baseline density (white) | 21–23 | 21–24 | yes |
+| Total stitches | 14 133 | 13 701 (−3.1 %) | yes |
+| Jumps | 4, one per thread; no trims | 4, one per thread; no trims | yes |
+| Mixed green area | blue and yellow | green has its own thread | **no** |
+
+The last criterion fails because of PE's colour-set choice, not the screen. PE's Auto Select
+chose blue, red, yellow and purple for an image whose colours are red, green, blue and yellow.
+Green is then a mix, and purple adds a fifth line set. OpenStitch reduces the image to its own
+four colours, so green has its own thread. How Auto Select chooses its four, and what CMYK,
+RGBK, CRVK and BMYK hold, needs the colour-set captures below.
+
+The same checks run in the test suite on the owner's image rebuilt procedurally:
+`line_screen_meets_pe_design_capture`. It asserts:
+- angles within 3° (on the straight baseline stitches);
+- lines 2.0 ± 0.1 mm apart;
+- own-area density within 10 % of 297;
+- white within 25 % of 21;
+- one jump per thread;
+- total within 10 % of 14 133.
+
+Implementation choices beyond the capture:
+- **Shares.** Each grid cell (0.5 mm) is matched as the fabric plus a non-negative mix of the
+  threads' reduced colours, summing to at most 1. In mono the share is the darkness after the
+  full-range contrast stretch.
+- **Zigzag.** A thread zigzags where its share is at least 0.08. Each stitch advances
+  `1 / (Max. Density × 4/3) / share` mm: 0.17 mm at full share, PE's ≈ 6 needle points per mm.
+  The depth stays at 90 % of the interval.
+- **More than four threads.** A fifth thread and later ones take the four angles shifted by
+  22.5°.
+- **Moves between lines.** Line ends are joined by a stitch when they are within three
+  intervals.
+
 ## Captures still needed (owner-made, at defaults unless named)
 
 - **Colour sets:** the same image with each Color Set (CMYK, RGBK, CRVK, BMYK), to pin the
@@ -126,7 +172,12 @@ The model above differs on each element:
 - Its lines are straight screen lines, not image-derived segments.
 - Its connector rule is serpentine line ends, with no coverage or colour test.
 
-Whether that difference is enough is the lawyer's question, not this note's.
+Whether that difference is enough is the lawyer's question, not this note's. The owner
+decided on 2026-10-30 to go ahead with this fixed-angle design. The generator keeps to it:
+- the angles come from `screen::ANGLES` and the Direction setting only, never from the image;
+- the lines are straight;
+- a move between lines is sewn when it is short and jumped otherwise, with no coverage, colour
+  or angle test.
 
 ## Harness
 

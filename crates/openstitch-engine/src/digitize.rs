@@ -220,13 +220,13 @@ pub fn commands() -> Vec<CommandSpec> {
         ),
         spec(
             "digitize.photoStitch",
-            "Photo Stitch (approximation): tone-modulated fill rows (style fill) or zigzag lines (style lines)",
+            "Photo Stitch (approximation): tone-modulated fill rows (style fill, after Photo Stitch 1) or a line screen, one fixed angle per thread (style lines, Photo Stitch 2)",
             Effect::Edit,
             placement_docs(vec![
                 opt(
                     "style",
                     "fill|lines",
-                    "Fill rows (after Photo Stitch 1) or lines (after Photo Stitch 2); default fill",
+                    "Fill rows (after Photo Stitch 1) or a line screen (Photo Stitch 2); default fill",
                 ),
                 opt(
                     "mode",
@@ -236,7 +236,7 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt(
                     "colors",
                     "int 1-32",
-                    "Thread colours in colour mode (default 10, PE-DESIGN's Max. Number of Colors)",
+                    "Thread colours in colour mode (default 10 for fill, PE-DESIGN's Max. Number of Colors; 4 for lines, its Color Set)",
                 ),
                 opt("thread", "color", "Thread in mono mode (default Black)"),
                 opt(
@@ -252,12 +252,22 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt(
                     "rowSpacing",
                     "mm",
-                    "Distance between rows, 0.2-5 (default 0.25 fill, 1.2 lines)",
+                    "Distance between rows (fill) or the Line interval (lines), 0.2-5 (default 0.25 fill, 2.0 lines)",
                 ),
                 opt(
                     "stitchLength",
                     "mm",
-                    "Fill stitch length (Run Pitch) or zigzag pitch, 0.3-7 (default 3 fill, 0.8 lines)",
+                    "Fill stitch length (Run Pitch), or the straight run where a line's colour is not needed, 0.3-7 (default 3 fill, 2.5 lines)",
+                ),
+                opt(
+                    "maxDensity",
+                    "lines/mm",
+                    "Lines: Max. Density, zigzag lines per mm at full colour, 0.5-10 (default 4.5)",
+                ),
+                opt(
+                    "direction",
+                    "degrees",
+                    "Lines: Direction, turns every thread's screen angle (0/45/90/135), -180-180 (default 0)",
                 ),
             ]),
             |s, p| {
@@ -268,7 +278,17 @@ pub fn commands() -> Vec<CommandSpec> {
                 };
                 let mode = match choice(p, "mode", "color", &["color", "mono"])? {
                     "mono" => PhotoMode::Mono(thread(p, "thread")?.unwrap_or(Thread::rgb(0))),
-                    _ => PhotoMode::Color(count(p, "colors", photo::COLORS as i64, 1, 32)?),
+                    _ => PhotoMode::Color(count(
+                        p,
+                        "colors",
+                        if style == PhotoStyle::Lines {
+                            photo::LINE_COLORS
+                        } else {
+                            photo::COLORS
+                        } as i64,
+                        1,
+                        32,
+                    )?),
                 };
                 let mut options = PhotoStitch::new(style, mode);
                 if let Some(f) = thread(p, "fabric")? {
@@ -277,6 +297,8 @@ pub fn commands() -> Vec<CommandSpec> {
                 options.sew_page = p.bool("sewPage", Some(options.sew_page))?;
                 options.row_spacing_mm = p.opt("rowSpacing", options.row_spacing_mm, 0.2, 5.0)?;
                 options.stitch_mm = p.opt("stitchLength", options.stitch_mm, 0.3, 7.0)?;
+                options.max_density = p.opt("maxDensity", options.max_density, 0.5, 10.0)?;
+                options.direction_deg = p.opt("direction", options.direction_deg, -180.0, 180.0)?;
                 let out = photo::convert(&image, &frame, &options).map_err(|e| failed(p, e))?;
                 Ok(json!({
                     "colors": hexes(&out.threads),

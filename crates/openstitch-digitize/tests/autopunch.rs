@@ -529,43 +529,6 @@ fn bar_widths_choose_satin_and_fill_as_pe_design() {
     );
 }
 
-/// The owner's four shapes (red disc, green triangle, yellow rectangle, blue square on white)
-/// in two layouts with every shape moved and recoloured.
-fn shapes(moved: bool) -> Raster {
-    let (r, g, b, y) = (
-        [220, 30, 30, 255],
-        [30, 160, 60, 255],
-        [30, 60, 200, 255],
-        [240, 200, 40, 255],
-    );
-    Raster::from_fn(240, 240, |px, py| {
-        let (fx, fy) = (f64::from(px), f64::from(py));
-        let disc = |cx: f64, cy: f64, rad: f64| (fx - cx).powi(2) + (fy - cy).powi(2) < rad * rad;
-        let tri = |x0: f64, x1: f64, base: f64, apex: f64| {
-            let t = (fy - apex) / (base - apex);
-            (0.0..=1.0).contains(&t) && (fx - (x0 + x1) / 2.0).abs() <= t * (x1 - x0) / 2.0
-        };
-        let rect = |x0, y0, x1, y1| px >= x0 && px < x1 && py >= y0 && py < y1;
-        let hit = if moved {
-            [
-                (rect(20, 20, 100, 100), g),
-                (rect(130, 40, 210, 90), b),
-                (tri(20.0, 120.0, 220.0, 150.0), r),
-                (disc(170.0, 170.0, 49.0), y),
-            ]
-        } else {
-            [
-                (disc(60.0, 60.0, 49.0), r),
-                (tri(130.0, 230.0, 100.0, 30.0), g),
-                (rect(20, 150, 100, 200), y),
-                (rect(130, 130, 210, 210), b),
-            ]
-        };
-        hit.iter().find(|h| h.0).map_or(WHITE, |h| h.1)
-    })
-    .expect("size")
-}
-
 /// PE-DESIGN 11.50 sews the four colours yellow, blue, red, green on both layouts
 /// (`autopunch-default.pes`, `autopunch-owner-shapes-moved.pes`): by the colour's R + G + B,
 /// highest first, not by area or position; and finds 4 colours plus white by itself.

@@ -101,29 +101,31 @@ fn colour_fill_separates_threads() {
     }
 }
 
+/// Photo Stitch 2 Mono: one thread's line screen; the zigzag thickens with darkness and the
+/// straight baseline runs on through white, as PE-DESIGN's screen covers the whole image.
 #[test]
-fn mono_lines_swing_with_darkness_and_break_on_white() {
+fn mono_screen_follows_darkness_and_runs_on_through_white() {
     let frame = Frame::new(0.0, 0.0, 50.0, 100);
     let p = PhotoStitch::new(PhotoStyle::Lines, PhotoMode::Mono(black()));
-    let out = photo::convert(&gradient(), &frame, &p).expect("converts");
-    let pts = needles(&out.objects[0]);
-    // 10 mm high at 1.2 mm spacing → 8 rows of 1.25 mm.
-    let spacing = 12.5;
-    let swing = |a: f64, b: f64| {
-        pts.iter()
-            .filter(|p| p.0 >= a && p.0 < b)
-            .map(|p| {
-                let centre = ((p.1 / spacing - 0.5).round() + 0.5) * spacing;
-                (p.1 - centre).abs()
-            })
-            .fold(0.0, f64::max)
-    };
-    assert!(swing(0.0, 100.0) > 4.0);
-    assert!(swing(0.0, 100.0) > swing(250.0, 350.0));
     assert_eq!(
-        pts.iter().filter(|p| p.0 > 470.0).count(),
-        0,
-        "white breaks the lines"
+        (p.row_spacing_mm, p.stitch_mm, p.max_density),
+        (2.0, 2.5, 4.5)
+    );
+    let out = photo::convert(&gradient(), &frame, &p).expect("converts");
+    assert_eq!(out.objects.len(), 1);
+    let pts = needles(&out.objects[0]);
+    let band = |a: f64, b: f64| pts.iter().filter(|p| p.0 >= a && p.0 < b).count();
+    let (dark, mid, light) = (band(0.0, 100.0), band(200.0, 300.0), band(400.0, 500.0));
+    assert!(dark > mid && mid > light, "{dark} {mid} {light}");
+    assert!(light > 0, "the baseline runs on through white");
+    let b = out.objects[0].stitch_block.as_ref().expect("block");
+    assert_eq!(
+        b.stitches
+            .iter()
+            .filter(|s| s.command == Command::Jump)
+            .count(),
+        1,
+        "one path"
     );
 }
 
@@ -346,4 +348,143 @@ fn runs_are_joined_nearest_first() {
         jumps * 20 < stitches,
         "{jumps} jumps for {stitches} needle points"
     );
+}
+
+/// The thread's straight baseline stitches (2.5 mm runs, on the line itself).
+fn baseline(o: &DesignObject) -> Vec<((f64, f64), (f64, f64))> {
+    let st = &o.stitch_block.as_ref().expect("block").stitches;
+    st.windows(2)
+        .filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch)
+        .map(|w| ((w[0].x, w[0].y), (w[1].x, w[1].y)))
+        .filter(|(a, b)| ((b.0 - a.0).hypot(b.1 - a.1) - 25.0).abs() < 1.0)
+        .collect()
+}
+
+/// #129 acceptance check against PE-DESIGN 11.50's Photo Stitch 2 (round-4 capture
+/// `photostitch2-color-owner-shapes.pes`, measured with tools/screencmp.py; criteria in
+/// docs/research/photo-stitch-2-halftone.md), on the owner's four-shape image rebuilt here:
+/// line angles 0/45/90/135° in sewing order within 3°, lines 2.0 ± 0.1 mm apart, each thread
+/// within 10 % of PE's ≈297 needle points per cm² in its own colour area and within 25 % of
+/// PE's ≈21 on white, one jump a thread, and the total within 10 % of PE's 14 133.
+#[test]
+fn line_screen_meets_pe_design_capture() {
+    let img = shapes(false);
+    let frame = Frame::new(0.0, 0.0, 84.7, 240);
+    let p = PhotoStitch::new(PhotoStyle::Lines, PhotoMode::Color(photo::LINE_COLORS));
+    let out = photo::convert(&img, &frame, &p).expect("converts");
+    assert_eq!(out.objects.len(), 4, "{:?}", out.threads);
+    let total: usize = out.stitches.iter().sum();
+    assert!(
+        (total as f64 - 14_133.0).abs() / 14_133.0 < 0.10,
+        "{total} stitches against PE's 14 133"
+    );
+    // Colour areas of the source image, in cm².
+    let mm_per_px = 84.7 / 240.0;
+    let area_of = |px: [u8; 4]| -> usize {
+        [
+            WHITE,
+            [220, 30, 30, 255],
+            [30, 60, 200, 255],
+            [240, 200, 40, 255],
+            [30, 160, 60, 255],
+        ]
+        .iter()
+        .position(|c| *c == px)
+        .unwrap_or(0)
+    };
+    let mut cm2 = [0.0f64; 5];
+    for y in 0..240 {
+        for x in 0..240 {
+            cm2[area_of(img.pixel(x, y))] += mm_per_px * mm_per_px / 100.0;
+        }
+    }
+    for (layer, o) in out.objects.iter().enumerate() {
+        let b = o.stitch_block.as_ref().expect("block");
+        assert_eq!(
+            b.stitches
+                .iter()
+                .filter(|s| s.command == Command::Jump)
+                .count(),
+            1,
+            "thread {layer}: one jump"
+        );
+        // Line angle: the straight baseline stitches run at the thread's screen angle.
+        let want = [0.0, 45.0, 90.0, 135.0][layer];
+        let runs = baseline(o);
+        assert!(runs.len() > 50, "thread {layer} has a baseline");
+        for (a, c) in &runs {
+            let ang = (-(c.1 - a.1))
+                .atan2(c.0 - a.0)
+                .to_degrees()
+                .rem_euclid(180.0);
+            let off = ((ang - want + 90.0).rem_euclid(180.0) - 90.0).abs();
+            assert!(off <= 3.0, "thread {layer}: {ang}° against {want}°");
+        }
+        // Line spacing: baseline needle points sit on lines 2.0 mm apart.
+        let t = want.to_radians();
+        let across = |p: (f64, f64)| p.0 * t.sin() + p.1 * t.cos();
+        let first = across(runs[0].0);
+        let on_grid = runs
+            .iter()
+            .filter(|(a, _)| {
+                let k = (across(*a) - first) / 20.0;
+                (k - k.round()).abs() * 20.0 <= 1.0
+            })
+            .count();
+        assert!(
+            on_grid * 20 >= runs.len() * 19,
+            "thread {layer}: lines 2.0 mm apart"
+        );
+        // Needle points per cm² by colour area.
+        let mut counts = [0usize; 5];
+        for (x, y) in needles(o) {
+            let (px, py) = ((x / 10.0 / mm_per_px) as u32, (y / 10.0 / mm_per_px) as u32);
+            if px < 240 && py < 240 {
+                counts[area_of(img.pixel(px, py))] += 1;
+            }
+        }
+        let dens: Vec<f64> = (0..5).map(|k| counts[k] as f64 / cm2[k]).collect();
+        let own = dens[1..].iter().copied().fold(0.0, f64::max);
+        assert!(
+            (own - 297.0).abs() / 297.0 < 0.10,
+            "thread {layer}: own area {own:.0}/cm²"
+        );
+        assert!(
+            (dens[0] - 21.0).abs() / 21.0 < 0.25,
+            "thread {layer}: {:.0}/cm² on white",
+            dens[0]
+        );
+    }
+}
+
+/// The screen's colour shares: a thread's own colour is all that thread, a colour between two
+/// threads is shared, and the fabric colour is none.
+#[test]
+fn screen_shares_mix_threads_over_the_fabric() {
+    use openstitch_digitize::screen::mix;
+    let (red, blue, white) = ([220.0, 30.0, 30.0], [30.0, 60.0, 200.0], [255.0; 3]);
+    let s = mix(red, &[red, blue], white);
+    assert!((s[0] - 1.0).abs() < 1e-3 && s[1] < 1e-3, "{s:?}");
+    let s = mix(white, &[red, blue], white);
+    assert!(s.iter().all(|v| *v < 1e-6), "{s:?}");
+    let half = [0, 1, 2].map(|k| (red[k] + blue[k]) / 2.0);
+    let s = mix(half, &[red, blue], white);
+    assert!(
+        (s[0] - 0.5).abs() < 0.02 && (s[1] - 0.5).abs() < 0.02,
+        "{s:?}"
+    );
+    assert!(s.iter().sum::<f64>() <= 1.0 + 1e-9);
+}
+
+/// The screen angles are a fixed set in sewing order, turned by the Direction setting.
+#[test]
+fn screen_angles_are_a_fixed_set() {
+    use openstitch_digitize::screen::angle;
+    assert_eq!(
+        (0..4).map(|l| angle(l, 0.0)).collect::<Vec<_>>(),
+        vec![0.0, 45.0, 90.0, 135.0]
+    );
+    assert_eq!(angle(4, 0.0), 22.5);
+    assert_eq!(angle(0, 30.0), 30.0);
+    assert_eq!(angle(3, 60.0), 15.0);
 }
