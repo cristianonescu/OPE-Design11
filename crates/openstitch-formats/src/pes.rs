@@ -482,6 +482,17 @@ pub struct WriteOptions {
     /// u16 mm values followed by the hoop name (owner's `#PES0110` files: 100, 100, "nv880e-S"
     /// for a 100 × 100 mm page; issue #125).
     pub hoop_mm: Option<(u16, u16)>,
+    /// The v6 header's "Hoop Rotation" field (EduTechWiki: "90° 1 = rotate"): the hoop is
+    /// turned 90°, as `machine.set` `rotate90` does. Written as 0 when false.
+    pub hoop_rotated: bool,
+    /// The v6 header's "Design Page Is Custom" field: the Design Page has a custom size rather
+    /// than a hoop's. Written as 0 when false (pyembroidery's constant).
+    pub custom_page: bool,
+    /// The custom Design Page size in mm, for the v6 header's sixth and seventh u16
+    /// (EduTechWiki's "DesignWidth" / "DesignHeight", typical 200): PE-DESIGN 11.50 reads a
+    /// custom page's size there (it showed pyembroidery's constant as a 200 x 200 Custom Size
+    /// page, reference session 2026-10-30). `None` keeps 200 x 200.
+    pub page_mm: Option<(u16, u16)>,
 }
 
 impl Default for WriteOptions {
@@ -493,6 +504,9 @@ impl Default for WriteOptions {
             version: Version::V6,
             truncated: false,
             hoop_mm: None,
+            hoop_rotated: false,
+            custom_page: false,
+            page_mm: None,
         }
     }
 }
@@ -510,8 +524,7 @@ impl WriteOptions {
         if s == "11" {
             return Some(Self {
                 version: Version::V11,
-                truncated: false,
-                hoop_mm: None,
+                ..Self::default()
             });
         }
         let (v, truncated) = match s.strip_suffix('t') {
@@ -526,7 +539,7 @@ impl WriteOptions {
         Some(Self {
             version,
             truncated,
-            hoop_mm: None,
+            ..Self::default()
         })
     }
 }
@@ -563,7 +576,7 @@ pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u
             w.u16le(1); // scale to fit
             w.u16le(1); // hoop
         }
-        Version::V6 | Version::V11 => write_header_v6(&mut w, &pattern, options.hoop_mm)?,
+        Version::V6 | Version::V11 => write_header_v6(&mut w, &pattern, options)?,
     }
     if options.truncated {
         w.u16le(0);
@@ -623,18 +636,30 @@ fn write_string16(w: &mut ByteWriter, s: &str) {
 fn write_header_v6(
     w: &mut ByteWriter,
     pattern: &StitchPattern,
-    hoop_mm: Option<(u16, u16)>,
+    options: &WriteOptions,
 ) -> Result<()> {
     w.u16le(1); // hoop
     w.ascii("02");
     for key in METADATA_KEYS {
         write_string8(w, pattern.metadata.get(key).map(String::as_str));
     }
-    let (hoop_w, hoop_h) = hoop_mm.map_or((0x64, 0x64), |(w, h)| (i64::from(w), i64::from(h)));
-    // Optimize hoop change, custom page, hoop width and height (mm), then pyembroidery's
-    // page, grid and display constants.
+    let (hoop_w, hoop_h) = options
+        .hoop_mm
+        .map_or((0x64, 0x64), |(w, h)| (i64::from(w), i64::from(h)));
+    // EduTechWiki's v6 fields: optimize hoop change, design page is custom, hoop width and
+    // height (mm), hoop rotation, design width and height (the custom page size PE-DESIGN
+    // shows), then page sizes, colours, grid and display fields, which keep pyembroidery's
+    // values.
+    let (custom, rotated) = (
+        i64::from(options.custom_page),
+        i64::from(options.hoop_rotated),
+    );
+    let (page_w, page_h) = options
+        .page_mm
+        .map_or((0xC8, 0xC8), |(w, h)| (i64::from(w), i64::from(h)));
     for v in [
-        0, 0, hoop_w, hoop_h, 0, 0xC8, 0xC8, 0x64, 0x64, 0x64, 0x07, 0x13, 1, 1, 0, 100, 1, 0,
+        0, custom, hoop_w, hoop_h, rotated, page_w, page_h, 0x64, 0x64, 0x64, 0x07, 0x13, 1, 1, 0,
+        100, 1, 0,
     ] {
         w.u16le(v);
     }

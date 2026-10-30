@@ -353,7 +353,8 @@ Line references are relative to `crates/`.
   rewrites only the circle's pattern block and the text's box, which it recomputes); Manual
   Punch columns as PE-DESIGN's Straight and Curve Block objects (specs `pes-0110-manual-punch`,
   `pes-0110-curve-block`, reference pending; owner files m01–m11 read and rewritten byte for
-  byte outside the pattern block; a Curve Block written from a design has handles within one
+  byte outside the pattern block; Text > Convert to Blocks' output (stroke-blocks-H, -A) read as
+  blocks and running pieces, its blocks' marks equal but for the floats' last bits; a Curve Block written from a design has handles within one
   file unit of PE-DESIGN's, which way PE-DESIGN rounds them not mapped); the Appliqué wizard's stages as PE-DESIGN's appliqué lines and colours (spec
   `pes-0110-applique`, reference pending; owner files a01–a05 read and rewritten byte for byte
   outside the documented differences);
@@ -433,8 +434,12 @@ Line references are relative to `crates/`.
   the open rules (cutting at junctions and corners, order, under sewing, size) and the owner
   captures requested to settle them.
 - **REA:** none. Font internals are in the prohibited category.
-- **Grade:** Documented difference. The per-stroke angles are measured on the H, A, B, x and g;
-  the cutting rules need the requested captures.
+- **Grade:** Documented difference. The per-stroke angles are measured on the H, A, B, x and g,
+  and the round-5 captures settle the cut. Step 1 is in (2026-10-30, `openstitch_design::strokes`:
+  a glyph's strokes, junctions and loops with PE-DESIGN's structure on Lato's I, L, T, H, X, V, O,
+  A, S, e, i), and the rungs from each stroke's side edges joined at equal fractions of their
+  lengths, as PE-DESIGN's Convert to Blocks lines (H within 2°; A's legs within 10-25° until the
+  apex ownership of step 4); text is not sewn by stroke yet (steps 2-5 of the research note).
 - **Test:**
   - Inputs: `text.add {"text":"AVOW","size":30,"x":50,"y":50}` →
     `object.setRegion {"id":1,"type":"satin"}` → `design.generate`.
@@ -473,9 +478,19 @@ Line references are relative to `crates/`.
 - **Bend sweep (2026-10-28, references `satin-auto-bend-30/45/75/90.pes` and their `-nohalf` twins):**
   PE-DESIGN's count is the same at 30°, 45°, 60° and 75° (171–177 stitches on the 5 mm band) and the
   same with Half Stitch on or off; OpenStitch is within 10 % and the longest crossing within 0.5 mm
-  at all three (reference tier). At 120° PE-DESIGN sews 161 stitches with a 10 mm longest crossing
-  where OpenStitch sews 267 with a 13 mm one: the fan rule breaks down on a sharp turn (file
-  parked with the parked-references session; its spec is not in the repository).
+  at all three (reference tier). **120° (landed 2026-10-30, `satin-auto-bend-120` and `-nohalf`,
+  reference tier):** PE-DESIGN sews 161 stitches: square rungs on both legs, a fan of crossings up
+  to 9.6 mm (two band widths) round the bend whose inner ends crowd within 2 mm of the inner
+  corner, and its needle points 1/3 mm apart along the whole 47.3 mm outer edge. The derived
+  skeleton's rungs swap sides round a bend this sharp, so past 100° (`SHARP_BEND`, between the
+  90° references the skeleton lattice matches and this one) Auto satin rebuilds its rungs on the
+  outer edge (`region::even_outer`: stations every spacing from the far end along the stretch of
+  outline that does not pass the reflex corner, each rung square to that edge), and the corner
+  fan fans only corners that turn as the inner corner does (not the end cap's, which lie within
+  two widths on this band), keeps the rung end nearer the corner, and ends a crossing longer
+  than two widths at the inner corner. pescmp: 273 → 171 stitches to PE's 161, mean needle
+  distance 0.36 → 0.23 mm, coverage 0.614 → 0.699; the longest crossing 9.7 mm to PE's 9.6.
+  Bends up to 90° and the bent band sew exactly as before.
 - **Status:** fixed; the corner fan, end reach, forward start travel, the far-end needle lattice
   and the end on the start point follow PE-DESIGN (reference tier: satin-auto-bend-90-nohalf,
   satin-auto-bend-60, satin-auto-bend-30/45/75 (±nohalf), auto-satin-bent-band;
@@ -611,8 +626,18 @@ Line references are relative to `crates/`.
   height (rotation applied; the custom page when no hoop is chosen) in mm as the v6 header's
   hoop fields, where pyembroidery's constant 100 × 100 stood. PE-DESIGN 11.50 stores the hoop
   the same way in its own `#PES0110` files (u16 100, u16 100, then the hoop name "nv880e-S"
-  for a 100 × 100 mm page, in all 163 owner-drawn reference files). The page, grid and flag
-  fields keep pyembroidery's values, and v1 still writes its fixed hoop. Over-size designs
+  for a 100 × 100 mm page, in all 163 owner-drawn reference files). Since 2026-10-30 the
+  v6 "Design Page Is Custom" field is 1 for a custom page size, "Hoop Rotation" is 1 for a hoop
+  turned 90°, and a custom page's size goes in the sixth and seventh u16 (EduTechWiki's
+  "DesignWidth" / "DesignHeight"). Checked by opening OpenStitch's exports in PE-DESIGN 11.50
+  (reference session, files in the owner's round-5 notes): a 130 × 180 hoop rotated 90°
+  (hoop fields 180, 130, rotation 1) opens as Hoop Size 130 × 180 with Rotate 90 Degrees
+  ticked; a custom 300 × 200 page written with pyembroidery's constant 200, 200 in the design
+  fields opened as a 200 × 200 Custom Size page, which is how the design fields were found.
+  Both opened without a warning, with the design centred on the page and the single-needle
+  machine type (the v6 header carries neither position nor machine type). The page, grid and
+  display fields after them keep pyembroidery's values, and v1 still writes its fixed hoop: the
+  public description puts the hoop in the first u16 in one place and the second in another. Over-size designs
   (round-4 capture `hoop-oversize-100.dst`): PE-DESIGN neither rejects a 129 × 105 mm design
   on a 100 × 100 mm page nor promotes it to a larger hoop; Save As warns and saves on Yes,
   Export writes silently. OpenStitch writes it and returns a warning, `fitsPage: false` and
@@ -1364,6 +1389,29 @@ Line references are relative to `crates/`.
     bottom first: regions in scan order, reversed for the 1st, 3rd, … colour; it replaces
     "largest first". Counts: shapes 4384 / 4482, moved 4358 / 4436, specks 2355 / 2365,
     right triangle 2502 / 2547, bars 3094 / 3197 and 2011 / 2018.
+  - **Thread picks after colour reduction (documented difference, 2026-10-30; pe-refs-4's
+    round-5 `four-colours`, `ap-solo-*`, `ap-four-max10`, `ap-grid16-brother/-ver4` captures):**
+    Auto Punch's BROTHER EMBROIDERY picks are not always the nearest thread.
+    - The picks are a fixed per-colour mapping. Each colour gets the same thread alone as among
+      others, and Max. Number of Colors does not change them, so the colour reduction does not
+      move flat colours.
+    - The Omit Region Colors swatches show the matched threads, not the reduced colours.
+    - On 20 flat colours (four squares, a 16-colour grid of primaries, half levels, tints and
+      greys), OpenStitch's equal-weight RGB match (#119) gives PE's thread for 13.
+    - PE's misses go both ways, so no colour shift explains them:
+      - (128, 0, 0) gets 49 Amber Red (181, 75, 100) over 13 nearer threads, four of them PE's
+        own picks elsewhere;
+      - (128, 128, 255) gets the darker 4 Cornflower Blue;
+      - (192, 192, 192) gets the darker 16 Silver;
+      - (200, 40, 120) gets 51 rather than 49;
+      - (240, 160, 40) gets 12 rather than 52.
+    - Twelve distances (RGB variants, YUV, HSV, CIELAB 1976 with and without gamma, CIE94,
+      CIEDE2000) were tried, each after 22 pre-shifts (channel quantisation and bin centres,
+      saturation, gamma, normalisation). The best explains 15 of 20, so none is adopted.
+    - With the Ver4 Option Color chart, PE's picks depend on the other colours in the image
+      ((200, 40, 120) gets red2 alone and magenta2 among others) and turn greys into navy,
+      maroon and teal. That is treated as a PE-DESIGN quirk, not a model.
+    OpenStitch keeps the equal-weight nearest thread.
   - **Colour order** (`autopunch-owner-shapes-moved.pes`, the same four colours with every
     shape moved and recoloured): PE sews yellow, blue, red, green again, so the order is a
     property of the colours. It is the reduced colour's R + G + B, highest first (yellow 480,
@@ -1414,9 +1462,13 @@ Line references are relative to `crates/`.
       4665 stitches, every grey band within 6 % but 150–179.
 
     Left (open):
-    - The mixing law within a set. PE gives an area's main thread nearly full coverage, and its
-      choices are neither nearest-thread nor least squares; OpenStitch's named sets sew 8–15 %
-      fewer stitches.
+    - The mixing law within a set, now narrowed by the colour-ramp captures (hue 0–300° through
+      CMYK and RGBK). PE sews the most-used thread first, which OpenStitch now does too: every
+      set's thread order matches on the shapes and the ramp. A saturated colour's chromatic
+      threads sum to about full coverage, which OpenStitch now applies over its least squares
+      (`screen::saturate`). The named sets moved from −8 to −15 % stitches against PE to −1.8
+      to −6.4 %. Left: the exact transitions between neighbouring colours, for example the
+      CMYK ramp's red, which PE splits evenly between yellow and magenta (−11 % stitches).
     - Auto Select's thread choice. PE always picks four threads; OpenStitch reduces to the
       image's colours, so where PE mixes green from blue and yellow, OpenStitch gives green its
       own thread.
@@ -1555,6 +1607,15 @@ Line references are relative to `crates/`.
   needs the codes for all 61 entries, known since the round-4 chart reading (see below), and goes with
   the palette work (#136). The machine-format references (`machine-formats`, red and black)
   pick the same entries under both metrics.
+- **PEC colour indexes block by block (2026-10-30, #119, #136):** PE-DESIGN 11.50's own file of
+  the 29 Ver4 Option colours (`tests/fixtures/pe11/ver4-option-color-29.pes`, reference
+  session) gives every colour block the plain nearest PEC entry among 1–61: 32 five times, 7,
+  14, 25 and 37 twice each. OpenStitch's PEC writer gave each distinct colour a still-unused
+  entry instead (so distinct design colours stayed distinct on the machine); it now writes the
+  plain nearest entry per block, and the fixture's 29 indexes are reproduced
+  (`each_block_gets_its_nearest_chart_entry_as_pe_design_writes`). No spec changed. The same
+  file showed the `#PES0110` thread-table reader taking a false, shorter table that starts in
+  the middle of the real one (11 records of 30); it now keeps the longest table that parses.
 - **Thread-chart CSV and the built-in palette (2026-10-29, #136):** PE-DESIGN 11.50 has no
   thread-chart CSV (round-4 check: Options ▸ Edit User Thread Chart only imports; user charts
   are binary `.btc2` files, 89 bytes of high-entropy data for one colour, in the program
@@ -1564,7 +1625,28 @@ Line references are relative to `crates/`.
   `threads.exportCsv` for user and built-in charts and `threads.builtinCharts`, which marks
   Brother entries 1–61 as the ones PE matches to (#119). Charts cannot be exchanged with
   PE-DESIGN through files; `.btc2` is not decoded (obfuscated, kept in the program folder).
-  The 94-entry sew palette of the issue is not implemented: no PE-DESIGN capture shows it.
+  The 94-entry sew palette is implemented since 2026-10-30 (`openstitch_core::sew_palette`,
+  `threads.builtinCharts` `sewPalette`): PE-DESIGN 11.50 has no single 94-row list, but its
+  "Ver4 Option Color" chart has exactly 29 rows, and its own file of them
+  (`ver4-option-color-29.pes`, reference session) writes ids 66–94, type `0x0B`, brand
+  "Option Color" and RGB on a 0/85/170/255 grid: 61 basic + 4 reserved (shown nowhere) + 29,
+  as the issue said. The `#PES0110` writer writes an Option Color thread with that record
+  (id string 66–94, empty code and chart, type `0x0B`; `as_pe_writes`,
+  `option_colours_are_written_with_their_sew_palette_ids` against PE's own file) instead of the
+  nearest PEC index it gave before. The matcher (`sew_palette_index`) follows the issue's dual rule and is
+  **not verified against PE-DESIGN**: no capture shows where PE-DESIGN matches colours to this
+  palette (its vector import does not: the swatch capture sent rgb(0, 0, 255) to 405 BLUE, not
+  to the identical Option colour blue2). No default path calls it, so no output a PE
+  reference backs changes; it is an API for callers that ask for the palette. PE-DESIGN's
+  Auto Punch does match to Ver4 Option Color when it is chosen as the Thread Chart (reference
+  session, 2026-10-30, a 4-colour image of rgb(20,20,180), (100,200,60), (200,40,120),
+  (240,160,40) on white, default parameters): it picked 66, 69, 85, 84. Squared Euclidean,
+  city block, the issue's dual rule and red-mean all give 66, 81, 85, 89; CIE76 Lab gives 66,
+  69, 91, 84. The same image with BROTHER EMBROIDERY gave 406, 509, 107, 208 (PEC 21, 37, 51,
+  12) where squared Euclidean gives PEC 21, 37, 49, 52. So Auto Punch changes the colours
+  before matching (its colour reduction or segmentation), and these picks neither confirm nor
+  settle the palette rule; the issue's dual rule does not reproduce them. Left for the image
+  track: Auto Punch's colour reduction.
 - **Readers against PE-DESIGN's ten-format export (2026-10-29, #135):** pe-refs-4's
   `sample-basic` (a satin S and a fill, exported to every type) found four reader problems.
   (1) PES "drops PE's tie-in records" (471 needle points against PE's 475): not a reader

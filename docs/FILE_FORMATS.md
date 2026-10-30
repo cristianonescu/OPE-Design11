@@ -90,10 +90,12 @@ the two constant fields. PE-DESIGN writes it when it saves a design outside the 
 stitches for a design of that size, and reads an empty design (width and height 0) as empty.
 
 Colour mapping: PEC stores indexes into Brother's fixed 64-entry chart, not RGB. Writer
-assigns each distinct design colour the nearest still-unused chart entry among 1–61
-(equal-weight squared-Euclidean RGB distance, later chart entry on ties;
-`openstitch_core::nearest_index` over `pec_basic_chart()`, #119), so distinct colours stay
-distinct on the machine. Entries 62–64 are read but never chosen: PE-DESIGN 11.50 sent
+gives each colour block the nearest chart entry among 1–61 (equal-weight squared-Euclidean
+RGB distance, later chart entry on ties; `openstitch_core::nearest_index` over
+`pec_basic_chart()`, #119). Distinct design colours share an entry when it is nearest to both,
+as in PE-DESIGN 11.50's own file: its 29 Ver4 Option colours got 32 five times
+(`tests/fixtures/pe11/ver4-option-color-29.pes`; an earlier rule gave each distinct colour a
+still-unused entry, which PE-DESIGN does not do). Entries 62–64 are read but never chosen: PE-DESIGN 11.50 sent
 rgb(255, 128, 0) to 11 Deep Gold rather than 62 Orange (`thread-match-swatches.pes`). The same
 matcher picks the chart entry for JEF, SEW, HUS and PCS. `approximate_index` is the "approximate" palette matcher
 (city-block winner, squared-Euclidean fallback) for the built-in sew palette.
@@ -146,7 +148,7 @@ Object section as pyembroidery 1.5.1 reads and writes it (little-endian):
 |---|---|
 | v1 header | u16 scale-to-fit (1), u16 hoop (1), u16 object count |
 | v4+ header | u16 hoop, 2 ASCII digits, then five u8-length strings: name, category, author, keywords, comments. Strings are Windows-1252 with CR LF line breaks, as PE-DESIGN 11 writes them; OpenStitch reads valid UTF-8 (its earlier files, pyembroidery) as UTF-8 |
-| v5–v10 | fixed fields (36 bytes in v6: hoop/page/grid settings; OpenStitch writes the selected hoop's width and height in mm as the third and fourth u16 (`WriteOptions::hoop_mm`, from `design.export`; 100 × 100 without one) and pyembroidery's values for the rest; PE-DESIGN 11.50's `#PES0110` files store the hoop the same way, u16 mm width and height followed by the hoop name, e.g. 100, 100, "nv880e-S"), u8-length image file name, six f32 (identity transform), u16 counts of programmable fills, motifs, feather patterns, u16 thread count, threads |
+| v5–v10 | fixed fields (36 bytes in v6: hoop/page/grid settings; OpenStitch writes the selected hoop's width and height in mm as the third and fourth u16 (`WriteOptions::hoop_mm`, from `design.export`; 100 × 100 without one), 1 in the second ("Design Page Is Custom") for a custom page size and in the fifth ("Hoop Rotation") for a hoop turned 90° (`custom_page`, `hoop_rotated`), and a custom page's width and height in mm in the sixth and seventh (`page_mm`; pyembroidery's 200, 200 otherwise). PE-DESIGN 11.50 opens these as the hoop, rotation and Custom Size page they describe (a rotated 130 × 180 hoop is written 180, 130 with rotation 1) and pyembroidery's values for the rest; PE-DESIGN 11.50's `#PES0110` files store the hoop the same way, u16 mm width and height followed by the hoop name, e.g. 100, 100, "nv880e-S"), u8-length image file name, six f32 (identity transform), u16 counts of programmable fills, motifs, feather patterns, u16 thread count, threads |
 | thread (v5+) | u8-string catalogue no., R G B, u8 0, u32 colour type (`0x0A` custom colour), u8-strings name, brand, chart |
 | objects | u16 object count, `FFFF 0000`, then objects named by u16-length class strings, separated by `FFFF 0000`, ended by `0000 0000` |
 | `CEmbOne` | 16 zero bytes, six f32 transform (a b c d tx ty; pyembroidery places the group at `tx = 1000 − w/2`, `ty = 1000 + h/2`), u16 1, 0, 0, width, height, 8 zero bytes, u16 section count |
@@ -268,7 +270,9 @@ below is pinned by a test in `tests/pes11.rs`.
 | 168 | region direction, degrees | r08 (45 → 90) |
 | 170 | region colour, a thread-table index | shape-start-points (three shapes: 0, 2, 3 = 800, 007, 027), hole-sewing-pentagon-star |
 | 174 | Fill Frequency, % (default 30) | fill-frequency-0/25/50 |
+| 178 | 1 in PE-DESIGN's tool defaults, 0 in the owner's machine-* files and on Convert to Blocks' blocks (meaning not mapped) | stroke-blocks-H, -A |
 | 180 | region under sewing 1 on, 0 off | r06 |
+| 182 | region under sewing type: 2 PE-DESIGN's default, 4, 0, 1, 3 the second to fifth types; 0 on Convert to Blocks' blocks | satin-col-us-type-2 … -5, stroke-blocks-H |
 | 186 | Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline | region-travel-u-* |
 | 204, 262, 286, 354, 378 | i32 x, y: the bounds' top-left corner, five times (reference points of attributes not identified) | r02, r03, o-closed-curve |
 | 298, 310 | i32 x, y: the bounds' centre (x0 + x1 and y0 + y1 halved, truncated) | r02, r03, o-open-freehand |
@@ -300,18 +304,32 @@ the line; m04, m05, m08 each change only that field). What makes them blocks is 
   m09, m10, m11 and o-manual-curve are within one unit (0.1 mm) of this rule, which way each
   is rounded is not mapped. The bounds are the outline's extent as its curves reach it,
   rounded outward (m10's left side bulges to x 591.48: 591; m11 sags to y 970.25: 971).
-- The two lists hold one entry per line, n each: the first ends' vertices 0 … n − 1 and the
-  second ends' 2n − 1 … n, all at t 0 (m01: 2 and 2 entries, m03: 4 and 4).
-- The marks hang off the two straight edges that close the block, cut at the height midway
-  between the outline's top and bottom as its curves reach them (m11: (600 + 970.25) / 2 =
-  785.125). Mark A is the left cut (segment 2n − 1, its parameter up the edge) offset a tenth
-  of the bounds' width outward and a tenth of their height down; C likewise at the right cut
-  (segment n − 1, its parameter down the edge); B midway between the cuts, a quarter of the
-  height up. The tenths and the quarter are whole units, rounded down; the parameters are
-  single-precision values stored as f64 (m11: 0.07437500357627869). A straight block's cuts sit
-  mid-edge at t 0.5, which is the closed-shape rule (m01, m03).
+- The two lists hold one entry per line, in order: its first end's vertex in the first list,
+  its second end's in the second, all at t 0. The Manual Punch tool's blocks have no other
+  vertices: 0 … n − 1 and 2n − 1 … n (m01: 2 and 2 entries, m03: 4 and 4). Text > Convert to
+  Blocks also puts outline points between line ends (stroke-blocks-A's second block: lines
+  [0, 11] [1, 10] [4, 7] [5, 6] on 12 vertices).
+- The marks hang off the outline where the horizontal line midway between its top and
+  bottom (as its curves reach them: m11, (600 + 970.25) / 2 = 785.125) crosses it furthest
+  left and furthest right, each crossing as a segment and a parameter along it, a crossing at
+  a vertex as the end of the segment before it (t 1: stroke-blocks-H's first block). Mark A is
+  the left crossing offset a tenth of the bounds' width outward and a tenth of their height
+  down; C likewise at the right; B midway between them, a quarter of the height up. The tenths
+  and the quarter are whole units, rounded down; the parameters are single-precision values
+  stored as f64 (m11: 0.07437500357627869). On the Manual Punch tool's blocks the crossings are
+  the edges that close the block (a straight block's mid-edge at t 0.5, the closed-shape rule:
+  m01, m03); Convert to Blocks' vertical strokes cross on their sides. On its diagonal blocks
+  (stroke-blocks-A) PE-DESIGN's crossings differ from this in the floats' last bits (t within
+  1e-4); how it computes them is not mapped.
 - The body's two tail positions (u16 segment, f32 t at +4414 and +4426 on a default-pattern
-  body) are (2n − 1, 1.0) and (n, 0.0), where a shape has the last segment and 1.0 twice.
+  body) are the last segment at 1.0, and the vertex the block's sewing ends at, at 0.0: an end
+  of its last line, n on the Manual Punch tool's blocks, either end on Convert to Blocks' (H's
+  first block: 2 of [2, 3]; its third: 2 of [1, 2]). A shape has the last segment and 1.0
+  twice.
+
+Convert to Blocks writes one group of blocks with running pieces between them (open lines,
+line Running, region Not Sewn) whose two position lists are empty (stroke-blocks-H, -A); their
+marks follow the open-line placement the writer doesn't reproduce.
 
 PE-DESIGN numbers the lines across the whole object: one object for the eight clicks of m03.
 Manual Punch > Running is an open line with one entry per list, an ordinary shape
@@ -332,7 +350,7 @@ four lines, then the square; Replace drops the square):
 - A file with a sewn cutting line sets bit 0x80 of the signature code's first character
   (`B1 30`: a02, against `10` or `01` in all 854 other `#PES0110` files).
 - The covering line has an empty pattern block (size 750, no polylines) and its own values in
-  fields of the sew types it doesn't use (+58, +178, +364: 0 where others have 1; +70, +72,
+  fields of the sew types it doesn't use (+58, +364: 0 where others have 1; +70, +72,
   +82, +218, +220, +238, +240, +260, +334, +336, +346: 50 / 100 where others have 123, 117 or
   50); not mapped.
 For closed shapes the coordinates sit at fixed fractions of the bounds: A a tenth of the width
@@ -479,8 +497,8 @@ outlines in one object, programmable, motif and the other region types, motif, s
 candlewicking, chain and cutting lines; text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character
-edits or under sewing. Checks: the 119 owner files whose list the reader parses completely (54
-with shapes, 11 of them Manual Punch objects, 5 Applique Wizard outputs, 19 with plain text, 27 with a Text Transform, 14 with
+edits or under sewing. Checks: the 121 owner files whose list the reader parses completely (56
+with shapes, 11 of them Manual Punch objects, 2 of Convert to Blocks, 5 Applique Wizard outputs, 19 with plain text, 27 with a Text Transform, 14 with
 text fitted to an outline, 3 with a stitch group; two of them with gallery shapes) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
@@ -1270,11 +1288,26 @@ with PE-DESIGN through files (round-4 check, issue #136). The `.btc2` format is 
 Earlier OpenStitch versions read the same six columns without quoting or a column row, so
 their files still import. The built-in charts (`threads.builtinCharts`: `brother` = the
 64-entry PEC chart, entries 1–61 marked `basic` as the ones PE-DESIGN matches to;
-`janomeJef`, `janomeSew`, `husqvarnaHus`, `husqvarnaShv`) export in the same schema
+`sewPalette` = the 94-entry sew palette below; `janomeJef`, `janomeSew`, `husqvarnaHus`,
+`husqvarnaShv`) export in the same schema
 (`threads.exportCsv {builtin}`), so any of them can be copied into a user chart and edited.
 Not adopted from #136, for want of any PE-DESIGN reference: the `#userchart` header with a
 chart code, the `id,R,G,B,attr,code,description` column order, the 6-character code and the
-1,499-colour cap, and the 94-entry "sew palette".
+1,499-colour cap.
+
+The sew palette (`openstitch_core::sew_palette`, #136): 94 ids, 1-based. Ids 1–61 are the
+BROTHER EMBROIDERY chart (PEC entries 1–61, with their codes), 62–65 reserved (PE-DESIGN shows
+them nowhere), 66–94 PE-DESIGN 11.50's "Ver4 Option Color" chart: 29 rows with an empty code,
+brand "Option Color", type `0x0B` and RGB on a 0/85/170/255 grid, written in a `#PES0110`
+thread table with the id string (66–94) where a BROTHER EMBROIDERY thread has its PEC index
+(`tests/fixtures/pe11/ver4-option-color-29.pes`). OpenStitch's `#PES0110` writer
+(`pes11::as_pe_writes`) writes such a thread (brand "Option Color", one of the 29 RGB values)
+the same way since 2026-10-30: id string, empty code and chart, type `0x0B`; any other colour
+gets its nearest PEC index there. `sew_palette_index` matches a colour to it
+with #119's dual squared-Euclidean / city-block rule (`approximate_index`), skipping the
+reserved ids, or to ids 1–61 alone; that rule is the issue's and not verified against
+PE-DESIGN (no capture shows where PE-DESIGN matches to this palette; its vector import uses the
+BROTHER EMBROIDERY chart), and no default path calls it.
 
 ## OpenStitch template (`.ostemplate`)
 

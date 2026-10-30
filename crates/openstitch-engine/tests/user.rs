@@ -295,12 +295,22 @@ fn thread_chart_csv_exports_and_imports_back() {
         ids,
         [
             "brother",
+            "sewPalette",
             "janomeJef",
             "janomeSew",
             "husqvarnaHus",
             "husqvarnaShv"
         ]
     );
+    // The sew palette: ids 1–61 with PE's codes, 62–65 reserved (left out), 66–94 the Ver4
+    // Option colours (brand "Option Color", no code).
+    let sew = builtin[1]["threads"].as_array().expect("sew palette");
+    assert_eq!(sew.len(), 61 + 29);
+    assert_eq!(sew[4]["code"], json!("800"));
+    assert_eq!(sew[61]["index"], json!(66));
+    assert_eq!(sew[61]["color"], json!("#0000aa"));
+    assert_eq!(sew[61]["brand"], json!("Option Color"));
+    assert_eq!(sew[61]["code"], Value::Null);
     let brother = builtin[0]["threads"].as_array().expect("threads");
     assert_eq!(brother.len(), 64);
     assert_eq!(brother[0]["index"], json!(1));

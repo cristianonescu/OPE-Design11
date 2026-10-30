@@ -13,8 +13,9 @@ mod charts;
 mod trims;
 
 pub use brother::{
-    BROTHER_EMBROIDERY, BROTHER_EMBROIDERY_BRAND, brother_embroidery_code,
-    pec_index_of_brother_code,
+    BROTHER_EMBROIDERY, BROTHER_EMBROIDERY_BRAND, OPTION_COLOR_BRAND, OPTION_COLOR_KIND,
+    SEW_PALETTE_RESERVED, VER4_OPTION_COLORS, brother_embroidery_code, pec_index_of_brother_code,
+    sew_palette, sew_palette_index,
 };
 pub use charts::{HUS_CHART, JEF_CHART, PEC_CHART, SEW_CHART, SHV_CHART};
 

@@ -333,23 +333,24 @@ fn pes_export_writes_the_selected_hoop() {
     let at = 8 + 4 + 2 + 2;
     let hoop = |path: &std::path::Path| {
         let b = std::fs::read(path).expect("read");
-        // Skip the five u8-length metadata strings, then the two u16 flags.
+        // Skip the five u8-length metadata strings; then optimize hoop change, design page is
+        // custom, hoop width, height and rotation (u16 each).
         let mut i = at;
         for _ in 0..5 {
             i += 1 + usize::from(b[i]);
         }
-        i += 4;
-        (
-            u16::from_le_bytes([b[i], b[i + 1]]),
-            u16::from_le_bytes([b[i + 2], b[i + 3]]),
-        )
+        let u = |k: usize| u16::from_le_bytes([b[i + 2 * k], b[i + 2 * k + 1]]);
+        (u(1), u(2), u(3), u(4), u(5), u(6))
     };
+    // (custom page, hoop width, height, rotated, design width, height): PE-DESIGN 11.50 shows a
+    // rotated 130 x 180 hoop from 180, 130 and rotation 1, and reads a custom page's size from
+    // the design fields (reference session, 2026-10-30).
     for (settings, expected) in [
-        (json!({"hoop": "130x180"}), (130, 180)),
-        (json!({"rotate90": true}), (180, 130)),
+        (json!({"hoop": "130x180"}), (0, 130, 180, 0, 200, 200)),
+        (json!({"rotate90": true}), (0, 180, 130, 1, 200, 200)),
         (
             json!({"hoop": "custom", "width": 300, "height": 200}),
-            (300, 200),
+            (1, 300, 200, 0, 300, 200),
         ),
     ] {
         run(&mut s, "machine.set", settings);
