@@ -47,10 +47,10 @@ through its normal interface are committed under `compat/reference/`. The compat
 | | |
 |---|---|
 | Feature matrix rows | 168: 142 implemented (2 of them partially compatible), 2 documented only, 10 blocked, 14 planned beyond PE-DESIGN |
-| Compatibility specs | 384: 384 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
+| Compatibility specs | 386: 386 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
 | Matrix rows covered by specs | 32: 25 at the reference tier, 5 at the internal-regression tier, 2 at the oracle tier |
 | Open audit differences | 11 ([audit](docs/COMPATIBILITY_AUDIT.md#summary)) |
-| Open GitHub issues | 7 ([list](https://github.com/cristianonescu/OpenStitch/issues)) |
+| Open GitHub issues | 5 ([list](https://github.com/cristianonescu/OpenStitch/issues)) |
 <!-- /status:glance -->
 
 Tiers, weakest first: *internal regression* (our own earlier output), *oracle* (an independent
@@ -291,11 +291,9 @@ Open enhancement issues:
 
 <!-- status:issues-planned -->
 - [#120](https://github.com/cristianonescu/OpenStitch/issues/120) Add a `#PES0110` editable-object-section writer
-- [#124](https://github.com/cristianonescu/OpenStitch/issues/124) Support a combinable underlay bitmask with a lattice/net mode and density selector
 - [#127](https://github.com/cristianonescu/OpenStitch/issues/127) Rework auto-punch colour reduction, small-region removal, and the satin-vs-fill decision
 - [#129](https://github.com/cristianonescu/OpenStitch/issues/129) (Optional, larger) Photo-stitch rotating-line coverage density model
 - [#130](https://github.com/cristianonescu/OpenStitch/issues/130) Add a PMV motif/pattern reader
-- [#131](https://github.com/cristianonescu/OpenStitch/issues/131) Import PAS / PMF / PLF ASCII pattern sources and tile them into fills
 - [#134](https://github.com/cristianonescu/OpenStitch/issues/134) Import external scalable embroidery font containers
 <!-- /status:issues-planned -->
 
