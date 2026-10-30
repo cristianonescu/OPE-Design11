@@ -196,35 +196,24 @@ back.
    [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
    stroke only) and an exact medial axis instead of the grid approximation.
-8. **Formats:** CSD export (no public writer); the CSD reader against PE-DESIGN's real file
-   (parked round-4 export: 2 stitches and 51 colour changes read). PEC moves over 204.7 mm
-   split as PE-DESIGN's DST does since 2026-10-29 (#126); PE's own PEC does not encode such a
-   move (its `long-jump-300` PES has a stand-in row instead), settled 2026-10-30. Colour matching is equal-weight squared Euclidean
-   with an "approximate" city-block matcher since 2026-10-29 (#119), checked against the owner's
-   twelve-swatch capture, and the 61 BROTHER EMBROIDERY catalogue codes are known since the
-   round-4 chart reading; SVG imports snap to them as PE-DESIGN's do since 2026-10-30
-   (`thread-match-swatches` compares the thread table); left: the sew palette
-   and user-chart CSV schema (#136), per-machine export limits and hoop codes (#125).
-8. **Formats:** CSD export (no public writer). Thread charts: OpenStitch's own CSV is
-   documented and exported since 2026-10-29 (#136; PE-DESIGN keeps charts as binary `.btc2`,
-   no CSV); left: Brother catalogue codes for the 61 matched chart entries so imported fills
-   snap to them as in PE-DESIGN. PEC moves over 204.7 mm split as PE-DESIGN's
 8. **Formats:** CSD export (no public writer). The CSD and SHV readers match PE-DESIGN's own
-   exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart. PEC 42
-   (307 LINEN) has PE-DESIGN's RGB since 2026-10-30, and every coded thread in PE's files
-   matches the chart; PE's PEC keeps zero-length stitches in 28 of 249 references, so the
-   planned "drop them in the PEC writer" was not done. Left: the
-   `machine-sample-basic` compares (skip PE's zero-length stitches; no trim before a colour
-   change in DST/EXP/HUS/VIP). PEC moves over 204.7 mm split as PE-DESIGN's
-   DST does since 2026-10-29 (#126). PE's oversize PES has an empty machine section, which the
-   reader now reports instead of misreading (2026-10-30).
-   exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart; the eight
-   writers match PE-DESIGN's exports of its own design since 2026-10-30
-   (`machine-sample-basic`, zero-length stitches aside and counted per side in the report;
-   PCS and HUS write a design's jump landing twice as PE does since 2026-10-30, so only the
-   two repeats PE's PES cannot carry are left). PEC moves over 204.7 mm split as PE-DESIGN's
-   DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such a move (parked PES of
-   `long-jump-300`).
+   exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart. The eight
+   machine-format writers (DST, EXP, PCS, HUS, VIP, JEF, SEW, XXX) match PE-DESIGN's exports of
+   its own design since 2026-10-30 (`machine-sample-basic`, zero-length stitches aside and
+   counted per side in the report; PCS and HUS write a jump landing twice as PE does, so only
+   the two repeats PE's PES cannot carry are left). PE's PEC keeps zero-length stitches (28 of
+   249 references), so the planned "drop them in the PEC writer" was not done. PEC moves over
+   204.7 mm split as PE-DESIGN's DST does since 2026-10-29 (#126); PE's own PEC does not encode
+   such a move (its `long-jump-300` PES has a stand-in row instead), settled 2026-10-30. PE's
+   oversize PES has an empty machine section, which the reader reports instead of misreading
+   (2026-10-30). Thread charts: OpenStitch's own CSV is documented and exported since 2026-10-29
+   (#136; PE-DESIGN keeps charts as binary `.btc2`, no CSV). Colour matching is equal-weight
+   squared Euclidean with an "approximate" city-block matcher since 2026-10-29 (#119), checked
+   against the owner's twelve-swatch capture; the 61 BROTHER EMBROIDERY catalogue codes are known
+   since the round-4 chart reading, PEC 42 (307 LINEN) has PE-DESIGN's RGB and every coded thread
+   in PE's files matches the chart (2026-10-30), and SVG imports snap to them as PE-DESIGN's do
+   since 2026-10-30 (`thread-match-swatches` compares the thread table). Left: the sew palette
+   and user-chart CSV schema (#136), per-machine export limits and hoop codes (#125).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo
