@@ -223,12 +223,20 @@ pub fn fill_edge_to_edge(
     holes: &[Contour],
     stagger: Stagger,
     entry: Option<Vec2>,
+    sloped: bool,
 ) -> Vec<Run> {
     let l = p.stitch_length;
     let start = entry.map(|e| e.rotated(-p.angle.to_radians()));
     let anchor = grid_anchor(contours, p, holes);
     if let (Some(s), Some(a)) = (start, anchor)
-        && let Some(run) = pe_halves(&edge_row_spans(contours, p, holes, true), p, stagger, s, a)
+        && let Some(run) = pe_halves(
+            &edge_row_spans(contours, p, holes, true),
+            p,
+            stagger,
+            s,
+            a,
+            sloped,
+        )
     {
         return vec![run];
     }
@@ -328,6 +336,7 @@ fn pe_halves(
     stagger: Stagger,
     s: Vec2,
     min_x: f64,
+    sloped: bool,
 ) -> Option<Run> {
     let (first, last) = (spans.first()?, spans.last()?);
     let rows = last.row.checked_sub(first.row)? + 1;
@@ -387,6 +396,22 @@ fn pe_halves(
         run.extend((1..=n).map(|k| from.lerp(to, k as f64 / n as f64)));
     };
     for half in halves.iter().filter(|h| !h.is_empty()) {
+        if sloped && half.len() > 1 {
+            sloped_half(half, &mut run, &go, pull, p, &|b: &RowSpan| {
+                // Grid step k · f · L for the pass ending on row k (anchored(k - 1) is k · f).
+                let k = b.row - first.row;
+                let f = match k.checked_sub(1) {
+                    Some(k) => stagger.anchored(k),
+                    None => stagger.anchored(0).map(|_| 0.0),
+                };
+                match f {
+                    Some(f) => min_x + f * l,
+                    None => stagger.phase(b.row.saturating_sub(1)) * l,
+                }
+            });
+            go(&mut run, home);
+            continue;
+        }
         let odd = half.len() % 2 == 1;
         let mut passes = vec![(half[0], true)];
         if odd {
@@ -430,6 +455,62 @@ fn pe_halves(
     }
     run.dedup_by(|a, b| a.distance(*b) < 1e-9);
     Some(run)
+}
+
+/// One half of PE-DESIGN's Stitch Type 2 fill (its second Stitch Type button): sloped rows.
+/// Pass i runs from row i's edge to row i + 1's far edge, rising one row spacing over its
+/// length, so consecutive passes meet at the edges in one continuous zigzag with no step at the
+/// row ends (PE-DESIGN 11.50, round-5 captures tatami-40-st2-dir0/30/90 and round 4's
+/// tatami-40-stitch-type-2: every pass rises 0.20-0.22 mm, Type 1's are flat). The needle grid
+/// along each pass ([`pe_grid`], the Frequency rule) is the one of the row before its end row in
+/// row order: the start row in the half sewn upward, two rows past the end in the half sewn
+/// downward (tatami-40-st2-dir90's second half), each point at the height interpolated along
+/// the pass. The half's first pass is sewn along the row direction
+/// (+x) from its edge point, after the travel from the start point; the half ends at its last
+/// row's start side, as Type 1 does.
+fn sloped_half(
+    half: &[&RowSpan],
+    run: &mut Run,
+    go: &dyn Fn(&mut Run, Vec2),
+    pull: f64,
+    p: &RegionParams,
+    phase: &dyn Fn(&RowSpan) -> f64,
+) {
+    let l = p.stitch_length;
+    let mut forward = true;
+    for (i, w) in half.windows(2).enumerate() {
+        let (a, b) = (w[0], w[1]);
+        let (from, to) = if forward {
+            (*a.range.start(), *b.range.end())
+        } else {
+            (*a.range.end(), *b.range.start())
+        };
+        let (lo, hi) = (from.min(to), from.max(to));
+        let mut xs = pe_grid(&(lo..=hi), phase(b), l);
+        if !forward {
+            xs.reverse();
+        }
+        let along = (to - from).abs().max(1e-9);
+        let at = |x: f64| {
+            let t = ((x - from).abs() / along).clamp(0.0, 1.0);
+            from_rotated(v2(x, a.y + (b.y - a.y) * t), p.angle)
+        };
+        if i == 0 {
+            // Travel reaches the outline; the row end lies the pull compensation beyond.
+            let edge = if forward { from + pull } else { from - pull };
+            go(run, from_rotated(v2(edge, a.y), p.angle));
+            run.push(at(from));
+        }
+        run.extend(xs.into_iter().map(at));
+        run.push(at(to));
+        forward = !forward;
+    }
+    if let Some(last) = half.last() {
+        go(
+            run,
+            from_rotated(v2(*last.range.start() + pull, last.y), p.angle),
+        );
+    }
 }
 
 /// Rows from the rotated bounds' minimum to their maximum, `row_spacing` apart, lengthened by

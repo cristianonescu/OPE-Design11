@@ -47,9 +47,10 @@ pub use machine::{
 };
 pub use model::{
     Arrange, BackgroundImage, ChainShape, ContourJoin, ContourStrategy, Design, DesignObject,
-    DesignPage, DesignProperties, Feather, FeatherSide, Gradation, Guides, ImageAdjust, LineSewing,
-    LineType, ObjectKind, OptimizeOrder, RegionSewing, RegionType, RunningStitchPath, StaggerKind,
-    StartEnd, StitchBlock, UnderlayDensity, UnderlayParts, UnderlayStyle,
+    DesignPage, DesignProperties, Feather, FeatherSide, FillStitchType, Gradation, Guides,
+    ImageAdjust, LineSewing, LineType, ObjectKind, OptimizeOrder, RegionSewing, RegionType,
+    RunningStitchPath, StaggerKind, StartEnd, StitchBlock, UnderlayDensity, UnderlayParts,
+    UnderlayStyle,
 };
 pub use text::{
     CharEdit, FONTS, FontInfo, Layout, PathFit, Spread, TextAlign, TextDirection, TextError,
