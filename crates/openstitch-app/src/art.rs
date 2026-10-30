@@ -27,11 +27,15 @@ pub enum Art {
     SewEmpty,
     NoMedia,
     NoImage,
+    ObjectsEmpty,
+    UpdateAvailable,
+    UpdateCurrent,
+    UpdateFailed,
 }
 
 impl Art {
     #[cfg(test)]
-    const ALL: [Art; 16] = [
+    const ALL: [Art; 20] = [
         Art::EmptyCanvas,
         Art::DbChoose,
         Art::DbEmpty,
@@ -48,6 +52,10 @@ impl Art {
         Art::SewEmpty,
         Art::NoMedia,
         Art::NoImage,
+        Art::ObjectsEmpty,
+        Art::UpdateAvailable,
+        Art::UpdateCurrent,
+        Art::UpdateFailed,
     ];
 
     fn svg(self) -> (&'static str, &'static str) {
@@ -76,6 +84,10 @@ impl Art {
             Art::SewEmpty => svg!("sew_empty"),
             Art::NoMedia => svg!("no_media"),
             Art::NoImage => svg!("no_image"),
+            Art::ObjectsEmpty => svg!("objects_empty"),
+            Art::UpdateAvailable => svg!("update_available"),
+            Art::UpdateCurrent => svg!("update_current"),
+            Art::UpdateFailed => svg!("update_failed"),
         }
     }
 }
