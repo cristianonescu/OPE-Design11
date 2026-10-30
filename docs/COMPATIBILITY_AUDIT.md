@@ -86,8 +86,6 @@ dearest:
 | 12 | No minimum font sizes or small-text fonts | Fonts | 4 | Documented difference | No |
 | 13 | No per-character colour or multi-character selection | Fonts | 4 | Documented difference | Colour grouping |
 | 14 | Programmable fill and fill default to 0° instead of 45° (**fixed**: programmable fill internal regression, fill 2026-10-30 from pes-objects r01; type change rule pending) | Stitches | 3 | Documented difference | No |
-| 15 | Missing fill, satin and zigzag attributes; wrong ranges (**partly fixed**: Frequency and ranges; Stitch Type, Half Stitch, Miter limit pending) | Stitches | 3 | Documented difference | Geometry |
-| 14 | Programmable fill defaults to 0° instead of 45° (**fixed**, internal regression; type change rule pending) | Stitches | 3 | Documented difference | No |
 | 15 | Missing fill, satin and zigzag attributes; wrong ranges (**partly fixed**: Frequency and ranges; Stitch Type 1 = OpenStitch's fill, Stitch Type 2, Half Stitch, Miter limit pending) | Stitches | 3 | Documented difference | Geometry |
 | 16 | Optimize Sewing Order does not move entry and exit points (**fixed**, reference) | Stitches | 3 | Documented difference | No |
 | 17 | Hole sewing not validated or paired (**fixed**, internal regression) | Stitches | 3 | Documented difference | No |
