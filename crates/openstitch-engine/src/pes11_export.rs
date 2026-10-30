@@ -196,11 +196,15 @@ fn punch_block(
 ) -> Result<Shape, String> {
     let id = object.id;
     let lines = &r.direction_lines;
-    let punch_lines = u16::try_from(lines.len())
-        .map_err(|_| format!("object {id} has {} direction lines", lines.len()))?;
+    let k = u32::try_from(lines.len())
+        .ok()
+        .filter(|&k| k <= u32::from(u16::MAX) / 2)
+        .ok_or_else(|| format!("object {id} has {} direction lines", lines.len()))?;
     let mut s = Shape::with_defaults();
     s.closed = true;
-    s.punch_lines = punch_lines;
+    // Line i joins vertex i and 2k − 1 − i; the sewing ends at the last line's second end.
+    s.punch = (0..k).map(|i| [i, 2 * k - 1 - i]).collect();
+    s.punch_exit = k as u16;
     region(id, r, &mut s, table)?;
     match &object.line {
         Some(l) => line(id, l, &mut s, table)?,
@@ -847,7 +851,8 @@ mod tests {
         design.add(DesignObject::shape(vec![outline], Some(r.clone()), None));
         let o = objects(&design).expect("objects");
         let s = &o.shapes[0];
-        assert_eq!(s.punch_lines, 2);
+        assert_eq!(s.punch, [[0, 3], [1, 2]]);
+        assert_eq!(s.punch_exit, 2);
         assert_eq!(s.bounds, [600, 600, 800, 800]);
         let xy: Vec<(f32, f32)> = s.vertices.iter().map(|v| (v.x, v.y)).collect();
         assert_eq!(
@@ -888,13 +893,12 @@ mod tests {
             let bytes = std::fs::read(format!("{dir}/{name}.pes")).expect("fixture");
             let pe = openstitch_formats::pes::read_objects(&bytes).expect("objects");
             let pe = &pe.shapes[0];
-            let n = usize::from(pe.punch_lines);
-            let at = |k: usize| {
-                let v = &pe.vertices[k];
+            let at = |k: u32| {
+                let v = &pe.vertices[k as usize];
                 v2(f64::from(v.x - PAGE_ORIGIN), f64::from(v.y - PAGE_ORIGIN))
             };
             let mut r = RegionSewing::new(RegionType::Satin, red());
-            r.direction_lines = (0..n).map(|k| [at(k), at(2 * n - 1 - k)]).collect();
+            r.direction_lines = pe.punch.iter().map(|&[a, b]| [at(a), at(b)]).collect();
             r.curved_lines = true;
             let mut design = Design::new("t", openstitch_design::DesignPage::default());
             design.add(DesignObject::shape(
@@ -904,7 +908,11 @@ mod tests {
             ));
             let o = objects(&design).expect("objects");
             let ours = &o.shapes[0];
-            assert_eq!(ours.punch_lines, pe.punch_lines, "{name}");
+            assert_eq!(
+                (&ours.punch, ours.punch_exit),
+                (&pe.punch, pe.punch_exit),
+                "{name}"
+            );
             // The bounds: the curve's extent rounded outward (ours from our handles).
             for (a, b) in ours.bounds.iter().zip(&pe.bounds) {
                 assert!(

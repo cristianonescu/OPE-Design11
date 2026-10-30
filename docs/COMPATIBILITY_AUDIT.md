@@ -353,7 +353,8 @@ Line references are relative to `crates/`.
   rewrites only the circle's pattern block and the text's box, which it recomputes); Manual
   Punch columns as PE-DESIGN's Straight and Curve Block objects (specs `pes-0110-manual-punch`,
   `pes-0110-curve-block`, reference pending; owner files m01–m11 read and rewritten byte for
-  byte outside the pattern block; a Curve Block written from a design has handles within one
+  byte outside the pattern block; Text > Convert to Blocks' output (stroke-blocks-H, -A) read as
+  blocks and running pieces, its blocks' marks equal but for the floats' last bits; a Curve Block written from a design has handles within one
   file unit of PE-DESIGN's, which way PE-DESIGN rounds them not mapped); the Appliqué wizard's stages as PE-DESIGN's appliqué lines and colours (spec
   `pes-0110-applique`, reference pending; owner files a01–a05 read and rewritten byte for byte
   outside the documented differences);
