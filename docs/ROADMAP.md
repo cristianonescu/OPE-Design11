@@ -195,8 +195,8 @@ back.
    stroke only) and an exact medial axis instead of the grid approximation.
 8. **Formats:** CSD export (no public writer); the CSD reader against PE-DESIGN's real file
    (parked round-4 export: 2 stitches and 51 colour changes read). PEC moves over 204.7 mm
-   split as PE-DESIGN's DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such
-   a move (parked PES of `long-jump-300`). Colour matching is equal-weight squared Euclidean
+   split as PE-DESIGN's DST does since 2026-10-29 (#126); PE's own PEC does not encode such a
+   move (its `long-jump-300` PES has a stand-in row instead), settled 2026-10-30. Colour matching is equal-weight squared Euclidean
    with an "approximate" city-block matcher since 2026-10-29 (#119), checked against the owner's
    twelve-swatch capture, and the 61 BROTHER EMBROIDERY catalogue codes are known since the
    round-4 chart reading; left: snapping SVG and hex fills to them, the sew palette
@@ -209,8 +209,8 @@ back.
    exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart; left: the
    `machine-sample-basic` compares (skip PE's zero-length stitches; no trim before a colour
    change in DST/EXP/HUS/VIP). PEC moves over 204.7 mm split as PE-DESIGN's
-   DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such a move (parked PES of
-   `long-jump-300`).
+   DST does since 2026-10-29 (#126). PE's oversize PES has an empty machine section, which the
+   reader now reports instead of misreading (2026-10-30).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo

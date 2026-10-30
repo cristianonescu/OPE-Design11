@@ -59,18 +59,46 @@ pub(crate) fn read_section(reader: &mut ByteReader<'_>) -> Result<StitchPattern>
     reader.u8()?; // icon stride
     reader.u8()?; // icon height
     reader.skip(0xC)?;
-    let color_changes = usize::from(reader.u8()?);
+    let count_byte = reader.u8()?;
+    let color_changes = usize::from(count_byte);
     let color_bytes = reader.read(color_changes + 1)?;
-    pattern.threads = color_bytes
-        .iter()
-        .map(|&b| {
-            PEC_CHART[usize::from(b) % PEC_CHART.len()]
-                .clone()
-                .unwrap_or_else(|| Thread::rgb(0).with_name("Unknown"))
-        })
-        .collect();
+    // `FF` is the "no colours" form of an empty section (a PEC holds at most 255 colours, so
+    // a real count byte is at most `FE`); OpenStitch and PE-DESIGN both write it.
+    pattern.threads = if count_byte == 0xFF {
+        Vec::new()
+    } else {
+        color_bytes
+            .iter()
+            .map(|&b| {
+                PEC_CHART[usize::from(b) % PEC_CHART.len()]
+                    .clone()
+                    .unwrap_or_else(|| Thread::rgb(0).with_name("Unknown"))
+            })
+            .collect()
+    };
     reader.skip(0x1D0 - color_changes)?;
-    reader.u24le()?; // stitch block length
+    let block_len = reader.u24le()?; // stitch block length, from 0x200
+    // A block too short for the full stitch header holds no stitches. PE-DESIGN 11.50 writes
+    // one (13 bytes: length, `31 FF F0`, width, height, `FF`) when it saves a design that lies
+    // outside the Design Page after warning that the data "cannot be sent to the embroidery
+    // machine": the design is then only in the object section (round-4 capture
+    // `oversize-hoop100.pes`, 129 x 105 mm on a 100 x 100 mm page; #125). Reading on would
+    // decode the preview icons as stitches.
+    if block_len < 0x10 {
+        reader.skip(3)?; // 31 FF F0
+        let (width, height) = (reader.u16le()?, reader.u16le()?);
+        if width > 0 || height > 0 {
+            return Err(FormatError::UnsupportedFormat(format!(
+                "the PEC section holds no stitches for this {:.1} x {:.1} mm design: \
+                 PE-DESIGN saves none when a design lies outside the Design Page; fit it \
+                 into the page (or choose a larger hoop) and save it again",
+                f64::from(width) / 10.0,
+                f64::from(height) / 10.0
+            )));
+        }
+        pattern.stitches = vec![Stitch::new(0.0, 0.0, Command::End)];
+        return Ok(pattern);
+    }
     reader.skip(0x0B)?;
     pattern.stitches = read_stitches(reader)?;
     Ok(pattern)

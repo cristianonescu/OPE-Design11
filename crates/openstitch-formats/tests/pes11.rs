@@ -1095,3 +1095,34 @@ fn a_stitch_group_built_from_stitches_round_trips() {
     }
     assert_eq!(back, objects);
 }
+
+/// PE-DESIGN 11.50 saves a design outside its Design Page with an empty machine section (no
+/// colours, a 13-byte stitch block that only gives the design's size, 129 x 105 mm): reading
+/// it says so instead of decoding the preview icons as 169 stitches and 256 colours, and the
+/// object section still reads (#125).
+#[test]
+fn pe_design_oversize_save_has_no_machine_stitches() {
+    let bytes = data("pe11/oversize-hoop100.pes");
+    let err = pes::read(&bytes).expect_err("no machine stitches");
+    let msg = err.to_string();
+    assert!(
+        msg.contains("129.0 x 105.0 mm") && msg.contains("Design Page"),
+        "{msg}"
+    );
+    let objects = pes::read_objects(&bytes).expect("objects");
+    assert_eq!(objects.version, "0110");
+    assert_eq!(objects.threads.len(), 13);
+}
+
+/// OpenStitch's own empty design writes the same "no colours" form in its PEC section: a
+/// machine-only (`1t`) file reads back with no threads and no stitches (it used to read as 256
+/// Sky Blue threads).
+#[test]
+fn empty_pes_reads_back_with_no_threads() {
+    let mut p = openstitch_core::StitchPattern::new();
+    p.push(openstitch_core::Command::End);
+    let options = pes::WriteOptions::parse("1t").expect("1t");
+    let back = pes::read(&pes::write_with(&p, &options).expect("write")).expect("read");
+    assert!(back.threads.is_empty(), "{}", back.threads.len());
+    assert_eq!(back.count(openstitch_core::Command::Stitch), 0);
+}

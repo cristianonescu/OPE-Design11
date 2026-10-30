@@ -103,3 +103,15 @@ no warning. Three of the eleven files are kept here for the readers' tests:
 | `sample-basic.csd` | `b405685a744df0dd4395279c561822aea4010d8460c7887404aaa9b7e52b841b` | Export, type Singer (*.CSD). |
 | `sample-basic.dst` | `c29378ba32fda42d1b5e5499cdec5c4594ab70ac49dc5fa69ee710000c8b855b` | Export, type Tajima (*.DST). |
 | `sample-basic.shv` | `508c945b5a4e9047da8cda1fd69240a6add83cd9183d1460bffdb3ba0c9dc727` | Export, type Husqvarna/Viking (*.SHV). |
+
+**Oversize design (#125, round 4 group F):** made by the owner's PE-DESIGN 11.50 (Layout &
+Editing), Windows 11 Pro 10.0.26300, 2026-10-29 12:03-12:04, black-box GUI use only (track
+pe-refs-4). Design Settings > Page Size = Hoop Size 100 x 100 mm (multi-needle, nv880e-S); the
+twelve-swatch design, Ctrl+A, Home > Size... 150 %: 129,00 x 105,00 mm, 17225 st, outside the
+page. Save As PES: "Please keep all designs within the Design Page. Saved data cannot be sent
+to the original card or the embroidery machine. Do you want to save the data anyway?" -> Yes.
+The PEC section is the empty form: no colours, a 13-byte stitch block with the design's size.
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `oversize-hoop100.pes` | `492bdbcbf6a1a3c7894104320d84cd80790e2bdb99d5f5dade593399d201a1fc` | as above |
