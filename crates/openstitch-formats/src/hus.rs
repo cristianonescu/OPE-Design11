@@ -176,7 +176,7 @@ pub const VIP_PIECE: i64 = 75;
 /// HUS: every frame move as `81` jumps of at most 8 mm (the longer axis full, the other
 /// proportional) to the move's end, a zero-length `81` after it when the move is trimmed
 /// (the first move excepted), then a zero-length `80` stitch at the move's end (the first
-/// needle point); a stitch over 12 mm as `80` stitches of at most 12 mm, split the same way;
+/// needle point; the stream's own stitch at that point, if any, follows as a second one); a stitch over 12 mm as `80` stitches of at most 12 mm, split the same way;
 /// `84` for a colour change; `90` at the end, with no return to the origin.
 ///
 /// VIP: `88` (zero-length) before a trimmed move (the first move excepted); every frame move
@@ -188,6 +188,7 @@ pub(crate) fn encode(input: &StitchPattern, dialect: Dialect) -> Encoded {
     pattern.fix_thread_count(None);
     let palette = repeating_stops_palette(&pattern);
     let events = layout::events(&pattern);
+    let made_up_first_move = layout::starts_with_stitch(&pattern);
     let (mut commands, mut xs, mut ys) = (Vec::new(), Vec::new(), Vec::new());
     let (mut x, mut y) = (0_i64, 0_i64);
     let (mut min_x, mut min_y, mut max_x, mut max_y) = (0_i64, 0_i64, 0_i64, 0_i64);
@@ -219,6 +220,7 @@ pub(crate) fn encode(input: &StitchPattern, dialect: Dialect) -> Encoded {
                 trimmed,
             } => {
                 let trim = trimmed && !first_move;
+                let made_up = first_move && made_up_first_move;
                 first_move = false;
                 match dialect {
                     Dialect::Hus => {
@@ -228,11 +230,13 @@ pub(crate) fn encode(input: &StitchPattern, dialect: Dialect) -> Encoded {
                         if trim {
                             push(&mut commands, &mut xs, &mut ys, 0x81, 0, 0);
                         }
-                        // The zero-length stitch at the move's end is the first needle point;
-                        // a stitch of the stream at that very point is the same penetration.
+                        // The zero-length stitch at the move's end is the first needle point. A
+                        // stitch the stream has at that very point (a PE-DESIGN design's landing
+                        // stitch) follows as a second zero-length `80`, as PE-DESIGN writes it
+                        // (compat machine-sample-basic, #135).
                         push(&mut commands, &mut xs, &mut ys, 0x80, 0, 0);
-                        if layout::next_stitch(&events, i) == Some((tx, ty)) {
-                            i += 1;
+                        if made_up && layout::next_stitch(&events, i) == Some((tx, ty)) {
+                            i += 1; // the move made up to the first stitch ends on that stitch
                         }
                         (x, y) = (tx, ty);
                     }

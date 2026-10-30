@@ -1,0 +1,380 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "machine-sample-basic",
+  "area": "machine",
+  "title": "PE-DESIGN's own two-colour design written to every machine format as PE-DESIGN 11 exports it",
+  "description": "PE-DESIGN 11.50's own design (round 4, pe-refs-4): a 20 mm Lato \"S\" in satin, 800 RED, then a 10 x 8 mm fill rectangle in 007 PRUSSIAN BLUE, saved as PES and exported to every type its Export dialog offers. OpenStitch imports PE's PES as stitches and writes each format; the writes are compared with PE's exports needle for needle. This PES's PEC section has none of the zero-length stitches its machine exports keep from PE's own stitch data (a needle point at each jump's landing and two repeats in the S: 475 points in the DST, 471 in the PES), so those cannot come from the PES and the compare drops a stitch that repeats the previous needle point on both sides (issue #135). SHV and CSD are read only in OpenStitch; their readers are checked against PE's files in the formats tests.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "DST read/write, configurable jumps-for-trim"
+      },
+      {
+        "area": "Files",
+        "feature": "EXP read/write"
+      },
+      {
+        "area": "Files",
+        "feature": "JEF read/write (Janome chart, stops, hoop code)"
+      },
+      {
+        "area": "Files",
+        "feature": "XXX read/write"
+      },
+      {
+        "area": "Files",
+        "feature": "PCS read/write (1/6 mm grid, hoop byte)"
+      },
+      {
+        "area": "Files",
+        "feature": "SEW read/write (Janome SEW chart)"
+      },
+      {
+        "area": "Files",
+        "feature": "HUS read and write (LZ77 + Huffman streams, HUS chart)"
+      },
+      {
+        "area": "Files",
+        "feature": "VIP read and write (HUS streams, obfuscated RGB colour table)"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/machine/sample-basic.* (PE-DESIGN 11.50, 2026-10-29, round 4): the PES and eight of PE's exports of the same design; the DST has 475 stitches, 4 of them zero-length, the PES's PEC section 471"
+    }
+  ],
+  "inputs": [
+    {
+      "from": "compat/reference/machine/sample-basic.pes",
+      "name": "sample-basic-source.pes"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "sample-basic",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "stitches.import",
+      "params": {
+        "path": "sample-basic-source.pes"
+      },
+      "id": "import"
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.dst"
+    },
+    {
+      "path": "a.exp"
+    },
+    {
+      "path": "a.pcs"
+    },
+    {
+      "path": "a.hus"
+    },
+    {
+      "path": "a.vip"
+    },
+    {
+      "path": "a.jef"
+    },
+    {
+      "path": "a.sew"
+    },
+    {
+      "path": "a.xxx"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design-pes",
+      "file": "machine/sample-basic.pes",
+      "make": "Round 4 group B (see MANIFEST): the S and the rectangle, Save As PES (default type)."
+    },
+    {
+      "id": "pe-design-dst",
+      "file": "machine/sample-basic.dst",
+      "make": "The same design, App menu > Export..., type Tajima (*.DST)."
+    },
+    {
+      "id": "pe-design-exp",
+      "file": "machine/sample-basic.exp",
+      "make": "The same design, App menu > Export..., type Melco (*.EXP)."
+    },
+    {
+      "id": "pe-design-pcs",
+      "file": "machine/sample-basic.pcs",
+      "make": "The same design, App menu > Export..., type Pfaff (*.PCS)."
+    },
+    {
+      "id": "pe-design-hus",
+      "file": "machine/sample-basic.hus",
+      "make": "The same design, App menu > Export..., type Husqvarna/Viking (*.HUS)."
+    },
+    {
+      "id": "pe-design-vip",
+      "file": "machine/sample-basic.vip",
+      "make": "The same design, App menu > Export..., type Husqvarna/Viking (*.VIP)."
+    },
+    {
+      "id": "pe-design-jef",
+      "file": "machine/sample-basic.jef",
+      "make": "The same design, App menu > Export..., type Janome (*.JEF)."
+    },
+    {
+      "id": "pe-design-sew",
+      "file": "machine/sample-basic.sew",
+      "make": "The same design, App menu > Export..., type Janome (*.SEW)."
+    },
+    {
+      "id": "pe-design-xxx",
+      "file": "machine/sample-basic.xxx",
+      "make": "The same design, App menu > Export..., type Singer (*.XXX)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "dst-versus-pe-design",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false,
+          "dropRepeats": true
+        }
+      },
+      "source": {
+        "export": "a.dst"
+      },
+      "evidence": "PE-DESIGN 11.50's Tajima (*.DST) export of the same design: the same needle points (PE's zero-length repeats aside), the jumps between the S and the rectangle and the colour change",
+      "reference": {
+        "id": "pe-design-dst"
+      }
+    },
+    {
+      "id": "exp-versus-pe-design",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false,
+          "dropRepeats": true
+        }
+      },
+      "source": {
+        "export": "a.exp"
+      },
+      "evidence": "PE-DESIGN 11.50's Melco (*.EXP) export of the same design: the same needle points (PE's zero-length repeats aside), the jumps between the S and the rectangle and the colour change",
+      "reference": {
+        "id": "pe-design-exp"
+      }
+    },
+    {
+      "id": "pcs-versus-pe-design",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.2,
+          "boundsMm": 0.2,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false,
+          "dropRepeats": true
+        }
+      },
+      "source": {
+        "export": "a.pcs"
+      },
+      "evidence": "PE-DESIGN 11.50's Pfaff (*.PCS) export of the same design: the same needle points (PE's zero-length repeats aside), the jumps between the S and the rectangle and the colour change (PCS units are 1/6 mm, so 0.2 mm of rounding)",
+      "reference": {
+        "id": "pe-design-pcs"
+      }
+    },
+    {
+      "id": "hus-versus-pe-design",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false,
+          "dropRepeats": true
+        }
+      },
+      "source": {
+        "export": "a.hus"
+      },
+      "evidence": "PE-DESIGN 11.50's Husqvarna/Viking (*.HUS) export of the same design: the same needle points (PE's zero-length repeats aside), the jumps between the S and the rectangle and the colour change",
+      "reference": {
+        "id": "pe-design-hus"
+      }
+    },
+    {
+      "id": "vip-versus-pe-design",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false,
+          "dropRepeats": true
+        }
+      },
+      "source": {
+        "export": "a.vip"
+      },
+      "evidence": "PE-DESIGN 11.50's Husqvarna/Viking (*.VIP) export of the same design: the same needle points (PE's zero-length repeats aside), the jumps between the S and the rectangle and the colour change",
+      "reference": {
+        "id": "pe-design-vip"
+      }
+    },
+    {
+      "id": "jef-versus-pe-design",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false,
+          "dropRepeats": true
+        }
+      },
+      "source": {
+        "export": "a.jef"
+      },
+      "evidence": "PE-DESIGN 11.50's Janome (*.JEF) export of the same design: the same needle points (PE's zero-length repeats aside), the jumps between the S and the rectangle and the colour change",
+      "reference": {
+        "id": "pe-design-jef"
+      }
+    },
+    {
+      "id": "sew-versus-pe-design",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false,
+          "dropRepeats": true
+        }
+      },
+      "source": {
+        "export": "a.sew"
+      },
+      "evidence": "PE-DESIGN 11.50's Janome (*.SEW) export of the same design: the same needle points (PE's zero-length repeats aside), the jumps between the S and the rectangle and the colour change",
+      "reference": {
+        "id": "pe-design-sew"
+      }
+    },
+    {
+      "id": "xxx-versus-pe-design",
+      "measure": {
+        "kind": "compare",
+        "options": {
+          "origin": "boundsMin",
+          "positionMm": 0.1,
+          "boundsMm": 0.1,
+          "threads": {
+            "rgb": false,
+            "name": false,
+            "catalog": false,
+            "brand": false,
+            "chart": false,
+            "kind": false
+          },
+          "metadata": false,
+          "pesObjects": false,
+          "dropRepeats": true
+        }
+      },
+      "source": {
+        "export": "a.xxx"
+      },
+      "evidence": "PE-DESIGN 11.50's Singer (*.XXX) export of the same design: the same needle points (PE's zero-length repeats aside), the jumps between the S and the rectangle and the colour change",
+      "reference": {
+        "id": "pe-design-xxx"
+      }
+    }
+  ]
+}

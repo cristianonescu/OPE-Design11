@@ -38,6 +38,9 @@ pub(crate) enum Event {
 }
 
 /// The pattern as events, centred so that the middle of its needle points' bounds is (0, 0).
+/// An odd extent puts the origin half a unit towards the minimum, as PE-DESIGN 11.50 does
+/// (`floor((min + max) / 2)`): its DST of `machine/sample-basic` spans x −134..135 and
+/// y −194..195 for 269 × 389 units; the even-sized references are unaffected (#135).
 pub(crate) fn events(pattern: &StitchPattern) -> Vec<Event> {
     let mut needle = pattern
         .stitches
@@ -49,8 +52,8 @@ pub(crate) fn events(pattern: &StitchPattern) -> Vec<Event> {
                 (b.0.min(s.x), b.1.min(s.y), b.2.max(s.x), b.3.max(s.y))
             });
             (
-                round_coordinate((b.0 + b.2) / 2.0),
-                round_coordinate((b.1 + b.3) / 2.0),
+                (round_coordinate(b.0) + round_coordinate(b.2)).div_euclid(2),
+                (round_coordinate(b.1) + round_coordinate(b.3)).div_euclid(2),
             )
         }
         None => (0, 0),
@@ -117,6 +120,17 @@ pub(crate) fn events(pattern: &StitchPattern) -> Vec<Event> {
         out.push(Event::End);
     }
     out
+}
+
+/// Whether the stream's first stitch or jump is a stitch: then [`events`] starts with a move it
+/// made up to that stitch, and the stitch at the move's end is that same needle point, not a
+/// landing stitch of its own.
+pub(crate) fn starts_with_stitch(pattern: &StitchPattern) -> bool {
+    pattern
+        .stitches
+        .iter()
+        .find(|s| matches!(s.command, Command::Stitch | Command::Jump))
+        .is_some_and(|s| s.command == Command::Stitch)
 }
 
 fn position(events: &[Event]) -> i64 {

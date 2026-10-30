@@ -215,6 +215,13 @@ back.
    change in DST/EXP/HUS/VIP). PEC moves over 204.7 mm split as PE-DESIGN's
    DST does since 2026-10-29 (#126). PE's oversize PES has an empty machine section, which the
    reader now reports instead of misreading (2026-10-30).
+   exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart; the eight
+   writers match PE-DESIGN's exports of its own design since 2026-10-30
+   (`machine-sample-basic`, zero-length stitches aside and counted per side in the report;
+   PCS and HUS write a design's jump landing twice as PE does since 2026-10-30, so only the
+   two repeats PE's PES cannot carry are left). PEC moves over 204.7 mm split as PE-DESIGN's
+   DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such a move (parked PES of
+   `long-jump-300`).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo
