@@ -188,6 +188,47 @@ Findings:
 - **Auto Select (open).** It always gives four threads; on a red-and-blue image it adds
   ultramarine and lime green. Our Auto Select reduces to the image's own colours.
 
+## Colour ramp (2026-10-30)
+
+pe-refs-4's `photostitch2-ramp-cmyk.pes` and `-ramp-rgbk.pes`: `ramp.bmp`, 80 × 20 mm, HSV hue
+0–300° across, S = V = 1. The band shares are in its `ramp-bands.txt`.
+
+Findings:
+- **Sewing order.** PE sews the most-used thread first. On the ramp CMYK sews cyan, yellow,
+  magenta, black, where on the shapes it sews cyan, magenta, yellow, black. Every capture, Auto
+  Select included, fits that rule, and the screen angles follow it. OpenStitch's Photo Stitch 2
+  now orders threads by their total share; Photo Stitch 1 still sews light threads first.
+- **Mixing.** Each hue goes to the one or two set colours nearest it, and a saturated colour's
+  chromatic threads sum to about full coverage.
+
+Five candidate laws were scored by mean share error on the 32 ramp bands and on the 8
+owner-shapes areas:
+
+| Law | Ramp | Shapes |
+|---|---|---|
+| Least squares (as before) | 0.069 | 0.107 |
+| Two nearest threads by RGB distance | 0.118 | 0.105 |
+| Hue interpolation between the set's thread hues, with plateaus | 0.073–0.090 | 0.155–0.192 |
+| **Least squares, chromatic shares raised to `min(1, saturation / 0.8)`** | **0.064** | **0.093** |
+
+The last law is now `screen::saturate`. It only raises shares that fall short, so pale colours
+stay light.
+
+| Set (owner shapes) | PE | before | now |
+|---|---|---|---|
+| CMYK | 13 954 | 12 757 (−8.6 %) | 13 704 (−1.8 %) |
+| RGBK | 14 420 | 12 729 (−11.7 %) | 13 501 (−6.4 %) |
+| CRYK | 14 926 | 12 757 (−14.5 %) | 14 049 (−5.9 %) |
+| BMYK | 13 963 | 12 897 (−7.6 %) | 13 510 (−3.2 %) |
+
+On the ramp, RGBK sews 5743 stitches against PE's 5892. CMYK sews 5793 against 6522, because PE
+gives red half to yellow and half to magenta where least squares gives magenta two thirds.
+
+Still open:
+- the exact transitions between neighbouring set colours;
+- why CMYK collapses green and blue onto cyan alone;
+- Auto Select's choice of four threads.
+
 ## Captures still needed (owner-made, at defaults unless named)
 
 - **Colour sets:** the same image with each Color Set (CMYK, RGBK, CRVK, BMYK), to pin the

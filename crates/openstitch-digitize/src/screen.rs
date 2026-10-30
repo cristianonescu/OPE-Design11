@@ -73,7 +73,7 @@ impl Shares {
             if let Some((_, s)) = cache.iter().find(|(c, _)| *c == rgb) {
                 return s.clone();
             }
-            let s = mix(rgb.map(f64::from), threads, fabric);
+            let s = saturate(rgb, mix(rgb.map(f64::from), threads, fabric), threads);
             if cache.len() < 4096 {
                 cache.push((rgb, s.clone()));
             }
@@ -127,6 +127,15 @@ impl Shares {
         }
     }
 
+    /// Thread `t`'s total share over the image (how much of it the screen sews).
+    pub fn usage(&self, t: usize) -> f64 {
+        self.share
+            .iter()
+            .flatten()
+            .map(|s| s.get(t).copied().unwrap_or(0.0))
+            .sum()
+    }
+
     /// Thread `t`'s share at a point relative to the image's top-left corner (design units),
     /// `None` outside the image or where it is transparent.
     fn at(&self, x: f64, y: f64, t: usize) -> Option<f64> {
@@ -139,6 +148,35 @@ impl Shares {
         }
         self.share[cy * self.cols + cx].as_ref().map(|s| s[t])
     }
+}
+
+/// HSV saturation of a colour, 0–1.
+fn saturation(c: [f64; 3]) -> f64 {
+    let (max, min) = (c[0].max(c[1]).max(c[2]), c[0].min(c[1]).min(c[2]));
+    if max <= 0.0 { 0.0 } else { (max - min) / max }
+}
+
+/// Saturation from which a colour's chromatic threads sum to full coverage.
+pub const FULL_SATURATION: f64 = 0.8;
+
+/// PE-DESIGN's coverage for a colourful pixel: its chromatic threads' shares sum to
+/// `min(1, saturation / 0.8)` where the least-squares mix gives less, scaled up in proportion;
+/// black and grey threads keep their share. On PE-DESIGN's ramp captures
+/// (`photostitch2-ramp-cmyk/-rgbk.pes`) and the owner-shapes Color Sets this narrows the
+/// difference from least squares alone: mean share error 0.069 → 0.064 on the ramp, 0.107 →
+/// 0.093 on the shapes. Pale colours stay light, since their target is low.
+pub fn saturate(rgb: [u8; 3], mut shares: Vec<f64>, threads: &[[f64; 3]]) -> Vec<f64> {
+    let chromatic: Vec<usize> = (0..threads.len())
+        .filter(|&k| saturation(threads[k]) > 0.2)
+        .collect();
+    let sum: f64 = chromatic.iter().map(|&k| shares[k]).sum();
+    let target = (saturation(rgb.map(f64::from)) / FULL_SATURATION).min(1.0);
+    if sum > 1e-6 && target > sum {
+        for &k in &chromatic {
+            shares[k] = (shares[k] * target / sum).min(1.0);
+        }
+    }
+    shares
 }
 
 /// Non-negative shares `c` (summing to at most 1) minimising

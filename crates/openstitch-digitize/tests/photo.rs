@@ -602,3 +602,53 @@ fn mono_screen_ramps_from_light_to_full() {
     assert_eq!(mono_share(0.86), 1.0);
     assert_eq!(mono_share(1.0), 1.0);
 }
+
+/// PE-DESIGN's Photo Stitch 2 sews the thread its screen uses most first (round-4 ramp captures
+/// `photostitch2-ramp-cmyk/-rgbk.pes`: a hue ramp red → magenta sews CMYK as cyan, yellow,
+/// magenta, black and RGBK as blue, lime green, red, black, where the owner's shapes sew them
+/// cyan, magenta, yellow, black and red, blue, lime green, black).
+#[test]
+fn screen_sews_the_most_used_thread_first() {
+    use openstitch_digitize::photo::ColorSet;
+    // The ramp as pe-refs-4's wizimg.py draws it: 800 × 200 px, HSV hue 0–300° across, S = V = 1.
+    let ramp = Raster::from_fn(800, 200, |x, _| {
+        let h = 300.0 * f64::from(x) / 799.0 / 60.0;
+        let (i, f) = (h.floor() as i32, h - h.floor());
+        let (q, t) = (1.0 - f, f);
+        let (r, g, b) = match i {
+            0 => (1.0, t, 0.0),
+            1 => (q, 1.0, 0.0),
+            2 => (0.0, 1.0, t),
+            3 => (0.0, q, 1.0),
+            4 => (t, 0.0, 1.0),
+            _ => (1.0, 0.0, q),
+        };
+        let c = |v: f64| (v * 255.0).round() as u8;
+        [c(r), c(g), c(b), 255]
+    })
+    .expect("size");
+    for (set, image, w_mm, want) in [
+        (ColorSet::Cmyk, &ramp, 79.9, ["32", "13", "51", "20"]),
+        (ColorSet::Rgbk, &ramp, 79.9, ["2", "14", "5", "20"]),
+        (
+            ColorSet::Cmyk,
+            &shapes(false),
+            84.7,
+            ["32", "51", "13", "20"],
+        ),
+        (ColorSet::Rgbk, &shapes(false), 84.7, ["5", "2", "14", "20"]),
+    ] {
+        let p = PhotoStitch {
+            color_set: set,
+            ..PhotoStitch::new(PhotoStyle::Lines, PhotoMode::Color(photo::LINE_COLORS))
+        };
+        let out = photo::convert(image, &Frame::new(0.0, 0.0, w_mm, image.width()), &p)
+            .expect("converts");
+        let got: Vec<&str> = out
+            .threads
+            .iter()
+            .map(|t| t.catalog_number.as_deref().unwrap_or(""))
+            .collect();
+        assert_eq!(got, want, "{set:?} on a {} px image", image.width());
+    }
+}
