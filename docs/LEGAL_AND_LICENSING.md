@@ -51,7 +51,11 @@ the project keeps:
   account, in the command icons' style. Every prompt is in `assets/illustrations/prompts.tsv`
   and `assets/illustrations/README.md`: each describes a generic object (a hoop, a folder, a
   spool, a woven cotton surface) and none names or describes Brother, PE-DESIGN or their
-  artwork; no reference images were used. Without them the editor shows the text alone.
+  artwork; no reference images were used. Seven empty-state and dialog illustrations
+  (`sew_empty`, `no_media`, `no_image`, `objects_empty`, `update_available`, `update_current`,
+  `update_failed`) were added the same way on 2026-10-30 (job ids in
+  `assets/illustrations/higgsfield-jobs.tsv`). Without them the editor shows
+  the text alone.
 - **Test images:** the images in `examples/images` (photos, illustrations, line art, pixel
   art, lettering), which test the image wizards and fill the README's "From image to
   embroidery" gallery, were generated for OpenStitch with Higgsfield (GPT Image 2.5) under the
