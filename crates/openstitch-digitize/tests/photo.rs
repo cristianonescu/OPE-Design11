@@ -303,3 +303,47 @@ fn mono_leaves_light_areas_unsewn_by_default() {
         "light edge bare"
     );
 }
+
+/// Photo Stitch 1 sews a colour in few long paths, as PE-DESIGN 11.50 does (round-4 captures:
+/// 1–5 jumps a colour): runs are visited nearest first, short hops to the next row turn like
+/// a fill row, and only a run with nothing close is jumped to.
+#[test]
+fn runs_are_joined_nearest_first() {
+    let frame = Frame::new(0.0, 0.0, 40.0, 40);
+    let p = bare(PhotoStyle::Fill, PhotoMode::Mono(black()));
+    let block = |out: &photo::Converted| out.objects[0].stitch_block.clone().expect("block");
+    // A solid black square on white is one path: one jump in.
+    let square = rects(40, 40, WHITE, &[(10, 10, 30, 30, BLACK)]);
+    let out = photo::convert(&square, &frame, &p).expect("converts");
+    let b = block(&out);
+    assert_eq!(
+        b.stitches
+            .iter()
+            .filter(|s| s.command == Command::Jump)
+            .count(),
+        1
+    );
+    // No travel outruns the join reach: two cells across and two rows down at most.
+    let (cw, ch) = (p.stitch_mm * 10.0, p.row_spacing_mm * 10.0);
+    let longest = photo::JOIN_CELLS * cw;
+    for w in b.stitches.windows(2) {
+        if w[1].command == Command::Stitch {
+            let len = (w[1].x - w[0].x).hypot(w[1].y - w[0].y);
+            assert!(len <= longest.hypot(2.0 * ch) + 1.0, "{len} {w:?}");
+        }
+    }
+    // A dithered mid-grey breaks into many runs, but they are sewn in far fewer paths.
+    let grey = rects(40, 40, [128, 128, 128, 255], &[]);
+    let out = photo::convert(&grey, &frame, &p).expect("converts");
+    let b = block(&out);
+    let jumps = b
+        .stitches
+        .iter()
+        .filter(|s| s.command == Command::Jump)
+        .count();
+    let stitches = b.stitches.len() - jumps;
+    assert!(
+        jumps * 20 < stitches,
+        "{jumps} jumps for {stitches} needle points"
+    );
+}
