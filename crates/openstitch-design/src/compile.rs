@@ -373,9 +373,13 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
                 ) {
                     runs
                 } else {
-                    // Travel from the start point and to the end point: PE-DESIGN's motif fill
-                    // walks it in steps of at most 2 mm (motif-fill-2pt).
-                    let pitch = if region.kind == RegionType::MotifFill {
+                    // Travel from the start point and to the end point: PE-DESIGN's motif and
+                    // decorative fills walk it in steps of at most 2 mm (motif-fill-2pt,
+                    // deco-fill-1line-100mm).
+                    let pitch = if matches!(
+                        region.kind,
+                        RegionType::MotifFill | RegionType::DecorativeFill
+                    ) {
                         regions::MOTIF_FILL_TRAVEL_PITCH
                     } else {
                         25.0
@@ -395,11 +399,15 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
             {
                 layers = vec![region::join_layers(layers, &closed, holes, path)];
             }
-            // Satin, fill and motif fill tie in and lock as PE-DESIGN 11 sews them
-            // (motif-fill-2pt: one 0.3 mm step out and back at the start and at the end).
+            // Satin, fill, motif and decorative fill tie in and lock as PE-DESIGN 11 sews them
+            // (motif-fill-2pt, deco-fill-1line-100mm: one 0.3 mm step out and back at the
+            // start and at the end).
             if matches!(
                 region.kind,
-                RegionType::Satin | RegionType::Fill | RegionType::MotifFill
+                RegionType::Satin
+                    | RegionType::Fill
+                    | RegionType::MotifFill
+                    | RegionType::DecorativeFill
             ) {
                 region::tie_and_lock(&mut layers);
             }

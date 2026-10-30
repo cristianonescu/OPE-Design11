@@ -1193,9 +1193,13 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 opt(
                     "patternWidth",
                     "mm",
-                    "Pattern width; zigzag net: zigzag width, 0.5-50",
+                    "Pattern width; zigzag net: zigzag width, 0.5-50 (decorative fill 0.5-100)",
                 ),
-                opt("patternHeight", "mm", "Pattern height, 0.5-50"),
+                opt(
+                    "patternHeight",
+                    "mm",
+                    "Pattern height, 0.5-50 (decorative fill 0.5-100)",
+                ),
                 opt(
                     "spacing",
                     "mm",
@@ -1467,11 +1471,17 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         }
                         r.pattern = Some(id);
                     }
+                    // PE-DESIGN 11.50's Decorative Fill defaults to a 100 mm tile.
+                    let max_size = if r.kind == RegionType::DecorativeFill {
+                        100.0
+                    } else {
+                        50.0
+                    };
                     if p.has("patternWidth") {
-                        r.pattern_width = Some(p.req("patternWidth", 0.5, 50.0)?);
+                        r.pattern_width = Some(p.req("patternWidth", 0.5, max_size)?);
                     }
                     if p.has("patternHeight") {
-                        r.pattern_height = Some(p.req("patternHeight", 0.5, 50.0)?);
+                        r.pattern_height = Some(p.req("patternHeight", 0.5, max_size)?);
                     }
                     if p.has("spacing") {
                         let lo = if r.kind == RegionType::MotifFill {

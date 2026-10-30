@@ -1,0 +1,172 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "deco-fill-1line-100mm",
+  "area": "stitches",
+  "title": "Decorative fill with the owner's free-line psc-deco-1line.plf at 100 mm",
+  "description": "A 40 x 40 mm square sewn as decorative fill with an owner-made Decorative Fill pattern (psc-deco-1line.plf: one free line (128,128)-(896,896) of the cell) at 100 x 100 mm, direction 0, run pitch 2.0 mm: the tile is centred on the region, so the line crosses the square from corner to corner, split evenly at the run pitch (1.95 mm), joined by travel along the outline at 2 mm, with the fill's tie-in and lock. PE-DESIGN also sews the line three times and walks parts of the outline repeatedly (292 needle points against OpenStitch's 73); that count is not compared.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Concentric circle and spiral"
+      },
+      {
+        "area": "Programmable Stitch Creator",
+        "feature": "Import of the user's own"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "guide",
+      "url": "https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html",
+      "note": "Decorative Fill Stitch: pattern, size, direction, run pitch, random shift, minimize feed"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 reference stitches/deco-fill-1line-100mm.pes (reference round 4 log, DECORATIVE FILL): 292 stitches, the line from the square's top-left to its bottom-right corner"
+    }
+  ],
+  "inputs": [
+    {
+      "from": "crates/openstitch-design/tests/fixtures/patterns/psc-deco-1line.plf",
+      "name": "psc-deco-1line.plf"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "pattern.import",
+      "params": {
+        "path": "psc-deco-1line.plf",
+        "id": "owner-deco"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 30,
+        "y": 30,
+        "width": 40,
+        "height": 40,
+        "fill": "Blue"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "decorativeFill",
+        "pattern": "owner-deco",
+        "patternWidth": 100,
+        "patternHeight": 100,
+        "angle": 0,
+        "runPitch": 2,
+        "randomShift": 0
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "deco.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/deco-fill-1line-100mm.pes",
+      "make": "Programmable Stitch Creator, New Decorative Fill Pattern: one line from (128,128) to (896,896) on the 16 x 16 grid, Save As psc-deco-1line.plf (Decorative Fill Files *.plf, Default Size 100.0 mm). Layout & Editing, 100 x 100 mm page: Rectangle (30,30)-(70,70) mm (40 x 40), line Not Sewn, region Decorative Fill Stitch, folder button > that file at 100.0 x 100.0 mm, Maintain aspect ratio off, Minimize feed on, Direction 0, Run pitch 2.0, Random Shift 0 %. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "deco.pes"
+      },
+      "evidence": "the line and the travel reach the whole 40 mm square",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "deco.pes"
+      },
+      "evidence": "the line and the travel reach the whole 40 mm square",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "stitch-length-median",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "median",
+        "minLength": 0.3
+      },
+      "source": {
+        "export": "deco.pes"
+      },
+      "evidence": "the line split evenly at the 2 mm run pitch (1.95 mm on its 56.6 mm) and travel in 2 mm steps",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "trims-inside",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "trim"
+      },
+      "source": {
+        "export": "deco.pes"
+      },
+      "evidence": "one region: no trim",
+      "expected": 0,
+      "reference": {}
+    },
+    {
+      "id": "jumps-inside",
+      "measure": {
+        "kind": "interiorMoves",
+        "command": "jump"
+      },
+      "source": {
+        "export": "deco.pes"
+      },
+      "evidence": "one region: no jump",
+      "expected": 0,
+      "reference": {}
+    }
+  ]
+}
