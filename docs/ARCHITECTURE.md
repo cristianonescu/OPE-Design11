@@ -308,7 +308,9 @@ Verified Compatible).
   and a zigzag 90 % of the interval deep elsewhere, its stitches closer as the share grows
   (0.17 mm at full share for Max. Density 4.5). Shares come from the fabric plus a
   non-negative mix of the threads' reduced colours on a 0.5 mm grid; colour mode reduces to N
-  threads besides the fabric (default 4). Lines are sewn serpentine with one jump per thread.
+  threads besides the fabric (default 4), or takes a named Color Set's four fixed threads in
+  its order (CMYK, RGBK, CRYK, BMYK). Mono's share is a ramp from 17 % to 86 % darkness, as
+  PE's. Lines are sewn serpentine with one jump per thread.
   No image-derived direction is used (docs/research/beyond/patents.md). Lighter threads sew first. Mono works on integer Rec. 601 luminance
   `(30 R + 59 G + 11 B) / 100` and stretches contrast first over the full range, darkest grey to
   0 and lightest to 255, only when the range is between 1 and 255 exclusive (#128).

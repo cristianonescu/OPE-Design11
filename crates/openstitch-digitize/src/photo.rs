@@ -31,6 +31,37 @@ pub enum PhotoStyle {
     Lines,
 }
 
+/// Photo Stitch 2's Color Set (PE-DESIGN 11.50's list: Auto Select, CMYK, RGBK, CRYK, BMYK).
+/// A named set is four fixed chart threads, sewn in the listed order, which also gives each its
+/// screen angle (round-4 captures `photostitch2-cmyk/-rgbk/-crvk/-bmyk.pes`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ColorSet {
+    /// The threads come from the image's colours ([`PhotoMode::Color`]'s count).
+    #[default]
+    Auto,
+    /// Sky Blue, Dark Fuchsia, Yellow, Black.
+    Cmyk,
+    /// Red, Blue, Lime Green, Black.
+    Rgbk,
+    /// Sky Blue, Red, Yellow, Black.
+    Cryk,
+    /// Blue, Dark Fuchsia, Yellow, Black.
+    Bmyk,
+}
+
+impl ColorSet {
+    /// The set's PEC chart numbers in sewing order, `None` for Auto Select.
+    pub fn pec(self) -> Option<[usize; 4]> {
+        match self {
+            ColorSet::Auto => None,
+            ColorSet::Cmyk => Some([32, 51, 13, 20]),
+            ColorSet::Rgbk => Some([5, 2, 14, 20]),
+            ColorSet::Cryk => Some([32, 5, 13, 20]),
+            ColorSet::Bmyk => Some([2, 51, 13, 20]),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum PhotoMode {
     /// Reduce to this many PEC threads.
@@ -59,6 +90,8 @@ pub struct PhotoStitch {
     pub max_density: f64,
     /// Lines: Direction, degrees added to every thread's screen angle (default 0).
     pub direction_deg: f64,
+    /// Lines, colour mode: the Color Set (default Auto Select).
+    pub color_set: ColorSet,
 }
 
 impl PhotoStitch {
@@ -84,6 +117,7 @@ impl PhotoStitch {
             stitch_mm,
             max_density: MAX_DENSITY,
             direction_deg: 0.0,
+            color_set: ColorSet::Auto,
         }
     }
 }
@@ -155,9 +189,22 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
     let fabric_pec = palette::nearest_pec(p.fabric).0;
     // Threads, and for the line screen the image colour each one stands for (its reduced
     // colour), against which the screen measures each thread's share.
-    let (threads, stands_for): (Vec<Thread>, Vec<[f64; 3]>) = match &p.mode {
-        PhotoMode::Mono(t) => (vec![t.clone()], vec![[0.0; 3]]),
-        PhotoMode::Color(n) => {
+    // A named Color Set: four fixed chart threads, sewn in the set's order.
+    let fixed = match (&p.mode, p.style, p.color_set.pec()) {
+        (PhotoMode::Color(_), PhotoStyle::Lines, Some(pec)) => Some(pec),
+        _ => None,
+    };
+    let (threads, stands_for): (Vec<Thread>, Vec<[f64; 3]>) = match (&p.mode, fixed) {
+        (_, Some(pec)) => pec
+            .iter()
+            .filter_map(|&i| openstitch_core::PEC_CHART.get(i).cloned().flatten())
+            .map(|t| {
+                let c = rgb_f(&t);
+                (t, c)
+            })
+            .unzip(),
+        (PhotoMode::Mono(t), _) => (vec![t.clone()], vec![[0.0; 3]]),
+        (PhotoMode::Color(n), None) => {
             let colors: Vec<Rgb> = cells.iter().flatten().map(|c| c.map(|v| v as u8)).collect();
             let n = (*n).clamp(1, 64);
             // Photo Stitch 2's Color Set holds N threads besides the page, so the line screen
@@ -215,13 +262,15 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
         threads.push(palette::nearest_pec(p.fabric).1);
     }
     let dithered = palette::dither(&cells, cols, rows, &targets);
-    // Light threads first, so darker detail sews on top.
+    // Light threads first, so darker detail sews on top; a named Color Set keeps its order.
     let mut order: Vec<usize> = (0..threads.len()).collect();
-    order.sort_by(|&a, &b| {
-        luma(targets[b])
-            .total_cmp(&luma(targets[a]))
-            .then(a.cmp(&b))
-    });
+    if fixed.is_none() {
+        order.sort_by(|&a, &b| {
+            luma(targets[b])
+                .total_cmp(&luma(targets[a]))
+                .then(a.cmp(&b))
+        });
+    }
     let mut objects = Vec::new();
     let mut counts = Vec::new();
     let mut sewn_threads = Vec::new();

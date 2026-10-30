@@ -350,13 +350,23 @@ fn runs_are_joined_nearest_first() {
     );
 }
 
-/// The thread's straight baseline stitches (2.5 mm runs, on the line itself).
+/// The thread's straight baseline stitches: 2.5 mm stitches continued by another 2.5 mm stitch
+/// in the same direction (a running stitch, not a zigzag stitch that happens to be as long).
 fn baseline(o: &DesignObject) -> Vec<((f64, f64), (f64, f64))> {
     let st = &o.stitch_block.as_ref().expect("block").stitches;
-    st.windows(2)
-        .filter(|w| w[0].command == Command::Stitch && w[1].command == Command::Stitch)
-        .map(|w| ((w[0].x, w[0].y), (w[1].x, w[1].y)))
-        .filter(|(a, b)| ((b.0 - a.0).hypot(b.1 - a.1) - 25.0).abs() < 1.0)
+    st.windows(3)
+        .filter(|w| w.iter().all(|s| s.command == Command::Stitch))
+        .filter_map(|w| {
+            let (d1, d2) = (
+                (w[1].x - w[0].x, w[1].y - w[0].y),
+                (w[2].x - w[1].x, w[2].y - w[1].y),
+            );
+            let (l1, l2) = (d1.0.hypot(d1.1), d2.0.hypot(d2.1));
+            let straight = (d1.0 * d2.1 - d1.1 * d2.0).abs() < 0.02 * l1 * l2
+                && d1.0 * d2.0 + d1.1 * d2.1 > 0.0;
+            ((l1 - 25.0).abs() < 1.0 && (l2 - 25.0).abs() < 1.0 && straight)
+                .then_some(((w[0].x, w[0].y), (w[1].x, w[1].y)))
+        })
         .collect()
 }
 
@@ -487,4 +497,108 @@ fn screen_angles_are_a_fixed_set() {
     assert_eq!(angle(4, 0.0), 22.5);
     assert_eq!(angle(0, 30.0), 30.0);
     assert_eq!(angle(3, 60.0), 15.0);
+}
+
+/// PE-DESIGN 11.50's named Color Sets (round-4 `photostitch2-cmyk/-rgbk/-crvk/-bmyk.pes`): four
+/// fixed chart threads sewn in the set's order, the screen angles following that order.
+#[test]
+fn named_color_sets_sew_their_threads_in_order() {
+    use openstitch_digitize::photo::ColorSet;
+    let img = shapes(false);
+    let frame = Frame::new(0.0, 0.0, 84.7, 240);
+    for (set, pec) in [
+        (ColorSet::Cmyk, ["32", "51", "13", "20"]),
+        (ColorSet::Rgbk, ["5", "2", "14", "20"]),
+        (ColorSet::Cryk, ["32", "5", "13", "20"]),
+        (ColorSet::Bmyk, ["2", "51", "13", "20"]),
+    ] {
+        let p = PhotoStitch {
+            color_set: set,
+            ..PhotoStitch::new(PhotoStyle::Lines, PhotoMode::Color(photo::LINE_COLORS))
+        };
+        let out = photo::convert(&img, &frame, &p).expect("converts");
+        let got: Vec<&str> = out
+            .threads
+            .iter()
+            .map(|t| t.catalog_number.as_deref().unwrap_or(""))
+            .collect();
+        assert_eq!(got, pec, "{set:?}");
+        for (layer, o) in out.objects.iter().enumerate() {
+            let want = [0.0, 45.0, 90.0, 135.0][layer];
+            for (a, c) in baseline(o) {
+                let ang = (-(c.1 - a.1))
+                    .atan2(c.0 - a.0)
+                    .to_degrees()
+                    .rem_euclid(180.0);
+                let off = ((ang - want + 90.0).rem_euclid(180.0) - 90.0).abs();
+                assert!(off <= 3.0, "{set:?} thread {layer}: {ang}°");
+            }
+        }
+    }
+    // Auto Select still reduces the image's own colours.
+    assert_eq!(
+        PhotoStitch::new(PhotoStyle::Lines, PhotoMode::Color(4)).color_set,
+        ColorSet::Auto
+    );
+}
+
+/// Direction turns the whole screen (PE-DESIGN's Direction 30° capture: 30°, 75°, 120°, 165°),
+/// and the Line interval and Max. Density set the spacing and the zigzag density (its capture at
+/// 3.0 mm and 2.5 lines/mm: lines 3.0 mm apart, about 112 needle points per cm² in a thread's
+/// own area against 297 at the defaults).
+#[test]
+fn direction_interval_and_density_shape_the_screen() {
+    let img = shapes(false);
+    let frame = Frame::new(0.0, 0.0, 84.7, 240);
+    let base = PhotoStitch::new(PhotoStyle::Lines, PhotoMode::Color(4));
+    let turned = photo::convert(
+        &img,
+        &frame,
+        &PhotoStitch {
+            direction_deg: 30.0,
+            ..base.clone()
+        },
+    )
+    .expect("converts");
+    for (layer, o) in turned.objects.iter().enumerate() {
+        let want = [30.0, 75.0, 120.0, 165.0][layer];
+        let runs = baseline(o);
+        assert!(!runs.is_empty());
+        for (a, c) in runs {
+            let ang = (-(c.1 - a.1))
+                .atan2(c.0 - a.0)
+                .to_degrees()
+                .rem_euclid(180.0);
+            let off = ((ang - want + 90.0).rem_euclid(180.0) - 90.0).abs();
+            assert!(off <= 3.0, "thread {layer}: {ang}° against {want}°");
+        }
+    }
+    // Coarser: 3 mm lines at 2.5 lines/mm sew about 6800 stitches where PE sews 6842.
+    let coarse = photo::convert(
+        &img,
+        &frame,
+        &PhotoStitch {
+            row_spacing_mm: 3.0,
+            max_density: 2.5,
+            ..base
+        },
+    )
+    .expect("converts");
+    let total: usize = coarse.stitches.iter().sum();
+    assert!(
+        (total as f64 - 6842.0).abs() / 6842.0 < 0.10,
+        "{total} against PE's 6842"
+    );
+}
+
+/// PE-DESIGN's Photo Stitch 2 Mono (round-4 grey capture): no zigzag below 17 % darkness, full
+/// density from 86 %.
+#[test]
+fn mono_screen_ramps_from_light_to_full() {
+    use openstitch_digitize::screen::mono_share;
+    assert_eq!(mono_share(0.0), 0.0);
+    assert_eq!(mono_share(0.17), 0.0);
+    assert!((mono_share(0.515) - 0.5).abs() < 1e-9);
+    assert_eq!(mono_share(0.86), 1.0);
+    assert_eq!(mono_share(1.0), 1.0);
 }

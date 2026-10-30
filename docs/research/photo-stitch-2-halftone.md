@@ -148,6 +148,46 @@ Implementation choices beyond the capture:
 - **Moves between lines.** Line ends are joined by a stitch when they are within three
   intervals.
 
+## Second round of captures (2026-10-30)
+
+These are pe-refs-4's round-4 `photostitch2-cmyk`, `-rgbk`, `-crvk` (labelled CRYK in PE),
+`-bmyk`, `-dir30`, `-int3-den2`, `-mono-grey-tonal` and `-specks-auto`. Each was made from a
+fresh wizard at its defaults with one setting changed.
+
+PE's input ranges: Line interval 1.2–5 mm; Max. Density 2.5–5 lines/mm (2.0 is refused, so
+that capture used 2.5).
+
+| Capture | PE-DESIGN | OpenStitch | |
+|---|---|---|---|
+| CMYK (PEC 32, 51, 13, 20 in order) | angles 0/45/90/135, 13 954 st | same threads, order and angles, 12 757 st | mixing differs |
+| RGBK (5, 2, 14, 20) | 14 420 st | 12 729 st | mixing differs |
+| CRYK (32, 5, 13, 20) | 14 926 st | 12 757 st | mixing differs |
+| BMYK (2, 51, 13, 20) | 13 963 st | 12 897 st | mixing differs |
+| Direction 30° | angles 30/75/120/165, 13 434 st | angles 30/75/120/165 | as PE |
+| Interval 3.0, density 2.5 | spacing 3.0 mm, own areas 100–124/cm², 6842 st | spacing 3.0 mm, 90–106/cm², 6666 st | as PE |
+| Mono, grey-tonal | 4665 st; bands 305 / 286 / 212 / 153 / 107 / 72 / 21 / 26 | 4671 st; 306 / 275 / 221 / 162 / 107 / 59 / 23 / 23 | as PE (ramp below) |
+| Auto Select on specks.bmp | four threads (red, blue, ultramarine, lime green) for a red-and-blue image | two threads | open |
+
+Findings:
+- **Angles follow the sewing position, never the colour.** Every capture has 0°, 45°, 90° and
+  135° in sewing order (30° more with Direction 30°). A named Color Set is four fixed chart
+  threads sewn in its listed order. `ColorSet` and `colorSet` implement them.
+- **Mono tone curve.** PE sews no zigzag below about 17 % darkness and full density from about
+  86 % (after the contrast stretch), linear between. `screen::mono_share` implements that ramp.
+  The old linear share from 0 sewed the light tones twice as densely (49 against 21 needle
+  points per cm² at grey 180–209).
+- **Mixing within a named set (open).** PE gives an area's main thread nearly full coverage,
+  about 300 needle points per cm². Least squares spreads the colour over several threads, so
+  OpenStitch's main threads reach 231–276. Neither nearest-thread nor least squares explains
+  PE's choices:
+  - in RGBK, image yellow becomes red (181) plus lime green (173), though lime is the nearest
+    thread;
+  - in CRYK, yellow becomes red (279) plus yellow (231);
+  - in CMYK, green becomes sky blue (full) plus black (94).
+  A colour ramp per set would pin the law.
+- **Auto Select (open).** It always gives four threads; on a red-and-blue image it adds
+  ultramarine and lime green. Our Auto Select reduces to the image's own colours.
+
 ## Captures still needed (owner-made, at defaults unless named)
 
 - **Colour sets:** the same image with each Color Set (CMYK, RGBK, CRVK, BMYK), to pin the

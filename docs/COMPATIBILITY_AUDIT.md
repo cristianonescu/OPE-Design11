@@ -1368,9 +1368,23 @@ Line references are relative to `crates/`.
     docs/research/photo-stitch-2-halftone.md. Built 2026-10-30 after the owner's "Go ahead"
     (`screen.rs`, a fixed angle set, no image-derived direction): 13 701 stitches against
     14 133, angles, spacing, own-area (280–292 / 296–298) and white (21–24 / 21–23) densities
-    and one jump a thread as PE. Left: Auto Select's colour set, where PE mixes green from blue
-    and yellow and adds purple, while OpenStitch gives green its own thread; the named Color
-    Sets; Photo Stitch 2 Mono, Direction and Line interval changes (captures requested).
+    and one jump a thread as PE. Second round of captures (2026-10-30: the four named Color
+    Sets, Direction 30°, Line interval 3 / Max. Density 2.5, Mono, Auto Select on a two-colour
+    image):
+    - Angles follow the sewing position in every file.
+    - A named set is four fixed threads sewn in order; OpenStitch now offers `colorSet`.
+    - Direction turns the whole screen.
+    - Interval and density act as modelled: 6666 stitches against 6842.
+    - Mono follows a tone ramp from 17 % to 86 % darkness, now OpenStitch's too: 4671 against
+      4665 stitches, every grey band within 6 % but 150–179.
+
+    Left (open):
+    - The mixing law within a set. PE gives an area's main thread nearly full coverage, and its
+      choices are neither nearest-thread nor least squares; OpenStitch's named sets sew 8–15 %
+      fewer stitches.
+    - Auto Select's thread choice. PE always picks four threads; OpenStitch reduces to the
+      image's colours, so where PE mixes green from blue and yellow, OpenStitch gives green its
+      own thread.
 - **Sewing-machine stitch files (PMV, 2026-10-29, #130):** OpenStitch now reads the PMV layout
   it writes (pyembroidery's description: 8-byte magic, 36-byte banner, 56-byte preamble, needle
   count and its double, 6-bit relative x / 5-bit absolute y pairs in 0.25 mm, the length and

@@ -11,7 +11,7 @@ use openstitch_design::{Contour, DesignObject, LineType};
 use openstitch_digitize::autopunch::{self, AutoPunch};
 use openstitch_digitize::center::{self, FigureOptions, LineImageOptions, RegionSew, SewSettings};
 use openstitch_digitize::cross::{self, CrossStitch, CrossType};
-use openstitch_digitize::photo::{self, PhotoMode, PhotoStitch, PhotoStyle};
+use openstitch_digitize::photo::{self, ColorSet, PhotoMode, PhotoStitch, PhotoStyle};
 use openstitch_digitize::raster::MAX_FILE_BYTES;
 use openstitch_digitize::regions::TraceOptions;
 use openstitch_digitize::{DigitizeError, Frame, Raster};
@@ -265,6 +265,11 @@ pub fn commands() -> Vec<CommandSpec> {
                     "Lines: Max. Density, zigzag lines per mm at full colour, 0.5-10 (default 4.5)",
                 ),
                 opt(
+                    "colorSet",
+                    "auto|cmyk|rgbk|cryk|bmyk",
+                    "Lines, colour mode: the Color Set; a named set is four fixed threads in its order (default auto)",
+                ),
+                opt(
                     "direction",
                     "degrees",
                     "Lines: Direction, turns every thread's screen angle (0/45/90/135), -180-180 (default 0)",
@@ -299,6 +304,18 @@ pub fn commands() -> Vec<CommandSpec> {
                 options.stitch_mm = p.opt("stitchLength", options.stitch_mm, 0.3, 7.0)?;
                 options.max_density = p.opt("maxDensity", options.max_density, 0.5, 10.0)?;
                 options.direction_deg = p.opt("direction", options.direction_deg, -180.0, 180.0)?;
+                options.color_set = match choice(
+                    p,
+                    "colorSet",
+                    "auto",
+                    &["auto", "cmyk", "rgbk", "cryk", "bmyk"],
+                )? {
+                    "cmyk" => ColorSet::Cmyk,
+                    "rgbk" => ColorSet::Rgbk,
+                    "cryk" => ColorSet::Cryk,
+                    "bmyk" => ColorSet::Bmyk,
+                    _ => ColorSet::Auto,
+                };
                 let out = photo::convert(&image, &frame, &options).map_err(|e| failed(p, e))?;
                 Ok(json!({
                     "colors": hexes(&out.threads),

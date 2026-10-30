@@ -7,6 +7,9 @@
 //! deep, whose stitches come closer together as the share grows, up to Max. Density. A thread's
 //! lines are sewn end to end, serpentine, with one jump in.
 //!
+//! Mono shares follow PE's tone ramp ([`mono_share`]); a named Color Set
+//! (`photo::ColorSet`) gives four fixed threads in its order.
+//!
 //! The angles are a fixed set, the same over the whole image: there is no per-pixel direction
 //! field and no per-connector coverage or colour test (docs/research/beyond/patents.md). The
 //! measurements behind the numbers are in docs/research/photo-stitch-2-halftone.md (round-4
@@ -28,6 +31,20 @@ pub const MIN_SHARE: f64 = 0.08;
 /// about 6 per mm at 4.5 lines/mm (≈ 300 needle points per cm² in a thread's own colour area
 /// on a 2.0 mm interval).
 pub const POINTS_PER_DENSITY: f64 = 4.0 / 3.0;
+
+/// Mono: darkness below this sews only the straight run (PE-DESIGN's Photo Stitch 2 Mono on
+/// the round-4 grey capture: no zigzag in the band below 17 % darkness).
+pub const MONO_LIGHT: f64 = 0.17;
+/// Mono: darkness from which the zigzag is at full density.
+pub const MONO_FULL: f64 = 0.86;
+
+/// The mono thread's share for a darkness 0–1: a linear ramp from [`MONO_LIGHT`] to
+/// [`MONO_FULL`]. Fitted to PE-DESIGN's Photo Stitch 2 Mono on the round-4 grey capture
+/// (`photostitch2-mono-grey-tonal.pes`): 4671 stitches against its 4665, every grey band's
+/// needle density within 6 % of PE's but 150–179 (59 against 72 per cm²).
+pub fn mono_share(darkness: f64) -> f64 {
+    ((darkness - MONO_LIGHT) / (MONO_FULL - MONO_LIGHT)).clamp(0.0, 1.0)
+}
 
 /// The screen angle of the thread sewn `layer`-th, turned by `direction`.
 pub fn angle(layer: usize, direction: f64) -> f64 {
@@ -73,7 +90,7 @@ impl Shares {
         let mut greys: Vec<u8> = s.share.iter().flatten().map(|v| v[0] as u8).collect();
         crate::photo::auto_levels(&mut greys);
         for (cell, g) in s.share.iter_mut().flatten().zip(greys) {
-            cell[0] = 1.0 - f64::from(g) / 255.0;
+            cell[0] = mono_share(1.0 - f64::from(g) / 255.0);
         }
         s
     }
