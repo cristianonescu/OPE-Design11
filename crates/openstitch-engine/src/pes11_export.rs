@@ -123,6 +123,15 @@ fn shape(object: &DesignObject, table: &mut Vec<Thread>) -> Result<Shape, String
         ObjectKind::Text => unreachable!("texts go through text_object"),
         ObjectKind::Stitches => unreachable!("stitch patterns go through stitch_group"),
     }
+    // A Manual Punch column (direction lines): a block object whose outline is the lines' first
+    // ends in order, then their second ends back.
+    if let Some(r) = object
+        .region
+        .as_ref()
+        .filter(|r| r.direction_lines.len() >= 2)
+    {
+        return punch_block(object, r, table);
+    }
     let [contour] = object.contours.as_slice() else {
         return Err(format!(
             "object {id} has {} outlines: a PES 0110 shape holds one (split it, or use version 6)",
@@ -154,6 +163,55 @@ fn shape(object: &DesignObject, table: &mut Vec<Thread>) -> Result<Shape, String
     }
     s.vertices = vertices(contour);
     s.bounds = bounds(contour);
+    Ok(s)
+}
+
+/// A Manual Punch column as PE-DESIGN's Straight Block object (m01, m03, o-manual-straight): a
+/// closed `CEmbLine` with one vertex per line end, each vertex its own handle on both sides.
+/// The Curve Block is refused: its handles are not mapped (the owner's curve files have their
+/// points on straight lines, where every rule gives the same handles).
+fn punch_block(
+    object: &DesignObject,
+    r: &RegionSewing,
+    table: &mut Vec<Thread>,
+) -> Result<Shape, String> {
+    let id = object.id;
+    if r.curved_lines {
+        return Err(format!(
+            "object {id} is a Curved Block: its curves are not mapped in PES 0110 yet (Straight Block is)"
+        ));
+    }
+    let lines = &r.direction_lines;
+    let punch_lines = u16::try_from(lines.len())
+        .map_err(|_| format!("object {id} has {} direction lines", lines.len()))?;
+    let mut s = Shape::with_defaults();
+    s.closed = true;
+    s.punch_lines = punch_lines;
+    region(id, r, &mut s, table)?;
+    match &object.line {
+        Some(l) => line(id, l, &mut s, table)?,
+        None => {
+            s.line_sewn = false;
+            s.line_type = Shape::LINE_NOT_SEWN;
+            s.line_color = s.region_color;
+        }
+    }
+    let ends = lines
+        .iter()
+        .map(|l| l[0])
+        .chain(lines.iter().rev().map(|l| l[1]));
+    s.vertices = ends
+        .map(|p| {
+            let (x, y) = file_xy(p);
+            Vertex {
+                x,
+                y,
+                handles: [(x, y), (x, y)],
+                kind: 0,
+            }
+        })
+        .collect();
+    s.bounds = Shape::bounds_of(&s.vertices);
     Ok(s)
 }
 
@@ -663,6 +721,60 @@ mod tests {
         assert_eq!(g.color_log.first().map(|&(_, c)| c), Some(0));
         assert_eq!(g.color_log.last().map(|&(_, c)| c), Some(1));
         assert_eq!(g.bounds, [600, 600, 750, 650]);
+    }
+
+    #[test]
+    fn a_manual_punch_column_becomes_a_straight_block() {
+        // m01-straight-1's clicks: (10,10) (10,30), (30,10) (30,30) mm.
+        let mut design = Design::new("t", openstitch_design::DesignPage::default());
+        let mut r = RegionSewing::new(RegionType::Satin, red());
+        r.direction_lines = vec![
+            [v2(100.0, 100.0), v2(100.0, 300.0)],
+            [v2(300.0, 100.0), v2(300.0, 300.0)],
+        ];
+        let outline = Contour::new(
+            vec![
+                v2(100.0, 100.0),
+                v2(300.0, 100.0),
+                v2(300.0, 300.0),
+                v2(100.0, 300.0),
+            ],
+            true,
+        );
+        design.add(DesignObject::shape(vec![outline], Some(r.clone()), None));
+        let o = objects(&design).expect("objects");
+        let s = &o.shapes[0];
+        assert_eq!(s.punch_lines, 2);
+        assert_eq!(s.bounds, [600, 600, 800, 800]);
+        let xy: Vec<(f32, f32)> = s.vertices.iter().map(|v| (v.x, v.y)).collect();
+        assert_eq!(
+            xy,
+            [
+                (600.0, 600.0),
+                (800.0, 600.0),
+                (800.0, 800.0),
+                (600.0, 800.0)
+            ]
+        );
+        assert!(
+            s.vertices
+                .iter()
+                .all(|v| v.handles == [(v.x, v.y); 2] && v.kind == 0)
+        );
+        assert_eq!(
+            (s.region, s.line_sewn, s.line_type),
+            (RegionSewType::Satin, false, Shape::LINE_NOT_SEWN)
+        );
+        // A Curved Block is refused with the reason.
+        let mut curved = Design::new("t", openstitch_design::DesignPage::default());
+        r.curved_lines = true;
+        curved.add(DesignObject::shape(
+            vec![Contour::rectangle(100.0, 100.0, 200.0, 200.0)],
+            Some(r),
+            None,
+        ));
+        let err = objects(&curved).expect_err("curved blocks are not mapped");
+        assert!(err.contains("Curved Block"), "{err}");
     }
 
     #[test]
