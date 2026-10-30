@@ -223,9 +223,11 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
     bounds 0.7–6.5 mm, Auto-direction satin without under sewing, fill across strokes up to
     13 mm and at 45° beyond, automatic colour count, PE's colour order (R + G + B, highest
     first, also in Cross Stitch), Sew Page Color in Color mode only (Auto Punch within 3 % of
-    PE's stitches on all four captures). Next: run-to-run travel in Cross Stitch; PE's meander
-    path for Photo Stitch 1 (mono +39 % stitches from short runs) and the per-colour screen
-    angles of Photo Stitch 2, both #129.
+    PE's stitches on all four captures). Photo Stitch 1's runs are joined nearest first since
+    2026-10-30 (mono +11 % stitches, was +39 %; trims 99 and 249, were 426 and 1158). Next:
+    run-to-run travel in Cross Stitch; PE's contour-following meanders for Photo Stitch 1 and
+    the per-colour screen angles of Photo Stitch 2 (#129, held for the owner's patent
+    decision).
 
 ## Beyond PE-DESIGN
 

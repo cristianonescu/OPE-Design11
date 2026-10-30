@@ -296,7 +296,11 @@ Verified Compatible).
   error-diffused onto the threads plus the fabric colour; fabric cells stay unsewn, so tone
   becomes coverage, unless Sew Page Color (on by default in Color mode, as in PE-DESIGN; Mono has
   none) makes the fabric colour a thread of its own that sews first; defaults Run Pitch 3.0 mm, 0.25 mm rows, 10
-  colours; rows are staggered by thirds. *Lines* (after Photo Stitch 2): zigzag rows
+  colours; rows are staggered by thirds. A thread's runs are sewn nearest first: from the
+  needle, the closest unsewn run end within 2 cells across and 2 rows down is entered with a
+  travel stitch (a hop to the next row leaves out the last needle point so the row turns, as
+  a fill row does), and only a run with nothing that close is jumped to, so a colour sews in
+  few long paths as PE-DESIGN's does. *Lines* (after Photo Stitch 2): zigzag rows
   whose swing follows darkness (mono) or the local share of each thread (colour); light areas
   break the line. Lighter threads sew first. Mono works on integer Rec. 601 luminance
   `(30 R + 59 G + 11 B) / 100` and stretches contrast first over the full range, darkest grey to

@@ -1276,6 +1276,18 @@ Line references are relative to `crates/`.
     4068 stitches: 143 per cm² in the darkest band, 37 at 180–209 and 2 above 210 as PE, but
     132–181 in the mid-tones where PE has 87–142, because the dithered rows break into short
     runs there (426 trims; PE 2). That is the stitch-path model again.
+  - **Photo Stitch 1 path (2026-10-30):** a thread's runs are now sewn nearest first instead
+    of row by row with a jump to every run. From the needle, the closest unsewn run end within
+    2 cells across and 2 rows down is entered with a travel stitch; a hop to the next row
+    leaves out the run's last needle point so the row turns, as a fill row does (those hops
+    had been sub-millimetre travel stitches, each a needle point). Mono capture: 3225 stitches
+    against PE's 2917 (was 4068), 99 trims against PE's 2 (was 426); needle points per cm²
+    by grey band 143 / 146 / 123 / 118 / 97 / 69 / 40 / 3 against PE's 154 / 142 / 125 / 92 /
+    87 / 66 / 20 / 1 (0–29 … 210+), was 143 / 181 / 162 / 178 / 132 / 81 / 37 / 2. Colour
+    capture: 11 654 stitches against PE's 12 255 (was 12 860), 249 trims against 6 (was 1158);
+    white 148 / 162, yellow 173 / 170, green 198 / 211, red 166 / 175, blue 192 / 176 (was blue
+    237). Left: PE's paths run along contours, diagonally; OpenStitch's stay horizontal rows,
+    and the remaining trims are runs more than 2 cells from any other.
   - **Photo Stitch 2** (`photostitch2-color-owner-shapes.pes`, Line interval 2.0 mm, Max.
     Density 4.5 lines/mm, Direction 0°, Color Set Auto Select): a halftone screen. Each of four
     threads (blue, red, yellow, purple) sews parallel lines 2 mm apart at its own screen angle
