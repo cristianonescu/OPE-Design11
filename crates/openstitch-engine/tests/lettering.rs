@@ -519,3 +519,88 @@ fn longest_text_lays_out_and_sews() {
             .is_err()
     );
 }
+
+#[test]
+fn text_transform_level_is_set_checked_and_reset_by_a_new_preset() {
+    let mut s = Session::new(temp_dir());
+    let text = |s: &Session| s.design().objects[0].text.clone().expect("text");
+    // Without a preset a level means nothing.
+    assert!(
+        s.execute(
+            "text.add",
+            Some(&json!({"text": "HELLO", "size": 10, "envelopeLevel": 20}))
+        )
+        .is_err()
+    );
+    run(
+        &mut s,
+        "text.add",
+        json!({"text": "HELLO", "size": 10, "x": 50, "y": 50, "envelope": 3, "envelopeLevel": 0}),
+    );
+    assert_eq!(text(&s).envelope_level, Some(0.0));
+    // Level 0 of a straight-edged preset is the straight text.
+    let flat = bounds(&s, 1);
+    run(
+        &mut s,
+        "object.setText",
+        json!({"ids": [1], "envelope": null}),
+    );
+    let straight = bounds(&s, 1);
+    assert!(
+        (flat.min_y - straight.min_y).abs() < 0.05 && (flat.max_y - straight.max_y).abs() < 0.05
+    );
+    // Choosing a preset resets the level to its default, as PE-DESIGN does.
+    run(
+        &mut s,
+        "object.setText",
+        json!({"ids": [1], "envelope": 3, "envelopeLevel": 75}),
+    );
+    assert_eq!(text(&s).envelope_level, Some(75.0));
+    run(&mut s, "object.setText", json!({"ids": [1], "envelope": 5}));
+    assert_eq!(
+        (text(&s).envelope, text(&s).envelope_level),
+        (Some(5), None)
+    );
+    // The default level and no level lay out the same.
+    let default = bounds(&s, 1);
+    run(
+        &mut s,
+        "object.setText",
+        json!({"ids": [1], "envelopeLevel": 20}),
+    );
+    assert_eq!(bounds(&s, 1), default);
+    run(
+        &mut s,
+        "object.setText",
+        json!({"ids": [1], "envelopeLevel": null}),
+    );
+    assert_eq!(text(&s).envelope_level, None);
+    // Each family's range: percent, degrees, the arch's half-sweep.
+    for (preset, bad) in [(3, 101.0), (9, 85.0), (13, -81.0), (1, 0.5), (1, 91.0)] {
+        run(
+            &mut s,
+            "object.setText",
+            json!({"ids": [1], "envelope": preset}),
+        );
+        assert!(
+            s.execute(
+                "object.setText",
+                Some(&json!({"ids": [1], "envelopeLevel": bad}))
+            )
+            .is_err(),
+            "{preset} {bad}"
+        );
+    }
+    // A stronger arch is a tighter circle: taller than the default one.
+    run(&mut s, "object.setText", json!({"ids": [1], "envelope": 1}));
+    let arch = bounds(&s, 1);
+    run(
+        &mut s,
+        "object.setText",
+        json!({"ids": [1], "envelopeLevel": 60}),
+    );
+    assert!(bounds(&s, 1).height() > arch.height() + 1.0);
+    // Saved and opened again with the project.
+    let bytes = project::encode(s.design()).expect("encode");
+    assert_eq!(&project::decode(&bytes).expect("decode"), s.design());
+}

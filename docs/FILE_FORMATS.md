@@ -346,6 +346,13 @@ breaks, 112-byte tail), then 22 bytes. Evidence: compat/reference/text/text-tran
 of every preset at levels 0, 25, 50, 75 and 100 on `OpenStitch` and of every preset at the default
 level on `Agjy 123`.
 
+The transform's strength is the float32 PE-DESIGN stores for the canvas handle (`Envelope::strength`,
+the same value as `TextSpec::envelope_level` / `envelopeLevel`): % of the font size for the
+straight-edged presets (default 50), % for the bows and waves (20), degrees for the slants (10)
+and fans (30), the arch's half-sweep in degrees (30) with the radius that keeps the text length
+in the arch geometry. The writer stores the text's own level (since 2026-10-30), the default
+when it has none.
+
 | Offset | Content |
 |---|---|
 | +0 | u16 PE-DESIGN's code of the preset. By palette place 1–26: 24, 25, 0, 1, 8, 9, 4, 5, 10, 11, 3, 2, 7, 6, 18, 19, 12, 14, 20, 21, 17, 16, 22, 23, 13, 15 (the same on all three texts) |
@@ -372,7 +379,7 @@ Fit Text to Outline option changed per file.
 Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
 segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
 (kerning, rotation, right alignment; character spacing on plain text), the letter's line width
-and pitch fields, the Text Transform levels other than the default (OpenStitch has none), the
+and pitch fields, the
 fit's fifth alignment (stretched), Manual Punch blocks (a `CEmbLine` body whose geometry header
 is a block list: a u32 count, 3 in o-manual-straight and o-manual-curve, then per-block entries;
 owner files with 1, 2 and 3 blocks requested), the appliqué's fifth object and

@@ -483,9 +483,11 @@ const ARCH_RADIANS: f64 = 1.887;
 /// 14) carry 1000 and zeros, as in the owner file made before any arch; the other presets leave
 /// PE-DESIGN's last arch numbers there, which OpenStitch writes as zeros.
 fn envelope(spec: &TextSpec, preset: u8) -> Result<Envelope, String> {
-    let &(code, strength) = ENVELOPES
+    let &(code, default) = ENVELOPES
         .get(usize::from(preset).wrapping_sub(1))
         .ok_or_else(|| format!("Text Transform preset {preset} (1-26)"))?;
+    // The text's own level (Text Transform's handle), else the preset's default.
+    let strength = spec.envelope_level.map_or(default, |l| l as f32);
     let geometry = match preset {
         1 | 2 => {
             let straight = TextSpec {
@@ -512,7 +514,8 @@ fn envelope(spec: &TextSpec, preset: u8) -> Result<Envelope, String> {
                 TextAlign::Right => -advance,
             };
             let (tx, ty) = (spec.transform.tx, spec.transform.ty);
-            let r = advance / ARCH_RADIANS;
+            // The level is the arch's half-sweep: the radius keeps the text length.
+            let r = advance / (ARCH_RADIANS * f64::from(strength) / f64::from(default));
             let cx = tx + start + advance / 2.0 + f64::from(PAGE_ORIGIN);
             let baseline = ty + f64::from(PAGE_ORIGIN);
             let cy = if preset == 1 {
@@ -759,6 +762,22 @@ mod tests {
         // The arch's box: its apex at the ascent line above the baseline, its ends below it.
         assert_eq!(a.bounds[1], 541);
         assert!(a.bounds[3] > 700, "{:?}", a.bounds);
+        // At its own level the arch writes that half-sweep, and the radius keeps the text
+        // length (twice the sweep, half the radius).
+        let mut steep = Design::new("t", openstitch_design::DesignPage::default());
+        spec.envelope_level = Some(60.0);
+        let (mut object, _) =
+            DesignObject::text(spec.clone(), Some(region.clone()), None).expect("layout");
+        object.region.as_mut().expect("region").underlay = false;
+        steep.add(object);
+        let s = objects(&steep).expect("objects").texts.remove(0);
+        let se = s.envelope.expect("CEmbDText");
+        assert_eq!((se.code, se.strength), (24, 60.0));
+        assert!(
+            (se.geometry[0] * 2.0 - e.geometry[0]).abs() < 0.01,
+            "{se:?} {e:?}"
+        );
+        spec.envelope_level = None;
         spec.envelope = None;
 
         // A tab, a vertical text and a rotated text are refused with the reason.
