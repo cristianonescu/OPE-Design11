@@ -6,7 +6,9 @@ use crate::commands::{CommandSpec, Effect, IDS, MM, default_line, indexes, opt, 
 use crate::params::{CommandError, Params};
 use crate::session::EngineState;
 use openstitch_design::boolean::{self, BoolOp, Region};
-use openstitch_design::{Contour, Design, DesignObject, LineSewing, LineType, ObjectKind, Vec2};
+use openstitch_design::{
+    Contour, Design, DesignObject, LineSewing, LineType, ObjectKind, RegionSewing, Vec2,
+};
 use serde_json::json;
 
 /// Most vertices a cut outline may have.
@@ -316,7 +318,7 @@ pub(crate) fn merge_overlapping(d: &mut Design, ids: &[u64]) -> Vec<u64> {
 pub(crate) fn set_region(o: &mut DesignObject, regions: &[Region]) {
     o.contours = boolean::contours(regions);
     if let Some(r) = &mut o.region {
-        r.angle = 0.0;
+        r.angle = RegionSewing::default_angle(r.kind);
     }
 }
 

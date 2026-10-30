@@ -99,6 +99,8 @@ Done 2026-10-30: stitch generation is bit-identical on Windows, macOS and Linux 
 math through the `libm` crate instead of each platform's C library); the arched Text Transform
 spec, deferred at alpha.6 because Linux measured it 0.2 mm lower, has its PE-DESIGN reference
 back.
+Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tools do
+(pes-objects r01); saved designs keep their stored angle.
 
 1. **Fill:** Round 4 (2026-10-29) confirmed PE-DESIGN has no random tatami stagger
    (Frequency and two Stitch Type buttons only) and a 0.1 lines/mm density floor. PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
