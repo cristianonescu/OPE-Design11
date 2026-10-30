@@ -1103,23 +1103,22 @@ Line references are relative to `crates/`.
   0.5 mm on 21 of the 26 presets for "OpenStitch" (specs text-transform-N-openstitch)
   and 18 of 26 for "Agjy 123" (text-transform-N-agjy; the arches 1 and 2 and 18 fail
   there as well, by 0.6-1.3 mm);
-  parked (owner's round-4 notes, numbers there): 3 (maxY 0.8 mm low), 9 (minX 1.1 mm), 10
-  (maxX 1.4 mm), 14 (minX 1.7, maxX 2.1 mm: the fan-in fit from HHHHHHH does not hold for
-  descender letters) and 17 (maxY 0.7 mm): the envelopes were fitted on the HHHHHHH box and
-  PE-DESIGN applies them to the cap-height box, so letters below the baseline (p, g, j, y)
-  and round tops land differently. Since 2026-10-30 `text.add` / `object.setText` take
+  parked until 2026-10-30 (owner's round-4 notes, numbers there): 3 (maxY 0.8 mm low), 9 (minX
+  1.1 mm), 10 (maxX 1.4 mm), 14 (minX 1.7, maxX 2.1 mm) and 17 (maxY 0.7 mm): the envelopes were
+  fitted on the HHHHHHH box and PE-DESIGN applies them to the cap-height box, so letters below
+  the baseline (p, g, j, y) and round tops landed differently; all pass since the cap-height box
+  (below). Since 2026-10-30 `text.add` / `object.setText` take
   `envelopeLevel` (the stored value; a new preset resets it, as in PE-DESIGN), which scales
   how far the preset's envelope bows from straight (the slants by the shear's tangent, the
   arches' angle with the radius keeping the text length), and the PES 0110 writer stores it.
-  67 of the 108 level captures pass at the reference tier with that one rule (box within
-  0.5 mm: every arch-over level, the tapers, the hills and valleys, pinch and bulge, the
-  baselines at most levels; specs `text-transform-N-openstitch-lL`,
-  `text-transform-13/14-agjy-l0/l100`). Parked (round4\text, not in the repository), 41:
-  the bows and waves 5, 6, 15, 16, 19, 20, 23, 24 and the tapers 3, 17, 18 at strong levels
-  (the lowest letters 0.6-2.1 mm below PE-DESIGN's: the same cap-height box as above, next),
-  the slants 9, 10 and the fans 13, 14 (the box 0.6-3.4 mm wider or narrower: the shear and
-  the fans' spread do not scale linearly; the fans are fitted from these files next), 2 at
-  level 25 and 4 at level 100 (0.6-0.9 mm).
+  Since the same day the envelope warps the cap-height box (the capital line to the baseline,
+  as PE-DESIGN does: the envelopes were fitted on HHHHHHH, whose box it is), so letters below
+  the baseline go on below the bottom edge instead of squeezing the envelope: 105 of the 108
+  level captures and 25 of the 26 default-level captures on "Agjy 123" (all 26 on
+  "OpenStitch") keep the box within 0.5 mm (specs `text-transform-N-openstitch[-lL]`,
+  `text-transform-N-agjy[-lL]`). Parked (round4\text, not in the repository): arch 2 on
+  "Agjy 123" at the default level (minX 0.6 mm) and on "OpenStitch" at level 25 (minX
+  0.6 mm), taper 4 at level 100 (maxX 1.1 mm) and slant 9 at level 100 (maxX 0.6 mm).
 - **Sewing order inside a text (checked 2026-10-27):** not a gap. PE-DESIGN 11.50 also sews
   every letter's region first, then every letter's outline, one colour block each (spec
   text-sewing-order, reference tier). Still open: the guide disables "some editing of
