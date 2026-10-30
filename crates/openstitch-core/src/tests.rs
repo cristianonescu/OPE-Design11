@@ -44,6 +44,17 @@ fn nearest_is_equal_weight_squared_euclidean_with_later_index_on_ties() {
     assert_eq!(nearest_index(&Thread::rgb(0x640064), &chart), Some(1));
 }
 
+#[test]
+fn imported_colours_become_brother_chart_threads() {
+    let t = nearest_brother_thread(&Thread::rgb(0xFF8000));
+    assert_eq!(t, PEC_CHART[11].clone().expect("11"));
+    assert_eq!(t.catalog_number.as_deref(), Some("11"));
+    assert_eq!(brother_embroidery_code(11), Some("214"));
+    // An exact chart colour stays that entry.
+    let red = PEC_CHART[5].clone().expect("5");
+    assert_eq!(nearest_brother_thread(&Thread::rgb(red.rgb_value())), red);
+}
+
 /// PE-DESIGN 11.50's picks for twelve RGB fills imported from an SVG (owner's capture
 /// `compat/reference/pes/thread-match-swatches.pes`, 2026-10-29, issue #119): Brother chart
 /// entry per fill. Equal-weight squared Euclidean against entries 1–61 reproduces all twelve;

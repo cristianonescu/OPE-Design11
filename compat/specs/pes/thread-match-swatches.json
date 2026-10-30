@@ -3,7 +3,7 @@
   "id": "thread-match-swatches",
   "area": "pes",
   "title": "Twelve known RGB fills mapped to the Brother Embroidery thread chart as PE-DESIGN maps them",
-  "description": "An SVG of twelve 20 x 20 mm squares with chosen RGB fills (pure red, green, blue, yellow, cyan, magenta, mid grey, tan, blue-grey, pale pink, dark green, orange) imported by PE-DESIGN 11.50 as fill regions; PE-DESIGN picked one Brother Embroidery thread per square: rgb(255, 0, 0) -> 800, rgb(0, 255, 0) -> 513, rgb(0, 0, 255) -> 405, rgb(255, 255, 0) -> 205, rgb(0, 255, 255) -> 019, rgb(255, 0, 255) -> 086, rgb(128, 128, 128) -> 817, rgb(200, 150, 100) -> 348, rgb(50, 100, 150) -> 070, rgb(240, 200, 220) -> 124, rgb(20, 80, 40) -> 415, rgb(255, 128, 0) -> 214. OpenStitch draws the same squares with the same RGB fills; the thread table of its PES is compared with PE-DESIGN's (issue #119: the nearest-thread distance; issue #136: the built-in palette).",
+  "description": "An SVG of twelve 20 x 20 mm squares with chosen RGB fills (pure red, green, blue, yellow, cyan, magenta, mid grey, tan, blue-grey, pale pink, dark green, orange) imported by PE-DESIGN 11.50 as fill regions; PE-DESIGN picked one Brother Embroidery thread per square: rgb(255, 0, 0) -> 800, rgb(0, 255, 0) -> 513, rgb(0, 0, 255) -> 405, rgb(255, 255, 0) -> 205, rgb(0, 255, 255) -> 019, rgb(255, 0, 255) -> 086, rgb(128, 128, 128) -> 817, rgb(200, 150, 100) -> 348, rgb(50, 100, 150) -> 070, rgb(240, 200, 220) -> 124, rgb(20, 80, 40) -> 415, rgb(255, 128, 0) -> 214. OpenStitch imports the same SVG with import.svg, which gives each fill the nearest Brother chart entry 1-61 as PE-DESIGN does (issue #119: equal-weight squared Euclidean, later entry on ties; issue #136: the chart's 61 entries and their codes); the thread table of its PES is compared with PE-DESIGN's.",
   "covers": {
     "audit": [
       18
@@ -19,6 +19,10 @@
     {
       "kind": "measured",
       "note": "compat/reference/pes/thread-match-swatches.pes (PE-DESIGN 11.50, 2026-10-29): thread table in sewing order 800, 513, 405, 205, 019, 086, 817, 348, 070, 124, 415, 214 (the table also holds 519 for the unsewn outline slot); PEC colour indices 5, 14, 2, 13, 32, 25, 39, 35, 4, 57, 38, 11; 8488 stitches"
+    },
+    {
+      "kind": "measured",
+      "note": "compat/reference/pes/thread-match-swatches.svg is the SVG PE-DESIGN imported for the reference (pe-refs-4, SHA-256 747094e4ff85efaf9ae93f01487ca787df9b219582a20d6cef4775e92d9847ca); its colours are listed in the owner's swatches-12.txt"
     }
   ],
   "script": [
@@ -30,130 +34,15 @@
       }
     },
     {
-      "command": "shape.rectangle",
+      "command": "import.svg",
       "params": {
-        "x": 5,
-        "y": 10,
-        "width": 20,
-        "height": 20,
-        "fill": "#ff0000"
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 27,
-        "y": 10,
-        "width": 20,
-        "height": 20,
-        "fill": "#00ff00"
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 49,
-        "y": 10,
-        "width": 20,
-        "height": 20,
-        "fill": "#0000ff"
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 71,
-        "y": 10,
-        "width": 20,
-        "height": 20,
-        "fill": "#ffff00"
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 5,
-        "y": 35,
-        "width": 20,
-        "height": 20,
-        "fill": "#00ffff"
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 27,
-        "y": 35,
-        "width": 20,
-        "height": 20,
-        "fill": "#ff00ff"
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 49,
-        "y": 35,
-        "width": 20,
-        "height": 20,
-        "fill": "#808080"
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 71,
-        "y": 35,
-        "width": 20,
-        "height": 20,
-        "fill": "#c89664"
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 5,
-        "y": 60,
-        "width": 20,
-        "height": 20,
-        "fill": "#326496"
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 27,
-        "y": 60,
-        "width": 20,
-        "height": 20,
-        "fill": "#f0c8dc"
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 49,
-        "y": 60,
-        "width": 20,
-        "height": 20,
-        "fill": "#145028"
-      }
-    },
-    {
-      "command": "shape.rectangle",
-      "params": {
-        "x": 71,
-        "y": 60,
-        "width": 20,
-        "height": 20,
-        "fill": "#ff8000"
+        "path": "swatches-12.svg"
       }
     },
     {
       "command": "object.setRegion",
       "params": {
         "ids": [
-          1,
           2,
           3,
           4,
@@ -164,7 +53,8 @@
           9,
           10,
           11,
-          12
+          12,
+          13
         ],
         "type": "fill",
         "angle": 45,
@@ -175,7 +65,6 @@
       "command": "object.setLine",
       "params": {
         "ids": [
-          1,
           2,
           3,
           4,
@@ -186,7 +75,8 @@
           9,
           10,
           11,
-          12
+          12,
+          13
         ],
         "type": "none"
       }
@@ -224,105 +114,14 @@
       "source": {
         "export": "swatches.pes"
       },
-      "evidence": "internal regression: OpenStitch keeps an RGB fill as a custom thread (exact RGB, no chart name); PE-DESIGN snaps it to the Brother Embroidery chart (800, 513, 405, 205, 019, 086, 817, 348, 070, 124, 415, 214 for these twelve). The reference file's thread table is the target for issue #119; checking it here would fail today, so it is listed in the audit instead of being compared",
-      "expected": [
-        {
-          "rgb": "#ff0000",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        },
-        {
-          "rgb": "#00ff00",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        },
-        {
-          "rgb": "#0000ff",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        },
-        {
-          "rgb": "#ffff00",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        },
-        {
-          "rgb": "#00ffff",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        },
-        {
-          "rgb": "#ff00ff",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        },
-        {
-          "rgb": "#808080",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        },
-        {
-          "rgb": "#c89664",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        },
-        {
-          "rgb": "#326496",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        },
-        {
-          "rgb": "#f0c8dc",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        },
-        {
-          "rgb": "#145028",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        },
-        {
-          "rgb": "#ff8000",
-          "name": null,
-          "catalog": null,
-          "brand": null,
-          "chart": null,
-          "kind": 10
-        }
-      ]
+      "evidence": "PE-DESIGN snaps each imported RGB fill to the Brother Embroidery chart (800, 513, 405, 205, 019, 086, 817, 348, 070, 124, 415, 214 for these twelve); OpenStitch's import.svg does the same, and its PES thread table reads back as the same twelve chart threads",
+      "reference": {}
+    }
+  ],
+  "inputs": [
+    {
+      "from": "compat/reference/pes/thread-match-swatches.svg",
+      "name": "swatches-12.svg"
     }
   ]
 }

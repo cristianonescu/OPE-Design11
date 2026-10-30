@@ -1440,6 +1440,13 @@ Line references are relative to `crates/`.
   table now calls 42 "Linen" (PE's RGB for it is still pyembroidery's guess). The dialog's own
   first column (1 BLACK, 2 WHITE, 3 RED, …) is not the PEC index. API:
   `openstitch_core::BROTHER_EMBROIDERY`, `brother_embroidery_code`, `pec_index_of_brother_code`.
+- **Imported colours snap to the chart (2026-10-30, #119):** `import.svg` gives every fill and
+  stroke the nearest Brother chart thread 1–61, as PE-DESIGN's vector import does, and
+  `thread-match-swatches` now imports the very SVG PE-DESIGN imported and compares the whole
+  thread table (RGB, name, code, brand, chart, type) with PE's file: equal, reference tier. The
+  PES 0110 writer takes the codes of all 61 entries from core (its own table had 25) and picks
+  the PEC index among 1–61. Hex colours given to commands (`fill: "#rrggbb"`) stay exact on
+  purpose: PE-DESIGN has no free-RGB colour field to match, and exact RGB is what PES v6 keeps.
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 - **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,

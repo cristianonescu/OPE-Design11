@@ -19,7 +19,10 @@
 
 use crate::io::{ByteReader, ByteWriter};
 use crate::{FormatError, Result, pec};
-use openstitch_core::{PEC_CHART, StitchPattern, Thread, nearest_index};
+use openstitch_core::{
+    BROTHER_EMBROIDERY_BRAND, PEC_CHART, StitchPattern, Thread, brother_embroidery_code,
+    nearest_index, pec_basic_chart,
+};
 use std::borrow::Cow;
 
 #[path = "pes11_template.rs"]
@@ -1022,39 +1025,6 @@ fn write_mfc_unicode(w: &mut ByteWriter, s: &str) {
     }
 }
 
-/// The BROTHER EMBROIDERY catalogue number of the PEC chart colours PE-DESIGN 11.50 writes in its
-/// thread tables, as `(PEC index, catalogue number)`: every pair found in the owner's own
-/// `#PES0110` files (compat/reference, tests/fixtures/pe11 and the round-4 captures, 2026-10-29;
-/// each with brand `EMBROIDERY`, an empty chart name and exactly the PEC chart's RGB). The other
-/// 39 chart colours have no owner sample yet.
-pub const BROTHER_EMBROIDERY: [(usize, &str); 25] = [
-    (1, "007"),
-    (2, "405"),
-    (3, "534"),
-    (4, "070"),
-    (5, "800"),
-    (12, "208"),
-    (13, "205"),
-    (14, "513"),
-    (16, "005"),
-    (20, "900"),
-    (22, "869"),
-    (24, "058"),
-    (25, "086"),
-    (28, "030"),
-    (29, "001"),
-    (32, "019"),
-    (33, "126"),
-    (37, "509"),
-    (48, "807"),
-    (50, "519"),
-    (51, "107"),
-    (55, "614"),
-    (56, "515"),
-    (58, "206"),
-    (61, "027"),
-];
-
 /// Catalogue number, brand and chart name for `t` in a PE-DESIGN 11 thread table. A colour from
 /// OpenStitch's Brother PEC chart (brand `Brother`, its chart number as the catalogue number,
 /// the chart's exact RGB) is written as PE-DESIGN writes that colour, from its BROTHER EMBROIDERY
@@ -1072,8 +1042,10 @@ fn pe_thread_strings(t: &Thread, index: usize) -> (&str, &str, &str) {
         && PEC_CHART[index]
             .as_ref()
             .is_some_and(|c| c.rgb_value() == t.rgb_value());
-    match BROTHER_EMBROIDERY.iter().find(|&&(i, _)| i == index) {
-        Some(&(_, catalog)) if from_pec_chart => (catalog, "EMBROIDERY", ""),
+    // Codes for all 61 entries: openstitch_core::BROTHER_EMBROIDERY (PE's chart, by name,
+    // checked against the 30 pairs in the owner's files).
+    match brother_embroidery_code(index) {
+        Some(catalog) if from_pec_chart => (catalog, BROTHER_EMBROIDERY_BRAND, ""),
         _ => own,
     }
 }
@@ -1083,7 +1055,8 @@ fn pe_thread_strings(t: &Thread, index: usize) -> (&str, &str, &str) {
 fn write_threads(w: &mut ByteWriter, threads: &[Thread]) {
     w.u16le(threads.len() as i64);
     for t in threads {
-        let index = nearest_index(t, &PEC_CHART).unwrap_or(0);
+        // PE-DESIGN matches to its 61-entry chart only (#119).
+        let index = nearest_index(t, pec_basic_chart()).unwrap_or(0);
         let (catalog, brand, chart) = pe_thread_strings(t, index);
         write_mfc_unicode(w, catalog);
         w.append(&[t.red, t.green, t.blue, 0]);
@@ -1348,12 +1321,15 @@ mod tests {
         assert_eq!(pe_thread_strings(&silver, 16), ("005", "EMBROIDERY", ""));
         let red = PEC_CHART[5].clone().expect("red");
         assert_eq!(pe_thread_strings(&red, 5), ("800", "EMBROIDERY", ""));
-        // A custom colour, and a chart colour with no owner sample, keep their own strings.
+        // Every chart entry 1–61 has its code now (6 REDDISH BROWN is 337, from the chart's
+        // names); a custom colour and an entry outside PE's chart keep their own strings.
+        let reddish = PEC_CHART[6].clone().expect("chart colour");
+        assert_eq!(pe_thread_strings(&reddish, 6), ("337", "EMBROIDERY", ""));
         let mut custom = Thread::rgb(0x12_34_56);
         custom.catalog_number = Some("42".into());
         assert_eq!(pe_thread_strings(&custom, 16), ("42", "", ""));
-        let unsampled = PEC_CHART[6].clone().expect("chart colour");
-        assert_eq!(pe_thread_strings(&unsampled, 6), ("6", "Brother", ""));
+        let orange = PEC_CHART[62].clone().expect("62");
+        assert_eq!(pe_thread_strings(&orange, 62), ("62", "Brother", ""));
         // A chart RGB under another brand is not relabelled.
         let mut other = silver.clone();
         other.brand = Some("Madeira".into());

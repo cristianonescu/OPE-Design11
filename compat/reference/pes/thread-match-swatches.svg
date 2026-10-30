@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="100mm" viewBox="0 0 100 100">
+<rect x="5" y="10" width="20" height="20" fill="rgb(255,0,0)" stroke="none"/>
+<rect x="27" y="10" width="20" height="20" fill="rgb(0,255,0)" stroke="none"/>
+<rect x="49" y="10" width="20" height="20" fill="rgb(0,0,255)" stroke="none"/>
+<rect x="71" y="10" width="20" height="20" fill="rgb(255,255,0)" stroke="none"/>
+<rect x="5" y="35" width="20" height="20" fill="rgb(0,255,255)" stroke="none"/>
+<rect x="27" y="35" width="20" height="20" fill="rgb(255,0,255)" stroke="none"/>
+<rect x="49" y="35" width="20" height="20" fill="rgb(128,128,128)" stroke="none"/>
+<rect x="71" y="35" width="20" height="20" fill="rgb(200,150,100)" stroke="none"/>
+<rect x="5" y="60" width="20" height="20" fill="rgb(50,100,150)" stroke="none"/>
+<rect x="27" y="60" width="20" height="20" fill="rgb(240,200,220)" stroke="none"/>
+<rect x="49" y="60" width="20" height="20" fill="rgb(20,80,40)" stroke="none"/>
+<rect x="71" y="60" width="20" height="20" fill="rgb(255,128,0)" stroke="none"/>
+</svg>

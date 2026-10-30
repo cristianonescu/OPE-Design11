@@ -232,10 +232,24 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             ),
             opt("x", "mm", "Left edge (default: centred on the Design Page)"),
             opt("y", "mm", "Top edge (default: centred on the Design Page)"),
+            opt(
+                "exactColors",
+                "bool",
+                "Keep the SVG's own RGB instead of the nearest Brother chart thread (default false: PE-DESIGN's behaviour)",
+            ),
         ],
         |s, p| {
             let (_, data) = read_file(s, p, MAX_SVG_BYTES)?;
-            let shapes = parse_svg(&data).map_err(|e| p.failed(e.to_string()))?;
+            let mut shapes = parse_svg(&data).map_err(|e| p.failed(e.to_string()))?;
+            // PE-DESIGN 11.50 gives every imported fill and stroke the nearest BROTHER
+            // EMBROIDERY chart thread (thread-match-swatches); `exactColors` keeps the RGB.
+            if !p.bool("exactColors", Some(false))? {
+                for shape in &mut shapes {
+                    for t in [&mut shape.fill, &mut shape.stroke].into_iter().flatten() {
+                        *t = openstitch_core::nearest_brother_thread(t);
+                    }
+                }
+            }
             let Some(b) = bounds(&shapes) else {
                 return Err(p.failed("the SVG has no visible filled or stroked paths"));
             };
