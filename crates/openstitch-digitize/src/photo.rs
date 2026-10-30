@@ -2,7 +2,8 @@
 //!
 //! - [`PhotoStyle::Fill`] (after Photo Stitch 1): the image is sampled on a grid of fill
 //!   stitches (row spacing × stitch length) and error-diffused (Floyd–Steinberg) onto the
-//!   thread colours plus the fabric colour. Each thread sews its cells as staggered fill rows;
+//!   thread colours plus the fabric colour. Each thread sews its cells as staggered fill rows,
+//!   the runs visited nearest first so a colour sews in few long paths (see `fill_layer`);
 //!   fabric cells stay unsewn, so tone becomes stitch coverage.
 //! - [`PhotoStyle::Lines`] (after Photo Stitch 2): rows of zigzag lines whose amplitude follows
 //!   the tone (mono: darkness; colour: how much of each thread the dithered image holds
@@ -264,7 +265,28 @@ pub fn auto_levels(greys: &mut [u8]) {
 }
 
 /// Fill rows for thread `t`: serpentine rows, runs of neighbouring cells sewn as one row
-/// with needle points every cell width, staggered by thirds from row to row.
+/// Longest move between two runs of one thread that is sewn as a travel stitch instead of a
+/// jump (and trim), in cell widths.
+pub const JOIN_CELLS: f64 = 2.0;
+/// A turn into the next run leaves out the previous run's last needle point when the stitch
+/// from its second-to-last point stays within this many cell widths.
+pub const TURN_CELLS: f64 = 1.25;
+
+/// One run of neighbouring cells of a thread in a grid row, with its needle points (x in
+/// design units, left to right) and the row's y.
+struct Run {
+    xs: Vec<f64>,
+    y: f64,
+    row: usize,
+}
+
+/// Fill rows for thread `t`. Each run of neighbouring cells in a row is a straight row of
+/// needle points every cell width, staggered by thirds from row to row. The runs are sewn
+/// nearest first, as PE-DESIGN's Photo Stitch 1 sews a colour in few long paths
+/// (round-4 captures: 1–5 jumps a colour): from where the needle is, the closest unsewn run
+/// end within [`JOIN_CELLS`] of a cell width in x and two rows in y is sewn next, entered from
+/// that end, and reached with a travel stitch; when none is that close, the needle jumps to
+/// the first unsewn run in row order.
 fn fill_layer(
     d: &[Option<usize>],
     cols: usize,
@@ -274,10 +296,12 @@ fn fill_layer(
     cw: f64,
     ch: f64,
 ) -> Vec<Stitch> {
-    let mut out = Vec::new();
+    // Runs, grouped by row; each row's runs left to right.
+    let mut by_row: Vec<Vec<usize>> = vec![Vec::new(); rows];
+    let mut runs: Vec<Run> = Vec::new();
     for y in 0..rows {
         let row_y = frame.origin.y + (y as f64 + 0.5) * ch;
-        let mut runs = Vec::new();
+        let phase = (y % 3) as f64 / 3.0;
         let mut x = 0;
         while x < cols {
             if d[y * cols + x] != Some(t) {
@@ -288,32 +312,89 @@ fn fill_layer(
             while x < cols && d[y * cols + x] == Some(t) {
                 x += 1;
             }
-            runs.push((a, x));
-        }
-        if y % 2 == 1 {
-            runs.reverse();
-        }
-        let phase = (y % 3) as f64 / 3.0;
-        for (a, b) in runs {
-            let (x0, x1) = (a as f64 * cw, b as f64 * cw);
-            let mut xs = vec![x0];
+            let (x0, x1) = (a as f64 * cw, x as f64 * cw);
+            let mut xs = vec![frame.origin.x + x0];
             let mut k = (x0 / cw - phase).floor() + 1.0;
             while (k + phase) * cw < x1 {
-                let x = (k + phase) * cw;
-                if x - x0 > cw * 0.25 && x1 - x > cw * 0.25 {
-                    xs.push(x);
+                let px = (k + phase) * cw;
+                if px - x0 > cw * 0.25 && x1 - px > cw * 0.25 {
+                    xs.push(frame.origin.x + px);
                 }
                 k += 1.0;
             }
-            xs.push(x1);
-            if y % 2 == 1 {
-                xs.reverse();
-            }
-            out.push(Stitch::new(frame.origin.x + xs[0], row_y, Command::Jump));
-            for x in xs {
-                out.push(Stitch::new(frame.origin.x + x, row_y, Command::Stitch));
+            xs.push(frame.origin.x + x1);
+            by_row[y].push(runs.len());
+            runs.push(Run {
+                xs,
+                y: row_y,
+                row: y,
+            });
+        }
+    }
+    let mut done = vec![false; runs.len()];
+    let mut next_scan = 0usize;
+    let mut out: Vec<Stitch> = Vec::new();
+    let reach_x = JOIN_CELLS * cw + 1e-6;
+    let mut pen: Option<(f64, usize)> = None;
+    let mut last_len = 0usize;
+    for _ in 0..runs.len() {
+        // The closest unsewn run end near the needle: (distance, run, enter from the right).
+        let mut best: Option<(f64, usize, bool)> = None;
+        if let Some((px, prow)) = pen {
+            let first_row = prow.saturating_sub(2);
+            let near = by_row.iter().enumerate().take(prow + 3).skip(first_row);
+            for (row, in_row) in near {
+                let dy = (row as f64 - prow as f64).abs() * ch;
+                for &r in in_row {
+                    if done[r] {
+                        continue;
+                    }
+                    let (l, rgt) = (runs[r].xs[0], runs[r].xs[runs[r].xs.len() - 1]);
+                    for (end, from_right) in [(l, false), (rgt, true)] {
+                        let dx = (end - px).abs();
+                        if dx > reach_x {
+                            continue;
+                        }
+                        let dist = dx.hypot(dy);
+                        if best.is_none_or(|b| dist < b.0 - 1e-9) {
+                            best = Some((dist, r, from_right));
+                        }
+                    }
+                }
             }
         }
+        let (r, from_right, travel) = match best {
+            Some((_, r, from_right)) => (r, from_right, true),
+            None => {
+                while done[next_scan] {
+                    next_scan += 1;
+                }
+                // Serpentine as before: odd rows enter from the right.
+                (next_scan, runs[next_scan].row % 2 == 1, false)
+            }
+        };
+        done[r] = true;
+        let run = &runs[r];
+        let mut xs = run.xs.clone();
+        if from_right {
+            xs.reverse();
+        }
+        if !travel {
+            out.push(Stitch::new(xs[0], run.y, Command::Jump));
+        } else if last_len >= 2
+            && let Some(prev) = out.len().checked_sub(2).map(|i| out[i])
+            && (prev.x - xs[0]).hypot(prev.y - run.y) <= TURN_CELLS * cw + 1e-6
+        {
+            // A short hop to the next row: the previous run's last needle point is left out,
+            // so the stitch turns from its second-to-last point straight into this run, as a
+            // fill row turns, instead of a sub-millimetre travel stitch.
+            out.pop();
+        }
+        for &x in &xs {
+            out.push(Stitch::new(x, run.y, Command::Stitch));
+        }
+        last_len = xs.len();
+        pen = Some((xs[xs.len() - 1], run.row));
     }
     out
 }

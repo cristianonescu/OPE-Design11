@@ -296,7 +296,11 @@ Verified Compatible).
   error-diffused onto the threads plus the fabric colour; fabric cells stay unsewn, so tone
   becomes coverage, unless Sew Page Color (on by default in Color mode, as in PE-DESIGN; Mono has
   none) makes the fabric colour a thread of its own that sews first; defaults Run Pitch 3.0 mm, 0.25 mm rows, 10
-  colours; rows are staggered by thirds. *Lines* (after Photo Stitch 2): zigzag rows
+  colours; rows are staggered by thirds. A thread's runs are sewn nearest first: from the
+  needle, the closest unsewn run end within 2 cells across and 2 rows down is entered with a
+  travel stitch (a hop to the next row leaves out the last needle point so the row turns, as
+  a fill row does), and only a run with nothing that close is jumped to, so a colour sews in
+  few long paths as PE-DESIGN's does. *Lines* (after Photo Stitch 2): zigzag rows
   whose swing follows darkness (mono) or the local share of each thread (colour); light areas
   break the line. Lighter threads sew first. Mono works on integer Rec. 601 luminance
   `(30 R + 59 G + 11 B) / 100` and stretches contrast first over the full range, darkest grey to
@@ -680,7 +684,11 @@ openstitch_app::editor (lib, no egui, unit-tested)
   chrome; screenshots ignore the saved window preferences). `python3 tools/screenshots.py`
   rebuilds the editor screenshots from examples/ in a temporary folder with a stand-in home
   folder, so no local path shows, and downscales and quantises them. The
-  images in `docs/images/rust-editor-*.png` are made this way on macOS (Metal).
+  images in `docs/images/rust-editor-*.png` are made this way on macOS (Metal). The stitch plots
+  in `docs/images/engine-*.png` need no window: `python3 tools/engine_image.py
+  examples/NAME.json docs/images/engine-NAME.png` runs the example with `stitchtool exec`,
+  exports PES and draws the stitches in their thread colours with the needle points as dots
+  (engine-programmable-fill.png regenerated this way, 2026-10-30).
 
 ## Decisions
 

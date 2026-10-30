@@ -2633,7 +2633,7 @@ fn codec_commands() -> Vec<CommandSpec> {
                 opt(
                     "pesVersion",
                     "1t|1|6|6t|11",
-                    "PES only: version 1 or 6, `t` = no objects (default 6: RGB threads, names, stitch group; 1t = machine only, smallest); 11 = PE-DESIGN 11 `#PES0110` with the shapes as editable objects (fill and satin regions, running, zigzag, triple, E and V lines; text and stitch patterns are refused)",
+                    "PES only: version 1 or 6, `t` = no objects (default 6: RGB threads, names, stitch group; 1t = machine only, smallest); 11 = PE-DESIGN 11 `#PES0110` with shapes (fill and satin regions, running, zigzag, triple, E and V lines), Lato Bold texts and stitch patterns as editable objects; what it cannot hold is refused with the object named",
                 ),
                 opt(
                     "split",

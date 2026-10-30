@@ -3,7 +3,7 @@
   "id": "line-motif-zigzag-3pt",
   "area": "stitches",
   "title": "Motif line with the owner's psc-motif-zigzag-3pt.pmf",
-  "description": "A 39.5 mm straight line sewn as a motif line with an owner-made 3-point motif (base line with its middle point dragged to (512,768)) at 5 x 5 mm: 8 motifs stretched to 4.94 mm fill the line from end to end, each point 1.25 mm off the line (256 of the 1024-unit cell at 5 mm).",
+  "description": "A 39.5 mm straight line sewn as a motif line with an owner-made 3-point motif (base line with its middle point dragged to (512,768)) at 5 x 5 mm: 8 motifs stretched to 4.94 mm fill the line from end to end, each point 1.25 mm off the line (256 of the 1024-unit cell at 5 mm). The line ties in and locks like PE-DESIGN's other lines.",
   "covers": {
     "audit": [],
     "featureMatrix": [
@@ -95,6 +95,21 @@
     }
   ],
   "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "line.pes"
+      },
+      "evidence": "PE-DESIGN 11.50 sews 23 needle points: the satin-like tie-in (three 0.3 mm steps out along the 2.8 mm first stitch and back in two), the 8 motifs' 16 points and a one-step lock",
+      "reference": {
+        "tolerance": {
+          "percent": 3
+        }
+      }
+    },
     {
       "id": "height",
       "measure": {

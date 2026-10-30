@@ -7,6 +7,7 @@ use crate::params::{CommandError, CommandResult, Params};
 use crate::sandbox::Access;
 use crate::session::EngineState;
 use openstitch_core::StitchPattern;
+use openstitch_design::fmath::Det;
 use openstitch_design::machine::{self, user_hoop_key};
 use openstitch_design::{
     BROTHER_HOOPS, Design, MachineSettings, MachineType, SewingArea, Transform, UserHoop, v2,
@@ -226,10 +227,10 @@ pub fn measure(x0: f64, y0: f64, x1: f64, y1: f64) -> Value {
     let angle = if dx == 0.0 && dy == 0.0 {
         0.0
     } else {
-        (-dy).atan2(dx).to_degrees()
+        (-dy).datan2(dx).to_degrees()
     };
     json!({
-        "distanceMM": round(dx.hypot(dy)),
+        "distanceMM": round(dx.dhypot(dy)),
         "dxMM": round(dx),
         "dyMM": round(dy),
         "angleDegrees": round(angle),

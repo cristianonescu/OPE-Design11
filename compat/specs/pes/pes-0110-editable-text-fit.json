@@ -23,6 +23,10 @@
     {
       "kind": "measured",
       "note": "docs/FILE_FORMATS.md, CEmbAText: the 14 compat/reference/text/text-fit-* files, one Fit Text to Outline option per file; the writer rewrites them byte-identical outside the documented differences (pes11.rs)"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 re-save of a.pes (MANIFEST pes-0110-editable-text-fit, 2026-10-29): opens with no warning, the text still fitted to the circle (re-fits when the circle is reshaped), settings as written, 860/727/133 stitches as its own text-fit-default; the re-save rewrites only the circle pattern block and the fitted text box (757..1242 x 573..757, as text-fit-default; OpenStitch 805..1218 x 373..759)"
     }
   ],
   "script": [

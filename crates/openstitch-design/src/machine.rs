@@ -5,6 +5,7 @@
 //! given machine model accepts is not published in one place, so every hoop is offered for both
 //! machine types (PE-DESIGN warns the user not to pick a hoop the machine cannot use).
 
+use crate::fmath::Det;
 use openstitch_core::{Command, StitchPattern};
 use serde::{Deserialize, Serialize};
 
@@ -357,7 +358,7 @@ pub fn estimate(pattern: &StitchPattern, settings: &MachineSettings) -> Estimate
         match s.command {
             Command::Stitch => {
                 stitches += 1;
-                let run = last.map_or(0.0, |(x, y)| (s.x - x).hypot(s.y - y) / 10.0);
+                let run = last.map_or(0.0, |(x, y)| (s.x - x).dhypot(s.y - y) / 10.0);
                 *needle.last_mut().expect("non-empty") += run + PENETRATION_ALLOWANCE_MM;
             }
             Command::Jump => jumps += 1,

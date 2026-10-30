@@ -27,6 +27,7 @@
 //! Lengths are 0.1 mm; output is deterministic.
 
 use crate::boolean::{self, BoolOp};
+use crate::fmath::Det;
 use crate::geometry::{Contour, Vec2, contains};
 use crate::paths::Walker;
 
@@ -343,7 +344,7 @@ fn corner_turn(a: &[Vec2], b: &[Vec2], ca: &[f64], cb: &[f64], pitch: f64) -> Ve
 
 /// Arc lengths of the corners of the closed polyline `poly` (start and end excluded).
 fn corners(poly: &[Vec2]) -> Vec<f64> {
-    let limit = CORNER_DEGREES.to_radians().cos();
+    let limit = CORNER_DEGREES.to_radians().dcos();
     let mut out = Vec::new();
     let mut s = 0.0;
     for i in 1..poly.len().saturating_sub(1) {
@@ -394,7 +395,7 @@ fn turn_points(len: f64, pitch: f64) -> usize {
 fn samples(poly: &[Vec2], pitch: f64, count: usize) -> Vec<(f64, Vec2)> {
     let w = Walker::new(poly);
     let len = w.length();
-    let limit = CORNER_DEGREES.to_radians().cos();
+    let limit = CORNER_DEGREES.to_radians().dcos();
     let n = poly.len();
     let corner = |i: usize| {
         // The turn at vertex i (the closing vertex wraps to the start).

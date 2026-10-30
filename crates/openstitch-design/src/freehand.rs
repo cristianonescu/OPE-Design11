@@ -3,6 +3,7 @@
 //! between smooth vertices become cubic Béziers (Catmull-Rom tangents); sharp turns stay
 //! corners. Own algorithm. Lengths are 0.1 mm.
 
+use crate::fmath::Det;
 use crate::geometry::{Bezier, Contour, Vec2};
 
 /// Most trail points one stroke may have.
@@ -113,7 +114,7 @@ pub fn fit(points: &[Vec2], closed: bool, tolerance: f64, smooth: bool) -> Optio
             usize::try_from(i).ok().and_then(|i| v.get(i).copied())
         }
     };
-    let cos_corner = CORNER_DEGREES.to_radians().cos();
+    let cos_corner = CORNER_DEGREES.to_radians().dcos();
     // Tangent (scaled by the neighbour chord) at a smooth vertex; None at corners and ends.
     let tangent = |i: usize| -> Option<Vec2> {
         let (p, q, r) = (at(i as isize - 1)?, at(i as isize)?, at(i as isize + 1)?);

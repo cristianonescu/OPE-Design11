@@ -1,10 +1,12 @@
 //! The design's editable objects as PE-DESIGN 11 `#PES0110` objects (`openstitch_formats::pes11`),
 //! for `design.export` with `pesVersion` 11: one `CEmbLine` per shape, one `CEmbNText` per text
-//! (Lato Bold), a thread table in sewing order, the design's groups and page size. What the
+//! (Lato Bold), one `CEmbOne` per stitch pattern, a thread table in sewing order, the design's
+//! groups and page size. What the
 //! object list cannot hold yet fails with the object named, so a user can fall back to version 6
 //! (stitches) knowingly.
 
-use openstitch_core::Thread;
+use openstitch_core::{StitchPattern, Thread};
+use openstitch_design::fmath::Det;
 use openstitch_design::text::{
     self, Spread, TextAlign, TextDirection, TextMetrics, TextSpec, VAlign,
 };
@@ -14,7 +16,7 @@ use openstitch_design::{
 };
 use openstitch_formats::pes11::{
     Envelope, Fit, KIND_CURVE_AFTER, KIND_CURVE_BEFORE, Letter, Objects, PAGE_ORIGIN,
-    RegionSewType, Shape, Text, Vertex,
+    RegionSewType, Shape, StitchGroup, Text, Vertex,
 };
 
 /// The `#PES0110` objects of `design`'s visible objects, in design order.
@@ -40,6 +42,9 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
         if object.kind == ObjectKind::Text {
             out.texts
                 .push(text_object(object, index, &positions, &mut out.threads)?);
+        } else if object.kind == ObjectKind::Stitches {
+            out.stitch_groups
+                .push(stitch_group(object, index, &mut out.threads)?);
         } else {
             out.shapes.push(shape(object, &mut out.threads)?);
         }
@@ -50,8 +55,8 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
             }
         }
     }
-    if out.shapes.is_empty() && out.texts.is_empty() {
-        return Err("the design has no visible shapes or texts".into());
+    if out.shapes.is_empty() && out.texts.is_empty() && out.stitch_groups.is_empty() {
+        return Err("the design has no visible objects".into());
     }
     out.groups = groups.into_iter().map(|(_, m)| m).collect();
     Ok(out)
@@ -63,6 +68,9 @@ fn mm(units: f64) -> u16 {
 
 /// Index of `thread` in the table, appended when new (compared by colour and catalogue number).
 fn thread_index(table: &mut Vec<Thread>, thread: &Thread) -> u16 {
+    // Written as PE-DESIGN writes the colour (BROTHER EMBROIDERY numbers for Brother chart
+    // colours).
+    let thread = &openstitch_formats::pes11::as_pe_writes(thread);
     let same = |t: &Thread| {
         t.rgb_value() == thread.rgb_value() && t.catalog_number == thread.catalog_number
     };
@@ -75,16 +83,45 @@ fn thread_index(table: &mut Vec<Thread>, thread: &Thread) -> u16 {
     }
 }
 
+/// A stitch pattern as a `CEmbOne`: its needle points in runs, each colour block's thread added
+/// to the table in sewing order (compat pes-0110-stitches, PE-DESIGN's re-saves of version 6
+/// files).
+fn stitch_group(
+    object: &DesignObject,
+    position: u16,
+    table: &mut Vec<Thread>,
+) -> Result<StitchGroup, String> {
+    let id = object.id;
+    let block = object
+        .stitch_block
+        .as_ref()
+        .ok_or_else(|| format!("object {id} is a stitch pattern without stitches"))?;
+    let pattern = StitchPattern {
+        stitches: block.stitches.clone(),
+        threads: block.threads.clone(),
+        ..StitchPattern::default()
+    };
+    // A block past the last thread sews in the last one, as the compiler does; no thread is
+    // black.
+    let mut indices: Vec<u16> = block
+        .threads
+        .iter()
+        .map(|t| thread_index(table, t))
+        .collect();
+    if indices.is_empty() {
+        indices.push(thread_index(table, &Thread::rgb(0)));
+    }
+    let thread = |k: usize| indices.get(k).or(indices.last()).copied().unwrap_or(0);
+    StitchGroup::from_pattern(&pattern, position, thread)
+        .ok_or_else(|| format!("object {id} is a stitch pattern without stitches"))
+}
+
 fn shape(object: &DesignObject, table: &mut Vec<Thread>) -> Result<Shape, String> {
     let id = object.id;
     match object.kind {
         ObjectKind::Shape => {}
         ObjectKind::Text => unreachable!("texts go through text_object"),
-        ObjectKind::Stitches => {
-            return Err(format!(
-                "object {id} is a stitch pattern: PES 0110 holds editable shapes only (use version 6)"
-            ));
-        }
+        ObjectKind::Stitches => unreachable!("stitch patterns go through stitch_group"),
     }
     let [contour] = object.contours.as_slice() else {
         return Err(format!(
@@ -394,7 +431,7 @@ fn bent_box(preset: u8, r: f64, cx: f64, baseline: f64, size: f64) -> [f64; 4] {
             ([r - (ascent - size), r + size], baseline - size - r, 1.0)
         };
         for rho in radii {
-            let (x, y) = (cx + rho * a.sin(), centre_y + sign * rho * a.cos());
+            let (x, y) = (cx + rho * a.dsin(), centre_y + sign * rho * a.dcos());
             x0 = x0.min(x);
             x1 = x1.max(x);
             y0 = y0.min(y);
@@ -590,6 +627,42 @@ mod tests {
                 .all(|v| v.kind == 0 && v.handles == [(0.0, 0.0); 2])
         );
         assert_eq!((s.vertices[0].x, s.vertices[0].y), (600.0, 600.0));
+    }
+
+    #[test]
+    fn a_stitch_pattern_becomes_a_stitch_group_with_its_threads() {
+        use openstitch_core::{Command, Stitch};
+        use openstitch_design::StitchBlock;
+        let mut design = Design::new("t", openstitch_design::DesignPage::default());
+        design.add(DesignObject::shape(
+            vec![Contour::rectangle(0.0, 0.0, 50.0, 50.0)],
+            Some(RegionSewing::new(RegionType::Fill, red())),
+            None,
+        ));
+        let blue = Thread::rgb(0x00_00_FF);
+        let stitches = [
+            (100.0, 100.0, Command::Stitch),
+            (200.0, 100.0, Command::Stitch),
+            (200.0, 150.0, Command::ColorChange),
+            (250.0, 150.0, Command::Stitch),
+        ]
+        .map(|(x, y, c)| Stitch::new(x, y, c));
+        design.add(DesignObject::stitches(StitchBlock {
+            stitches: stitches.to_vec(),
+            threads: vec![red(), blue.clone()],
+        }));
+        let o = objects(&design).expect("objects");
+        assert_eq!(o.shapes.len(), 1);
+        let [g] = o.stitch_groups.as_slice() else {
+            panic!("one stitch group: {:?}", o.stitch_groups);
+        };
+        assert_eq!(g.position, 1);
+        // Red is the shape's thread already; blue is appended.
+        assert_eq!(o.threads.len(), 2);
+        assert_eq!(o.threads[1].rgb_value(), blue.rgb_value());
+        assert_eq!(g.color_log.first().map(|&(_, c)| c), Some(0));
+        assert_eq!(g.color_log.last().map(|&(_, c)| c), Some(1));
+        assert_eq!(g.bounds, [600, 600, 750, 650]);
     }
 
     #[test]

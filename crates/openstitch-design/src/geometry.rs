@@ -1,3 +1,4 @@
+use crate::fmath::Det;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, Mul, RangeInclusive, Sub};
 
@@ -35,7 +36,7 @@ impl Mul<f64> for Vec2 {
 
 impl Vec2 {
     pub fn length(self) -> f64 {
-        self.x.hypot(self.y)
+        self.x.dhypot(self.y)
     }
 
     pub fn distance(self, o: Vec2) -> f64 {
@@ -44,7 +45,7 @@ impl Vec2 {
 
     /// Rotation by `radians` about the origin.
     pub fn rotated(self, radians: f64) -> Vec2 {
-        let (s, c) = radians.sin_cos();
+        let (s, c) = radians.dsin_cos();
         v2(self.x * c - self.y * s, self.x * s + self.y * c)
     }
 
@@ -95,7 +96,7 @@ impl Transform {
 
     /// Clockwise on screen (y down) for positive degrees.
     pub fn rotation(degrees: f64, about: Vec2) -> Self {
-        let (sn, cs) = degrees.to_radians().sin_cos();
+        let (sn, cs) = degrees.to_radians().dsin_cos();
         Transform {
             a: cs,
             b: sn,
@@ -183,7 +184,7 @@ impl Contour {
         let points = (0..n)
             .map(|i| {
                 let t = i as f64 / n as f64 * std::f64::consts::TAU;
-                v2(center.x + rx * t.cos(), center.y + ry * t.sin())
+                v2(center.x + rx * t.dcos(), center.y + ry * t.dsin())
             })
             .collect();
         Contour::new(points, true)

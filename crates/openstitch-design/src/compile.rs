@@ -7,6 +7,7 @@ use crate::model::{
 };
 use crate::patterns::{self, Pattern, PatternKind};
 use crate::region;
+use crate::regions;
 use crate::route;
 use crate::stamp;
 use openstitch_core::{Command, Stitch, StitchPattern, Thread, round_coordinate};
@@ -372,7 +373,14 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
                 ) {
                     runs
                 } else {
-                    route::route_region(runs, &closed, region.entry, region.exit, 25.0)
+                    // Travel from the start point and to the end point: PE-DESIGN's motif fill
+                    // walks it in steps of at most 2 mm (motif-fill-2pt).
+                    let pitch = if region.kind == RegionType::MotifFill {
+                        regions::MOTIF_FILL_TRAVEL_PITCH
+                    } else {
+                        25.0
+                    };
+                    route::route_region(runs, &closed, region.entry, region.exit, pitch)
                 };
             }
             // PE-DESIGN's fill under sewing runs straight on into the top stitching.
@@ -387,8 +395,12 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
             {
                 layers = vec![region::join_layers(layers, &closed, holes, path)];
             }
-            // Satin and fill tie in and lock as PE-DESIGN 11 sews them.
-            if matches!(region.kind, RegionType::Satin | RegionType::Fill) {
+            // Satin, fill and motif fill tie in and lock as PE-DESIGN 11 sews them
+            // (motif-fill-2pt: one 0.3 mm step out and back at the start and at the end).
+            if matches!(
+                region.kind,
+                RegionType::Satin | RegionType::Fill | RegionType::MotifFill
+            ) {
                 region::tie_and_lock(&mut layers);
             }
             for runs in layers {
@@ -572,11 +584,12 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
             run
         })
         .collect();
-    // PE-DESIGN ties in and locks these lines like a satin (line-*-default.pes); V, stem,
+    // PE-DESIGN ties in and locks these lines like a satin (line-*-default.pes; motif lines:
+    // line-motif-zigzag-3pt.pes, three steps out after its 2.8 mm first stitch); V, stem,
     // candlewicking and chain tie in with three steps out instead of one, but not where a
     // moved entry point starts a stem or candlewick with running stitch
     // (line-*-startend-*.pes; a chain's lead keeps the long one).
-    if !matches!(line.kind, LineType::Motif | LineType::Cutting) {
+    if line.kind != LineType::Cutting {
         region::tie_and_lock(std::slice::from_mut(&mut runs));
         if matches!(
             line.kind,

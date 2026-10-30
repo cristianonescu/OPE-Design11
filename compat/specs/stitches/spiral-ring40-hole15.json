@@ -3,7 +3,7 @@
   "id": "spiral-ring40-hole15",
   "area": "stitches",
   "title": "Spiral Stitch: 40 mm ring with a 15 mm hole, defaults",
-  "description": "PE-DESIGN 11.50's Spiral Stitch: one path from the start point on the outline, the outline offset a row (1 / density) inwards per turn to the middle (turns 0.5 mm apart on both axes of the rectangle), 4·2^n needle points a smooth turn, corners kept on a rectangle. With a hole PE-DESIGN sews the outline's spiral inwards to the middle of the band, about 30 short pieces there with a tie-in, lock and trim each (64 trims, a dark band of overlapping passes), then the hole's spiral; OpenStitch joins the two spirals with one travel, so the stitch count (1473 against 1952) is not compared: bounds and stitch lengths are.",
+  "description": "PE-DESIGN 11.50's Spiral Stitch: one path from the start point on the outline, the outline offset a row (1 / density) inwards per turn to the middle (turns 0.5 mm apart on both axes of the rectangle), 4·2^n needle points a smooth turn, corners kept on a rectangle. With a hole PE-DESIGN sews the outline's spiral inwards to the middle of the band, about 30 short pieces there with a tie-in, lock and trim each (64 trims, a dark band of overlapping passes), then the hole's spiral; OpenStitch joins the two spirals with one travel, so the stitch count (1473 against 1952) is not compared: bounds and stitch lengths are. Measured 2026-10-30: the band pieces are 31 wedges about 5.5° wide every 11.25° at r 13.4–14.0 mm (397 needle points, each with a tie-in, a lock and a trim); OpenStitch does not copy them.",
   "covers": {
     "audit": [],
     "featureMatrix": [

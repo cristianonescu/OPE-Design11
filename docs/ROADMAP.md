@@ -36,7 +36,9 @@ for macOS, Windows and Linux. CI builds and tests all three.
   - Satin and fill options: auto direction, underlays, gradation, feather, split, travel.
   - Region types: programmable fill, motif fill, piping, cross stitch, concentric circle,
     radial, spiral, flexible spiral, stippling, net fill, zigzag net fill, decorative fill;
-    concentric circle and spiral calibrated to PE-DESIGN 11.50 (#138, 14 references).
+    concentric circle and spiral calibrated to PE-DESIGN 11.50 (#138, 14 references;
+    open: the spiral's inner-turn needle counts and the concentric chord splits, rule not found;
+    seam, winding and the rectangle spiral's return run wait for round-5 captures).
 - **Lettering:** text objects with Lato Bold and Pacifico (SIL OFL), text on a path, user
   TrueType/OpenType fonts (CJK through any font with the glyphs), shaping of right-to-left and
   complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits
@@ -92,6 +94,11 @@ harness. The details per item are in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDI
 ## Still to do
 
 Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDIT.md):
+
+Done 2026-10-30: stitch generation is bit-identical on Windows, macOS and Linux (transcendental
+math through the `libm` crate instead of each platform's C library); the arched Text Transform
+spec, deferred at alpha.6 because Linux measured it 0.2 mm lower, has its PE-DESIGN reference
+back.
 
 1. **Fill:** Round 4 (2026-10-29) confirmed PE-DESIGN has no random tatami stagger
    (Frequency and two Stitch Type buttons only) and a 0.1 lines/mm density floor. PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
@@ -174,13 +181,13 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
    editable (compat `pes-0110-editable-shapes`, the owner's check); turn the `#PES0110` shapes
    the reader parses into editable OpenStitch objects; write text (`CEmbNText`/`CTTFLetter`), the
    other region and line types, hole-sewing pairs and several outlines per object; the hoop
-6. **PES:** editable shapes and Lato Bold text are written (`pesVersion` 11 writes `CEmbLine`
-   and `CEmbNText` objects in PE-DESIGN 11.50's layout, 2026-10-29; issue #120; PE-DESIGN opens
+6. **PES:** editable shapes, Lato Bold text and stitch patterns are written (`pesVersion` 11
+   writes `CEmbLine`, `CEmbNText` and `CEmbOne` objects in PE-DESIGN 11.50's layout, 2026-10-29; issue #120; PE-DESIGN opens
    the shapes and the text editable, references `pes-0110-editable-shapes`,
    `pes-0110-editable-text`). Left: PE-DESIGN's confirmation of the Hoop Size page (probe p3);
    the design's machine type and hoop in the header; BROTHER EMBROIDERY numbers for the chart colours with no owner sample; turn the `#PES0110` shapes and texts the reader
-   parses into editable OpenStitch objects; PE-DESIGN opening text fitted to an outline
-   (`pes-0110-editable-text-fit`); right-aligned and vertical text; Manual Punch blocks and the appliqué's objects (owner files
+   parses into editable OpenStitch objects; the fitted text's box as PE-DESIGN computes it
+   (`pes-0110-editable-text-fit`: PE-DESIGN opens the fit editable and recomputes the box); PE-DESIGN opening a written stitch group (`pes-0110-stitches`); right-aligned and vertical text; Manual Punch blocks and the appliqué's objects (owner files
    requested); the other region and line types, hole-sewing pairs and several outlines per object; the hoop
    fields; PES v7–v10 (from the owner's own files only, as
    [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
@@ -223,9 +230,12 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
     bounds 0.7–6.5 mm, Auto-direction satin without under sewing, fill across strokes up to
     13 mm and at 45° beyond, automatic colour count, PE's colour order (R + G + B, highest
     first, also in Cross Stitch), Sew Page Color in Color mode only (Auto Punch within 3 % of
-    PE's stitches on all four captures). Next: run-to-run travel in Cross Stitch; PE's meander
-    path for Photo Stitch 1 (mono +39 % stitches from short runs) and the per-colour screen
-    angles of Photo Stitch 2, both #129.
+    PE's stitches on all four captures). Photo Stitch 1's runs are joined nearest first since
+    2026-10-30 (mono +11 % stitches, was +39 %; trims 99 and 249, were 426 and 1158). Next:
+    run-to-run travel in Cross Stitch; PE's contour-following meanders for Photo Stitch 1 and
+    the per-colour screen angles of Photo Stitch 2 (#129, held for the owner's patent
+    decision; harness `tools/screencmp.py` and design note
+    docs/research/photo-stitch-2-halftone.md done 2026-10-30).
 
 ## Beyond PE-DESIGN
 
@@ -297,8 +307,9 @@ with text set in it. Each lands as its own PR with the fixtures' provenance in a
 bundled patterns, motifs and fonts are never read. Done: import of `.pas`/`.pmf`/`.plf` text
 sources in the documented `@DIRECTIVE` layout, checked against six owner-made Programmable
 Stitch Creator files, and programmable fill, motif fill and motif line tiled as PE-DESIGN 11.50
-sews them (2026-10-29: four reference specs). Next: the motif fill's travel between rows and
-the motif line's tie stitches; a decorative-fill reference for free `.plf` lines. Waiting for
+sews them (2026-10-29: four reference specs); the motif fill's travel and ties and the motif
+line's tie-in and lock as PE-DESIGN (2026-10-30: 130 and 23 needle points as PE). Next: a decorative-fill
+reference for free `.plf` lines. Waiting for
 the owner-made samples: PE-DESIGN's own PMV files and a Font Creator font of one and two
 owner-drawn glyphs with text set in it (pe-refs-4 could not reach Font Creator and Stitch Design
 Factory). Each lands as its own PR with the fixtures' provenance in a MANIFEST.

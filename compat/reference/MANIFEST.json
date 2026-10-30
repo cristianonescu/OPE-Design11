@@ -422,6 +422,30 @@
       "notes": "23467 bytes, header #PES0110. The object section is byte-identical to a.pes except the CEmbLine body's pattern block (body bytes 386-4360), where PE-DESIGN wrote its own default pattern over OpenStitch's placeholder; header, thread table, geometry and trailer unchanged. PEC section re-sewn by PE-DESIGN: 462 records against a.pes's 419, 465 stitches in the status bar."
     },
     {
+      "file": "pes/pes-0110-editable-text-fit.pes",
+      "spec": "pes-0110-editable-text-fit",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Made by the pe-refs-4 session (black-box GUI use only) for PR #169 (round4/log.txt). Source: the spec's export target/compat/work/pes-0110-editable-text-fit/a.pes from PR #169 (commit 532cb2d; copy kept as D:/_sandboxes/PE-reference-notes/round4/pr169/openstitch-a.pes, SHA-256 b8b3e3fb1e645d4b0ad425d2277625596d05063b26023e48926c5783116c4f0c): a 60 mm circle (Running 2.0, red) and ABCDE in Lato Bold 8, Fill red, fitted to it at the Fit Text to Outline defaults. App menu > Open: no warning, no Hoop Settings tab; status bar 'Total : 60,00 x 68,30 mm, Stitches = 860'. Text and circle select as one unit; Fit Text offers Fit Text to Outline and Release Text from Outline; the dialog shows the settings as written (horizontal centred, vertical above, along, other side unticked). Stretching the circle 10 mm re-fitted ABCDE along the ellipse, re-centred (undone); appending F re-fitted it centred (not saved). Text ABCDE, Lato 8,0, Fill red, line Not Sewn, 40,80 x 14,00 mm, 727 stitches; circle 60,00 x 60,00 mm, Running 2,0, 133 stitches: all three as compat/reference/text/text-fit-default.pes (pair 860, text 727, circle 133). Saved unchanged: Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110).",
+      "sha256": "8117403412d67512b9e4fd2727f16c0a0820e03b77c63b4ddf207043796f3a5d",
+      "notes": "9042 bytes, header #PES0110. The PES section keeps its 6033-byte length; 3022 bytes differ from the input: 3010 in the circle's pattern block (body 386-4360, where PE-DESIGN writes its own default pattern over OpenStitch's placeholder, as for every shape) and 12 in the fitted text's bounds and extent (CEmbAText body +0..+16): PE-DESIGN writes 757..1242 x 573..757 (0.1 mm + 500), the same as its own text-fit-default.pes, where OpenStitch wrote 805..1218 x 373..759 from its layout. Everything else in the object section (letters, attributes, the 122-byte fit tail with the outline's archive number, the circle's attributes and outline, the sewing-order list) is unchanged. PEC regenerated."
+    },
+    {
+      "file": "pes/pes-0110-editable-text-transform.pes",
+      "spec": "pes-0110-editable-text-transform",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Made by the pe-refs-4 session (black-box GUI use only) for PR #164 (round4/log.txt). Source: the spec's export target/compat/work/pes-0110-editable-text-transform/a.pes from PR #164 (commit d4a9898; copy kept as D:/_sandboxes/PE-reference-notes/round4/pr164/openstitch-a.pes, SHA-256 c4d9d326d4451e1357ae7b6d2cb844c7a9923e6e95f4a1aced5245ab9840da1b): HHHHHHH in Lato Bold, size 10, centred on (50,50) mm, Fill red without under sewing, Text Transform preset 1. App menu > Open: no warning, no Hoop Settings tab; status bar 'Total : 79,20 x 26,50 mm, Stitches = 1307'; a plain click selects the text: HHHHHHH, Transform ticked, preset 1 (Arch 1), centred, Lato 10,0, Fill red, line Not Sewn. Clicking preset 2 then preset 1 (PE-DESIGN's default level) gives the same 79,20 x 26,50 mm and 1307 stitches, so the stored level is PE-DESIGN's default. Appending A re-lays the text on the arc (not saved). Saved unchanged: Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110).",
+      "sha256": "b8268bc753232fa305d208195661254f30604e86fcbfe6c615c6e0a6b2879918",
+      "notes": "5649 bytes, header #PES0110. PES section identical to the input except the 8 bytes of the text's bounds and extent (0xCC-0xDA): PE-DESIGN writes 552..1441 x 841..1170 (0.1 mm + 500) from its own layout. PEC regenerated (1313 records against 1707). PE-DESIGN's own text-transform-1.pes: 79,30 x 26,10 mm, 1307 stitches; both store a 30 degree strength; radius 39.613 mm (OpenStitch) against 40.802 (PE-DESIGN)."
+    },
+    {
       "file": "pes/pes-0110-editable-text.pes",
       "spec": "pes-0110-editable-text",
       "reference": "pe-design",

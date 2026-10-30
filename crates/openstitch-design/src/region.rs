@@ -4,6 +4,7 @@
 //! unchanged. Lengths are 0.1 mm.
 
 use crate::direction;
+use crate::fmath::Det;
 use crate::generate::{self, RegionParams, RowSpan, Run, Stagger, subdivide};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, subtract, v2};
 use crate::model::{
@@ -1189,7 +1190,7 @@ fn sections_in_order(
             .min_by(|&a, &b| {
                 let d = |i: usize| {
                     let (y, x) = middle(&all[i]);
-                    (y - e.y).hypot(x - e.x)
+                    (y - e.y).dhypot(x - e.x)
                 };
                 d(a).total_cmp(&d(b))
             })
@@ -1764,7 +1765,7 @@ fn fan_corners(mut rungs: Vec<[Vec2; 2]>, outline: &Contour) -> Vec<[Vec2; 2]> {
     let corner = |k: usize| {
         let (a, v, b) = (pts[(k + n - 1) % n], pts[k], pts[(k + 1) % n]);
         let (din, dout) = (crate::paths::unit(v - a), crate::paths::unit(b - v));
-        let turn = crate::paths::dot(din, dout).clamp(-1.0, 1.0).acos();
+        let turn = crate::paths::dot(din, dout).clamp(-1.0, 1.0).dacos();
         let convex = (crate::paths::cross(din, dout) > 0.0) == ccw;
         (a, v, b, din, dout, turn, convex)
     };
@@ -1787,7 +1788,7 @@ fn fan_corners(mut rungs: Vec<[Vec2; 2]>, outline: &Contour) -> Vec<[Vec2; 2]> {
         }
         let zone = 3.0 * width * turn / std::f64::consts::FRAC_PI_2;
         let (nin, nout) = (inward(din), inward(dout));
-        let (ain, aout) = (nin.y.atan2(nin.x), nout.y.atan2(nout.x));
+        let (ain, aout) = (nin.y.datan2(nin.x), nout.y.datan2(nout.x));
         let mut sweep = aout - ain;
         while sweep > std::f64::consts::PI {
             sweep -= std::f64::consts::TAU;
@@ -1816,7 +1817,7 @@ fn fan_corners(mut rungs: Vec<[Vec2; 2]>, outline: &Contour) -> Vec<[Vec2; 2]> {
                 continue;
             }
             let angle = ain + sweep * (u + zone / 2.0) / zone;
-            let dir = v2(angle.cos(), angle.sin());
+            let dir = v2(angle.dcos(), angle.dsin());
             if let Some(d) = ray_to(g[side], dir, &edges) {
                 g[1 - side] = g[side] + dir * d;
                 done[i] = true;
@@ -1865,7 +1866,7 @@ pub fn auto_angle(contours: &[Contour]) -> f64 {
         syy += dy * dy * l;
         sxy += dx * dy * l;
     }
-    let major = 0.5 * (2.0 * sxy).atan2(sxx - syy);
+    let major = 0.5 * (2.0 * sxy).datan2(sxx - syy);
     let deg = major.to_degrees() + 90.0;
     // Normalise to (-90, 90] and round to 0.01° so output does not depend on noise.
     let mut a = deg.rem_euclid(180.0);

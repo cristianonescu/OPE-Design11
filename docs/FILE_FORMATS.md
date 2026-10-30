@@ -119,7 +119,7 @@ the owner's machine (docs/COMPATIBILITY_AUDIT.md item 2).
 | `1` | ✅ | ❌ | ❌ | ✅ (colours as PEC indexes) | ❌ |
 | `6t` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | `6` (default) | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `11` (PE-DESIGN 11, `#PES0110`) | ✅ | ✅ (thread table in sewing order; no names) | ✅ | ❌ (the shapes are the objects) | ✅ shapes: fill and satin regions; running, zigzag, triple, E and V lines; groups. ❌ text, stitch patterns and the other region and line types: the export fails and names the object. **Unverified** in PE-DESIGN until the owner's copy opens one (spec `pes-0110-editable-shapes`) |
+| `11` (PE-DESIGN 11, `#PES0110`) | ✅ | ✅ (thread table in sewing order; each thread named with its PEC chart index, as PE-DESIGN names its own colours) | ✅ | ✅ (a stitch pattern is a `CEmbOne`) | ✅ shapes: fill and satin regions; running, zigzag, triple, E and V lines; groups; Lato Bold text, with a Text Transform or fitted to an outline. ❌ the other region and line types, other fonts: the export fails and names the object. PE-DESIGN 11.50 opens shapes and text editable (specs `pes-0110-editable-shapes`, `-text`, `-text-transform`); stitch patterns: spec `pes-0110-stitches`, reference pending |
 | 4, 5 (5.5, 5.6), 7–10 | **Blocked** | | | | |
 
 Editor: File ▸ Export ▸ PES offers the five. Engine: `design.export` `pesVersion`.
@@ -212,8 +212,25 @@ below is pinned by a test in `tests/pes11.rs`.
   shape-start-points, the appliqué's heart) is a `CEmbLine` record byte for byte under its own
   class name: the same 4432-byte body, geometry header and vertices, and no gallery id. The
   reader reads it as a shape (`Shape::gallery`) and the writer writes it back under its class.
+- `CEmbOne` (a stitch group: PE-DESIGN's re-saves of OpenStitch's version 6 files,
+  pes-default-v6, pes-csewseg-trims, pes-design-properties) is the version 6 record with
+  `#PES0110`'s object head: bounds (x0 y0 x1 y1 of the needle points, file units), extent, the
+  transform (translation = the bounds' bottom-left corner, where version 6 centres the group on
+  (1000, 1000)), u16 1 0 0 width height, 8 zero bytes, the u16 run count and the runs, each a
+  `CSewSeg` (u16 flag, 0 stitches or 1 a jump; u16 thread-table index; u16 `FFFF`; u32 point
+  count; i16 x y points relative to the bottom-left corner), then the colour log (u16 count,
+  (run, thread) pairs). In the sewing-order list a stitch group lists one part per colour block.
+  The reader reads it as a `StitchGroup` and the writer writes it back.
+- **Header fields and thread names:** the fields between the metadata strings and the thread
+  table (page mode, hoop, machine string, page size …) are kept as read and written back
+  verbatim, and so are the two characters after the signature's `01 00` (`10` in the
+  multi-needle files, `01` in the single-needle ones and PE-DESIGN's re-saves of version 6
+  files). The thread table's fifth string is the thread's name: PE-DESIGN writes its own
+  colours' PEC chart index there, and keeps a name it read from another file (pes-default-v6:
+  `Red`, `Black`).
 - Classes seen: `CEmbLine` (Shape tools: rectangle, ellipse, open and closed lines), `CEmbNText`
-  with one `CTTFLetter` per letter (text), `CEmbSpecialShape` (Shapes gallery presets).
+  with one `CTTFLetter` per letter (text), `CEmbSpecialShape` (Shapes gallery presets),
+  `CEmbOne` with `CSewSeg` runs (stitch groups).
 
 `CEmbLine` body, offsets from the byte after the class name or tag (u16 unless noted):
 
@@ -370,7 +387,9 @@ MFC Unicode form, the PEC chart index of the nearest chart colour, `kind` 10; a 
 OpenStitch's Brother PEC chart gets the BROTHER EMBROIDERY catalogue number and brand
 `EMBROIDERY` PE-DESIGN writes for it, from the 25 pairs found in the owner's files
 (`pes11::BROTHER_EMBROIDERY`: 1 → 007, 5 → 800, 16 → 005, 20 → 900 …), any other thread its own
-catalogue number, brand and chart), one `CEmbLine` per visible shape with every mapped field set, the
+catalogue number, brand and chart), one `CEmbLine` per visible shape with every mapped field set,
+one `CEmbOne` per stitch pattern (its needle points in runs cut as version 6 cuts them, a jump
+run where the pattern jumps or trims, each colour block's thread added to the table), the
 groups, the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
 as `CEmbNText` (letters at the text's size, Satin or Fill, an optional running, triple or
 zigzag line at PE's defaults, line breaks, the line spacing %, left or centre alignment and the
@@ -378,13 +397,14 @@ click point at the alignment point), and fitted to an outline as `CEmbAText` (th
 character spacing and the outline's archive number; the outline must come before the text),
 and with a Text Transform as `CEmbDText` (the preset's code,
 the default level's strength and, for the arches, the circle measured on OpenStitch's straight
-layout; zeros where PE-DESIGN leaves stale numbers). What it cannot hold fails with the object named: stitch patterns, several
+layout; zeros where PE-DESIGN leaves stale numbers). What it cannot hold fails with the object named: several
 outlines in one object, programmable, motif and the other region types, motif, stem,
 candlewicking, chain and cutting lines; text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character
-edits or under sewing. Checks: the 99 owner files whose list the reader parses completely (37
-with shapes, 19 with plain text, 27 with a Text Transform, 14 with text fitted to an outline; two of them with gallery shapes) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
+edits or under sewing. Checks: the 102 owner files whose list the reader parses completely (37
+with shapes, 19 with plain text, 27 with a Text Transform, 14 with text fitted to an outline,
+3 with a stitch group; two of them with gallery shapes) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
 
@@ -404,6 +424,11 @@ byte-identical to PE-DESIGN's outside these documented differences
   Hoop Settings tab, 290 × 190 mm section outlines and no stitch count in the status bar until
   something is selected; its own Hoop Size page file (r27) shows none of them. The machine type
   and hoop of the design's machine settings are not mapped yet.
+- **Header strings:** the metadata strings are written in Windows-1252 with CR LF, as
+  PE-DESIGN shows them; pes-design-properties holds OpenStitch's former UTF-8 bytes, which
+  PE-DESIGN kept when it re-saved the file, so its strings (and the offsets after them) differ.
+  A file read from PE-DESIGN keeps its header fields; a design's are written from the templates
+  above.
 - **Text Transform:** from a design, the arch circle is the straight text's advance width
   over 1.887, measured on OpenStitch's layout as the shift between a left and a right aligned
   setting: HHHHHHH's radius 40.83 mm against PE-DESIGN's 40.80; the other presets carry zeros
@@ -415,6 +440,10 @@ byte-identical to PE-DESIGN's outside these documented differences
   PE-DESIGN sews this object 79.2 mm: an open difference in how the letters are placed round the
   circle (COMPATIBILITY_AUDIT item 5). Other presets: the letters' extent, the top at most
   the ascent line.
+- **Fitted text box:** from a design, the `CEmbAText` bounds and extent come from OpenStitch's
+  layout (ABCDE on the 60 mm circle: 805..1218 × 373..759 against PE-DESIGN's 757..1242 ×
+  573..757); PE-DESIGN recomputes them when it opens the file (compat
+  `pes-0110-editable-text-fit`).
 - **Text:** the letter field at +14 (OpenStitch writes r12's −0.0) and the last sewing-order
   field of the line-spacing files (PE-DESIGN leaves it unset, `08 CE 53 00`; OpenStitch writes
   1). A text written from the letter defaults gives r12's object section byte for byte
@@ -446,8 +475,17 @@ PE-DESIGN's own text (a click inside the A's counter selects neither). **Text Tr
 `pes-0110-editable-text-transform`, reference tier):** PE-DESIGN opens HHHHHHH with preset 1 as
 editable text with Transform ticked, preset 1 at its default level (re-selecting the preset gives
 the same 79.20 × 26.50 mm and 1307 stitches), centred, Lato 10, and the text can be retyped on
-the arc. Its re-save keeps the object section but for the text box. Version 6 stays the default
-export until the coordinator decides otherwise.
+the arc. Its re-save keeps the object section but for the text box. **Fit Text to Outline
+(2026-10-29, `pes-0110-editable-text-fit`, reference tier):** PE-DESIGN opens the circle and
+ABCDE with no warning as one fitted unit (Fit Text offers Release Text from Outline; stretching
+the circle re-fits the text along the ellipse, re-centred), shows the fit settings as written,
+and sews the pair, the text and the circle with the stitch counts of its own text-fit-default
+(860, 727, 133). Its re-save keeps the object section's length and rewrites two places: the
+circle's pattern block (its own default pattern, as for every shape) and the fitted text's
+bounds and extent, which it recomputes from its layout: 757..1242 × 573..757, the same as its
+own text-fit-default, where OpenStitch writes 805..1218 × 373..759 (an open difference, as for
+the arched text box). Version 6 stays the default export until the coordinator decides
+otherwise.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
 
@@ -913,13 +951,24 @@ patterns, `compat/reference/stitches/prog-fill-*.pes`, `motif-fill-2pt.pes`,
   tiles, OpenStitch 2329 and 1636; every OpenStitch needle point lies within 0.2 mm of one of
   PE-DESIGN's (mean 0.10 and 0.11 mm).
 - **Motif fill:** the same grid origin; each motif's base line runs through the middle of its
-  row band, so the first row lies half a motif below the region's top edge.
+  row band, so the first row lies half a motif below the region's top edge. The rows start at
+  the one nearest the start point; travel between rows and to and from the start point walks
+  the outline in even steps of at most 2 mm (5 mm in three steps of 1.67 mm), with the fill's
+  0.3 mm tie-in and lock: 130 needle points, as PE-DESIGN (2026-10-30).
 - **Motif line:** a whole number of motifs, stretched along the line to fill it from end to end,
   on open and closed lines alike (8 motifs of 4.94 mm on a 39.5 mm line at the 5 mm size).
 
-Not yet the same: PE-DESIGN's motif fill travels between rows along the outline at 2 mm
-(130 needle points against OpenStitch's 103, which joins rows with one stitch), and its motif
-line adds tie-in and tie-off stitches (23 against 16).
+Not yet the same: when both ends of the first motif-fill row are as far from the start point,
+PE-DESIGN walks right and comes back down the right edge where OpenStitch walks left (the same
+needle points mirrored; one reference cannot tell PE-DESIGN's tie-break), and its motif line adds
+tie-in and tie-off stitches (23 against 16).
+The motif line ties in and locks as PE-DESIGN does (since 2026-10-30): three 0.3 mm steps out
+along a first stitch over 2.65 mm and back, one lock step at the end; 23 needle points as
+PE-DESIGN.
+
+Not yet the same: when both ends of the first motif-fill row are as far from the start point,
+PE-DESIGN walks right and comes back down the right edge where OpenStitch walks left (the same
+needle points mirrored; one reference cannot tell PE-DESIGN's tie-break).
 
 ### Text pattern sources (`.pas`, `.pmf`, `.plf`)
 

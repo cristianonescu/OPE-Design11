@@ -76,7 +76,7 @@ dearest:
 | 2 | Default PES is truncated v1 with no object section (**fixed**, internal regression; open test pending) | PES | 5 | Documented, unverified | Black-box open test |
 | 3 | Trims and jumps inside one fill or satin region; no Running Stitch Path (**fixed**, internal regression) | Stitches | 5 | Documented difference | No |
 | 4 | Trims between underlay, top stitching and outline of one object | Stitches | 4 | Documented, unverified | Single-needle policy |
-| 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes shapes as `CEmbLine`, which PE-DESIGN 11.50 opens editable, and Lato Bold text as `CEmbNText`, which it opens editable and retypable (both reference)) | PES | 5 | Reference | Yes (the Hoop Size page check; Text Transform and text on an outline) |
+| 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes shapes as `CEmbLine`, which PE-DESIGN 11.50 opens editable, and Lato Bold text as `CEmbNText`, which it opens editable and retypable (both reference); stitch patterns as `CEmbOne` stitch groups (reference pending, `pes-0110-stitches`)) | PES | 5 | Reference | Yes (the Hoop Size page check; Text Transform and text on an outline) |
 | 6 | One sewing direction per text instead of per stroke | Fonts | 5 | Documented difference | Angles |
 | 7 | Auto direction is one fixed angle (**fixed**, internal regression) | Stitches | 4 | Documented difference | No |
 | 8 | Underlay model differs (**partly fixed**: PE's two region types, Density Dense / Medium / Light, the Manual Punch column's edge / piping / zigzag); zigzag lines have no underlay | Stitches | 4 | Documented difference | Geometry |
@@ -348,7 +348,9 @@ Line references are relative to `crates/`.
   79.2 mm (its own text-transform-1: 79.3) round the same 40.8 mm circle, so the spec's width
   check stays at the internal tier until the letters' placement round the circle matches at
   0.3 mm), and text fitted to an outline as `CEmbAText` with its Fit Text to Outline settings
-  and the outline it follows (spec `pes-0110-editable-text-fit`, reference pending);
+  and the outline it follows (spec `pes-0110-editable-text-fit`, reference: PE-DESIGN 11.50 opens it
+  with the text still fitted to the circle and re-fits it when the circle is reshaped; its re-save
+  rewrites only the circle's pattern block and the text's box, which it recomputes);
   Shapes-gallery shapes (`CEmbSpecialShape`, `CEmbLine` records under another class name)
   round-trip (o-gallery-heart, shape-start-points). Refused for
   now: right-aligned and vertical text, stretched fit, rotation, letter spacing, kerning,
@@ -584,7 +586,8 @@ Line references are relative to `crates/`.
     unchanged at export, write the bytes back and recompute the PEC offset only. Otherwise
     warn and fall back.
   - Since 2026-10-29 the `#PES0110` writer (item 5) writes back everything the reader parses
-    (`CEmbLine` shapes, thread table, groups, page), so once the import turns the reader's shapes
+    (`CEmbLine` shapes, texts, `CEmbOne` stitch groups, thread table with its names, groups, the
+    header's page and hoop fields verbatim), so once the import turns the reader's shapes
     into design objects (ROADMAP item 6) a PE-DESIGN file of shapes re-saves with its objects.
 
 ## 10. Hoop and Design Page fields are hard-coded in PES
@@ -1164,18 +1167,42 @@ Line references are relative to `crates/`.
   Status: reference tier, all 14 specs pass. Stitch counts within 3 %, bounds within 0.35 mm,
   mean stitch length within 0.15 mm. Open (count checks kept out of the reference tier, not
   loosened):
-  - `spiral-circle40-pitch3p0`: PE 1354 stitches, OpenStitch 1284 (−5.2 %). Suspected cause:
-    at a 3 mm pitch PE puts more needle points on the inner turns than the 4·2ⁿ rule gives (it
-    matches within 2 % at 2 mm). The count is an internal-tier check pinning OpenStitch's 1284
-    at 3 %; bounds and stitch lengths stay at the reference tier.
-  - `spiral-ring40-hole15`: PE 1952 stitches, OpenStitch 1473 (−24.5 %), because PE sews the
-    band where the outline's and the hole's spirals meet as about 30 trimmed pieces (64 trims).
-    The spec compares bounds and stitch lengths only.
+  - `spiral-circle40-pitch3p0`: PE 1354 stitches, OpenStitch 1284 (−5.2 %). The count is an
+    internal-tier check pinning OpenStitch's 1284 at 3 %; bounds and stitch lengths stay at the
+    reference tier. Investigated 2026-10-30, turn by turn: PE's outer turns have 64 needle
+    points like OpenStitch's (the 4·2ⁿ rule), but below the radius where the rule halves the
+    count PE's turns fall off gradually instead of in powers of two: 64 down to r = 16.2 mm,
+    then 56, 44, 38, 39, 40, 40, 36, 34, 33, 32 … 28, 25, 22, 19, 18, 16 against OpenStitch's
+    32 from r = 15.3 mm and 16 from 7.7 mm. Inside a turn PE splits some base pieces in half and
+    not others (adaptive halving per piece), and the pieces next to the axis directions are
+    narrower than the rest (about 8.8° against 11–12° at r = 12 mm, pitch 2), although the turns
+    are true circles (radius within 0.04 mm all round): the parameterisation is not uniform in
+    angle. Neither a cubic Bézier quarter (11.0–11.6° for 8 equal steps) nor a rational
+    quadratic one (10.5–11.8°) reproduces it, so the rule is still open. The same pattern shows
+    at pitch 2 (turn counts 60, 62, 55, 60 … in the 64 band; 42, 39, 36 … in the 32 band), where
+    it cancels out in the total (within 2 %).
+  - `spiral-ring40-hole15`: PE 1952 stitches, OpenStitch 1473 (−24.5 %). The spec compares
+    bounds and stitch lengths only. Investigated 2026-10-30: PE sews the outline's spiral from
+    19.85 mm in to 13.6 mm (908 needle points), then 31 separate pieces round the middle of the
+    band (r 13.4–14.0 mm, 397 needle points, 64 trims), then the hole's spiral from 13.6 mm in
+    to the hole (647 points). The pieces are wedges about 5.5° wide repeating every 11.25°;
+    each has a tie-in and a lock (0.3 mm back-and-forth), 13 of them nothing else, the others
+    up to 37 stitches zigzagging inside their 1.3 mm wedge. They are PE filling leftover slivers
+    between its two spirals one by one. OpenStitch does not copy them: 64 trims in a 25 mm²
+    band is a defect a user would not want, and the band is covered by the two spirals' last
+    turns. Kept as a documented difference.
 
-  Other known differences: PE splits
-  more chords inside each concentric circle (2.0 / 1.0 + 1.0 / 1.33 × 3 mm runs) than the 0.1 mm
-  rounding explains; the concentric seam on a Bézier circle; the spiral's winding on a circle
-  (PE turns against the outline there and with it on the rectangle).
+  Other known differences:
+  - Concentric chord splits: inside each circle PE's stitches come as single 2.0 mm stitches,
+    pairs of 1.0 mm and triples of 1.33 mm: key spans of about 2 and 4 mm split into
+    ceil(length / pitch) equal stitches. Rounding the 4·2ⁿ points to 0.1 mm explains only part
+    of it (OpenStitch's counts are within 3 %); where PE's key points come from is open.
+  - The concentric seam on a Bézier circle, the spiral's winding on a circle (PE turns against
+    the outline there and with it on the rectangle, although its running stitch goes the same
+    way round both) and the return run PE sews after the rectangle spiral's middle (trim, jump to
+    the bottom-left corner, running stitches along the bottom edge to R1): new captures were
+    requested from the reference session on 2026-10-30 (round 5: square, portrait rectangle,
+    reversed drags, ellipse, moved R1 and R2, triangle).
 - **Image digitizing (Phase 6, issues #127, #128, #132, #129):** the Auto Punch, Cross Stitch
   and Photo Stitch pipelines were this project's own approximations; the Phase 6 gap analysis
   pins their arithmetic. Done 2026-10-29 (#128): mono Photo Stitch uses integer Rec. 601
@@ -1248,9 +1275,18 @@ Line references are relative to `crates/`.
   motifs (`line-motif-zigzag-3pt`). The import mapped a motif's cross offset at twice its size
   (fixed: 1024 cell units are one motif size). A reference point was ignored for programmable
   and motif fills, and a user pattern fell back to the default with a reference point or a
-  curved direction (both fixed). Left: the motif fill's travel between rows (PE-DESIGN walks the
-  outline at 2 mm: 130 needle points against 103) and the motif line's tie stitches (23
-  against 16).
+  curved direction (both fixed). The motif fill's travel is PE-DESIGN's since 2026-10-30: rows
+  from the one nearest the start point, travel along the outline in even steps of at most
+  2 mm, the fill's tie-in and lock (130 needle points against PE-DESIGN's 130, was 103; spec
+  `motif-fill-2pt` now checks the count within 3 %). Left: the motif line's tie stitches (23
+  against 16) and which way PE-DESIGN walks when both ends of the first row are as near.
+  curved direction (both fixed). The motif fill's travel is PE-DESIGN's since 2026-10-30: rows
+  from the one nearest the start point, travel along the outline in even steps of at most
+  2 mm, the fill's tie-in and lock (130 needle points against PE-DESIGN's 130, was 103; spec
+  `motif-fill-2pt` now checks the count within 3 %). The motif line ties in and locks like
+  PE-DESIGN's other lines since 2026-10-30 (23 needle points against PE-DESIGN's 23, was 16;
+  spec `line-motif-zigzag-3pt` checks the count within 3 %). Left: which way PE-DESIGN walks
+  when both ends of the first motif-fill row are as near.
   Second round of captures, 2026-10-29 (pe-refs-4, inputs drawn by its `wizimg.py`):
   - **Auto Punch bars** (`autopunch-thin-strokes.pes`, nine black 40 mm bars 0.5–4 mm wide;
     `autopunch-thin-strokes-wide.pes`, seven 30 mm bars 5–14 mm; Max. Number of Colors filled
@@ -1276,13 +1312,30 @@ Line references are relative to `crates/`.
     4068 stitches: 143 per cm² in the darkest band, 37 at 180–209 and 2 above 210 as PE, but
     132–181 in the mid-tones where PE has 87–142, because the dithered rows break into short
     runs there (426 trims; PE 2). That is the stitch-path model again.
+  - **Photo Stitch 1 path (2026-10-30):** a thread's runs are now sewn nearest first instead
+    of row by row with a jump to every run. From the needle, the closest unsewn run end within
+    2 cells across and 2 rows down is entered with a travel stitch; a hop to the next row
+    leaves out the run's last needle point so the row turns, as a fill row does (those hops
+    had been sub-millimetre travel stitches, each a needle point). Mono capture: 3225 stitches
+    against PE's 2917 (was 4068), 99 trims against PE's 2 (was 426); needle points per cm²
+    by grey band 143 / 146 / 123 / 118 / 97 / 69 / 40 / 3 against PE's 154 / 142 / 125 / 92 /
+    87 / 66 / 20 / 1 (0–29 … 210+), was 143 / 181 / 162 / 178 / 132 / 81 / 37 / 2. Colour
+    capture: 11 654 stitches against PE's 12 255 (was 12 860), 249 trims against 6 (was 1158);
+    white 148 / 162, yellow 173 / 170, green 198 / 211, red 166 / 175, blue 192 / 176 (was blue
+    237). Left: PE's paths run along contours, diagonally; OpenStitch's stay horizontal rows,
+    and the remaining trims are runs more than 2 cells from any other.
   - **Photo Stitch 2** (`photostitch2-color-owner-shapes.pes`, Line interval 2.0 mm, Max.
     Density 4.5 lines/mm, Direction 0°, Color Set Auto Select): a halftone screen. Each of four
     threads (blue, red, yellow, purple) sews parallel lines 2 mm apart at its own screen angle
     (0°, 45°, 90°, 135°) over the whole mask, with zigzag excursions where its colour is
     needed (white areas 88 needle points per cm², coloured areas 355–426), 14 133 stitches.
     OpenStitch's Lines style sews every colour along horizontal rows (7035 stitches). This is
-    #129's model; noted on #129.
+    #129's model; noted on #129. Measured in detail on 2026-10-30 with the new
+    `tools/screencmp.py`: each line is a straight 2.4–2.5 mm run where its colour is not
+    needed (about 20 needle points per cm² per thread) and a zigzag 1.8 mm deep advancing
+    0.2 mm per stitch where it is (about 300 per cm² in the thread's own area); one jump per
+    thread, no trims. The model, the acceptance criteria and the patent facts are in
+    docs/research/photo-stitch-2-halftone.md; the generator waits for the owner's decision.
 - **Sewing-machine stitch files (PMV, 2026-10-29, #130):** OpenStitch now reads the PMV layout
   it writes (pyembroidery's description: 8-byte magic, 36-byte banner, 56-byte preamble, needle
   count and its double, 6-bit relative x / 5-bit absolute y pairs in 0.25 mm, the length and
@@ -1545,7 +1598,7 @@ Line references are relative to `crates/`.
   - *Not recorded:* Font Creator and Stitch Design Factory output (#134, `.pef`, `.pmv`); the
     owner declined screen-control access to both programs.
 
-- **Platform-dependent arched text (found 2026-10-29, open):** the same build measures the PES 0110 Text Transform spec's arch height as 26.0 mm on Windows and macOS and 25.8 mm on Linux CI (PE-DESIGN 11.50: 26.5 mm). The bundled Lato is used on every platform, so the difference comes from the arch layout's arithmetic, not a font. Until it is deterministic, PE-DESIGN's re-save (`pes-0110-editable-text-transform.pes`, owner's notes `round4\pr164\`) stays out of the repository and the spec waits for its reference; no tolerance was widened.
+- **Platform-dependent arched text (found 2026-10-29, fixed 2026-10-30):** the same build measured the PES 0110 Text Transform spec's arch height as 26.0 mm on Windows and macOS and 25.8 mm on Linux CI (PE-DESIGN 11.50: 26.5 mm). Cause: stitch generation called the platform's C math library (`f64::sin`, `cos`, `atan2`, `hypot`… go to glibc, the MSVC runtime or Apple's libm, which differ in the last bit for some arguments), and on the arch a last-bit difference moved a fill row across its threshold (rows 0.2 mm apart at density 5). Every transcendental call in `openstitch-design` and the engine's stitch paths now goes through `openstitch_design::fmath::Det` (the `libm` crate, a pure-Rust port of musl's libm, already in the tree via rustybuzz), so a design sews the same bits everywhere; a source scan (`fmath::tests`) keeps the platform functions out, and `crates/openstitch-engine/tests/determinism.rs` pins the arched text and a rotated satin ellipse to bit-exact fingerprints on all three OSes. Windows output is unchanged (every compat spec, both goldens). PE-DESIGN's re-save (`pes-0110-editable-text-transform.pes`) is back in the repository with its MANIFEST entry: 26.0 mm against 26.5, within the spec's unchanged 0.5 mm.
 
 ## Order of work
 

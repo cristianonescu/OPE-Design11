@@ -4,6 +4,7 @@
 //! attribute lists. Lengths are 0.1 mm; output is deterministic (pseudo-random choices use a
 //! fixed seed).
 
+use crate::fmath::Det;
 use crate::generate::{self, RegionParams, RowSpan, Run, subdivide};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, v2};
 use crate::model::{RegionSewing, RegionType};
@@ -21,6 +22,11 @@ const MAX_POINTS: usize = 2_000_000;
 /// (compat/reference/stitches/prog-fill-square-4pt.pes); longer gaps are split evenly at
 /// OpenStitch's general long-stitch bound, 12 mm.
 pub const PROGRAMMABLE_MAX_STITCH: f64 = 120.0;
+
+/// Longest travel stitch of a motif fill, 0.1 mm: between rows and from the start point and
+/// back, PE-DESIGN 11.50 walks the outline in even steps of at most 2 mm
+/// (compat/reference/stitches/motif-fill-2pt.pes).
+pub const MOTIF_FILL_TRAVEL_PITCH: f64 = 20.0;
 
 /// Layers (runs) of region type `r.kind` (not fill or satin), rows at `angle` degrees.
 pub fn generate(
@@ -40,6 +46,7 @@ pub fn generate(
         holes,
         travel: r.travel_path().is_some(),
         pitch,
+        join_pitch: pitch.max(10.0),
     };
     match r.kind {
         RegionType::Fill | RegionType::Satin => Vec::new(),
@@ -99,7 +106,24 @@ pub fn generate(
                 .chain(std::iter::once(v2(period, ph / 2.0)))
                 .collect();
             let shift = r.row_offset.unwrap_or(50.0) / 100.0;
-            let rows = tile_rows(closed, holes, angle, &unit, period, ph + spacing, shift);
+            let mut rows = tile_rows(closed, holes, angle, &unit, period, ph + spacing, shift);
+            // PE-DESIGN starts at the row nearest the start point and walks the outline
+            // between rows in even steps of at most 2 mm (motif-fill-2pt.pes: 5 mm in three).
+            if let (Some(e), Some(first), Some(last)) = (
+                r.entry,
+                rows.first().and_then(|p| p.first()).copied(),
+                rows.last().and_then(|p| p.last()).copied(),
+            ) && last.distance(e) < first.distance(e)
+            {
+                rows.reverse();
+                for row in &mut rows {
+                    row.reverse();
+                }
+            }
+            let region = Region {
+                join_pitch: MOTIF_FILL_TRAVEL_PITCH,
+                ..region
+            };
             vec![region.sequence(rows)]
         }
         RegionType::DecorativeFill => {
@@ -215,6 +239,8 @@ struct Region<'a> {
     holes: &'a [Contour],
     travel: bool,
     pitch: f64,
+    /// Longest stitch of the travel that joins pieces.
+    join_pitch: f64,
 }
 
 impl Region<'_> {
@@ -250,7 +276,7 @@ impl Region<'_> {
     fn sequence_raw(&self, runs: Vec<Run>) -> Vec<Run> {
         let runs: Vec<Run> = runs.into_iter().filter(|r| r.len() >= 2).collect();
         let mut graph = self.graph();
-        join(runs, graph.as_mut(), self.pitch.max(10.0))
+        join(runs, graph.as_mut(), self.join_pitch)
     }
 
     /// Runs whose stitches are already final (cross stitch groups): ordered, joined.
@@ -1158,7 +1184,7 @@ fn net_families(
             let unit: Vec<Vec2> = (0..=16)
                 .map(|k| {
                     let t = k as f64 / 16.0;
-                    v2(t * 2.0 * s, (t * std::f64::consts::TAU).sin() * s / 4.0)
+                    v2(t * 2.0 * s, (t * std::f64::consts::TAU).dsin() * s / 4.0)
                 })
                 .collect();
             vec![
