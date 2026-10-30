@@ -415,6 +415,10 @@ byte-identical to PE-DESIGN's outside these documented differences
   PE-DESIGN sews this object 79.2 mm: an open difference in how the letters are placed round the
   circle (COMPATIBILITY_AUDIT item 5). Other presets: the letters' extent, the top at most
   the ascent line.
+- **Fitted text box:** from a design, the `CEmbAText` bounds and extent come from OpenStitch's
+  layout (ABCDE on the 60 mm circle: 805..1218 × 373..759 against PE-DESIGN's 757..1242 ×
+  573..757); PE-DESIGN recomputes them when it opens the file (compat
+  `pes-0110-editable-text-fit`).
 - **Text:** the letter field at +14 (OpenStitch writes r12's −0.0) and the last sewing-order
   field of the line-spacing files (PE-DESIGN leaves it unset, `08 CE 53 00`; OpenStitch writes
   1). A text written from the letter defaults gives r12's object section byte for byte
@@ -446,8 +450,17 @@ PE-DESIGN's own text (a click inside the A's counter selects neither). **Text Tr
 `pes-0110-editable-text-transform`, reference tier):** PE-DESIGN opens HHHHHHH with preset 1 as
 editable text with Transform ticked, preset 1 at its default level (re-selecting the preset gives
 the same 79.20 × 26.50 mm and 1307 stitches), centred, Lato 10, and the text can be retyped on
-the arc. Its re-save keeps the object section but for the text box. Version 6 stays the default
-export until the coordinator decides otherwise.
+the arc. Its re-save keeps the object section but for the text box. **Fit Text to Outline
+(2026-10-29, `pes-0110-editable-text-fit`, reference tier):** PE-DESIGN opens the circle and
+ABCDE with no warning as one fitted unit (Fit Text offers Release Text from Outline; stretching
+the circle re-fits the text along the ellipse, re-centred), shows the fit settings as written,
+and sews the pair, the text and the circle with the stitch counts of its own text-fit-default
+(860, 727, 133). Its re-save keeps the object section's length and rewrites two places: the
+circle's pattern block (its own default pattern, as for every shape) and the fitted text's
+bounds and extent, which it recomputes from its layout: 757..1242 × 573..757, the same as its
+own text-fit-default, where OpenStitch writes 805..1218 × 373..759 (an open difference, as for
+the arched text box). Version 6 stays the default export until the coordinator decides
+otherwise.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
 
