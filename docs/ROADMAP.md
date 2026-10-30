@@ -206,9 +206,9 @@ back.
    no CSV); left: Brother catalogue codes for the 61 matched chart entries so imported fills
    snap to them as in PE-DESIGN. PEC moves over 204.7 mm split as PE-DESIGN's
 8. **Formats:** CSD export (no public writer). The CSD and SHV readers match PE-DESIGN's own
-   exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart; left: the
-   `machine-sample-basic` compares (skip PE's zero-length stitches; no trim before a colour
-   change in DST/EXP/HUS/VIP). PEC moves over 204.7 mm split as PE-DESIGN's
+   exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart; the eight
+   writers match PE-DESIGN's exports of its own design since 2026-10-30
+   (`machine-sample-basic`). PEC moves over 204.7 mm split as PE-DESIGN's
    DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such a move (parked PES of
    `long-jump-300`).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded

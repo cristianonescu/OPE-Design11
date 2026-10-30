@@ -136,6 +136,32 @@ pub(crate) fn read_stitches(reader: &mut ByteReader<'_>) -> Result<Vec<Stitch>> 
     Ok(out)
 }
 
+/// Puts back the needle point at each jump's landing that PE-DESIGN 11.50's PEC writer leaves
+/// out. PE-DESIGN's stitch data has a stitch where a jump run lands (its DST, EXP, JEF and other
+/// exports all carry it, as a zero-length stitch), but its PEC section holds no zero-length
+/// stitch at all: the sample of issue #135 has 471 needle points in its PEC and 475 in its DST,
+/// 2 of them at the jump landings. A jump followed by a stitch elsewhere gets a stitch at the
+/// jump's end, so the writers fold their frame moves onto the same point PE-DESIGN's do. Only for
+/// PE-DESIGN's own `#PES0110` files (OpenStitch's PEC keeps its landing stitches, and the
+/// oracle files from pyembroidery have none), and not in the readers: the stitch specs compare
+/// OpenStitch's engine with PE's PEC needle for needle, landings left out (issue #135).
+/// `stitches.import` applies it when a PE-DESIGN file becomes a design, so its exports match
+/// PE's. PE's other zero-length stitches (a repeated needle point) cannot be told from the PEC.
+pub fn restore_jump_landings(stitches: &mut Vec<Stitch>) {
+    let mut out = Vec::with_capacity(stitches.len() + 8);
+    for (i, s) in stitches.iter().enumerate() {
+        out.push(*s);
+        if s.command == Command::Jump
+            && let Some(next) = stitches.get(i + 1)
+            && next.command == Command::Stitch
+            && (next.x, next.y) != (s.x, s.y)
+        {
+            out.push(Stitch::new(s.x, s.y, Command::Stitch));
+        }
+    }
+    *stitches = out;
+}
+
 // MARK: Writing
 
 pub fn write(pattern: &StitchPattern) -> Result<Vec<u8>> {

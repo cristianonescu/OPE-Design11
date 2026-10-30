@@ -1481,9 +1481,15 @@ Line references are relative to `crates/`.
   end; the reader now follows the word counts (fixture `sample-basic.shv`). (4) Importing PE's
   DST merged its two colour blocks: a DST has no colours, so the stitch block got none and the
   blocks were merged as one colour; each block now gets its own Brother chart colour on import.
-  Left for the parked `machine-sample-basic` spec: the writers' compare must skip PE's
-  zero-length stitches, and OpenStitch's DST/EXP/HUS/VIP write a trim where PE writes only the
-  colour change.
+  The ten-format sample is now spec `machine-sample-basic` (2026-10-30, reference tier): PE's
+  PES is imported as stitches and the eight writable formats are compared with PE's exports
+  needle for needle. Three writer fixes made them equal: the design centre floors on an odd
+  extent; DST pads the way back to the origin to a trim run only when it is one record; and a
+  PE-DESIGN `#PES0110` import gets back the stitch at each jump landing that PE's PEC leaves
+  out, which the folding formats (JEF, SEW, VIP, XXX) fold onto. The compare drops zero-length
+  stitches on both sides (`dropRepeats`): PE's two other repeats in the S are in its exports but
+  cannot come from its PES. The "trim before the colour change" the round-4 notes saw does not
+  occur in this sample.
 - **Brother catalogue codes (2026-10-29, #119, #136):** pe-refs-4 read PE-DESIGN 11.50's BROTHER
   EMBROIDERY chart from Sewing Attributes ▸ Color: 61 rows, codes 001 WHITE to 900 BLACK, brand
   EMBROIDERY, no row for PEC 62–64 (so the 61-entry match set of #119 is PE's own chart).

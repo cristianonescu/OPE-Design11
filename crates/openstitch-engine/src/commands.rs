@@ -2611,6 +2611,11 @@ fn codec_commands() -> Vec<CommandSpec> {
                 if pattern.threads.len() < pattern.color_block_count() {
                     pattern.fix_thread_count(None);
                 }
+                // PE-DESIGN 11's own PES leaves the needle point at each jump landing out of its
+                // PEC section; put it back so the design's exports match PE-DESIGN's (#135).
+                if pattern.metadata.get("pes.version").map(String::as_str) == Some("0110") {
+                    openstitch_formats::pec::restore_jump_landings(&mut pattern.stitches);
+                }
                 let found = openstitch_design::DesignProperties::from_metadata(&pattern.metadata);
                 let adopt = p.bool("adoptProperties", Some(s.design.properties.is_empty()))?
                     && !found.is_empty();

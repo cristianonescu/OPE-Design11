@@ -287,8 +287,12 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
             .cloned()
             .unwrap_or(Thread::rgb(0))
     };
-    // Where the last jump landed: the first needle point of the run after it (PE-DESIGN files
-    // and compiled patterns have no zero-length stitch there).
+    // Where the last jump landed: the first needle point of the run after it (PE-DESIGN's PEC
+    // and compiled patterns have no zero-length stitch there). A block that does carry a stitch
+    // on the landing keeps it: `stitches.import` restores the one PE-DESIGN's own designs have
+    // there (its machine exports write it; `pec::restore_jump_landings`, compat
+    // machine-sample-basic), so the run starts with the landing twice and the writer sews the
+    // second as the zero-length stitch after the jump.
     let mut landing: Option<Vec2> = None;
     for s in &block.stitches {
         match s.command {
@@ -297,9 +301,12 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
                 let p = v2(s.x, s.y);
                 if let Some(l) = landing.take()
                     && run.is_empty()
-                    && l != p
                 {
                     run.push(l);
+                    if l == p {
+                        run.push(p);
+                        continue;
+                    }
                 }
                 run.push(p);
             }

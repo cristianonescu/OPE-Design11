@@ -3252,6 +3252,114 @@
       "settings": "Font: Lato-Bold.ttf from crates/openstitch-design/fonts (SHA-256 8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1) installed for the current Windows user (copied to %LOCALAPPDATA%\\Microsoft\\Windows\\Fonts and registered under HKCU ... \\Fonts as \"Lato Bold (TrueType)\"), PE-DESIGN restarted to list it. PE lists it as \"Lato\" among the TrueType fonts (Text tab > Font drop-down); Text tab > TTF Settings shows \"TrueType Font Attribute Setting\": Font Lato, Font style Bold (the only style), Script Western. Text tool (Home > Text > first tool \"A\"), Text tab: font Lato, size field (no label or tooltip; next to Font Filter) default 10.0; Sew: line Not Sewn (Line), region default Satin Stitch for text, changed to Fill Stitch (choices for text: Satin, Fill, Prog. Fill), Fill at defaults (under sewing on, density 4.5, 45 deg...), region colour changed from 209 TANGERINE (tool default) to 800 EMBROIDERY RED. Text Attributes (defaults): Kerning 0.0 mm, Vertical Offset 0.0 mm, Rotate Angle 0 degree, Character Spacing 0.0 mm, Line Spacing 100 \"% of char height\", Alignment Left (left/center/right buttons), Direction horizontal (horizontal / vertical), Transform off. Click on the page, type, then Select tool to finish. text \"HHHHHHH\", size 10.0, Lato, Fill 800 RED, line Not Sewn, Alignment Center: 74,60 x 10,30 mm, 1284 st without transform. Text Attributes > Transform check box (off by default). Ticking it applies the first grid preset (the one highlighted, number 3 below). The palette: two round icons on top (row 0), then a grid of 4 columns x 6 rows = 24 icons, so 26 presets in all (first survey said 7 rows / 30; corrected 19:52 after scrolling the pane); below it \"Name Drop\" (check box, off) with \"Name Drop List...\" and a greyed \"Maintain aspect ratio\" and three small greyed icons. No tooltips on the presets. Numbered in reading order (top row left to right, then the grid rows); files for all 26 (13-26 added 19:53-19:57, same text and place). REMADE 2026-10-27 19:45-19:49 ON THE PAGE (the first files started at x=-3 mm, off the page, and PE saved them without a PEC block): PE-DESIGN restarted, File > New, Text tool, Text tab: Lato 10.0, line Not Sewn (Line), region Fill Stitch, 800 EMBROIDERY RED (Color tab), Alignment Center; clicked the page at (50, 50) mm, typed HHHHHHH, Select tool: 74,60 x 10,30 mm, 1284 st (same as before). Sewing Attributes as shown for this text: Under sewing unticked (Density Medium greyed), Density 5.0 line/mm, Stitch Type first button, Half Stitch unticked, Step pitch 4.0 mm, Frequency 30 %, Pull compensation 0.0 mm, no Direction field (the common text above says \"Fill at defaults (under sewing on, density 4.5\"; the 1284-stitch base is identical to the first files, so they used these same values). Then Transform ticked and the presets clicked in turn on the same text, Save As after each; no off-page warning, every file has its PEC block (LA:). Box positions are read from the canvas (+-0.5 mm), page origin top-left, y down; every box is centred on x = 50. This file: preset 9: slant forward (italic). 75,10 x 10,30 mm, 1250 st, box (12.5, 40.0)-(87.6, 50.3) mm. Save As PES default type (#PES0110).",
       "sha256": "4100bc02fa8a783d55833d88284ecea24ed70f50f6d1065e4203cf54a79eb271",
       "notes": "Header #PES0110."
+    },
+    {
+      "file": "machine/sample-basic.pes",
+      "spec": "machine-sample-basic",
+      "reference": "pe-design-pes",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 4 (pe-refs-4), PE-DESIGN 11.50, Design Page 100 x 100 mm. 11:43-11:47 GROUP B, machine formats (#135). Same design, text changed in the Text Attributes box to \"S\" (Transform unticked first), Text tab size 20,0, region Satin Stitch (hover + click), 800 EMBROIDERY RED: 14,00 x 21,10 mm, 278 st, centred at x = 50 (0.15 mm right, see group A). Home > Shapes > Rectangle, dragged (60,60)-(70,68) mm: Shapes tab line Zigzag Stitch (tool default) -> Not Sewn (Line) (the list opens scrolled; scroll up, hover, click), region Fill Stitch (default), Color pane Region 800 RED -> 007 EMBROIDERY PRUSSIAN BLUE: 10,00 x 8,00 mm, 197 st. Sewing order: 1 the S (red satin), 2 the rectangle (blue fill). Save As machine/sample-basic.pes (#PES0110). App menu > Export... (\"Export to File\"): Save as type list in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No PHC, PHX, PEN, PEC or DST options of any kind: Export offers nothing beyond this list and Save As offers only PES versions; no options dialog, no warning for any format; the typed extension is replaced by the type's own, upper case. Exported every type as sample-basic.<EXT>; the dialog's type list only takes mouse clicks (keyboard refused by the harness). This file: the Save As PES (#PES0110).",
+      "sha256": "66fc01d1989380d047bbc6bae0f45f3f593211ffcfd7aa8d01632d8a8eaee825",
+      "notes": "The PEC section holds 471 needle points: PE-DESIGN writes no zero-length stitch there (its DST of the same design has the same 471 plus 4 zero-length ones)."
+    },
+    {
+      "file": "machine/sample-basic.dst",
+      "spec": "machine-sample-basic",
+      "reference": "pe-design-dst",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 4 (pe-refs-4), PE-DESIGN 11.50, Design Page 100 x 100 mm. 11:43-11:47 GROUP B, machine formats (#135). Same design, text changed in the Text Attributes box to \"S\" (Transform unticked first), Text tab size 20,0, region Satin Stitch (hover + click), 800 EMBROIDERY RED: 14,00 x 21,10 mm, 278 st, centred at x = 50 (0.15 mm right, see group A). Home > Shapes > Rectangle, dragged (60,60)-(70,68) mm: Shapes tab line Zigzag Stitch (tool default) -> Not Sewn (Line) (the list opens scrolled; scroll up, hover, click), region Fill Stitch (default), Color pane Region 800 RED -> 007 EMBROIDERY PRUSSIAN BLUE: 10,00 x 8,00 mm, 197 st. Sewing order: 1 the S (red satin), 2 the rectangle (blue fill). Save As machine/sample-basic.pes (#PES0110). App menu > Export... (\"Export to File\"): Save as type list in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No PHC, PHX, PEN, PEC or DST options of any kind: Export offers nothing beyond this list and Save As offers only PES versions; no options dialog, no warning for any format; the typed extension is replaced by the type's own, upper case. Exported every type as sample-basic.<EXT>; the dialog's type list only takes mouse clicks (keyboard refused by the harness). This file: App menu > Export..., type Tajima (*.DST), no options dialog, no warning.",
+      "sha256": "c29378ba32fda42d1b5e5499cdec5c4594ab70ac49dc5fa69ee710000c8b855b",
+      "notes": "Written by PE as sample-basic.DST."
+    },
+    {
+      "file": "machine/sample-basic.exp",
+      "spec": "machine-sample-basic",
+      "reference": "pe-design-exp",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 4 (pe-refs-4), PE-DESIGN 11.50, Design Page 100 x 100 mm. 11:43-11:47 GROUP B, machine formats (#135). Same design, text changed in the Text Attributes box to \"S\" (Transform unticked first), Text tab size 20,0, region Satin Stitch (hover + click), 800 EMBROIDERY RED: 14,00 x 21,10 mm, 278 st, centred at x = 50 (0.15 mm right, see group A). Home > Shapes > Rectangle, dragged (60,60)-(70,68) mm: Shapes tab line Zigzag Stitch (tool default) -> Not Sewn (Line) (the list opens scrolled; scroll up, hover, click), region Fill Stitch (default), Color pane Region 800 RED -> 007 EMBROIDERY PRUSSIAN BLUE: 10,00 x 8,00 mm, 197 st. Sewing order: 1 the S (red satin), 2 the rectangle (blue fill). Save As machine/sample-basic.pes (#PES0110). App menu > Export... (\"Export to File\"): Save as type list in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No PHC, PHX, PEN, PEC or DST options of any kind: Export offers nothing beyond this list and Save As offers only PES versions; no options dialog, no warning for any format; the typed extension is replaced by the type's own, upper case. Exported every type as sample-basic.<EXT>; the dialog's type list only takes mouse clicks (keyboard refused by the harness). This file: App menu > Export..., type Melco (*.EXP), no options dialog, no warning.",
+      "sha256": "fa8cbec935abd5f5a92c3356e669a6f4c23f5d29456fdf4500f8feb1912515d7",
+      "notes": "Written by PE as sample-basic.EXP."
+    },
+    {
+      "file": "machine/sample-basic.pcs",
+      "spec": "machine-sample-basic",
+      "reference": "pe-design-pcs",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 4 (pe-refs-4), PE-DESIGN 11.50, Design Page 100 x 100 mm. 11:43-11:47 GROUP B, machine formats (#135). Same design, text changed in the Text Attributes box to \"S\" (Transform unticked first), Text tab size 20,0, region Satin Stitch (hover + click), 800 EMBROIDERY RED: 14,00 x 21,10 mm, 278 st, centred at x = 50 (0.15 mm right, see group A). Home > Shapes > Rectangle, dragged (60,60)-(70,68) mm: Shapes tab line Zigzag Stitch (tool default) -> Not Sewn (Line) (the list opens scrolled; scroll up, hover, click), region Fill Stitch (default), Color pane Region 800 RED -> 007 EMBROIDERY PRUSSIAN BLUE: 10,00 x 8,00 mm, 197 st. Sewing order: 1 the S (red satin), 2 the rectangle (blue fill). Save As machine/sample-basic.pes (#PES0110). App menu > Export... (\"Export to File\"): Save as type list in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No PHC, PHX, PEN, PEC or DST options of any kind: Export offers nothing beyond this list and Save As offers only PES versions; no options dialog, no warning for any format; the typed extension is replaced by the type's own, upper case. Exported every type as sample-basic.<EXT>; the dialog's type list only takes mouse clicks (keyboard refused by the harness). This file: App menu > Export..., type Pfaff (*.PCS), no options dialog, no warning.",
+      "sha256": "913b9533caa764bac0f612904fa7e79d469c2e13e1d0874ce4560bd590a9f8fd",
+      "notes": "Written by PE as sample-basic.PCS."
+    },
+    {
+      "file": "machine/sample-basic.hus",
+      "spec": "machine-sample-basic",
+      "reference": "pe-design-hus",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 4 (pe-refs-4), PE-DESIGN 11.50, Design Page 100 x 100 mm. 11:43-11:47 GROUP B, machine formats (#135). Same design, text changed in the Text Attributes box to \"S\" (Transform unticked first), Text tab size 20,0, region Satin Stitch (hover + click), 800 EMBROIDERY RED: 14,00 x 21,10 mm, 278 st, centred at x = 50 (0.15 mm right, see group A). Home > Shapes > Rectangle, dragged (60,60)-(70,68) mm: Shapes tab line Zigzag Stitch (tool default) -> Not Sewn (Line) (the list opens scrolled; scroll up, hover, click), region Fill Stitch (default), Color pane Region 800 RED -> 007 EMBROIDERY PRUSSIAN BLUE: 10,00 x 8,00 mm, 197 st. Sewing order: 1 the S (red satin), 2 the rectangle (blue fill). Save As machine/sample-basic.pes (#PES0110). App menu > Export... (\"Export to File\"): Save as type list in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No PHC, PHX, PEN, PEC or DST options of any kind: Export offers nothing beyond this list and Save As offers only PES versions; no options dialog, no warning for any format; the typed extension is replaced by the type's own, upper case. Exported every type as sample-basic.<EXT>; the dialog's type list only takes mouse clicks (keyboard refused by the harness). This file: App menu > Export..., type Husqvarna/Viking (*.HUS), no options dialog, no warning.",
+      "sha256": "7b52a37e71de8f92f5ae13212f4c53350b6a3184fcd5e0e7b4b322c0fd1466a5",
+      "notes": "Written by PE as sample-basic.HUS."
+    },
+    {
+      "file": "machine/sample-basic.vip",
+      "spec": "machine-sample-basic",
+      "reference": "pe-design-vip",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 4 (pe-refs-4), PE-DESIGN 11.50, Design Page 100 x 100 mm. 11:43-11:47 GROUP B, machine formats (#135). Same design, text changed in the Text Attributes box to \"S\" (Transform unticked first), Text tab size 20,0, region Satin Stitch (hover + click), 800 EMBROIDERY RED: 14,00 x 21,10 mm, 278 st, centred at x = 50 (0.15 mm right, see group A). Home > Shapes > Rectangle, dragged (60,60)-(70,68) mm: Shapes tab line Zigzag Stitch (tool default) -> Not Sewn (Line) (the list opens scrolled; scroll up, hover, click), region Fill Stitch (default), Color pane Region 800 RED -> 007 EMBROIDERY PRUSSIAN BLUE: 10,00 x 8,00 mm, 197 st. Sewing order: 1 the S (red satin), 2 the rectangle (blue fill). Save As machine/sample-basic.pes (#PES0110). App menu > Export... (\"Export to File\"): Save as type list in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No PHC, PHX, PEN, PEC or DST options of any kind: Export offers nothing beyond this list and Save As offers only PES versions; no options dialog, no warning for any format; the typed extension is replaced by the type's own, upper case. Exported every type as sample-basic.<EXT>; the dialog's type list only takes mouse clicks (keyboard refused by the harness). This file: App menu > Export..., type Husqvarna/Viking (*.VIP), no options dialog, no warning.",
+      "sha256": "14211c65a71abcc189a4ce6f3fbc49e305dcefdca5c2a8a427b9a71248d30a76",
+      "notes": "Written by PE as sample-basic.VIP."
+    },
+    {
+      "file": "machine/sample-basic.jef",
+      "spec": "machine-sample-basic",
+      "reference": "pe-design-jef",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 4 (pe-refs-4), PE-DESIGN 11.50, Design Page 100 x 100 mm. 11:43-11:47 GROUP B, machine formats (#135). Same design, text changed in the Text Attributes box to \"S\" (Transform unticked first), Text tab size 20,0, region Satin Stitch (hover + click), 800 EMBROIDERY RED: 14,00 x 21,10 mm, 278 st, centred at x = 50 (0.15 mm right, see group A). Home > Shapes > Rectangle, dragged (60,60)-(70,68) mm: Shapes tab line Zigzag Stitch (tool default) -> Not Sewn (Line) (the list opens scrolled; scroll up, hover, click), region Fill Stitch (default), Color pane Region 800 RED -> 007 EMBROIDERY PRUSSIAN BLUE: 10,00 x 8,00 mm, 197 st. Sewing order: 1 the S (red satin), 2 the rectangle (blue fill). Save As machine/sample-basic.pes (#PES0110). App menu > Export... (\"Export to File\"): Save as type list in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No PHC, PHX, PEN, PEC or DST options of any kind: Export offers nothing beyond this list and Save As offers only PES versions; no options dialog, no warning for any format; the typed extension is replaced by the type's own, upper case. Exported every type as sample-basic.<EXT>; the dialog's type list only takes mouse clicks (keyboard refused by the harness). This file: App menu > Export..., type Janome (*.JEF), no options dialog, no warning.",
+      "sha256": "181ad420bf60cfef7d2c8b4c5bd49b9198012f950dbe214051a3b51ffba23e5f",
+      "notes": "Written by PE as sample-basic.JEF."
+    },
+    {
+      "file": "machine/sample-basic.sew",
+      "spec": "machine-sample-basic",
+      "reference": "pe-design-sew",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 4 (pe-refs-4), PE-DESIGN 11.50, Design Page 100 x 100 mm. 11:43-11:47 GROUP B, machine formats (#135). Same design, text changed in the Text Attributes box to \"S\" (Transform unticked first), Text tab size 20,0, region Satin Stitch (hover + click), 800 EMBROIDERY RED: 14,00 x 21,10 mm, 278 st, centred at x = 50 (0.15 mm right, see group A). Home > Shapes > Rectangle, dragged (60,60)-(70,68) mm: Shapes tab line Zigzag Stitch (tool default) -> Not Sewn (Line) (the list opens scrolled; scroll up, hover, click), region Fill Stitch (default), Color pane Region 800 RED -> 007 EMBROIDERY PRUSSIAN BLUE: 10,00 x 8,00 mm, 197 st. Sewing order: 1 the S (red satin), 2 the rectangle (blue fill). Save As machine/sample-basic.pes (#PES0110). App menu > Export... (\"Export to File\"): Save as type list in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No PHC, PHX, PEN, PEC or DST options of any kind: Export offers nothing beyond this list and Save As offers only PES versions; no options dialog, no warning for any format; the typed extension is replaced by the type's own, upper case. Exported every type as sample-basic.<EXT>; the dialog's type list only takes mouse clicks (keyboard refused by the harness). This file: App menu > Export..., type Janome (*.SEW), no options dialog, no warning.",
+      "sha256": "4e964afe23a4ce1bd24e98aa71a78d3b2e1b2bfffc7f1fe559bfe213c5fdbeae",
+      "notes": "Written by PE as sample-basic.SEW."
+    },
+    {
+      "file": "machine/sample-basic.xxx",
+      "spec": "machine-sample-basic",
+      "reference": "pe-design-xxx",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-29",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 4 (pe-refs-4), PE-DESIGN 11.50, Design Page 100 x 100 mm. 11:43-11:47 GROUP B, machine formats (#135). Same design, text changed in the Text Attributes box to \"S\" (Transform unticked first), Text tab size 20,0, region Satin Stitch (hover + click), 800 EMBROIDERY RED: 14,00 x 21,10 mm, 278 st, centred at x = 50 (0.15 mm right, see group A). Home > Shapes > Rectangle, dragged (60,60)-(70,68) mm: Shapes tab line Zigzag Stitch (tool default) -> Not Sewn (Line) (the list opens scrolled; scroll up, hover, click), region Fill Stitch (default), Color pane Region 800 RED -> 007 EMBROIDERY PRUSSIAN BLUE: 10,00 x 8,00 mm, 197 st. Sewing order: 1 the S (red satin), 2 the rectangle (blue fill). Save As machine/sample-basic.pes (#PES0110). App menu > Export... (\"Export to File\"): Save as type list in this order: Tajima (*.DST), Melco (*.EXP), Pfaff (*.PCS), Husqvarna/Viking (*.HUS), Husqvarna/Viking (*.VIP), Husqvarna/Viking (*.SHV), Janome (*.JEF), Janome (*.SEW), Singer (*.CSD), Singer (*.XXX). No PHC, PHX, PEN, PEC or DST options of any kind: Export offers nothing beyond this list and Save As offers only PES versions; no options dialog, no warning for any format; the typed extension is replaced by the type's own, upper case. Exported every type as sample-basic.<EXT>; the dialog's type list only takes mouse clicks (keyboard refused by the harness). This file: App menu > Export..., type Singer (*.XXX), no options dialog, no warning.",
+      "sha256": "1e709b821e3b67a5f59ec9500b87bcf37539e04717deb5fbcc1d575ca85243d8",
+      "notes": "Written by PE as sample-basic.XXX."
     }
   ]
 }

@@ -41,6 +41,11 @@ pub struct CompareOptions {
     pub sequence: bool,
     /// Collapse each run of jumps into its last jump.
     pub collapse_jumps: bool,
+    /// Drop, on both sides, every stitch at exactly the position of the stitch or jump before
+    /// it (a zero-length stitch). For files whose zero-length stitches cannot come from the
+    /// source: PE-DESIGN 11.50 writes none to its PEC section but keeps them in its machine
+    /// exports (issue #135). Not a tolerance: every other needle point is still compared.
+    pub drop_repeats: bool,
     pub threads: ThreadFields,
     pub metadata: bool,
     /// For two PES files: compare the object section summary.
@@ -63,6 +68,7 @@ impl Default for CompareOptions {
             counts: Tolerance::EXACT,
             sequence: true,
             collapse_jumps: true,
+            drop_repeats: false,
             threads: ThreadFields::default(),
             metadata: true,
             pes_objects: true,
@@ -248,11 +254,40 @@ fn normalised(trace: &Trace, collapse_jumps: bool) -> Vec<Entry> {
     out
 }
 
+/// `p` without its zero-length stitches (see [`CompareOptions::drop_repeats`]).
+fn without_repeats(p: &StitchPattern) -> StitchPattern {
+    let mut out = StitchPattern {
+        stitches: Vec::with_capacity(p.stitches.len()),
+        ..p.clone()
+    };
+    let mut at: Option<(f64, f64)> = None;
+    for s in &p.stitches {
+        match s.command {
+            Command::Stitch if at == Some((s.x, s.y)) => continue,
+            Command::Stitch | Command::Jump => at = Some((s.x, s.y)),
+            _ => {}
+        }
+        out.stitches.push(*s);
+    }
+    out
+}
+
 pub fn compare_patterns(
     expected: &StitchPattern,
     actual: &StitchPattern,
     options: &CompareOptions,
 ) -> Comparison {
+    if options.drop_repeats {
+        let options = CompareOptions {
+            drop_repeats: false,
+            ..options.clone()
+        };
+        return compare_patterns(
+            &without_repeats(expected),
+            &without_repeats(actual),
+            &options,
+        );
+    }
     let mut out = Out {
         options,
         list: Vec::new(),

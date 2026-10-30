@@ -501,7 +501,18 @@ share; the per-format rules are in each writer's doc comment and summarised here
 Shared by every format:
 
 - The design is centred: the stream starts at the middle of the needle points' bounds, (0, 0)
-  in the relative formats (PE-DESIGN's DST header is `+X 200 -X 200` for a 40 mm design).
+  in the relative formats (PE-DESIGN's DST header is `+X 200 -X 200` for a 40 mm design). An
+  odd extent puts the origin half a unit towards the minimum, `floor((min + max) / 2)`
+  (`sample-basic.DST`: x −134..135, y −194..195 for 269 × 389 units).
+- The way back to (0, 0) after the last stitch is padded to a trim run only when it is a single
+  record (`machine-formats.dst`); a longer way back is its pieces alone (`sample-basic.DST` 2,
+  `hoop-oversize-100.dst` 3, `long-jump-300.dst` 12 records), so it reads as no trim.
+- A design PE-DESIGN generated has a zero-length stitch at each jump's landing, which its
+  machine exports write and its PEC section leaves out (PE's PEC holds no zero-length stitch).
+  `stitches.import` of a PE-DESIGN `#PES0110` file puts it back
+  (`pec::restore_jump_landings`), and a stitch block keeps a stitch on its landing, so the
+  folding formats fold the move onto the same point as PE-DESIGN (`machine-sample-basic`, #135).
+  A stitch file PE-DESIGN only opened has none (`machine-formats`), nor has OpenStitch's PEC.
 - A stitch longer than a record holds is one needle penetration: the full-size pieces are
   jumps and only the remainder is a stitch (HUS alone writes two stitches).
 - A frame move is a run of jumps with no trim record of its own; the formats that have a trim
