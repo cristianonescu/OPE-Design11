@@ -58,6 +58,11 @@ const PATTERN_END: usize = LINE_BODY - template::BODY_TAIL.len();
 /// every owner file (100 × 100 mm and 200 × 200 mm pages alike).
 pub const PAGE_ORIGIN: f32 = 500.0;
 
+/// Thread-table colour type of the Applique Wizard's colours: catalogue number `100` (Applique
+/// Material, PEC 62), `101` (Applique Position, PEC 63) and `102` (Applique, PEC 64), RGB 0, no
+/// chart index, brand or chart (a01-rect-applique … a05). PE-DESIGN's chart colours are 10.
+pub const APPLIQUE_KIND: u32 = 2;
+
 /// Region sew type (`CEmbLine` body +134).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RegionSewType {
@@ -160,6 +165,10 @@ pub struct Shape {
     pub zigzag_width: f32,
     /// Zigzag density, line/mm.
     pub zigzag_density: f32,
+    /// E or V stitch width, mm (body +90; PE-DESIGN's default 2.5, the Applique Wizard's
+    /// tack-down 2.0: line-e-default, line-v-default, a01-rect-applique). An E or V line's sewn
+    /// extent is the bounds plus this width.
+    pub ev_width: f32,
     /// Running stitch pitch, mm. Kept while another line type is chosen, as PE's tool keeps it.
     pub run_pitch: f32,
     pub line_under_sewing: bool,
@@ -208,6 +217,9 @@ impl Shape {
     pub const LINE_E_OR_V: u16 = 3;
     pub const LINE_TRIPLE: u16 = 4;
     pub const LINE_NOT_SEWN: u16 = 9;
+    /// The Applique Wizard's cutting line (Applique Material: Cutting, a02-applique-cutting):
+    /// PE-DESIGN sews it with its cutting colour (PEC 65) whatever the line colour says.
+    pub const LINE_CUTTING: u16 = 7;
 
     /// A shape with PE-DESIGN 11.50's default attributes (the baseline file r01: line Zigzag
     /// 2.0 mm at 4.5 line/mm with under sewing, run pitch 2.0 mm; region Fill at 4.5 line/mm,
@@ -221,6 +233,7 @@ impl Shape {
             line_color: 0,
             zigzag_width: 2.0,
             zigzag_density: 4.5,
+            ev_width: 2.5,
             run_pitch: 2.0,
             line_under_sewing: true,
             region: RegionSewType::Fill,
@@ -948,6 +961,7 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         line_color: u16_at(body, 46),
         zigzag_width: f32::from(u16_at(body, 48)) / 10.0,
         zigzag_density: f32::from(u16_at(body, 50)) / 10.0,
+        ev_width: f32::from(u16_at(body, 90)) / 10.0,
         run_pitch: f32::from(u16_at(body, 52)) / 10.0,
         line_under_sewing: u16_at(body, 60) != 0,
         region: RegionSewType::from_raw(u16_at(body, 134)),
@@ -969,15 +983,15 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
 }
 
 /// The length of the `CEmbLine` body at the start of `data`: the 386 bytes before the pattern
-/// block, the block (u16 10000, u16 polyline count, per polyline six zero bytes, u16 1, u16
+/// block, the block (u16 size, u16 polyline count, per polyline six zero bytes, u16 1, u16
 /// point count and the points as two u16 each) and the 72 bytes after it. `None` when the
 /// block is not laid out that way.
 fn line_body_len(data: &[u8]) -> Option<usize> {
     let head = PATTERN_END - template::PATTERN_BYTES;
     let at = |o: usize| data.get(o..o + 2).map(|b| u16::from_le_bytes([b[0], b[1]]));
-    if at(head)? != 10000 {
-        return None;
-    }
+    // The pattern's size (10000 for PE-DESIGN's default; 750 and no polylines on the Applique
+    // Wizard's covering line, a01-rect-applique's fifth object), then its polylines.
+    at(head)?;
     let polylines = at(head + 2)?;
     let mut o = head + 4;
     for _ in 0..polylines {
@@ -1110,7 +1124,17 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     let pec_placeholder = w.len();
     w.u32le(0);
     w.u16le(1);
-    w.append(&objects.code.unwrap_or(*b"10"));
+    // A file's own code as read (`10`, `01`, a02's `B1 30`); a design's is `10`, with bit 0x80
+    // of the first character set when it has a sewn cutting line (`B1 30`: a02-applique-cutting,
+    // the one owner file with a cutting line, against `10` or `01` in all 854 others).
+    let cutting = objects
+        .shapes
+        .iter()
+        .any(|s| s.line_sewn && s.line_type == Shape::LINE_CUTTING);
+    let code = objects
+        .code
+        .unwrap_or(if cutting { [b'1' | 0x80, b'0'] } else { *b"10" });
+    w.append(&code);
     for key in crate::pes::METADATA_KEYS {
         crate::pes::write_string8(&mut w, pattern.metadata.get(key).map(String::as_str));
     }
@@ -1445,6 +1469,9 @@ fn write_threads(w: &mut ByteWriter, threads: &[Thread]) {
         w.u32le(i64::from(t.kind.unwrap_or(Thread::CUSTOM_KIND)));
         match t.name.as_deref() {
             Some(name) => write_mfc_unicode(w, name),
+            // The Applique Wizard's colours (kind 2: Applique Material, Position, Applique) have
+            // no chart index (a01-rect-applique).
+            None if t.kind == Some(APPLIQUE_KIND) => write_mfc_unicode(w, ""),
             None => write_mfc_unicode(w, &index.to_string()),
         }
         write_mfc_unicode(w, t.brand.as_deref().unwrap_or(""));
@@ -1499,11 +1526,12 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     for (k, v) in s.bounds.iter().enumerate() {
         put16(&mut head, 2 * k, *v as u16);
     }
-    // Sewn extent: the bounds plus half the zigzag width while a zigzag line is sewn.
-    let half = if s.line_sewn && s.line_type == Shape::LINE_ZIGZAG {
-        (s.zigzag_width * 5.0).round() as i16
-    } else {
-        0
+    // Sewn extent: the bounds plus half the zigzag width while a zigzag line is sewn, plus
+    // the E or V width while an E or V line is.
+    let half = match (s.line_sewn, s.line_type) {
+        (true, Shape::LINE_ZIGZAG) => (s.zigzag_width * 5.0).round() as i16,
+        (true, Shape::LINE_E_OR_V) => (s.ev_width * 10.0).round() as i16,
+        _ => 0,
     };
     for (k, v) in [x0 - half, y0 - half, x1 + half, y1 + half]
         .iter()
@@ -1519,6 +1547,12 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     put16(&mut head, 50, tenths(s.zigzag_density));
     put16(&mut head, 52, tenths(s.run_pitch));
     put16(&mut head, 60, u16::from(s.line_under_sewing));
+    put16(&mut head, 90, tenths(s.ev_width));
+    // +122: 1 on PE-DESIGN's cutting line where every other object has 5 (a02-applique-
+    // cutting; the field's meaning is not mapped).
+    if s.line_type == Shape::LINE_CUTTING {
+        put16(&mut head, 122, 1);
+    }
     put16(
         &mut head,
         132,
@@ -1595,10 +1629,12 @@ fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
     }
     let [x0, y0, x1, y1] = s.bounds.map(f64::from);
     let (width, height) = (x1 - x0, y1 - y0);
+    // Whole units, rounded (a05-applique-replace's 210-unit square: the centre mark at
+    // 595 + 52.5 → 648).
     let (left, right, mid) = (
-        (x0 - width / 10.0, y0 + height * 0.6),
-        (x1 + width / 10.0, y0 + height * 0.6),
-        ((x0 + x1) / 2.0, y0 + height * 0.25),
+        ((x0 - width / 10.0).round(), (y0 + height * 0.6).round()),
+        ((x1 + width / 10.0).round(), (y0 + height * 0.6).round()),
+        (((x0 + x1) / 2.0).round(), (y0 + height * 0.25).round()),
     );
     let (seg_b, t_ab, flag_c, t_cd, seg_d): (i64, f64, i64, f64, i64) = if s.closed {
         (2, 1.0, 1, 0.5, 3)

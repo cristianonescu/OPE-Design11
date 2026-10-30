@@ -355,7 +355,9 @@ Line references are relative to `crates/`.
   `pes-0110-curve-block`, reference pending; owner files m01–m11 read and rewritten byte for
   byte outside the pattern block; Text > Convert to Blocks' output (stroke-blocks-H, -A) read as
   blocks and running pieces, its blocks' marks equal but for the floats' last bits; a Curve Block written from a design has handles within one
-  file unit of PE-DESIGN's, which way PE-DESIGN rounds them not mapped);
+  file unit of PE-DESIGN's, which way PE-DESIGN rounds them not mapped); the Appliqué wizard's stages as PE-DESIGN's appliqué lines and colours (spec
+  `pes-0110-applique`, reference pending; owner files a01–a05 read and rewritten byte for byte
+  outside the documented differences);
   Shapes-gallery shapes (`CEmbSpecialShape`, `CEmbLine` records under another class name)
   round-trip (o-gallery-heart, shape-start-points). Refused for
   now: right-aligned and vertical text, stretched fit, rotation, letter spacing, kerning,

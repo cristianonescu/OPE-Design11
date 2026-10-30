@@ -270,6 +270,59 @@ fn convert_to_blocks_reads_as_blocks_and_running_pieces() {
 }
 
 #[test]
+fn applique_wizard_objects_read_with_their_lines_and_colours() {
+    // Applique Wizard on a 20 mm square at its defaults (a01): the square, then the material
+    // (running), position (running) and tack-down (V, 2.0 mm) lines on an outline 3 mm out,
+    // then the covering zigzag (3.0 mm), all in one group; the stage colours are PE-DESIGN's
+    // appliqué colours 100, 101, 102.
+    let a01 = objects_of(&data("pe11/a01-rect-applique.pes"));
+    assert!(a01.unparsed.is_none());
+    let lines: Vec<(u16, u16)> = a01
+        .shapes
+        .iter()
+        .map(|s| (s.line_type, s.line_color))
+        .collect();
+    assert_eq!(
+        lines,
+        [
+            (Shape::LINE_NOT_SEWN, 1),
+            (Shape::LINE_RUNNING, 2),
+            (Shape::LINE_RUNNING, 3),
+            (Shape::LINE_E_OR_V, 4),
+            (Shape::LINE_ZIGZAG, 4)
+        ]
+    );
+    assert_eq!(a01.shapes[3].ev_width, 2.0);
+    assert_eq!(a01.shapes[4].zigzag_width, 3.0);
+    // One group: the four lines, then the square.
+    assert_eq!(a01.groups, [vec![1, 2, 3, 4, 0]]);
+    for (t, catalog) in a01.threads[2..].iter().zip(["100", "101", "102"]) {
+        assert_eq!(t.catalog_number.as_deref(), Some(catalog));
+        assert_eq!((t.kind, t.rgb_value()), (Some(pes11::APPLIQUE_KIND), 0));
+    }
+    // Material Cutting (a02): a cutting line, and bit 0x80 of the signature code.
+    let a02 = data("pe11/a02-applique-cutting.pes");
+    assert_eq!(objects_of(&a02).shapes[1].line_type, Shape::LINE_CUTTING);
+    assert_eq!(a02[14..16], [0xB1, b'0']);
+    // No tack-down (a03): one object fewer; a 4 mm cover (a04); Replace (a05): the square gone.
+    assert_eq!(
+        objects_of(&data("pe11/a03-applique-no-tackdown.pes"))
+            .shapes
+            .len(),
+        4
+    );
+    let a04 = objects_of(&data("pe11/a04-applique-cover-4mm.pes"));
+    assert_eq!(a04.shapes.last().map(|s| s.zigzag_width), Some(4.0));
+    let a05 = objects_of(&data("pe11/a05-applique-replace.pes"));
+    assert_eq!(a05.shapes.len(), 4);
+    assert!(
+        a05.shapes
+            .iter()
+            .all(|s| s.region == RegionSewType::NotSewn)
+    );
+}
+
+#[test]
 fn unmapped_layouts_stop_reading_instead_of_misreading() {
     // Layouts not mapped yet must end the list as "unparsed", with the shapes read before them
     // intact and every vertex inside its bounds. The Manual Punch column of
@@ -440,6 +493,11 @@ fn round_3_object_files_read_their_stitches_and_stop_cleanly() {
 const FULLY_PARSED: &[&str] = &[
     "stroke-blocks-H",
     "stroke-blocks-A",
+    "a01-rect-applique",
+    "a02-applique-cutting",
+    "a03-applique-no-tackdown",
+    "a04-applique-cover-4mm",
+    "a05-applique-replace",
     "o-manual-straight",
     "o-manual-curve",
     "o-manual-running",
@@ -774,6 +832,12 @@ fn marks_close(a: &[u8], b: &[u8]) -> bool {
             .all(|&o| (f64_at(a, o) - f64_at(b, o)).abs() <= 1e-4)
 }
 
+/// The covering line's unmapped fields that differ from every other object's (a01-rect-applique:
+/// 0 where others have 1 at +58, +364; 50 / 50 / 100 where others have 123 / 123 / 50 or
+/// 117 / 117 at +70, +72, +82, +218, +220, +238, +240, +260, +334, +336, +346; its +178, 0, is
+/// read and written).
+const COVER_FIELDS: [usize; 13] = [58, 70, 72, 82, 218, 220, 238, 240, 260, 334, 336, 346, 364];
+
 #[test]
 fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differences() {
     // docs/FILE_FORMATS.md, "Writer": the pattern block inside every body is OpenStitch's own;
@@ -788,6 +852,11 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
         "r11-line",
         // Manual Punch > Running: an open running line, placed like r11's.
         "o-manual-running",
+        // The Applique Wizard's lines follow a curved outline offset from the pattern.
+        "a01-rect-applique",
+        "a02-applique-cutting",
+        "a03-applique-no-tackdown",
+        "a04-applique-cover-4mm",
         "o-arc",
         "o-arc-string",
         "o-closed-curve",
@@ -814,6 +883,11 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
         // Every pattern block is OpenStitch's placeholder (4 + 3970 bytes); PE-DESIGN's is as
         // long as the programmable pattern it holds (53 polylines in most files, one in m01).
         let records = bodies(&fixture, objects.shapes.len());
+        // Records whose pattern block is empty (the Applique Wizard's covering line).
+        let empty: Vec<bool> = records
+            .iter()
+            .map(|r| r.pattern_end == r.start + 390)
+            .collect();
         let original_len = fixture.len();
         let fixture = match bodies(&written, objects.shapes.len()).first() {
             Some(w) => with_pattern(&fixture, &records, &written[w.start + 386..w.pattern_end]),
@@ -850,6 +924,10 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
                 let (b, gh) = (r.start, r.geometry);
                 // +162: PE-DESIGN's default-colour index, OpenStitch's line colour.
                 (b + 162 <= from && to <= b + 164)
+                    // The Applique Wizard's covering line (its pattern block empty, size 750)
+                    // stores its own values in fields of the sew types it doesn't use.
+                    || (empty.get(k) == Some(&true)
+                        && COVER_FIELDS.iter().any(|&o| b + o <= from && to <= b + o + 2))
                     || (extent_differs && b + 8 <= from && to <= b + 16)
                     // The two lists' positions on a shape (one entry each): their t values.
                     || (r.marks_end - r.geometry == 84
@@ -889,7 +967,21 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
             .into_iter()
             .filter(|&(s, e)| !allowed(s, e) && !text_quirk(s, e))
             .collect();
-        assert!(unexplained.is_empty(), "{name}: {unexplained:?}");
+        let located: Vec<String> = unexplained
+            .iter()
+            .map(|&(f, t)| match records.iter().rposition(|r| r.start <= f) {
+                Some(k) => {
+                    let r = records[k];
+                    if f >= r.geometry {
+                        format!("#{k} geo+{}..{}", f - r.geometry, t - r.geometry)
+                    } else {
+                        format!("#{k} body+{}..{}", f - r.start, t - r.start)
+                    }
+                }
+                None => format!("{f}..{t}"),
+            })
+            .collect();
+        assert!(unexplained.is_empty(), "{name}: {located:?}");
     }
 }
 
