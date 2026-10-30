@@ -47,7 +47,7 @@ through its normal interface are committed under `compat/reference/`. The compat
 <!-- status:glance -->
 | | |
 |---|---|
-| Feature matrix rows | 168: 142 implemented (2 of them partially compatible), 2 documented only, 10 blocked, 14 planned beyond PE-DESIGN |
+| Feature matrix rows | 170: 143 implemented (2 of them partially compatible), 3 documented only, 10 blocked, 14 planned beyond PE-DESIGN |
 | Compatibility specs | 386: 386 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
 | Matrix rows covered by specs | 32: 25 at the reference tier, 5 at the internal-regression tier, 2 at the oracle tier |
 | Open audit differences | 11 ([audit](docs/COMPATIBILITY_AUDIT.md#summary)) |
@@ -224,6 +224,7 @@ PE-DESIGN 11 features OpenStitch does not have yet, from the feature matrix:
 <!-- status:not-implemented -->
 - **Export CSD, SHV** (Files)
 - **Import WMF/EMF** (Files)
+- **Fill Stitch Type 2** (Region sew types)
 <!-- /status:not-implemented -->
 
 Also missing, from the [roadmap](docs/ROADMAP.md#still-to-do):
@@ -529,7 +530,7 @@ including the README refresh done at every release, is in [docs/RELEASING.md](do
 - [Distribution and packaging](docs/DISTRIBUTION.md)
 - [Releasing](docs/RELEASING.md) and the [release notes](docs/releases/)
 - [Test images for the image wizards](docs/research/test-images.md)
-- Handoffs (history): [2026-10-29](docs/HANDOFF-2026-10-29.md),
+- Handoffs (history): [2026-10-30](docs/HANDOFF-2026-10-30.md), [2026-10-29](docs/HANDOFF-2026-10-29.md),
   [2026-10-28](docs/HANDOFF-2026-10-28.md), [2026-10-27](docs/HANDOFF-2026-10-27.md),
   [2026-10-19](docs/HANDOFF-2026-10-19.md), [2026-10-18](docs/HANDOFF-2026-10-18.md)
 
