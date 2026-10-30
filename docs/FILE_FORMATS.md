@@ -268,7 +268,9 @@ below is pinned by a test in `tests/pes11.rs`.
 | 168 | region direction, degrees | r08 (45 → 90) |
 | 170 | region colour, a thread-table index | shape-start-points (three shapes: 0, 2, 3 = 800, 007, 027), hole-sewing-pentagon-star |
 | 174 | Fill Frequency, % (default 30) | fill-frequency-0/25/50 |
+| 178 | 1 in PE-DESIGN's tool defaults, 0 in the owner's machine-* files and on Convert to Blocks' blocks (meaning not mapped) | stroke-blocks-H, -A |
 | 180 | region under sewing 1 on, 0 off | r06 |
+| 182 | region under sewing type: 2 PE-DESIGN's default, 4, 0, 1, 3 the second to fifth types; 0 on Convert to Blocks' blocks | satin-col-us-type-2 … -5, stroke-blocks-H |
 | 186 | Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline | region-travel-u-* |
 | 204, 262, 286, 354, 378 | i32 x, y: the bounds' top-left corner, five times (reference points of attributes not identified) | r02, r03, o-closed-curve |
 | 298, 310 | i32 x, y: the bounds' centre (x0 + x1 and y0 + y1 halved, truncated) | r02, r03, o-open-freehand |
@@ -300,18 +302,32 @@ the line; m04, m05, m08 each change only that field). What makes them blocks is 
   m09, m10, m11 and o-manual-curve are within one unit (0.1 mm) of this rule, which way each
   is rounded is not mapped. The bounds are the outline's extent as its curves reach it,
   rounded outward (m10's left side bulges to x 591.48: 591; m11 sags to y 970.25: 971).
-- The two lists hold one entry per line, n each: the first ends' vertices 0 … n − 1 and the
-  second ends' 2n − 1 … n, all at t 0 (m01: 2 and 2 entries, m03: 4 and 4).
-- The marks hang off the two straight edges that close the block, cut at the height midway
-  between the outline's top and bottom as its curves reach them (m11: (600 + 970.25) / 2 =
-  785.125). Mark A is the left cut (segment 2n − 1, its parameter up the edge) offset a tenth
-  of the bounds' width outward and a tenth of their height down; C likewise at the right cut
-  (segment n − 1, its parameter down the edge); B midway between the cuts, a quarter of the
-  height up. The tenths and the quarter are whole units, rounded down; the parameters are
-  single-precision values stored as f64 (m11: 0.07437500357627869). A straight block's cuts sit
-  mid-edge at t 0.5, which is the closed-shape rule (m01, m03).
+- The two lists hold one entry per line, in order: its first end's vertex in the first list,
+  its second end's in the second, all at t 0. The Manual Punch tool's blocks have no other
+  vertices: 0 … n − 1 and 2n − 1 … n (m01: 2 and 2 entries, m03: 4 and 4). Text > Convert to
+  Blocks also puts outline points between line ends (stroke-blocks-A's second block: lines
+  [0, 11] [1, 10] [4, 7] [5, 6] on 12 vertices).
+- The marks hang off the outline where the horizontal line midway between its top and
+  bottom (as its curves reach them: m11, (600 + 970.25) / 2 = 785.125) crosses it furthest
+  left and furthest right, each crossing as a segment and a parameter along it, a crossing at
+  a vertex as the end of the segment before it (t 1: stroke-blocks-H's first block). Mark A is
+  the left crossing offset a tenth of the bounds' width outward and a tenth of their height
+  down; C likewise at the right; B midway between them, a quarter of the height up. The tenths
+  and the quarter are whole units, rounded down; the parameters are single-precision values
+  stored as f64 (m11: 0.07437500357627869). On the Manual Punch tool's blocks the crossings are
+  the edges that close the block (a straight block's mid-edge at t 0.5, the closed-shape rule:
+  m01, m03); Convert to Blocks' vertical strokes cross on their sides. On its diagonal blocks
+  (stroke-blocks-A) PE-DESIGN's crossings differ from this in the floats' last bits (t within
+  1e-4); how it computes them is not mapped.
 - The body's two tail positions (u16 segment, f32 t at +4414 and +4426 on a default-pattern
-  body) are (2n − 1, 1.0) and (n, 0.0), where a shape has the last segment and 1.0 twice.
+  body) are the last segment at 1.0, and the vertex the block's sewing ends at, at 0.0: an end
+  of its last line, n on the Manual Punch tool's blocks, either end on Convert to Blocks' (H's
+  first block: 2 of [2, 3]; its third: 2 of [1, 2]). A shape has the last segment and 1.0
+  twice.
+
+Convert to Blocks writes one group of blocks with running pieces between them (open lines,
+line Running, region Not Sewn) whose two position lists are empty (stroke-blocks-H, -A); their
+marks follow the open-line placement the writer doesn't reproduce.
 
 PE-DESIGN numbers the lines across the whole object: one object for the eight clicks of m03.
 Manual Punch > Running is an open line with one entry per list, an ordinary shape
@@ -332,7 +348,7 @@ four lines, then the square; Replace drops the square):
 - A file with a sewn cutting line sets bit 0x80 of the signature code's first character
   (`B1 30`: a02, against `10` or `01` in all 854 other `#PES0110` files).
 - The covering line has an empty pattern block (size 750, no polylines) and its own values in
-  fields of the sew types it doesn't use (+58, +178, +364: 0 where others have 1; +70, +72,
+  fields of the sew types it doesn't use (+58, +364: 0 where others have 1; +70, +72,
   +82, +218, +220, +238, +240, +260, +334, +336, +346: 50 / 100 where others have 123, 117 or
   50); not mapped.
 For closed shapes the coordinates sit at fixed fractions of the bounds: A a tenth of the width
@@ -479,8 +495,8 @@ outlines in one object, programmable, motif and the other region types, motif, s
 candlewicking, chain and cutting lines; text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character
-edits or under sewing. Checks: the 119 owner files whose list the reader parses completely (54
-with shapes, 11 of them Manual Punch objects, 5 Applique Wizard outputs, 19 with plain text, 27 with a Text Transform, 14 with
+edits or under sewing. Checks: the 121 owner files whose list the reader parses completely (56
+with shapes, 11 of them Manual Punch objects, 2 of Convert to Blocks, 5 Applique Wizard outputs, 19 with plain text, 27 with a Text Transform, 14 with
 text fitted to an outline, 3 with a stitch group; two of them with gallery shapes) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):

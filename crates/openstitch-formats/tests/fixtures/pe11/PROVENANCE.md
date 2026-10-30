@@ -167,3 +167,17 @@ step 4.0, frequency 30 %); 20,00 x 20,00 mm, 707 st; Save As PES (#PES0110). Thr
 | File | SHA-256 | Made as |
 |---|---|---|
 | `thread-307-linen.pes` | `66ddd37bf00d39e984486a8368ad8cc2178575407c4cfecc068ce832590b7422` | as above |
+## Round 5 (2026-10-30): Convert to Blocks
+
+Made by the owner's PE-DESIGN 11.50 (Layout & Editing) on Windows 11 Pro 10.0.26300,
+2026-10-30 10:37-11:04, by black-box GUI use only (session pe-refs-4 for the pattern-formats
+track, round4/log.txt "STROKE-WISE LETTERING", round5/text-strokes). App menu > New (Hoop Size
+100 x 100 mm); Home > Text > Text tool, Lato (Lato-Bold.ttf from crates/openstitch-design/fonts,
+installed for the user), size 20,0, line Not Sewn, region Satin at the text defaults (under
+sewing off, density 5,0); click (50,50) mm; the letter; Select tool; Text ribbon > Convert to
+Blocks; Save As "Layout & Editing Ver.11.0 File" (#PES0110).
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `stroke-blocks-H.pes` | `f687c993943d9f3323713a8f1bfa1bc696ec48e69834c28d42e1e574066b59f0` | H converted to blocks: one group of five blocks and three running pieces; 285 st (as the text). |
+| `stroke-blocks-A.pes` | `01e8ebc43e92ce52a5bc97659dbbf37bdd367473799bc67ede5bd4946218b2b7` | A converted to blocks: one group of five blocks and four running pieces; 293 st (the text: 290). |

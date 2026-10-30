@@ -205,7 +205,7 @@ fn manual_punch_blocks_read_as_shapes_with_their_direction_lines() {
     let [s] = m01.as_slice() else {
         panic!("one block object: {m01:?}")
     };
-    assert_eq!(s.punch_lines, 2);
+    assert_eq!((&s.punch, s.punch_exit), (&vec![[0, 3], [1, 2]], 2));
     assert!(s.closed);
     let xy: Vec<(f32, f32)> = s.vertices.iter().map(|v| (v.x, v.y)).collect();
     assert_eq!(
@@ -221,8 +221,8 @@ fn manual_punch_blocks_read_as_shapes_with_their_direction_lines() {
         (s.region, s.density, s.line_sewn, s.line_type),
         (RegionSewType::Satin, 4.5, false, Shape::LINE_NOT_SEWN)
     );
-    assert_eq!(read("m03-straight-3")[0].punch_lines, 4);
-    assert_eq!(read("o-manual-straight")[0].punch_lines, 3);
+    assert_eq!(read("m03-straight-3")[0].punch.len(), 4);
+    assert_eq!(read("o-manual-straight")[0].punch.len(), 3);
     assert_eq!(read("m04-straight-1-fill")[0].region, RegionSewType::Fill);
     assert_eq!(read("m05-straight-1-density")[0].density, 6.0);
     let m08 = &read("m08-straight-1-line")[0];
@@ -232,12 +232,12 @@ fn manual_punch_blocks_read_as_shapes_with_their_direction_lines() {
     );
     // The Curve Block: the same lines, the sides as smooth curves through their ends.
     let m07 = &read("m07-curve-1")[0];
-    assert_eq!(m07.punch_lines, 2);
+    assert_eq!(m07.punch.len(), 2);
     assert!(m07.vertices.iter().any(|v| v.kind != 0));
-    assert_eq!(read("m09-curve-bent")[0].punch_lines, 3);
-    assert_eq!(read("m11-curve-4")[0].punch_lines, 4);
+    assert_eq!(read("m09-curve-bent")[0].punch.len(), 3);
+    assert_eq!(read("m11-curve-4")[0].punch.len(), 4);
     // Manual Punch > Running is an open line with one entry per list: an ordinary shape.
-    assert_eq!(read("o-manual-running")[0].punch_lines, 0);
+    assert!(read("o-manual-running")[0].punch.is_empty());
     // A block object written from these fields reads back the same.
     let objects = objects_of(&data("pe11/m03-straight-3.pes"));
     let written =
@@ -296,6 +296,30 @@ fn applique_wizard_objects_read_with_their_lines_and_colours() {
             .iter()
             .all(|s| s.region == RegionSewType::NotSewn)
     );
+}
+
+#[test]
+fn convert_to_blocks_reads_as_blocks_and_running_pieces() {
+    // Text > Convert to Blocks on a Lato Bold H and A (20 mm, Satin): one group of Manual
+    // Punch blocks with running pieces between them. A block's lines can skip outline points
+    // (A's second block: lines [0, 11] [1, 10] [4, 7] [5, 6]); the running pieces have empty
+    // position lists; the blocks carry under sewing type 0 and +178 0.
+    let h = objects_of(&data("pe11/stroke-blocks-H.pes"));
+    assert!(h.unparsed.is_none());
+    assert_eq!(h.shapes.len(), 8);
+    assert_eq!(h.groups, [(0..8).collect::<Vec<u16>>()]);
+    let blocks: Vec<usize> = h.shapes.iter().map(|s| s.punch.len()).collect();
+    assert_eq!(blocks, [3, 0, 4, 0, 2, 4, 0, 7]);
+    assert!(h.shapes[1].no_positions && !h.shapes[1].closed);
+    assert_eq!(
+        (h.shapes[0].under_sewing_type, h.shapes[0].flag_178),
+        (0, 0)
+    );
+    assert_eq!(h.shapes[0].punch_exit, 2);
+    let a = objects_of(&data("pe11/stroke-blocks-A.pes"));
+    assert!(a.unparsed.is_none());
+    assert_eq!(a.shapes[1].punch, [[0, 11], [1, 10], [4, 7], [5, 6]]);
+    assert_eq!(a.shapes[1].punch_exit, 5);
 }
 
 #[test]
@@ -472,6 +496,8 @@ const FULLY_PARSED: &[&str] = &[
     "a03-applique-no-tackdown",
     "a04-applique-cover-4mm",
     "a05-applique-replace",
+    "stroke-blocks-H",
+    "stroke-blocks-A",
     "o-manual-straight",
     "o-manual-curve",
     "o-manual-running",
@@ -791,11 +817,26 @@ fn with_pattern(fixture: &[u8], records: &[Body], placeholder: &[u8]) -> Vec<u8>
 }
 
 /// The covering line's unmapped fields that differ from every other object's (a01-rect-applique:
-/// 0 where others have 1 at +58, +178, +364; 50 / 50 / 100 where others have 123 / 123 / 50 or
-/// 117 / 117 at +70, +72, +82, +218, +220, +238, +240, +260, +334, +336, +346).
-const COVER_FIELDS: [usize; 14] = [
-    58, 70, 72, 82, 178, 218, 220, 238, 240, 260, 334, 336, 346, 364,
-];
+/// 0 where others have 1 at +58, +364; 50 / 50 / 100 where others have 123 / 123 / 50 or
+/// 117 / 117 at +70, +72, +82, +218, +220, +238, +240, +260, +334, +336, +346; its +178, 0, is
+/// read and written).
+const COVER_FIELDS: [usize; 13] = [58, 70, 72, 82, 218, 220, 238, 240, 260, 334, 336, 346, 364];
+
+/// Two geometry-header mark blocks (52 bytes: A x y, u32, f64 t, u16, B x y, u32, f64 t, C x y,
+/// u16) equal but for the floats' last bits: the integers equal, coordinates within 0.001 unit,
+/// parameters within 1e-4.
+fn marks_close(a: &[u8], b: &[u8]) -> bool {
+    let f32_at = |m: &[u8], o: usize| f32::from_le_bytes(m[o..o + 4].try_into().expect("f32"));
+    let f64_at = |m: &[u8], o: usize| f64::from_le_bytes(m[o..o + 8].try_into().expect("f64"));
+    let ints = [8..12, 20..22, 30..34, 50..52];
+    ints.iter().all(|r| a[r.clone()] == b[r.clone()])
+        && [0, 4, 22, 26, 42, 46]
+            .iter()
+            .all(|&o| (f32_at(a, o) - f32_at(b, o)).abs() <= 0.001)
+        && [12, 34]
+            .iter()
+            .all(|&o| (f64_at(a, o) - f64_at(b, o)).abs() <= 1e-4)
+}
 
 #[test]
 fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differences() {
@@ -894,6 +935,23 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
                     || ((marks_differ.contains(&name) || name.starts_with("text-fit"))
                         && gh <= from
                         && to <= r.marks_end)
+                    // Convert to Blocks' running pieces are open lines: their marks follow the
+                    // open-line placement the writer doesn't reproduce (the blocks' own marks
+                    // are compared byte for byte).
+                    || (name.starts_with("stroke-blocks")
+                        && objects.shapes.get(k).is_some_and(|s| !s.closed)
+                        && gh <= from
+                        && to <= r.marks_end)
+                    // A diagonal block's marks: PE-DESIGN's crossing differs from OpenStitch's in
+                    // the last bits of the floats (t within 1e-4, coordinates within 0.001 unit;
+                    // the integer fields equal), as decoded below.
+                    || (name.starts_with("stroke-blocks")
+                        && r.marks_end - 52 <= from
+                        && to <= r.marks_end
+                        && marks_close(
+                            &written[r.marks_end - 52..r.marks_end],
+                            &fixture[r.marks_end - 52..r.marks_end],
+                        ))
             })
         };
         // Text: a letter field that is f32 -0.0 in r12–r26 and 0.0 in the later owner files
