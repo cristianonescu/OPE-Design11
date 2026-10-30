@@ -13,7 +13,7 @@ registers before relying on it. Claim gists are paraphrases, not claim text.
 | Patent | Holder | Priority | Status shown | Touches | Reading |
 |---|---|---|---|---|---|
 | US 8,532,810 B2 | Vistaprint (Cimpress) | 1998-08-17 | Expired (fee related), term ended 2018 | auto-digitizing (Auto Punch), B4 routing | expired; the survey had mis-described it as a skeleton-satin patent (corrected below) |
-| US 7,996,103 B2 | Brother Industries | 2007-11-26 | **Active** until 2030-03-27 | F16 direction-aware photo stitch (deferred); B4's "travel over sewn lines" rule needs a look | the one live patent on the list |
+| US 7,996,103 B2 | Brother Industries | 2007-11-26 | **Active** until 2030-03-27 | F16 direction-aware photo stitch (deferred); Photo Stitch 2's fixed-angle line screen (#129, [photo-stitch-2-halftone.md](../photo-stitch-2-halftone.md), held for the owner's decision); B4's "travel over sewn lines" rule needs a look | the one live patent on the list |
 | US 5,541,847 A | Pulse Microsystems | 1994-10-14 | Expired (lifetime) 2014 | B1 contour fill | expired |
 | US 6,934,599 B2 | VSM Group (now Singer Sourcing) | 2002-04-22 | Expired (lifetime) 2023 | D12 TrueType to satin, Font Creator | expired |
 | US 6,587,745 B1 | Wilcom | 1998-09-07 | Expired (fee related), lapsed 2007 | B2 guided fills, today's direction curve | expired |

@@ -1294,7 +1294,12 @@ Line references are relative to `crates/`.
     (0°, 45°, 90°, 135°) over the whole mask, with zigzag excursions where its colour is
     needed (white areas 88 needle points per cm², coloured areas 355–426), 14 133 stitches.
     OpenStitch's Lines style sews every colour along horizontal rows (7035 stitches). This is
-    #129's model; noted on #129.
+    #129's model; noted on #129. Measured in detail on 2026-10-30 with the new
+    `tools/screencmp.py`: each line is a straight 2.4–2.5 mm run where its colour is not
+    needed (about 20 needle points per cm² per thread) and a zigzag 1.8 mm deep advancing
+    0.2 mm per stitch where it is (about 300 per cm² in the thread's own area); one jump per
+    thread, no trims. The model, the acceptance criteria and the patent facts are in
+    docs/research/photo-stitch-2-halftone.md; the generator waits for the owner's decision.
 - **Sewing-machine stitch files (PMV, 2026-10-29, #130):** OpenStitch now reads the PMV layout
   it writes (pyembroidery's description: 8-byte magic, 36-byte banner, 56-byte preamble, needle
   count and its double, 6-bit relative x / 5-bit absolute y pairs in 0.25 mm, the length and

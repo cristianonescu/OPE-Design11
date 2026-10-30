@@ -227,7 +227,8 @@ Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUD
     2026-10-30 (mono +11 % stitches, was +39 %; trims 99 and 249, were 426 and 1158). Next:
     run-to-run travel in Cross Stitch; PE's contour-following meanders for Photo Stitch 1 and
     the per-colour screen angles of Photo Stitch 2 (#129, held for the owner's patent
-    decision).
+    decision; harness `tools/screencmp.py` and design note
+    docs/research/photo-stitch-2-halftone.md done 2026-10-30).
 
 ## Beyond PE-DESIGN
 
