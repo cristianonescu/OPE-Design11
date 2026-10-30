@@ -584,11 +584,12 @@ fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> 
             run
         })
         .collect();
-    // PE-DESIGN ties in and locks these lines like a satin (line-*-default.pes); V, stem,
+    // PE-DESIGN ties in and locks these lines like a satin (line-*-default.pes; motif lines:
+    // line-motif-zigzag-3pt.pes, three steps out after its 2.8 mm first stitch); V, stem,
     // candlewicking and chain tie in with three steps out instead of one, but not where a
     // moved entry point starts a stem or candlewick with running stitch
     // (line-*-startend-*.pes; a chain's lead keeps the long one).
-    if !matches!(line.kind, LineType::Motif | LineType::Cutting) {
+    if line.kind != LineType::Cutting {
         region::tie_and_lock(std::slice::from_mut(&mut runs));
         if matches!(
             line.kind,

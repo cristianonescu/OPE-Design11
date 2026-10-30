@@ -309,6 +309,8 @@ sources in the documented `@DIRECTIVE` layout, checked against six owner-made Pr
 Stitch Creator files, and programmable fill, motif fill and motif line tiled as PE-DESIGN 11.50
 sews them (2026-10-29: four reference specs); the motif fill's travel and ties as PE-DESIGN
 (2026-10-30, 130 needle points as PE). Next: the motif line's tie stitches; a decorative-fill
+sews them (2026-10-29: four reference specs); the motif line's tie-in and lock (2026-10-30,
+23 needle points as PE). Next: the motif fill's travel between rows; a decorative-fill
 reference for free `.plf` lines. Waiting for
 the owner-made samples: PE-DESIGN's own PMV files and a Font Creator font of one and two
 owner-drawn glyphs with text set in it (pe-refs-4 could not reach Font Creator and Stitch Design
