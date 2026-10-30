@@ -1574,6 +1574,15 @@ Line references are relative to `crates/`.
   needs the codes for all 61 entries, known since the round-4 chart reading (see below), and goes with
   the palette work (#136). The machine-format references (`machine-formats`, red and black)
   pick the same entries under both metrics.
+- **PEC colour indexes block by block (2026-10-30, #119, #136):** PE-DESIGN 11.50's own file of
+  the 29 Ver4 Option colours (`tests/fixtures/pe11/ver4-option-color-29.pes`, reference
+  session) gives every colour block the plain nearest PEC entry among 1–61: 32 five times, 7,
+  14, 25 and 37 twice each. OpenStitch's PEC writer gave each distinct colour a still-unused
+  entry instead (so distinct design colours stayed distinct on the machine); it now writes the
+  plain nearest entry per block, and the fixture's 29 indexes are reproduced
+  (`each_block_gets_its_nearest_chart_entry_as_pe_design_writes`). No spec changed. The same
+  file showed the `#PES0110` thread-table reader taking a false, shorter table that starts in
+  the middle of the real one (11 records of 30); it now keeps the longest table that parses.
 - **Thread-chart CSV and the built-in palette (2026-10-29, #136):** PE-DESIGN 11.50 has no
   thread-chart CSV (round-4 check: Options ▸ Edit User Thread Chart only imports; user charts
   are binary `.btc2` files, 89 bytes of high-entropy data for one colour, in the program
@@ -1583,7 +1592,28 @@ Line references are relative to `crates/`.
   `threads.exportCsv` for user and built-in charts and `threads.builtinCharts`, which marks
   Brother entries 1–61 as the ones PE matches to (#119). Charts cannot be exchanged with
   PE-DESIGN through files; `.btc2` is not decoded (obfuscated, kept in the program folder).
-  The 94-entry sew palette of the issue is not implemented: no PE-DESIGN capture shows it.
+  The 94-entry sew palette is implemented since 2026-10-30 (`openstitch_core::sew_palette`,
+  `threads.builtinCharts` `sewPalette`): PE-DESIGN 11.50 has no single 94-row list, but its
+  "Ver4 Option Color" chart has exactly 29 rows, and its own file of them
+  (`ver4-option-color-29.pes`, reference session) writes ids 66–94, type `0x0B`, brand
+  "Option Color" and RGB on a 0/85/170/255 grid: 61 basic + 4 reserved (shown nowhere) + 29,
+  as the issue said. The `#PES0110` writer writes an Option Color thread with that record
+  (id string 66–94, empty code and chart, type `0x0B`; `as_pe_writes`,
+  `option_colours_are_written_with_their_sew_palette_ids` against PE's own file) instead of the
+  nearest PEC index it gave before. The matcher (`sew_palette_index`) follows the issue's dual rule and is
+  **not verified against PE-DESIGN**: no capture shows where PE-DESIGN matches colours to this
+  palette (its vector import does not: the swatch capture sent rgb(0, 0, 255) to 405 BLUE, not
+  to the identical Option colour blue2). No default path calls it, so no output a PE
+  reference backs changes; it is an API for callers that ask for the palette. PE-DESIGN's
+  Auto Punch does match to Ver4 Option Color when it is chosen as the Thread Chart (reference
+  session, 2026-10-30, a 4-colour image of rgb(20,20,180), (100,200,60), (200,40,120),
+  (240,160,40) on white, default parameters): it picked 66, 69, 85, 84. Squared Euclidean,
+  city block, the issue's dual rule and red-mean all give 66, 81, 85, 89; CIE76 Lab gives 66,
+  69, 91, 84. The same image with BROTHER EMBROIDERY gave 406, 509, 107, 208 (PEC 21, 37, 51,
+  12) where squared Euclidean gives PEC 21, 37, 49, 52. So Auto Punch changes the colours
+  before matching (its colour reduction or segmentation), and these picks neither confirm nor
+  settle the palette rule; the issue's dual rule does not reproduce them. Left for the image
+  track: Auto Punch's colour reduction.
 - **Readers against PE-DESIGN's ten-format export (2026-10-29, #135):** pe-refs-4's
   `sample-basic` (a satin S and a fill, exported to every type) found four reader problems.
   (1) PES "drops PE's tie-in records" (471 needle points against PE's 475): not a reader

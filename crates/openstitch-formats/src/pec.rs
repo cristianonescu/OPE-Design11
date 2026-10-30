@@ -371,28 +371,16 @@ pub(crate) fn write_section(input: &StitchPattern, w: &mut ByteWriter) -> Result
     Ok(list)
 }
 
-/// Maps each colour block's thread to a PEC chart index. Each distinct colour first claims the
-/// nearest still-free chart entry (first-appearance order, among the 61 entries PE-DESIGN
-/// matches to), then every block takes the nearest claimed entry, so distinct design colours
-/// stay distinct on the machine.
+/// Maps each colour block's thread to a PEC chart index: the nearest of the 61 entries
+/// PE-DESIGN matches to (`pec_basic_chart`, equal-weight squared Euclidean, later entry on
+/// ties), block by block. Distinct design colours may share an entry, as in PE-DESIGN 11.50's
+/// own file: its 29 Ver4 Option colours (`tests/fixtures/pe11/ver4-option-color-29.pes`) got
+/// PEC 32 five times, 7, 14, 25 and 37 twice each, every one the plain nearest entry. (An
+/// earlier rule gave each distinct colour a still-unused entry, which PE-DESIGN does not do.)
 pub fn pec_color_indexes(threads: &[Thread]) -> Vec<usize> {
-    let mut free: Vec<Option<Thread>> = pec_basic_chart().to_vec();
-    let mut claimed: Vec<Option<Thread>> = vec![None; free.len()];
-    let mut seen: Vec<u32> = Vec::new();
-    for t in threads {
-        if seen.contains(&t.rgb_value()) {
-            continue;
-        }
-        seen.push(t.rgb_value());
-        let Some(i) = nearest_index(t, &free) else {
-            break;
-        };
-        free[i] = None;
-        claimed[i] = Some(t.clone());
-    }
     threads
         .iter()
-        .map(|t| nearest_index(t, &claimed).unwrap_or(20))
+        .map(|t| nearest_index(t, pec_basic_chart()).unwrap_or(20))
         .collect()
 }
 

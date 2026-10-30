@@ -12,6 +12,9 @@
 //! The dialog's own first column (1 BLACK, 2 WHITE, 3 RED, …) is not the PEC index and is not
 //! used here.
 
+use crate::Thread;
+use std::borrow::Cow;
+
 /// Brand string PE-DESIGN writes for a BROTHER EMBROIDERY thread.
 pub const BROTHER_EMBROIDERY_BRAND: &str = "EMBROIDERY";
 
@@ -97,4 +100,84 @@ pub fn pec_index_of_brother_code(code: &str) -> Option<usize> {
         .iter()
         .find(|&&(_, c, _)| c == code)
         .map(|&(i, _, _)| i)
+}
+
+/// Brand PE-DESIGN 11.50 writes for a Ver4 Option Color thread.
+pub const OPTION_COLOR_BRAND: &str = "Option Color";
+
+/// Colour type PE-DESIGN 11.50 writes for a Ver4 Option Color thread (BROTHER EMBROIDERY's is
+/// `0x0A`, [`Thread::CUSTOM_KIND`]).
+pub const OPTION_COLOR_KIND: u32 = 0x0B;
+
+/// PE-DESIGN 11.50's "Ver4 Option Color" thread chart: `(sew palette id, name, RGB)` for its
+/// 29 rows, in row order. Read from PE-DESIGN's own file of the 29 colours (reference session,
+/// 2026-10-30; `openstitch-formats` fixture `pe11/ver4-option-color-29.pes`): empty code, type
+/// [`OPTION_COLOR_KIND`], brand [`OPTION_COLOR_BRAND`] and the id string 66–94 (row n is 65 + n)
+/// where a BROTHER EMBROIDERY thread has its PEC index. Every channel is 0, 85, 170 or 255.
+pub const VER4_OPTION_COLORS: [(usize, &str, u32); 29] = [
+    (66, "prussian blue2", 0x00_00AA),
+    (67, "blue2", 0x00_00FF),
+    (68, "electric blue2", 0x00_55FF),
+    (69, "moss green2", 0x00_AA00),
+    (70, "sky blue3", 0x00_AAFF),
+    (71, "lime green3", 0x00_FF00),
+    (72, "leaf green3", 0x00_FF55),
+    (73, "sky blue5", 0x00_FFAA),
+    (74, "sky blue6", 0x00_FFFF),
+    (75, "dark brown2", 0x55_0000),
+    (76, "purple2", 0x55_00FF),
+    (77, "cornflower blue2", 0x55_55FF),
+    (78, "sky blue2", 0x55_AAAA),
+    (79, "sky blue4", 0x55_AAFF),
+    (80, "lime green2", 0x55_FF00),
+    (81, "leaf green2", 0x55_FF55),
+    (82, "seacrest2", 0x55_FFAA),
+    (83, "light blue2", 0x55_FFFF),
+    (84, "red2", 0xAA_0000),
+    (85, "magenta2", 0xAA_00AA),
+    (86, "magenta3", 0xAA_00FF),
+    (87, "lilac2", 0xAA_55FF),
+    (88, "lavender2", 0xAA_AAFF),
+    (89, "yellow2", 0xAA_FF00),
+    (90, "dark fuchsia2", 0xFF_0055),
+    (91, "deep rose2", 0xFF_00AA),
+    (92, "deep rose3", 0xFF_00FF),
+    (93, "light lilac2", 0xFF_55FF),
+    (94, "flesh pink2", 0xFF_AAFF),
+];
+
+/// Sew palette ids PE-DESIGN reserves and never shows (issue #136: 61 basic + 4 reserved + 29).
+pub const SEW_PALETTE_RESERVED: std::ops::RangeInclusive<usize> = 62..=65;
+
+/// The 94-entry sew palette of issue #136, indexed by its 1-based id (index 0 unused): ids 1–61
+/// are the BROTHER EMBROIDERY chart threads ([`crate::PEC_CHART`], their codes in
+/// [`BROTHER_EMBROIDERY`]), 62–65 reserved (`None`), 66–94 the Ver4 Option Color threads.
+pub fn sew_palette() -> &'static [Option<Thread>] {
+    static PALETTE: std::sync::LazyLock<Vec<Option<Thread>>> = std::sync::LazyLock::new(|| {
+        let mut v: Vec<Option<Thread>> = crate::pec_basic_chart().to_vec();
+        v.extend(SEW_PALETTE_RESERVED.map(|_| None));
+        v.extend(VER4_OPTION_COLORS.iter().map(|&(_, name, rgb)| {
+            let mut t = Thread::rgb(rgb);
+            t.name = Some(Cow::Borrowed(name));
+            t.brand = Some(Cow::Borrowed(OPTION_COLOR_BRAND));
+            t.kind = Some(OPTION_COLOR_KIND);
+            Some(t)
+        }));
+        v
+    });
+    &PALETTE
+}
+
+/// The sew palette id of `color` (issue #119/#136's "approximate" match: the dual squared
+/// Euclidean / city-block minima of [`crate::approximate_index`]; reserved ids never match).
+/// `basic_only` matches against ids 1–61 alone. The rule is the issue's: no PE-DESIGN capture
+/// shows where PE uses this palette or how it matches to it.
+pub fn sew_palette_index(color: &Thread, basic_only: bool) -> Option<usize> {
+    let palette = sew_palette();
+    let candidates = if basic_only {
+        &palette[..=crate::PEC_BASIC_COLORS]
+    } else {
+        palette
+    };
+    crate::approximate_index(color, candidates)
 }
