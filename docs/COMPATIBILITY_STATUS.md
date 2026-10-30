@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 253 · pass 253 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 253 · pass 251 · fail 2 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -35,11 +35,11 @@ Specs: 253 · pass 253 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Line sew types | Running (pitch, run times… | internal-regression | `attribute-ranges` |
 | Line sew types | Running (pitch, run times 1… | reference | `line-running-default`, `line-triple-default`, `run-circle-60` |
 | Line sew types | Zigzag: width, density… | reference | `line-zigzag-default`, `line-zigzag-density-max` |
-| Machine | Brother 64-colour PEC chart mapping… | reference | `thread-match-swatches` |
-| Programmable Stitch Creator | Import of the user's own… | reference | `line-motif-zigzag-3pt`, `motif-fill-2pt`, `prog-fill-line-2pt`, `prog-fill-square-4pt` |
+| Machine | Brother 64-colour PEC chart mapping… | **failing** | `thread-match-swatches` |
+| Programmable Stitch Creator | Import of the user's own… | **failing** | `line-motif-zigzag-3pt`, `motif-fill-2pt`, `prog-fill-line-2pt`, `prog-fill-square-4pt` |
 | Region sew types | Concentric circle… | reference | `concentric-circle40-d1p0`, `concentric-circle40-d3p0`, `concentric-circle40-pitch3p0`, `concentric-circle40-start2`, `concentric-circle40`, `concentric-rect40x30`, `concentric-ring40-hole15`, `spiral-circle40-d1p0`, `spiral-circle40-d3p0`, `spiral-circle40-pitch3p0`, `spiral-circle40-start2`, `spiral-circle40`, `spiral-rect40x30`, `spiral-ring40-hole15` |
 | Region sew types | Fill (tatami: angle or auto direction… | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions`, `square-gradation-30-10`, `square-gradation-default`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5-h33`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-density-min`, `sweep-fill-dir-135`, `sweep-fill-dir-30`, `sweep-fill-dir-45`, `sweep-fill-dir-90`, `sweep-fill-freq-10`, `sweep-fill-freq-40`, `sweep-fill-pitch-2p0`, `sweep-fill-pitch-3p0`, `sweep-fill-pitch-6p0`, `sweep-fill-pitch-max`, `sweep-fill-pitch-min`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max`, `sweep-fill-us-default`, `sweep-fill-us-density-dense`, `sweep-fill-us-density-light`, `sweep-fill-us-type-2`, `tatami-40-stitch-type-1`, `tatami-40-stitch-type-2`, `u-gradation-50-50`, `u-gradation-80-20`, `u-gradation-95-50`, `u-gradation-blend-blue`, `u-gradation-dir-90`, `u-gradation-pattern-2`, `u-gradation-pattern-3`, `u-gradation-pattern-4`, `u-gradation-pattern-5`, `u-gradation-pattern-6`, `u-gradation-pattern-7`, `u-gradation-pattern-8` |
-| Region sew types | Programmable fill… | reference | `motif-fill-2pt`, `prog-fill-line-2pt`, `prog-fill-square-4pt`, `programmable-fill-45` |
+| Region sew types | Programmable fill… | **failing** | `motif-fill-2pt`, `prog-fill-line-2pt`, `prog-fill-square-4pt`, `programmable-fill-45` |
 | Region sew types | Satin: a zigzag across the column… | internal-regression; reference pending | `machine-satin-width-16`, `machine-satin-width-18`, `machine-satin-width-20`, `machine-satin-width-22`, `machine-satin-width-25`, `machine-satin-width-30`, `auto-satin-bent-band`, `region-travel-u-satin`, `satin-auto-bend-30-nohalf`, `satin-auto-bend-30`, `satin-auto-bend-45-nohalf`, `satin-auto-bend-45`, `satin-auto-bend-60`, `satin-auto-bend-75-nohalf`, `satin-auto-bend-75`, `satin-auto-bend-90-nohalf`, `satin-auto-bend-90`, `satin-col-us-off`, `satin-col-us-type-1`, `satin-col-us-type-2`, `satin-col-us-type-3`, `satin-col-us-type-4`, `satin-col-us-type-5`, `satin-feather`, `satin-gradation`, `satin-length-sweep-d1p0`, `satin-length-sweep-d4p5`, `satin-sections-h`, `satin-zigzag-rect`, `satin-zigzag-skeleton`, `sweep-satin-density-0p2`, `sweep-satin-density-0p3`, `sweep-satin-density-0p5`, `sweep-satin-density-4p5`, `sweep-satin-density-max`, `sweep-satin-density-min`, `sweep-satin-pull-0p5`, `sweep-satin-pull-max`, `sweep-satin-us-default`, `sweep-satin-us-type-2`, `sweep-satin-width-10`, `sweep-satin-width-15`, `sweep-satin-width-2`, `sweep-satin-width-3` |
 
 ## By audit item
@@ -56,7 +56,7 @@ Specs: 253 · pass 253 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | 15 | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `square-gradation-30-10`, `square-gradation-default`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5-h33`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-density-min`, `sweep-fill-dir-135`, `sweep-fill-dir-30`, `sweep-fill-dir-45`, `sweep-fill-dir-90`, `sweep-fill-freq-10`, `sweep-fill-freq-40`, `sweep-fill-pitch-2p0`, `sweep-fill-pitch-3p0`, `sweep-fill-pitch-6p0`, `sweep-fill-pitch-max`, `sweep-fill-pitch-min`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max`, `sweep-fill-us-default`, `sweep-fill-us-density-dense`, `sweep-fill-us-density-light`, `sweep-fill-us-type-2`, `tatami-40-stitch-type-1`, `tatami-40-stitch-type-2` |
 | 16 | reference | `machine-rbgb`, `machine-rbr-far`, `machine-rbr`, `optimize-entry-exit`, `sew-order-six-objects` |
 | 17 | internal-regression | `hole-sewing-limits`, `hole-sewing-pentagon-star` |
-| 18 | oracle | `pes-thread-chart-roundtrip`, `thread-match-swatches` |
+| 18 | **failing** | `pes-thread-chart-roundtrip`, `thread-match-swatches` |
 | 19 | reference | `pes-design-properties` |
 
 ## By spec
@@ -80,8 +80,6 @@ Specs: 253 · pass 253 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `machine/machine-trim-fine` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-shapes` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text-fit` | pass | reference | pass | — | pass | — |
-| `pes/pes-0110-editable-text-transform` | pass | internal-regression | pass | — | pending | — |
-| `pes/pes-0110-editable-text-fit` | pass | internal-regression | pass | — | pending | — |
 | `pes/pes-0110-editable-text-transform` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-stitches` | pass | internal-regression | pass | — | pending | — |
@@ -92,7 +90,7 @@ Specs: 253 · pass 253 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `pes/pes-objects-owner-patterns` | pass | reference | pass | — | pass | — |
 | `pes/pes-objects-psc-patterns` | pass | reference | — | — | pass | — |
 | `pes/pes-thread-chart-roundtrip` | pass | oracle | — | pass | — | — |
-| `pes/thread-match-swatches` | pass | reference | pass | — | pass | — |
+| `pes/thread-match-swatches` | fail | — | — | — | fail | — |
 | `stitches/attribute-ranges` | pass | internal-regression | pass | — | — | — |
 | `stitches/auto-satin-bent-band` | pass | reference | pass | — | pass | — |
 | `stitches/concentric-circle40-d1p0` | pass | reference | — | — | pass | — |
@@ -130,7 +128,7 @@ Specs: 253 · pass 253 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/line-v-rect-default` | pass | reference | — | — | pass | — |
 | `stitches/line-zigzag-default` | pass | reference | pass | — | pass | — |
 | `stitches/line-zigzag-density-max` | pass | reference | — | — | pass | — |
-| `stitches/motif-fill-2pt` | pass | reference | pass | — | pass | — |
+| `stitches/motif-fill-2pt` | fail | — | pass | — | fail | — |
 | `stitches/optimize-entry-exit` | pass | reference | pass | — | pass | — |
 | `stitches/prog-fill-line-2pt` | pass | reference | pass | — | pass | — |
 | `stitches/prog-fill-square-4pt` | pass | reference | pass | — | pass | — |
