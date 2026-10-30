@@ -39,6 +39,14 @@ with current screenshots. Refresh it in a pull request before every release:
    python -I tools/screenshots.py
    ```
 
+   ```bash
+   python -I tools/gallery.py
+   ```
+
+   The second command converts the test images in `examples/images` and rewrites the README's
+   "From image to embroidery" gallery between its markers. Check that it shows OpenStitch's
+   results only, never PE-DESIGN's.
+
    `docs/images/readme/` holds the README's set. A new feature worth showing gets a scene in
    `tools/screenshots.py` with a `docs/images/readme/` output and a cell in the README's
    Screenshots table. Never use PE-DESIGN screenshots or Brother artwork; new illustrations and

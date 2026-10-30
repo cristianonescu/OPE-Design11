@@ -247,7 +247,12 @@ back.
     screen, #129, is built since 2026-10-30 after the owner's decision: −3.1 % stitches, angles,
     spacing and densities as PE's; named Color Sets, Direction, interval/density and Mono's
     tone ramp as PE's; harness `tools/screencmp.py`, design note
-    docs/research/photo-stitch-2-halftone.md).
+    docs/research/photo-stitch-2-halftone.md). Test images since 2026-10-30: 30 generated
+    images in `examples/images` covering photos, illustrations, line art, pixel art, lettering,
+    transparency, noise and sizes, with PE captures requested and a README gallery
+    (`tools/gallery.py`, part of the release checklist in docs/RELEASING.md). They found that
+    Auto Punch's 100-colour census fills with edge shades on anti-aliased images, so orange
+    and yellow become grey, where PE-DESIGN keeps them (round-5 capture); the fix is next.
 
 ## Beyond PE-DESIGN
 
