@@ -959,14 +959,18 @@ patterns, `compat/reference/stitches/prog-fill-*.pes`, `motif-fill-2pt.pes`,
 - **Motif line:** a whole number of motifs, stretched along the line to fill it from end to end,
   on open and closed lines alike (8 motifs of 4.94 mm on a 39.5 mm line at the 5 mm size).
 - **Decorative fill with free lines** (`compat/reference/stitches/deco-fill-1line-100mm.pes`,
-  2026-10-30): the tile is centred on the region, or starts at the reference point (here the
-  region's centre is also the page's, so the reference cannot tell the two apart); every line of
+  2026-10-30): the tile is centred on the shape's bounding box, or starts at the reference point
+  (settled by `deco-fill-1line-offcentre.pes`: on a 40 × 60 mm rectangle at (10, 20) mm the line
+  runs (10, 30) → (50, 70) mm, y = x + 20, not corner to corner); every line of
   every tile copy is clipped to the region and split evenly at the run pitch (the 56.6 mm
   diagonal of the 40 mm square in 1.95 mm stitches, the same needle points as PE-DESIGN); pieces
   are joined by travel along the outline in 2 mm steps, from the piece nearest the start point,
   with the fill's tie-in and lock. Not yet the same: PE-DESIGN sews the line three times and walks
-  parts of the outline two or three times (292 needle points against OpenStitch's 73); one
-  reference does not show the rule behind it.
+  parts of the outline two or three times (292 needle points against OpenStitch's 73 on the
+  square, 357 against 83 on the rectangle, where its walk also reaches the top 10 mm that
+  OpenStitch's travel does not), and with a two-line tile whose lines both fall outside the square
+  (`deco-fill-2lines.pes`, parked) it still walks the border (245 needle points) where OpenStitch
+  sews nothing.
 
 Not yet the same: when both ends of the first motif-fill row are as far from the start point,
 PE-DESIGN walks right and comes back down the right edge where OpenStitch walks left (the same
@@ -997,7 +1001,7 @@ Layout (ASCII, CRLF or LF, one directive per line, a trailing `\` continues the 
 | `@VERSION n` | file version, returned as read (PE-DESIGN 11.50 writes `10000`) |
 | `@UNIT n`, `@COOD …` | header values, read and ignored (PE-DESIGN 11.50 writes neither) |
 | `@SYSENV n` | one number: a fill/stamp tile (`.pas`) or, when the file holds exactly one `@LINE` and no tile geometry, a motif (`.pmf`); PE-DESIGN 11.50 writes `1` for both, returned as read |
-| `@SYSENV w h r` | three numbers: a decorative-fill tile (`.plf`): width and height in 0.01 mm and a flag; PE-DESIGN 11.50 writes `10000 10000 1`, its 100 mm Default Size, returned as read |
+| `@SYSENV w h r` | three numbers: a decorative-fill tile (`.plf`): width and height in 0.01 mm and a third number; PE-DESIGN 11.50 writes `10000 10000 1` for one line and `10000 10000 2` for two (its 100 mm Default Size; the third number follows the line count in both owner files), returned as read |
 | `@TILE n` | number of `@TILELINE`s that follow (checked when present) |
 | `@TILELINE i npts x0 y0 …` | tile line `i` (0, 1, … in order), `npts` ≥ 2 points |
 | `@TILEAREA npts x0 y0 …` | a stamp outline, ≥ 3 points, kept as a closed path of the tile |

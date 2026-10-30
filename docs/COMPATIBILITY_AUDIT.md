@@ -1360,9 +1360,12 @@ Line references are relative to `crates/`.
   fill tile, so Decorative Fill could not use it and sewed a bundled pattern instead; it now keeps
   the lines free (`freeLines`) and sews the same needle points on the line, the same travel pitch
   and tie-in. Left: PE-DESIGN sews the line three times and walks parts of the outline two or
-  three times (292 needle points against 73); needs a second reference (the same pattern on an
-  off-centre 40 × 60 mm rectangle, and a tile with two lines) to tell the repeat rule and whether
-  the tile is centred on the region or on the page.
+  three times (292 needle points against 73). The off-centre rectangle (`deco-fill-1line-offcentre`,
+  2026-10-30) settled the placement: the tile is centred on the shape's bounding box, which
+  OpenStitch does (the same 28 needle points on the line). Still open: the repeat rule (the line
+  three times, the outline walked whole: 357 against 83 there), and a two-line tile whose lines
+  fall outside the shape (`deco-fill-2lines`, parked: PE-DESIGN walks the border, 245 needle
+  points, OpenStitch sews nothing).
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.

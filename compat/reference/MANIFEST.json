@@ -3264,6 +3264,18 @@
       "settings": "Pattern: psc-deco-1line.plf, drawn by the owner in Programmable Stitch Creator (New Decorative Fill Pattern, one line (128,128)-(896,896) on the 16 x 16 grid; repository copy crates/openstitch-design/tests/fixtures/patterns/psc-deco-1line.plf). Layout & Editing: Rectangle (30,30)-(70,70) mm -> 40,00 x 40,00, line Not Sewn, region Decorative Fill Stitch, folder button > Browse > psc-deco-1line at 100,0 x 100,0 mm, Maintain aspect ratio unticked, Minimize feed ticked, Direction 0, Run pitch 2,0 mm, Random Shift 0 %, 007 PRUSSIAN BLUE. Save As PES (default type).",
       "sha256": "cac1814310876ae8f953749bec7a8affa12a02577f4661f993786ce8a3507e9d",
       "notes": "292 stitches in the status bar (PE's built-in default pattern gave 795; not saved). Stitches: one diagonal from the top-left to the bottom-right corner plus running feeds along the square's border."
+    },
+    {
+      "file": "stitches/deco-fill-1line-offcentre.pes",
+      "spec": "deco-fill-1line-offcentre",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro 10.0.26200",
+      "settings": "Pattern: psc-deco-1line.plf, drawn by the owner in Programmable Stitch Creator (New Decorative Fill Pattern, one line (128,128)-(896,896) on the 16 x 16 grid; repository copy crates/openstitch-design/tests/fixtures/patterns/psc-deco-1line.plf). Layout & Editing: New, Rectangle (10,20)-(50,80) mm -> 40,00 x 60,00, line Not Sewn, region Decorative Fill Stitch, folder button > Browse > psc-deco-1line at 100,0 x 100,0 mm, Maintain aspect ratio unticked, Minimize feed ticked, Direction 0, Run pitch 2,0 mm, Random Shift 0 %, 007 PRUSSIAN BLUE. Save As PES (default type).",
+      "sha256": "a0a1a06a9ec00a9c343bd90ccd2d8bbf0cf18cfc26e290e9c68f507754478a58",
+      "notes": "357 stitches (358 PEC records). The diagonal runs from the left edge 10 mm below the top to the right edge 10 mm above the bottom: page (10,30)->(50,70) = y = x + 20, the tile centred on the rectangle's box."
     }
   ]
 }
