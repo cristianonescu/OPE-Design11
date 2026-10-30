@@ -8,6 +8,7 @@ pub mod compile;
 pub mod concentric;
 pub mod direction;
 mod envelope_presets;
+pub mod fmath;
 pub mod fonts;
 pub mod freehand;
 pub mod generate;

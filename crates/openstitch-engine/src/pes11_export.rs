@@ -5,6 +5,7 @@
 //! (stitches) knowingly.
 
 use openstitch_core::Thread;
+use openstitch_design::fmath::Det;
 use openstitch_design::text::{
     self, Spread, TextAlign, TextDirection, TextMetrics, TextSpec, VAlign,
 };
@@ -394,7 +395,7 @@ fn bent_box(preset: u8, r: f64, cx: f64, baseline: f64, size: f64) -> [f64; 4] {
             ([r - (ascent - size), r + size], baseline - size - r, 1.0)
         };
         for rho in radii {
-            let (x, y) = (cx + rho * a.sin(), centre_y + sign * rho * a.cos());
+            let (x, y) = (cx + rho * a.dsin(), centre_y + sign * rho * a.dcos());
             x0 = x0.min(x);
             x1 = x1.max(x);
             y0 = y0.min(y);

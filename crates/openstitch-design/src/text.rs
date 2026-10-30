@@ -6,6 +6,7 @@
 //! even-odd rule the region generators use. Each glyph is filled on its own, so glyphs that touch
 //! or overlap (script joins) never cut holes into each other.
 
+use crate::fmath::Det;
 use crate::fonts::{
     DesignFont, EmbroideryFont, FontData, MAX_GLYPH_SEGMENTS, MAX_LAYOUT_SEGMENTS, parse_face,
     shaping_note,
@@ -1389,11 +1390,11 @@ fn envelope_layout(spec: &TextSpec, preset: u8, fonts: &[DesignFont]) -> Result<
         let at = |k: usize| -reach + 2.0 * reach * k as f64 / steps as f64;
         let (points, fit) = if preset == 1 {
             let c = v2(cx, r);
-            let p = (0..=steps).map(|k| c + v2(r * at(k).sin(), -r * at(k).cos()));
+            let p = (0..=steps).map(|k| c + v2(r * at(k).dsin(), -r * at(k).dcos()));
             (p.collect(), PathFit::default())
         } else {
             let c = v2(cx, -spec.size * 10.0 - r);
-            let p = (0..=steps).map(|k| c + v2(r * at(k).sin(), r * at(k).cos()));
+            let p = (0..=steps).map(|k| c + v2(r * at(k).dsin(), r * at(k).dcos()));
             let fit = PathFit {
                 valign: VAlign::Top,
                 ..PathFit::default()
@@ -1442,7 +1443,7 @@ pub fn envelope_edges(n: u8) -> Option<(Vec<Vec2>, Vec<Vec2>)> {
             (0..=24)
                 .map(|k| {
                     let a = (k as f64 / 24.0 - 0.5) * ARCH_ANGLE;
-                    let (x, y) = (0.5 + r * a.sin(), r * (1.0 - a.cos()));
+                    let (x, y) = (0.5 + r * a.dsin(), r * (1.0 - a.dcos()));
                     if n == 1 {
                         v2(x, y + 0.1)
                     } else {
@@ -1541,7 +1542,7 @@ impl PathWalker {
         let (a, b) = (self.points[seg], self.points[seg + 1]);
         let len = self.at[seg + 1] - self.at[seg];
         let d = b - a;
-        let angle = d.y.atan2(d.x);
+        let angle = d.y.datan2(d.x);
         let p = if len > 0.0 {
             a + d * ((s - self.at[seg]) / len)
         } else {

@@ -14,6 +14,8 @@ serde.workspace = true
 serde_json.workspace = true
 ttf-parser = { version = "0.25", default-features = false, features = ["std", "opentype-layout", "apple-layout", "variable-fonts"] }
 i_overlay = { version = "9.1", default-features = false }
+# Platform-independent sin, cos, atan2, hypot... (see src/fmath.rs); already in the tree via rustybuzz.
+libm = "=0.2.16"
 rustybuzz = { version = "=0.20.1", default-features = false, features = ["std"] }
 unicode-bidi = "=0.3.18"
 unicode-script = "=0.5.8"

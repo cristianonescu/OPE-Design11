@@ -4,6 +4,7 @@
 //! attribute lists. Lengths are 0.1 mm; output is deterministic (pseudo-random choices use a
 //! fixed seed).
 
+use crate::fmath::Det;
 use crate::generate::{self, RegionParams, RowSpan, Run, subdivide};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, v2};
 use crate::model::{RegionSewing, RegionType};
@@ -1158,7 +1159,7 @@ fn net_families(
             let unit: Vec<Vec2> = (0..=16)
                 .map(|k| {
                     let t = k as f64 / 16.0;
-                    v2(t * 2.0 * s, (t * std::f64::consts::TAU).sin() * s / 4.0)
+                    v2(t * 2.0 * s, (t * std::f64::consts::TAU).dsin() * s / 4.0)
                 })
                 .collect();
             vec![

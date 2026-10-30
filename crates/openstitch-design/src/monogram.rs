@@ -13,6 +13,7 @@
 //! ratio" a frame keeps its natural proportions and grows to enclose the box.
 
 use crate::boolean::{self, BoolOp};
+use crate::fmath::Det;
 use crate::fonts::DesignFont;
 use crate::geometry::{Contour, Rect, Transform, Vec2, v2};
 use crate::shapes::{self, ArcMode};
@@ -314,7 +315,7 @@ pub fn frame_box(info: &FrameInfo, inner: Rect, margin: f64, keep_aspect: bool) 
             };
             let r = match aspect {
                 // A circle through the corners.
-                Some(_) => (hw.hypot(hh), hw.hypot(hh)),
+                Some(_) => (hw.dhypot(hh), hw.dhypot(hh)),
                 // An ellipse of the box's proportions through its corners.
                 None => (hw * std::f64::consts::SQRT_2, hh * std::f64::consts::SQRT_2),
             };
@@ -362,7 +363,7 @@ pub fn frame(id: &str, b: Rect) -> Vec<FramePart> {
         contours: vec![ellipse(outer), ellipse(inner)],
         filled: true,
     };
-    let at = |a: f64, s: f64| v2(c.x + rx * s * a.cos(), c.y + ry * s * a.sin());
+    let at = |a: f64, s: f64| v2(c.x + rx * s * a.dcos(), c.y + ry * s * a.dsin());
     match id {
         "ring" => vec![ring(1.0, 1.0 - band / rx.min(ry))],
         "double-ring" => vec![
@@ -395,7 +396,7 @@ pub fn frame(id: &str, b: Rect) -> Vec<FramePart> {
             for i in 0..n * 8 {
                 let a = i as f64 / (n * 8) as f64 * TAU;
                 // Half-sine bumps between the valleys.
-                let bump = ((a * n as f64 / 2.0).sin()).abs();
+                let bump = ((a * n as f64 / 2.0).dsin()).abs();
                 outer.push(at(a, 0.9 + 0.1 * bump));
             }
             vec![FramePart {

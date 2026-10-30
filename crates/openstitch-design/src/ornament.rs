@@ -4,6 +4,7 @@
 //! are polar profiles scaled to the outline; frames are built from arcs, waves and teeth.
 //! Lengths are 0.1 mm.
 
+use crate::fmath::Det;
 use crate::geometry::{Bezier, Contour, Rect, Vec2, v2};
 use std::f64::consts::{PI, TAU};
 
@@ -90,11 +91,11 @@ fn resample_closed(p: &[Vec2], step: f64) -> Vec<Vec2> {
 
 /// Petal profile in 0–1 for angle parameter `u` (one petal per π).
 fn petal(style: u32, u: f64) -> f64 {
-    let c = u.cos().abs();
+    let c = u.dcos().abs();
     match style {
         0 => c,
         1 => c.sqrt(),
-        2 => (c + 0.35 * (3.0 * u).cos().abs()) / 1.35,
+        2 => (c + 0.35 * (3.0 * u).dcos().abs()) / 1.35,
         _ => c * c,
     }
 }
@@ -122,7 +123,7 @@ pub fn floral(outline: &Contour, density: u32, pattern: u32) -> Vec<Contour> {
     let reach: Vec<f64> = (0..SAMPLES)
         .map(|k| {
             let a = k as f64 / SAMPLES as f64 * TAU;
-            ray_hit(&poly, c, v2(a.cos(), a.sin())).unwrap_or(fallback)
+            ray_hit(&poly, c, v2(a.dcos(), a.dsin())).unwrap_or(fallback)
         })
         .collect();
     const INNER: f64 = 0.3;
@@ -140,7 +141,7 @@ pub fn floral(outline: &Contour, density: u32, pattern: u32) -> Vec<Contour> {
                     let a = k as f64 / SAMPLES as f64 * TAU;
                     let u = a * f64::from(petals) / 2.0 + phase;
                     let rho = scale * (INNER + (1.0 - INNER) * petal(style, u));
-                    c + v2(a.cos(), a.sin()) * (reach[k] * rho)
+                    c + v2(a.dcos(), a.dsin()) * (reach[k] * rho)
                 })
                 .collect();
             Contour::new(resample_closed(&pts, LINE_STEP), true)
@@ -257,9 +258,9 @@ pub fn frame(kind: Frame, b: &Rect, size: f64) -> Vec<Contour> {
             let perimeter = PI * (3.0 * (rx + ry) - ((3.0 * rx + ry) * (rx + 3.0 * ry)).sqrt());
             let n = ((perimeter / size).round() as usize).max(6);
             let centre = b.center();
-            let on = |t: f64| centre + v2(rx * t.cos(), ry * t.sin());
+            let on = |t: f64| centre + v2(rx * t.dcos(), ry * t.dsin());
             let outward = |t: f64| {
-                let v = v2(ry * t.cos(), rx * t.sin());
+                let v = v2(ry * t.dcos(), rx * t.dsin());
                 v * (1.0 / v.length().max(1e-9))
             };
             let mut c = Contour::new(

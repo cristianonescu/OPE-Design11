@@ -2,6 +2,7 @@
 //! cutting lines, and zigzag with half stitch. Independent algorithms specified from the
 //! public guide's attribute lists; lengths are 0.1 mm and every generator is deterministic.
 
+use crate::fmath::Det;
 use crate::generate::{Run, subdivide};
 use crate::geometry::{Vec2, v2};
 use crate::model::{Arrange, ChainShape};
@@ -148,7 +149,7 @@ fn stem_pieces(
         return None;
     }
     let a = angle.to_radians();
-    let along = width / 2.0 * (a.cos() / a.sin());
+    let along = width / 2.0 * (a.dcos() / a.dsin());
     let mut pieces = Vec::new();
     let mut s0 = 0.0;
     for (i, &(p, q)) in legs.iter().enumerate() {
@@ -169,7 +170,7 @@ fn stem_pieces(
             let top = c + t * along - nrm * (width / 2.0);
             let bottom = c - t * along + nrm * (width / 2.0);
             let u = top - bottom;
-            let e = normal(u * (1.0 / u.x.hypot(u.y))) * 1.4;
+            let e = normal(u * (1.0 / u.x.dhypot(u.y))) * 1.4;
             pieces.push(Piece {
                 at: s0 + l * j as f64 / n as f64,
                 lead: vec![c],
@@ -696,7 +697,7 @@ pub fn cutting(path: &[Vec2], closed: bool, leave_uncut: bool) -> [Vec<Run>; 4] 
             continue;
         }
         let bridged = bridges.iter().any(|&c| (mid - c).abs() < CUT_BRIDGE / 2.0);
-        let deg = (b.y - a.y).atan2(b.x - a.x).to_degrees().rem_euclid(180.0);
+        let deg = (b.y - a.y).datan2(b.x - a.x).to_degrees().rem_euclid(180.0);
         let needle = ((deg / 45.0).round() as usize) % 4;
         match &mut current {
             Some((n, run)) if !bridged && *n == needle && run.last() == Some(&a) => run.push(b),
