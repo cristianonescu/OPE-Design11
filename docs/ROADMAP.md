@@ -206,7 +206,10 @@ back.
    no CSV); left: Brother catalogue codes for the 61 matched chart entries so imported fills
    snap to them as in PE-DESIGN. PEC moves over 204.7 mm split as PE-DESIGN's
 8. **Formats:** CSD export (no public writer). The CSD and SHV readers match PE-DESIGN's own
-   exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart; left: the
+   exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart. PEC 42
+   (307 LINEN) has PE-DESIGN's RGB since 2026-10-30, and every coded thread in PE's files
+   matches the chart; PE's PEC keeps zero-length stitches in 28 of 249 references, so the
+   planned "drop them in the PEC writer" was not done. Left: the
    `machine-sample-basic` compares (skip PE's zero-length stitches; no trim before a colour
    change in DST/EXP/HUS/VIP). PEC moves over 204.7 mm split as PE-DESIGN's
    DST does since 2026-10-29 (#126); left: PE's own PEC encoding of such a move (parked PES of

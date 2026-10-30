@@ -61,10 +61,10 @@ pub static PEC_CHART: [Option<Thread>; 65] = [
     Some(Thread::chart(135, 135, 135, "Gray", "39", "Brother")),
     Some(Thread::chart(216, 204, 198, "Warm Gray", "40", "Brother")),
     Some(Thread::chart(67, 86, 7, "Dark Olive", "41", "Brother")),
-    // pyembroidery names this entry "Flesh Pink" like 57. PE-DESIGN 11.50's BROTHER EMBROIDERY
-    // chart has one Flesh Pink (124, PEC 57 in PE's files) and 307 LINEN, the one code left
-    // for 42 (`brother.rs`). PE's RGB for Linen is not known yet: pyembroidery's is kept.
-    Some(Thread::chart(253, 217, 222, "Linen", "42", "Brother")),
+    // pyembroidery names this entry "Flesh Pink" (253, 217, 222) like 57. PE-DESIGN 11.50's
+    // BROTHER EMBROIDERY chart has one Flesh Pink (124, PEC 57) and 307 LINEN at 42, which PE
+    // writes as (254, 227, 197) (tests/fixtures/pe11/thread-307-linen.pes, 2026-10-30).
+    Some(Thread::chart(254, 227, 197, "Linen", "42", "Brother")),
     Some(Thread::chart(249, 147, 188, "Pink", "43", "Brother")),
     Some(Thread::chart(0, 56, 34, "Deep Green", "44", "Brother")),
     Some(Thread::chart(178, 175, 212, "Lavender", "45", "Brother")),

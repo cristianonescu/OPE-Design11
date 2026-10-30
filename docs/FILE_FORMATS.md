@@ -62,12 +62,15 @@ Design Database converts between `.pes .dst .exp .pcs .hus .vip .shv .jef .sew .
 | 0x210 | … | stitch stream, terminated by `FF` |
 | end | 228 × (n+1) | 1-bit icons: whole design, then one per colour block |
 
-PE-DESIGN 11.50 writes no zero-length stitch to the PEC section: its status bar and its DST
-export count needle points that the PEC section leaves out (a zero-length stitch at each jump
-landing and where a stitch repeats its predecessor; e.g. 475 in the DST of `sample-basic`,
-471 in its PEC, the DST's other 4 all zero-length; 99 of 114 references show 1–9 more in the
-status bar than in their PEC). So reading a PE-DESIGN PES gives fewer needle points than PE
-reports, by design of the file, not of the reader (#135).
+PE-DESIGN 11.50's PEC section can leave out zero-length stitches its stitch data has: the DST
+of `sample-basic` has 475 needle points, its PEC 471, and the 4 the PEC lacks are the DST's
+zero-length ones (2 jump landings, 2 repeats); 99 of 114 references show 1–9 more points in
+the status bar than in their PEC. It does not drop them as a rule: 28 of the 249 PE-DESIGN
+references carry zero-length PEC stitches, after jumps, trims, colour changes and stitches
+(spirals, concentric circles, motif and programmable fills, tatami stitch types,
+2026-10-30). So reading a PE-DESIGN PES can give fewer needle points than PE reports, by
+design of the file, not of the reader (#135); OpenStitch's PEC writer keeps the zero-length
+stitches its stream has, as the references allow.
 
 Stitch stream: each axis value is either one byte (7-bit two's complement, used when
 −64 < d < 63) or two bytes `1 f f f v v v v  v v v v v v v v` (bit 7 set; bit 5 = trim,

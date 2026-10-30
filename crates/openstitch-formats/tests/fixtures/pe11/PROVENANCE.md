@@ -103,3 +103,14 @@ no warning. Three of the eleven files are kept here for the readers' tests:
 | `sample-basic.csd` | `b405685a744df0dd4395279c561822aea4010d8460c7887404aaa9b7e52b841b` | Export, type Singer (*.CSD). |
 | `sample-basic.dst` | `c29378ba32fda42d1b5e5499cdec5c4594ab70ac49dc5fa69ee710000c8b855b` | Export, type Tajima (*.DST). |
 | `sample-basic.shv` | `508c945b5a4e9047da8cda1fd69240a6add83cd9183d1460bffdb3ba0c9dc727` | Export, type Husqvarna/Viking (*.SHV). |
+
+**Linen thread sample (#119/#136):** made by the owner's PE-DESIGN 11.50 (Layout & Editing),
+Windows 11 Pro 10.0.26300, 2026-10-30, black-box GUI use only (reference session). New (Hoop
+100 x 100), Rectangle (40,40)-(60,60) mm, line Not Sewn; Color tab, BROTHER EMBROIDERY, row
+307 LINEN; region Fill Stitch at defaults (under sewing on, Medium, density 4.5, 45 degrees,
+step 4.0, frequency 30 %); 20,00 x 20,00 mm, 707 st; Save As PES (#PES0110). Thread table:
+"307" / PEC index "42" / EMBROIDERY, RGB (254, 227, 197), plus the unsewn line slot 800.
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `thread-307-linen.pes` | `66ddd37bf00d39e984486a8368ad8cc2178575407c4cfecc068ce832590b7422` | as above |
