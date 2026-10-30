@@ -951,13 +951,17 @@ patterns, `compat/reference/stitches/prog-fill-*.pes`, `motif-fill-2pt.pes`,
   tiles, OpenStitch 2329 and 1636; every OpenStitch needle point lies within 0.2 mm of one of
   PE-DESIGN's (mean 0.10 and 0.11 mm).
 - **Motif fill:** the same grid origin; each motif's base line runs through the middle of its
-  row band, so the first row lies half a motif below the region's top edge.
+  row band, so the first row lies half a motif below the region's top edge. The rows start at
+  the one nearest the start point; travel between rows and to and from the start point walks
+  the outline in even steps of at most 2 mm (5 mm in three steps of 1.67 mm), with the fill's
+  0.3 mm tie-in and lock: 130 needle points, as PE-DESIGN (2026-10-30).
 - **Motif line:** a whole number of motifs, stretched along the line to fill it from end to end,
   on open and closed lines alike (8 motifs of 4.94 mm on a 39.5 mm line at the 5 mm size).
 
-Not yet the same: PE-DESIGN's motif fill travels between rows along the outline at 2 mm
-(130 needle points against OpenStitch's 103, which joins rows with one stitch), and its motif
-line adds tie-in and tie-off stitches (23 against 16).
+Not yet the same: when both ends of the first motif-fill row are as far from the start point,
+PE-DESIGN walks right and comes back down the right edge where OpenStitch walks left (the same
+needle points mirrored; one reference cannot tell PE-DESIGN's tie-break), and its motif line adds
+tie-in and tie-off stitches (23 against 16).
 
 ### Text pattern sources (`.pas`, `.pmf`, `.plf`)
 

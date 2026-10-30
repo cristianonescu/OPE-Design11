@@ -26,7 +26,8 @@
    "patternWidth": 12,
    "patternHeight": 12,
    "density": 2.2,
-   "stitchLength": 4
+   "stitchLength": 4,
+   "underlay": false
   }
  },
  {
@@ -48,7 +49,8 @@
    "patternWidth": 12,
    "patternHeight": 12,
    "density": 2.2,
-   "stitchLength": 4
+   "stitchLength": 4,
+   "underlay": false
   }
  }
 ]
