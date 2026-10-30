@@ -432,6 +432,46 @@ fn unavailable_gradation_and_feather_are_kept_but_not_sewn() {
 }
 
 #[test]
+fn fill_stitch_type_is_set_sewn_saved_and_undone() {
+    use openstitch_design::FillStitchType;
+    let mut s = Session::new(temp_dir());
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 10, "y": 10, "width": 40, "height": 40}),
+    );
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": 1, "type": "fill", "angle": 0, "underlay": false}),
+    );
+    let flat = Compiler::default().compile(s.design());
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": 1, "stitchType": 2}),
+    );
+    let r = s.design().objects[0].region.clone().expect("region");
+    assert_eq!(r.stitch_type, FillStitchType::Two);
+    // PE-DESIGN 11.50's 40 mm square at 0 degrees sews 2006 stitches as Type 1 and 2001 as
+    // Type 2 (round 5): the sloped rows need no row-end steps.
+    let sloped = Compiler::default().compile(s.design());
+    assert_ne!(sloped, flat);
+    assert!(sloped.count(Command::Stitch) < flat.count(Command::Stitch));
+    let bytes = project::encode(s.design()).expect("encode");
+    assert_eq!(&project::decode(&bytes).expect("decode"), s.design());
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": 1, "stitchType": 1}),
+    );
+    assert_eq!(Compiler::default().compile(s.design()), flat);
+    run(&mut s, "history.undo", json!({}));
+    run(&mut s, "history.undo", json!({}));
+    assert_eq!(Compiler::default().compile(s.design()), flat);
+}
+
+#[test]
 fn bad_region_options_fail_cleanly() {
     let mut s = Session::new(temp_dir());
     run(
@@ -451,6 +491,9 @@ fn bad_region_options_fail_cleanly() {
         json!({"id": 1, "splitLength": 1}),
         json!({"id": 1, "splitLength": 13}),
         json!({"id": 1, "travel": 1}),
+        json!({"id": 1, "stitchType": 0}),
+        json!({"id": 1, "stitchType": 1.5}),
+        json!({"id": 1, "stitchType": 3}),
     ] {
         assert!(
             s.execute("object.setRegion", Some(&params)).is_err(),

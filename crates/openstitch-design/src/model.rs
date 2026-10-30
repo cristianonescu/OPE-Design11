@@ -971,6 +971,18 @@ impl UnderlayDensity {
     }
 }
 
+/// PE-DESIGN's fill Stitch Type, its two buttons in the Fill pane: One, the default, sews flat
+/// rows (halves from the start point, brick row ends); Two sews sloped rows, each pass rising one
+/// row spacing from edge to edge so the passes join in one continuous zigzag (see
+/// [`crate::generate::fill_edge_to_edge`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum FillStitchType {
+    #[default]
+    One,
+    Two,
+}
+
 /// Which row ends a feathered edge roughens.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -1194,6 +1206,9 @@ pub struct RegionSewing {
     /// Seed of the random stagger (default [`RegionSewing::DEFAULT_STAGGER_SEED`]).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stagger_seed: Option<u64>,
+    /// Fill: PE-DESIGN's Stitch Type (flat or sloped rows).
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub stitch_type: FillStitchType,
     /// Programmable / motif fill: shift of every other tile row (column), % of the tile.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub row_offset: Option<f64>,
@@ -1305,6 +1320,7 @@ impl RegionSewing {
             // PE-DESIGN 11's Frequency default (its field shows 30 %).
             frequency: (kind == RegionType::Fill).then_some(30.0),
             stagger: StaggerKind::Regular,
+            stitch_type: FillStitchType::One,
             stagger_seed: None,
             row_offset: None,
             column_offset: None,

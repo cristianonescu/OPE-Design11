@@ -1987,3 +1987,108 @@ fn motif_fill_repeats_the_motif_in_rows() {
         .count();
     assert!(peaks >= 25, "{peaks}");
 }
+
+// ---------------------------------------------------------------- fill Stitch Type
+
+/// A 40 mm fill square at 0°, 4.5 lines/mm, without under sewing, started at the middle of its
+/// left side (the halves need a start point) and sewn with `stitch_type` (0.1 mm units).
+fn square_run(stitch_type: FillStitchType) -> Run {
+    let c = vec![Contour::rectangle(0.0, 0.0, 400.0, 400.0)];
+    let mut r = region(RegionType::Fill);
+    r.angle = 0.0;
+    r.density = 4.5;
+    r.underlay = false;
+    r.stitch_type = stitch_type;
+    r.entry = Some(v2(0.0, 200.0));
+    crate::region::layers(&c, &r, &[])
+        .pop()
+        .expect("top")
+        .concat()
+}
+
+/// Stitch Type 2's passes on [`square_run`]: for every pass from one side to the other, its
+/// rise from start to end, its end's height and its first inner needle point's position
+/// modulo the 4 mm stitch length.
+fn square_passes() -> Vec<(f64, f64, f64)> {
+    let run = square_run(FillStitchType::Two);
+    let edge = |p: &Vec2| p.x < 0.5 || p.x > 399.5;
+    let mut passes = vec![];
+    let mut last: Option<usize> = None;
+    for (i, p) in run.iter().enumerate().filter(|(_, p)| edge(p)) {
+        if let Some(j) = last
+            && i > j + 1
+            && (run[j].x - p.x).abs() > 399.0
+        {
+            passes.push((p.y - run[j].y, p.y, run[j + 1].x.rem_euclid(40.0)));
+        }
+        last = Some(i);
+    }
+    passes
+}
+
+#[test]
+fn stitch_type_2_passes_rise_one_row_from_edge_to_edge() {
+    // PE-DESIGN 11.50 (round 5, tatami-40-st2-dir0/30/90): Stitch Type 2 sews each pass from
+    // one row's edge to the next row's far edge, so it rises one row spacing; Stitch Type 1's
+    // rows are flat (tatami-40-st1-dir*).
+    let spacing = 10.0 / 4.5;
+    let passes = square_passes();
+    assert!(passes.len() > 170, "{}", passes.len());
+    for &(rise, y, _) in &passes {
+        assert!((rise.abs() - spacing).abs() < 0.01, "{rise} at {y}");
+    }
+    // Both halves: upward from the start point, then downward from the far side.
+    assert!(passes.iter().any(|p| p.0 > 0.0) && passes.iter().any(|p| p.0 < 0.0));
+    // Every whole 4 mm stitch along the rows climbs a tenth of a spacing in Type 2 (within
+    // 0.0002 mm: the first and last rows lie 0.0001 mm inside the outline), none in Type 1.
+    let climbs = |t: FillStitchType| -> Vec<f64> {
+        square_run(t)
+            .windows(2)
+            .filter(|w| (w[1].x - w[0].x).abs() > 39.9 && (w[1].x - w[0].x).abs() < 40.1)
+            .map(|w| (w[1].y - w[0].y).abs())
+            .collect()
+    };
+    let sloped = climbs(FillStitchType::Two);
+    assert!(sloped.len() > 1500, "{}", sloped.len());
+    let off: Vec<_> = sloped
+        .iter()
+        .filter(|dy| (*dy - spacing / 10.0).abs() >= 2e-3)
+        .collect();
+    assert!(off.is_empty(), "{off:?} of {}", sloped.len());
+    let flat = climbs(FillStitchType::One);
+    assert!(flat.len() > 1500, "{}", flat.len());
+    assert!(flat.iter().all(|&dy| dy < 1e-9), "{flat:?}");
+}
+
+#[test]
+fn stitch_type_2_needle_grid_follows_the_row_a_pass_ends_on() {
+    // The Frequency grid of a pass ending on row k is k · 30 % · 4 mm along the rows, in the
+    // half sewn upward and in the half sewn downward alike (tatami-40-st2-dir90: the downward
+    // half's first pass, from the top row, has the grid of the row two below it).
+    let spacing = 10.0 / 4.5;
+    let passes = square_passes();
+    let y0 = passes.iter().map(|p| p.1).fold(f64::INFINITY, f64::min);
+    let offsets: Vec<f64> = passes
+        .iter()
+        .map(|&(_, y, x)| {
+            let k = ((y - y0) / spacing).round();
+            (x - 12.0 * k).rem_euclid(40.0)
+        })
+        .collect();
+    for o in &offsets {
+        let d = (o - offsets[0]).rem_euclid(40.0);
+        assert!(d < 1e-6 || d > 40.0 - 1e-6, "{offsets:?}");
+    }
+}
+
+#[test]
+fn stitch_type_is_saved_only_when_it_is_type_2() {
+    let mut r = region(RegionType::Fill);
+    let json = serde_json::to_string(&r).expect("json");
+    assert!(!json.contains("stitchType"), "{json}");
+    r.stitch_type = FillStitchType::Two;
+    let json = serde_json::to_string(&r).expect("json");
+    assert!(json.contains(r#""stitchType":"two""#), "{json}");
+    let back: RegionSewing = serde_json::from_str(&json).expect("parse");
+    assert_eq!(back.stitch_type, FillStitchType::Two);
+}
