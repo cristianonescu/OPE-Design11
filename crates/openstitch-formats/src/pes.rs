@@ -65,6 +65,8 @@ pub struct ObjectSection {
     pub objects: Vec<EmbOne>,
     /// PE-DESIGN 11 (`#PES0110`) editable shapes (`CEmbLine`), in file order.
     pub shapes: Vec<crate::pes11::Shape>,
+    /// PE-DESIGN 11 stitch groups (`CEmbOne`), each with its position in the object list.
+    pub stitch_groups: Vec<crate::pes11::StitchGroup>,
     /// PE-DESIGN 11 texts (`CEmbNText`), each with its position in the object list.
     pub texts: Vec<crate::pes11::Text>,
     /// PE-DESIGN 11 groups: the member positions of each `CGroupObject`.
@@ -73,6 +75,10 @@ pub struct ObjectSection {
     pub page_mm: Option<(u16, u16)>,
     /// PE-DESIGN 11 Hoop Size page (header page mode 0) rather than a Custom Size page.
     pub hoop_page: bool,
+    /// PE-DESIGN 11 header fields between the metadata strings and the thread table, verbatim.
+    pub header: Option<Vec<u8>>,
+    /// PE-DESIGN 11: the two characters after the signature's `01 00` (`10`, `01`).
+    pub code: Option<[u8; 2]>,
     /// The first object class that was not parsed, if any.
     pub unparsed: Option<String>,
 }
@@ -304,9 +310,12 @@ pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
             section.threads = objects.threads;
             section.shapes = objects.shapes;
             section.texts = objects.texts;
+            section.stitch_groups = objects.stitch_groups;
             section.groups = objects.groups;
             section.page_mm = objects.page_mm;
             section.hoop_page = objects.hoop_page;
+            section.header = objects.header;
+            section.code = objects.code;
             section.unparsed = objects.unparsed;
             return Ok(section);
         }
@@ -728,7 +737,12 @@ fn write_blocks(w: &mut ByteWriter, pattern: &StitchPattern, version: Version) -
 /// becomes a two-point jump from the last stitch, colour changes switch the thread. A run
 /// after a jump starts at the jump's landing point: PE-DESIGN 11 sews only the points of
 /// stitch runs, so without it the needle never goes down where the jump lands.
-fn segments(pattern: &StitchPattern, version: Version, min_x: f64, max_y: f64) -> Vec<SewSegment> {
+pub(crate) fn segments(
+    pattern: &StitchPattern,
+    version: Version,
+    min_x: f64,
+    max_y: f64,
+) -> Vec<SewSegment> {
     let chart: Vec<Option<Thread>> = match version {
         Version::V1 => pec_basic_chart().to_vec(),
         Version::V6 | Version::V11 => pattern.threads.iter().cloned().map(Some).collect(),
