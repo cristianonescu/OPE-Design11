@@ -146,3 +146,14 @@ line/mm, Output Pattern Add, Distance 3,0 mm.
 | `a03-applique-no-tackdown.pes` | `fee6f2f751623e9ebeb3701ac6c5e00e1b97bd50b51d3775d178b005f28a5b7e` | Tack down No: 970 st; PEC colours 1, 62, 63, 64. |
 | `a04-applique-cover-4mm.pes` | `d446d00ea341cdcd5953d0c86530e77ef810391ac513e51d35300196b8d3c021` | Covering width 4,0 mm: 34,60 x 34,70 mm, 1107 st. |
 | `a05-applique-replace.pes` | `ed820109683b353ef717c697dcffcc280a15598a7399b7e56dcbc55226121ad1` | Output Pattern Replace (distance greyed): the square replaced; three items, 23,00 x 23,00 mm, 537 st; PEC colours 62, 63, 64. |
+**Oversize design (#125, round 4 group F):** made by the owner's PE-DESIGN 11.50 (Layout &
+Editing), Windows 11 Pro 10.0.26300, 2026-10-29 12:03-12:04, black-box GUI use only (track
+pe-refs-4). Design Settings > Page Size = Hoop Size 100 x 100 mm (multi-needle, nv880e-S); the
+twelve-swatch design, Ctrl+A, Home > Size... 150 %: 129,00 x 105,00 mm, 17225 st, outside the
+page. Save As PES: "Please keep all designs within the Design Page. Saved data cannot be sent
+to the original card or the embroidery machine. Do you want to save the data anyway?" -> Yes.
+The PEC section is the empty form: no colours, a 13-byte stitch block with the design's size.
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `oversize-hoop100.pes` | `492bdbcbf6a1a3c7894104320d84cd80790e2bdb99d5f5dade593399d201a1fc` | as above |

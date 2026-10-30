@@ -1629,18 +1629,30 @@ Line references are relative to `crates/`.
     jump records of (92, -121) units plus one of (90, -118): the vector divided evenly into
     records whose longer axis is the 121-unit maximum, never halved; the runs from and to
     the origin are 11 x (-121, 121) + (-119, 119). OpenStitch's DST agrees on the total
-    jump length and the bounds (long-jump-300, reference tier). Its PES is parked: the PEC
-    writes the move as one trim-flagged long-form jump of (-45.5, +168.5) mm followed by 39
-    jump records of (+7.0, 0) mm, which a plain 12-bit decode (OpenStitch's reader included)
-    sums to (227.5, 168.5) mm, not the DST's (211.6, 278.3): the PEC encoding of a move
-    longer than 204.7 mm is open (raw bytes `9e 39 96 95` then 39 x `80 46 00`).
+    jump length and the bounds (long-jump-300, reference tier). Its PES stays parked, settled
+    2026-10-30: PE-DESIGN does not encode the move in the PEC at all. After the colour change
+    its PEC has one jump of (-45.5, +168.5) mm to (0, 180.0) mm (`9e 39 96 95`) and then 46
+    stitch records in a straight 280 mm row at y = 180 mm (39 of them the 7.0 mm long form
+    `80 46 00`), where the design's second block is a 39.5 x 6 mm satin like the first. The
+    block header says 290 x 190 mm; the PEC holds 233 needle points (186 + 47), the status bar
+    372 (186 + 186). For a design whose moves leave the 12-bit range, PE's PEC section is a
+    stand-in, not the stitches, so it cannot be a reference for a long move; OpenStitch's
+    split at 2047 units (#126, as PE's DST splits) stays. Reading it gives 280 x 174.5 mm.
   - *Hoop limits (#125):* a design scaled to 129 x 105 mm on a 100 x 100 mm Hoop-Size page
     is neither rejected nor promoted to a larger hoop. Save As warns "Please keep all designs
     within the Design Page. Saved data cannot be sent to the original card or the embroidery
     machine. Do you want to save the data anyway?" and saves on Yes; Export to DST writes
     the file with no warning (hoop-oversize-export, reference tier on the DST bounds). Its
-    PES is parked: OpenStitch reads 211 x 229 mm bounds from it where the DST and the status
-    bar say 129 x 105 (a sectioned layout for the hoop is the suspicion).
+    PES (settled 2026-10-30, now a formats fixture) has an empty machine section: the PEC's
+    "no colours" form and a 13-byte stitch block with only the design's size (1290 x 1050
+    units) and the end byte, which is what "cannot be sent to the embroidery machine" means;
+    the design is only in the object section (13 threads, `CGroupObject` and `CEmbLine`). The
+    211 x 229 mm OpenStitch read was its reader decoding the preview icons as 169 stitches and
+    the colour byte `FF` as 256 colours; it now reports that the PEC holds no stitches for this
+    129 x 105 mm design (`pe_design_oversize_save_has_no_machine_stitches`). OpenStitch's own
+    export of an oversize design still writes its stitches, with a warning (#125, #157); PE
+    writes none to the PEC. An empty OpenStitch PES (same "no colours" form) now reads back
+    without the 256 Sky Blue threads it used to give.
   - *Thread picks (#119, #136):* twelve 20 x 20 mm squares with chosen RGB fills imported
     from an owner SVG. PE-DESIGN mapped rgb(255,0,0) 800, (0,255,0) 513, (0,0,255) 405,
     (255,255,0) 205, (0,255,255) 019, (255,0,255) 086, (128,128,128) 817, (200,150,100)

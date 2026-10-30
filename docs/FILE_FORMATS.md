@@ -75,9 +75,16 @@ bit 4 = jump; 12-bit two's complement). Colour change: `FE B0` then `02`/`01` al
 split before encoding as PE-DESIGN 11.50 splits an over-long DST move (`long-jump-300.dst`:
 maximum along the longer axis, proportional share on the other, remainder last; never halved),
 so no written delta exceeds the 12-bit form (`pec_splits_moves_over_2047_units_like_pe_design_dst`,
-#126). PE-DESIGN's own PEC bytes for such a move are not yet understood (owner's parked PES:
-`9e 39 96 95` then 39 × `80 46 00`, which a plain 12-bit decode does not sum to the DST's
-vector); the issue's halving proposal matches neither format.
+#126). PE-DESIGN itself does not encode such a move in the PEC: its PES of `long-jump-300`
+has a stand-in there (one jump, then a straight 280 mm row of stitches where the second satin
+block should be), so its PEC is no reference for it; the issue's halving proposal matches
+neither format.
+
+An empty PEC section: colour byte `FF` ("no colours"; a real count is at most `FE`) and, from
+PE-DESIGN, a 13-byte stitch block (`00 00`, length 13, `31 FF F0`, width, height, `FF`) without
+the two constant fields. PE-DESIGN writes it when it saves a design outside the Design Page
+(`tests/fixtures/pe11/oversize-hoop100.pes`): the reader then reports that the PEC holds no
+stitches for a design of that size, and reads an empty design (width and height 0) as empty.
 
 Colour mapping: PEC stores indexes into Brother's fixed 64-entry chart, not RGB. Writer
 assigns each distinct design colour the nearest still-unused chart entry among 1–61
