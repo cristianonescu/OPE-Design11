@@ -295,6 +295,10 @@ fn pentagon_and_star(s: &mut Session) -> (f64, f64) {
     let (p, st) = (pentagon(50.0, 50.0, 20.0), star(50.0, 52.0, 10.0, 4.0));
     run(s, "shape.polygon", json!({"points": p, "fill": "Blue"}));
     run(s, "shape.polygon", json!({"points": st, "fill": "Yellow"}));
+    // Rows at 0 degrees: the area measure reads horizontal rows (new fills start at 45).
+    for id in [1, 2] {
+        run(s, "object.setRegion", json!({"id": id, "angle": 0}));
+    }
     (shoelace(&p), shoelace(&st))
 }
 
