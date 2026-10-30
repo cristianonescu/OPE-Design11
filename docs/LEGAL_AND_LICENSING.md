@@ -49,6 +49,15 @@ the project keeps:
   and `assets/illustrations/README.md`: each describes a generic object (a hoop, a folder, a
   spool, a woven cotton surface) and none names or describes Brother, PE-DESIGN or their
   artwork; no reference images were used. Without them the editor shows the text alone.
+- **Test images:** the images in `examples/images` (photos, illustrations, line art, pixel
+  art, lettering), which test the image wizards and fill the README's "From image to
+  embroidery" gallery, were generated for OpenStitch with Higgsfield (GPT Image 2.5) under the
+  project owner's account on 2026-10-30, with no reference images. `examples/images/PROVENANCE.md`
+  lists every prompt and Higgsfield job id. Each prompt describes original content: invented
+  people (no real person's likeness), no brands, logos or copyrighted characters, and nothing
+  modelled on Brother's or PE-DESIGN's samples. PE-DESIGN's conversions of these images are
+  references kept in the owner's notes folder, outside the repository; the gallery shows
+  OpenStitch's results only.
 - **Never in the repository:** Brother artwork, icons, logos, fonts or screenshots of
   PE-DESIGN. Documentation screenshots show OpenStitch only.
 - **Naming:** "PE-DESIGN" is not used as product branding in the user interface. Compatibility

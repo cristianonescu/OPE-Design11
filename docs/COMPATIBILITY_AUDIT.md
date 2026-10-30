@@ -1353,6 +1353,18 @@ Line references are relative to `crates/`.
     the path (OpenStitch trims at every run end, about 1100 times here) and PE's thread choice
     (it mixes two or three threads per colour area); both are the stitch-path model of #129,
     which the patent note in docs/research/beyond/patents.md bears on.
+  - **Test images (2026-10-30).** `examples/images` holds 30 generated test images: photos,
+    illustrations, line art, pixel art, lettering, transparency, noise and sizes. Each is
+    mapped to its wizards in docs/research/test-images.md, and PE-DESIGN captures of each are
+    requested. The first finding is on the generated flat emblem
+    `g01-emblem.png` (navy, orange, yellow, white, anti-aliased). Auto Punch at defaults sews
+    its orange as Silver and its yellow as Lavender. The 100-colour census is full by the
+    32nd row of the working image, with near-white and navy edge shades, before the orange and
+    yellow are reached. Those colours then join their nearest tracked shade. PE-DESIGN's
+    round-5 capture keeps all four colours (4 automatic colours, 11 342 stitches), so this is
+    a difference; the fix is its own PR. The rest of round 5's first captures are in
+    docs/research/test-images.md (Auto Select's four threads on a two-colour image, the
+    Color Set threads, Cross Stitch on pixel art).
   `openstitch.pattern` fill, motif and decorative patterns. Brother's bundled patterns are
   never read.
 - **Programmable fill, motif fill and motif line from owner-made patterns (reference,
