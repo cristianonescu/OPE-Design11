@@ -30,8 +30,9 @@ dropdowns are standard text controls and stay as they are.
 
 A full set is about 105 images (about 263 credits at 2.5 each). Following the rule for sets
 over about 60 images, the P1 half was generated first: 50 icons and 3 illustrations (plus
-three regenerated, 140 credits in all, balance 1,564.75 before). The P2 rows are left for a
-second pass.
+three regenerated, 140 credits in all, balance 1,564.75 before). The owner approved the P2
+half the same day: 45 icons and 4 illustrations plus one regenerated, 125 credits (see Phase 2
+below).
 
 ## Editor (Layout & Editing) commands
 
@@ -64,16 +65,17 @@ second pass.
 | Fabric Selector | palette | folded cloth (`fabric`) | P1 | done |
 | User Thread Charts | palette | card of spools (`thread_chart`) | P1 | done |
 | Measure | ruler (same as Ruler) | tape measure (`measure`) | P1 | done |
-| Paste / Save / Modify Image, Background Image Density | Open Image's picture | picture with clipboard / disk / pencil / half-tone | P2 | to do |
-| Rotate Left / Right, Delete Image | Rotate/Flip, Delete | picture with a turn arrow; picture with a cross | P2 | to do |
-| Split at Point, Delete Point | split, point | node with a cut; node with a cross | P2 | to do |
-| Design Settings vs Options | same gear | page with a gear for Design Settings | P2 | to do |
-| Sewing Attribute Sets | Region sew type | stack of attribute cards | P2 | to do |
-| Edge radius, Column width, Straight/Curved Block, Satin Skeleton, Satin Skeleton from Shape | rectangle, size, polygon, curve, outline | rounded corner; satin column width; block tools; skeleton line | P2 | to do |
-| Move Sections, Export Sections | hoop | hoop with arrows; hoop with export arrow | P2 | to do |
-| Photo Stitch 2 | Photo Stitch 1's | photo in a second style | P2 | to do |
-| Edit Character, Pencil (Open Curve), Convert Region to Line, Convert to Outlines, Change Color | sibling icons | own variants | P2 | to do |
-| Zoom tools, Edit Point, Copy/Paste Attributes, Import SVG, Rectangle tools | shared within a family | — | P3 | keep |
+| Paste / Save / Modify Image, Background Image Density | Open Image's picture | picture with clipboard / disk / pencil / half-tone | P2 | done (phase 2) |
+| Rotate Left / Right, Delete Image | Rotate/Flip, Delete | picture with a turn arrow; picture with a cross | P2 | done (phase 2) |
+| Split at Point, Delete Point | split, point | node with a cut; node with a cross | P2 | done (phase 2) |
+| Design Settings vs Options | same gear | page with a gear for Design Settings | P2 | done (phase 2) |
+| Sewing Attribute Sets | Region sew type | stack of attribute cards | P2 | done (phase 2) |
+| Edge radius, Column width, Straight/Curved Block, Satin Skeleton, Satin Skeleton from Shape | rectangle, size, polygon, curve, outline | rounded corner; satin column width; block tools; skeleton line | P2 | done (phase 2) |
+| Export Sections | hoop | hoop halves with an export arrow (`sections_export`); Move Sections keeps the hoop | P2 | done (phase 2) |
+| Photo Stitch 2 | Photo Stitch 1's | photo in a second style | P2 | done (phase 2) |
+| Edit Character, Pencil (Open Curve), Convert Region to Line, Convert to Outlines, Change Color | sibling icons | own variants | P2 | done (phase 2) |
+| Edit Point, Open Curve, Import SVG, Paste Attributes, Text and Grid settings | sibling icons | roof-shaped point; open S curve; page with a curve; dropper with a drop; letter with a gear; grid with a spacing arrow | P2 | done (phase 2) |
+| Zoom tools, Rectangle | shared within a family | — | P3 | keep |
 
 ## Suite windows (Stitch Creator, Stitch Design Factory, Design Database)
 
@@ -92,10 +94,11 @@ second pass.
 | Creator, Factory ▸ Flip vertically / horizontally | Rotate/Flip | mirrored triangles (`flip_v`, `flip_h`) | P1 | done |
 | Creator ▸ Region (Engrave), Region (Emboss) | Stamp | sunken and raised plate (`region_engrave`, `region_emboss`) | P1 | done |
 | Factory ▸ Swap | Connect (then a split icon) | two opposite arrows (`swap`) | P1 | done |
-| Creator ▸ New Fill/Stamp, New Motif, New Decorative Fill | New page | page with a fill / motif / ornament | P2 | to do |
-| Creator ▸ Region (Reset), Add to Design | Stamp, needle | plate reset; tile into a design | P2 | to do |
-| Database ▸ Create Image File and HTML, DST Settings, Network Machine Settings, Customer Support | Open Image, gears, Help | picture with a page; gear variants; headset | P2 | to do |
-| Factory ▸ Needle Drop Point, Horizontal Orientation | crosshair, rotate | own variants | P2 | to do |
+| Creator ▸ New Fill/Stamp, New Motif, New Decorative Fill | New page | page with a fill / motif / ornament | P2 | done (phase 2) |
+| Creator ▸ Region (Reset), Add to Design | Stamp, needle | plate reset; tile into a design | P2 | done (phase 2) |
+| Database ▸ Create Image File and HTML, DST Settings, Network Machine Settings, Customer Support | Open Image, gears, Help | picture with a page; gear variants; headset | P2 | done (phase 2) |
+| Factory ▸ Needle Drop Point, Horizontal Orientation | crosshair, rotate | own variants | P2 | done (phase 2) |
+| Creator, Factory ▸ Open / Modify Template, Preview Window; Database ▸ Preview; Factory ▸ Stitch Simulator | picture, pane icons | folder with a template sheet; sheet with a pencil; preview window; needle with a play button | P2 | done (phase 2) |
 | Database ▸ Search, About, Manual, Application Color, Select System Unit | magnifier, info, help, palette, ruler | — | P3 | keep |
 
 ## Empty states and dialogs
@@ -105,8 +108,8 @@ second pass.
 | Color pane, "Nothing is sewn yet" | text only | empty spools (`sew_empty`) | P1 | done |
 | Send to USB Media, "No USB stick or SD card is mounted." | text only | USB stick and card by an empty slot (`no_media`) | P1 | done |
 | Modify Image, "No background image" | text only | empty picture frame (`no_image`) | P1 | done |
-| Objects list, "No objects…" (`panels.rs`) | text only | empty tray illustration | P2 | to do |
-| Update dialog (available, up to date, failed) | text only | three small update illustrations | P2 | to do |
+| Objects list, "No objects…" (`panels.rs`) | text only | empty tray illustration | P2 | done (phase 2) |
+| Update dialog (available, up to date, failed) | text only | three small update illustrations | P2 | done (phase 2) |
 | Stitch Creator pattern library, "No user folder" | header illustration exists | — | P3 | keep |
 
 ## Brand and packaging
@@ -114,9 +117,13 @@ second pass.
 The app icon (SVG, PNG 16–1024, `.ico`, `.icns`), wordmarks, splash, About window and
 Application button come from the Higgsfield logo in `assets/brand` and are complete. No gap.
 
-## Phase 2
+## Phase 2 (2026-10-30)
 
-The P2 rows above: about 45 icons and 4 illustrations, about 125 credits. Generate them with
-the same prompts (`assets/icons/commands/README.md`, `assets/illustrations/README.md`) and add
-each to `OWN` in `icons.rs` (editor commands map through `glyph`, suite commands by key through
-`suite_glyph`).
+Approved by the owner after the P1 PR (#215). Generated with the same prompt templates: 45
+icons and 4 illustrations (`objects_empty`, `update_available`, `update_current`,
+`update_failed`), plus `import_svg` a second time (the first read as a crown), 125 credits.
+`sections_move` was generated but left out: Move Sections keeps the existing hoop icon, which
+would otherwise be unused. Every command in the four windows now has its own icon except the
+P3 families above. To add more, generate with the prompts in `assets/icons/commands/README.md`
+and `assets/illustrations/README.md`, list the file in `own!` in `icons.rs` and map it in
+`glyph` (editor commands) or `suite_glyph` (suite commands, by key).

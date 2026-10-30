@@ -404,8 +404,10 @@ pub fn window(app: &mut EditorApp, ctx: &egui::Context) {
         .default_pos(ctx.content_rect().center() - egui::vec2(300.0, 240.0))
         .show(ctx, |ui| match &st.phase {
             Phase::Available(update) => {
-                ui.heading(format!("OpenStitch {} is available", update.tag()));
-                ui.label(RichText::new(format!("You have {current}.")).weak());
+                crate::art::header(ui, crate::art::Art::UpdateAvailable, |ui| {
+                    ui.heading(format!("OpenStitch {} is available", update.tag()));
+                    ui.label(RichText::new(format!("You have {current}.")).weak());
+                });
                 if !update.applicable() {
                     ui.add_space(4.0);
                     let why = match &st.install {
@@ -499,7 +501,9 @@ pub fn window(app: &mut EditorApp, ctx: &egui::Context) {
                 ui.spinner();
             }
             Phase::UpToDate => {
-                ui.label(format!("You have the latest version ({current})."));
+                crate::art::header(ui, crate::art::Art::UpdateCurrent, |ui| {
+                    ui.label(format!("You have the latest version ({current})."));
+                });
                 if ui.button("Close").clicked() {
                     click = Click::Dismiss;
                 }
@@ -512,8 +516,10 @@ pub fn window(app: &mut EditorApp, ctx: &egui::Context) {
                 }
             }
             Phase::Failed { update, error } => {
-                ui.label(RichText::new("The update did not go through.").strong());
-                ui.label(error);
+                crate::art::header(ui, crate::art::Art::UpdateFailed, |ui| {
+                    ui.label(RichText::new("The update did not go through.").strong());
+                    ui.label(error);
+                });
                 ui.horizontal(|ui| {
                     if let Some(u) = update
                         && ui.button("Try again").clicked()

@@ -15,3 +15,7 @@ name_drop	2B2F36 FFFFFF A0A6AE D8433A	a white rectangular name tag label with a 
 sew_empty	2B2F36 FFFFFF A0A6AE 2A7AD8	a row of three empty white thread spools with grey flat ends and no thread wound on them, and one short loose blue thread end lying in front
 no_media	2B2F36 FFFFFF A0A6AE 2A7AD8 E0A21B	a blue USB flash drive and a small golden memory card lying beside an empty slot drawn as a dashed grey rounded outline
 no_image	2B2F36 FFFFFF A0A6AE 2E9D58	an empty picture frame with a dashed grey border holding only a faint grey outline of a hill and a sun, with a bold green plus sign in a circle at its lower right corner
+objects_empty	2B2F36 FFFFFF A0A6AE 2A7AD8 E0A21B	an empty white tray with a dashed grey bottom, and a blue square and a golden circle shape hovering just above it ready to be dropped in
+update_available	2B2F36 FFFFFF 2E9D58 2A7AD8	a white gift box with a blue ribbon and a bold green arrow pointing down into it
+update_current	2B2F36 FFFFFF 2E9D58	a big round green badge with a bold white check mark in its middle
+update_failed	2B2F36 FFFFFF E0A21B D8433A	a golden warning triangle with a bold red exclamation bar and dot inside it and a broken grey down arrow beside it
