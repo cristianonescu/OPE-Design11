@@ -519,15 +519,43 @@ fn pes_version_is_recorded() {
 }
 
 #[test]
-fn distinct_colours_get_distinct_chart_entries() {
+fn each_block_gets_its_nearest_chart_entry_as_pe_design_writes() {
+    // Two close reds both get 5 Red: PE-DESIGN does not keep distinct colours apart.
     let (red, also_red) = (Thread::rgb(0xE01010), Thread::rgb(0xEE1111));
     let idx = pec::pec_color_indexes(&[red.clone(), also_red, red]);
-    assert_ne!(idx[0], idx[1]);
-    assert_eq!(idx[0], idx[2]);
+    assert_eq!(idx, [5, 5, 5]);
     assert_eq!(
         PEC_CHART[idx[0]].as_ref().and_then(|t| t.name.as_deref()),
         Some("Red")
     );
+    // PE-DESIGN 11.50's PEC colour list for its 29 Ver4 Option colours, block by block.
+    let pe = pes::read(&data("pe11/ver4-option-color-29.pes")).expect("read");
+    let objects = pes::read_objects(&data("pe11/ver4-option-color-29.pes")).expect("objects");
+    let option: Vec<Thread> = objects
+        .threads
+        .iter()
+        .filter(|t| t.brand.as_deref() == Some("Option Color"))
+        .cloned()
+        .collect();
+    assert_eq!(option.len(), 29);
+    let written: Vec<usize> = pe
+        .threads
+        .iter()
+        .map(|t| {
+            PEC_CHART
+                .iter()
+                .position(|c| c.as_ref() == Some(t))
+                .expect("chart thread")
+        })
+        .collect();
+    assert_eq!(
+        written,
+        [
+            1, 2, 59, 56, 32, 14, 37, 32, 32, 24, 55, 4, 32, 32, 14, 37, 31, 53, 5, 7, 7, 9, 45,
+            13, 51, 25, 25, 8, 57
+        ]
+    );
+    assert_eq!(pec::pec_color_indexes(&option), written);
 }
 
 /// PEC long-form deltas: every move over ±2047 units (204.7 mm) is split as PE-DESIGN splits

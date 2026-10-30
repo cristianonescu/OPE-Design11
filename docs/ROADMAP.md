@@ -190,7 +190,8 @@ back.
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
    stroke only) and an exact medial axis instead of the grid approximation.
 8. **Formats:** CSD export (no public writer). The CSD and SHV readers match PE-DESIGN's own
-   exports since 2026-10-29 (#135), and a DST import keeps its colour blocks apart. The eight
+   exports since 2026-10-29 (#135), PEC colour indexes are the plain nearest entry per
+   block as in PE-DESIGN's own files (2026-10-30), and a DST import keeps its colour blocks apart. The eight
    machine-format writers (DST, EXP, PCS, HUS, VIP, JEF, SEW, XXX) match PE-DESIGN's exports of
    its own design since 2026-10-30 (`machine-sample-basic`, zero-length stitches aside and
    counted per side in the report; PCS and HUS write a jump landing twice as PE does, so only

@@ -90,10 +90,12 @@ the two constant fields. PE-DESIGN writes it when it saves a design outside the 
 stitches for a design of that size, and reads an empty design (width and height 0) as empty.
 
 Colour mapping: PEC stores indexes into Brother's fixed 64-entry chart, not RGB. Writer
-assigns each distinct design colour the nearest still-unused chart entry among 1–61
-(equal-weight squared-Euclidean RGB distance, later chart entry on ties;
-`openstitch_core::nearest_index` over `pec_basic_chart()`, #119), so distinct colours stay
-distinct on the machine. Entries 62–64 are read but never chosen: PE-DESIGN 11.50 sent
+gives each colour block the nearest chart entry among 1–61 (equal-weight squared-Euclidean
+RGB distance, later chart entry on ties; `openstitch_core::nearest_index` over
+`pec_basic_chart()`, #119). Distinct design colours share an entry when it is nearest to both,
+as in PE-DESIGN 11.50's own file: its 29 Ver4 Option colours got 32 five times
+(`tests/fixtures/pe11/ver4-option-color-29.pes`; an earlier rule gave each distinct colour a
+still-unused entry, which PE-DESIGN does not do). Entries 62–64 are read but never chosen: PE-DESIGN 11.50 sent
 rgb(255, 128, 0) to 11 Deep Gold rather than 62 Orange (`thread-match-swatches.pes`). The same
 matcher picks the chart entry for JEF, SEW, HUS and PCS. `approximate_index` is the "approximate" palette matcher
 (city-block winner, squared-Euclidean fallback) for the built-in sew palette.

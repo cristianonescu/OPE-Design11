@@ -167,3 +167,15 @@ step 4.0, frequency 30 %); 20,00 x 20,00 mm, 707 st; Save As PES (#PES0110). Thr
 | File | SHA-256 | Made as |
 |---|---|---|
 | `thread-307-linen.pes` | `66ddd37bf00d39e984486a8368ad8cc2178575407c4cfecc068ce832590b7422` | as above |
+
+**Ver4 Option Color (#136):** made by the owner's PE-DESIGN 11.50 (Layout & Editing), Windows
+11 Pro 10.0.26300, 2026-10-30, black-box GUI use only (reference session; owner's round-4 log,
+section "2026-10-30 11:51"). Hoop Size 100 x 100 page; 29 Fill squares of 10 mm, under sewing
+off, line Not Sewn, coloured with the Thread Chart "Ver4 Option Color" rows 1-29 in order (each
+square's colour checked); 85,00 x 70,00 mm, 5302 st; Save As PES (#PES0110). Thread records:
+empty code, RGB on a 0/85/170/255 grid, type 0x0B, id string 66-94 (row n = 65 + n), brand
+"Option Color", empty chart; plus the unsewn line slot 800 EMBROIDERY.
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `ver4-option-color-29.pes` | `ef52278a045822f4a7e97d1e687e55cf98bd76fc49464657cd3ce4160b3b79ff` | as above |

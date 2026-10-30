@@ -1555,6 +1555,15 @@ Line references are relative to `crates/`.
   needs the codes for all 61 entries, known since the round-4 chart reading (see below), and goes with
   the palette work (#136). The machine-format references (`machine-formats`, red and black)
   pick the same entries under both metrics.
+- **PEC colour indexes block by block (2026-10-30, #119, #136):** PE-DESIGN 11.50's own file of
+  the 29 Ver4 Option colours (`tests/fixtures/pe11/ver4-option-color-29.pes`, reference
+  session) gives every colour block the plain nearest PEC entry among 1–61: 32 five times, 7,
+  14, 25 and 37 twice each. OpenStitch's PEC writer gave each distinct colour a still-unused
+  entry instead (so distinct design colours stayed distinct on the machine); it now writes the
+  plain nearest entry per block, and the fixture's 29 indexes are reproduced
+  (`each_block_gets_its_nearest_chart_entry_as_pe_design_writes`). No spec changed. The same
+  file showed the `#PES0110` thread-table reader taking a false, shorter table that starts in
+  the middle of the real one (11 records of 30); it now keeps the longest table that parses.
 - **Thread-chart CSV and the built-in palette (2026-10-29, #136):** PE-DESIGN 11.50 has no
   thread-chart CSV (round-4 check: Options ▸ Edit User Thread Chart only imports; user charts
   are binary `.btc2` files, 89 bytes of high-entropy data for one colour, in the program

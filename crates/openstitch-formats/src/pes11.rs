@@ -480,7 +480,7 @@ fn read_page(data: &[u8], from: usize) -> Option<(u16, u16)> {
 /// the catalogue number, RGB and a pad byte, u32 colour type, the PEC chart index (as a
 /// string), brand and chart name, strings as MFC strings. The fields between the header
 /// strings and the table are not all mapped (their length varies: a machine-model string), so
-/// this tries each start and keeps the one that parses to exactly `list`.
+/// this tries each start and keeps the longest table that parses to exactly `list`.
 fn read_threads(data: &[u8], from: usize, list: usize) -> Option<(usize, Vec<Thread>)> {
     let parse = |start: usize| -> Result<Vec<Thread>> {
         let mut r = ByteReader::new(&data[..list]);
@@ -511,9 +511,12 @@ fn read_threads(data: &[u8], from: usize, list: usize) -> Option<(usize, Vec<Thr
             Err(FormatError::ValueOutOfRange(String::new()))
         }
     };
+    // Several starts can parse to exactly `list`: a run of records inside the table looks like
+    // a shorter table of its own. The real one is the longest (PE-DESIGN's 29 Ver4 Option
+    // colours, `ver4-option-color-29.pes`, also parse as an 11-thread table starting mid-way).
     (from..list.saturating_sub(2))
-        .rev()
-        .find_map(|s| parse(s).ok().map(|t| (s, t)))
+        .filter_map(|s| parse(s).ok().map(|t| (s, t)))
+        .max_by_key(|(s, t)| (t.len(), std::cmp::Reverse(*s)))
 }
 
 /// Reads the thread table and the object list's shapes. `from` is the offset after the header
