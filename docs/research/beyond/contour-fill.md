@@ -42,6 +42,17 @@ tree and blend of §2.1–2.3). What PE-DESIGN lacks, and this feature still add
 rings as separate loops, the double spiral, echo rings outside the shape, join styles and
 repeats.
 
+**Status (2026-10-30):** implemented as region type `contour` (`crate::contour`) on the ring
+tree, blend and sampling of `crate::spiral`: rings (`contourStrategy: rings`, the default),
+single spiral, double spiral, echo lines 0–30 and round or mitred corners (`contourJoin`).
+Differences from this sketch: the row spacing is the existing `spacing` attribute (default
+2.0 mm, 0.5–20), the ring order is `startInside` (outer-to-inner by default, not
+inner-to-outer, so the fill starts at R1 like PE-DESIGN's own Spiral), the clockwise flag is the
+existing `counterclockwise`, and the double spiral follows every other ring of each branch
+rather than a dedicated interleaving. Not yet done: repeats, the bevel join and the
+`contour-*` compat specs of §5 (the unit tests in `contour_tests.rs` cover the same
+measurements at the internal tier).
+
 ## 2. Geometry
 
 Notation: the region `R` is a set of closed contours (outer boundaries and holes, even-odd),

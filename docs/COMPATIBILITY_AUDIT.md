@@ -1440,6 +1440,10 @@ Line references are relative to `crates/`.
   table now calls 42 "Linen" (PE's RGB for it is still pyembroidery's guess). The dialog's own
   first column (1 BLACK, 2 WHITE, 3 RED, …) is not the PEC index. API:
   `openstitch_core::BROTHER_EMBROIDERY`, `brother_embroidery_code`, `pec_index_of_brother_code`.
+- **Contour fill (2026-10-30, B1):** an OpenStitch extension, region type `contour`. It
+  reuses PE-DESIGN's Spiral Stitch's offset rings but no reference spec sets it, so every
+  PE-DESIGN spec is unchanged; its tests are internal regressions. A design using it opens in
+  PE-DESIGN as plain stitches. Label it "Implemented (beyond PE-DESIGN)" in FEATURE_MATRIX.md.
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 - **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,

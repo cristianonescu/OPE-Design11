@@ -1,0 +1,11 @@
+[
+  {"command": "design.new", "params": {"name": "contour-fill", "width": 130, "height": 100}},
+  {"command": "shape.ellipse", "params": {"cx": 25, "cy": 27, "rx": 20, "ry": 20, "fill": "Red"}},
+  {"command": "object.setRegion", "params": {"id": 1, "type": "contour", "contourStrategy": "rings", "spacing": 2}},
+  {"command": "shape.rectangle", "params": {"x": 55, "y": 7, "width": 70, "height": 40, "cornerRadius": 8, "fill": "Blue"}},
+  {"command": "object.setRegion", "params": {"id": 2, "type": "contour", "contourStrategy": "singleSpiral", "spacing": 2}},
+  {"command": "shape.preset", "params": {"kind": "heart", "cx": 30, "cy": 75, "width": 36, "fill": "Emerald Green"}},
+  {"command": "object.setRegion", "params": {"id": 3, "type": "contour", "contourStrategy": "doubleSpiral", "spacing": 1.5}},
+  {"command": "shape.rectangle", "params": {"x": 68, "y": 60, "width": 45, "height": 30, "fill": "Orange"}},
+  {"command": "object.setRegion", "params": {"id": 4, "type": "contour", "contourStrategy": "rings", "spacing": 2.5, "echoLines": 2, "contourJoin": "miter"}}
+]

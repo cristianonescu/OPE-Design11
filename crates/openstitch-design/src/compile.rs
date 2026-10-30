@@ -368,7 +368,7 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
                 // concentric-*, spiral-*): no travel from R1 or to R2, no reversal.
                 *top = if matches!(
                     region.kind,
-                    RegionType::ConcentricCircle | RegionType::Spiral
+                    RegionType::ConcentricCircle | RegionType::Spiral | RegionType::Contour
                 ) {
                     runs
                 } else {

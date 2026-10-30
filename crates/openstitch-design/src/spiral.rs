@@ -78,9 +78,8 @@ pub fn spiral(closed: &[Contour], holes: &[Contour], p: &SpiralParams) -> Vec<Ve
     } else {
         boolean::contours(&boolean::combine(closed, holes, BoolOp::Difference))
     };
-    let rings = Rings::build(&base, p, clockwise);
-    let chains = rings.chains();
-    let mut pieces = sew(&rings, &chains, p);
+    let tree = Tree::build(&base, p.spacing, p.pitch, 0.0, true, clockwise);
+    let mut pieces = tree.sew(p.pitch, p.entry, Mode::Spiral);
     if p.start_inside {
         pieces.reverse();
         pieces.iter_mut().for_each(|piece| piece.reverse());
@@ -103,20 +102,38 @@ type LevelRegion = (Vec<Contour>, Vec<usize>);
 struct Rings {
     rings: Vec<Ring>,
     parent: Vec<Option<usize>>,
+    /// Distance between levels, 0.1 mm.
+    spacing: f64,
 }
 
 impl Rings {
-    fn build(base: &[Contour], p: &SpiralParams, clockwise: bool) -> Rings {
+    /// Whether ring `i` splits: more than one ring of the next level continues it.
+    fn splits(&self, i: usize) -> bool {
+        self.parent.iter().filter(|&&p| p == Some(i)).count() > 1
+    }
+}
+
+impl Rings {
+    /// Rings at insets `(level + first) · spacing`; level 0 with `first` 0 is the outline itself.
+    fn build(
+        base: &[Contour],
+        spacing: f64,
+        pitch: f64,
+        first: f64,
+        rounded: bool,
+        clockwise: bool,
+    ) -> Rings {
         let mut rings: Vec<Ring> = Vec::new();
         let mut parent: Vec<Option<usize>> = Vec::new();
         let mut previous: Vec<LevelRegion> = Vec::new();
         let mut budget = 0.0;
         for level in 0..MAX_LEVELS {
-            let regions = if level == 0 {
+            let inset = (level as f64 + first) * spacing;
+            let regions = if inset <= 0.0 {
                 // The outline itself, cleaned (self-overlaps resolved, holes as holes).
                 boolean::combine(base, &[], BoolOp::Union)
             } else {
-                boolean::offset(base, -(level as f64) * p.spacing, true)
+                boolean::offset(base, -inset, rounded)
             };
             if regions.is_empty() {
                 break;
@@ -130,7 +147,7 @@ impl Rings {
                     let length = closed_length(&points);
                     outlines.push(Contour::new(points.clone(), true));
                     // A loop shorter than a stitch is a sliver at the middle of the shape.
-                    if points.len() < 3 || length < p.pitch {
+                    if points.len() < 3 || length < pitch {
                         continue;
                     }
                     if (signed_area(&points) > 0.0) != clockwise {
@@ -146,7 +163,7 @@ impl Rings {
                         points,
                         length,
                     });
-                    budget += length / p.pitch;
+                    budget += length / pitch;
                 }
                 current.push((outlines, members));
             }
@@ -155,7 +172,11 @@ impl Rings {
                 break;
             }
         }
-        Rings { rings, parent }
+        Rings {
+            rings,
+            parent,
+            spacing,
+        }
     }
 
     /// Chains of rings from the outline (or a hole) towards the middle: a ring continues its
@@ -218,13 +239,69 @@ fn parent_ring(
     })
 }
 
+/// How a chain of rings is sewn.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Mode {
+    /// One path per chain, each turn blending a ring into the next (PE-DESIGN's Spiral).
+    Spiral,
+    /// Every ring a closed loop of its own, its start moved on by a golden-ratio fraction of a
+    /// stitch from the last so needle points of neighbouring rings do not line up.
+    Rings,
+    /// Two interleaved spirals per chain: inwards over the even rings, back out over the odd
+    /// ones, so the path ends next to where it began.
+    DoubleSpiral,
+}
+
+/// Rings linked into chains (see the module documentation): what every offset fill sews.
+pub(crate) struct Tree {
+    rings: Rings,
+    chains: Vec<Vec<usize>>,
+}
+
+impl Tree {
+    /// The ring tree of `base` (contours, even-odd), rings `spacing` apart starting `first`
+    /// rows inside the outline, corners rounded or mitred, all turning clockwise on screen
+    /// when `clockwise`.
+    pub(crate) fn build(
+        base: &[Contour],
+        spacing: f64,
+        pitch: f64,
+        first: f64,
+        rounded: bool,
+        clockwise: bool,
+    ) -> Tree {
+        let rings = Rings::build(base, spacing, pitch, first, rounded, clockwise);
+        let chains = rings.chains();
+        Tree { rings, chains }
+    }
+
+    /// Sews the chains in `mode`; see [`sew`].
+    pub(crate) fn sew(&self, pitch: f64, entry: Option<Vec2>, mode: Mode) -> Vec<Vec<Vec2>> {
+        sew(&self.rings, &self.chains, pitch, entry, mode)
+    }
+}
+
+/// A ring shorter than the one before by more than this many times the length an offset
+/// takes from a convex outline (2π·spacing a level) is the remnant of a shape that ended.
+const COLLAPSE: f64 = 1.5;
+
+/// Golden-ratio fraction by which each ring's start moves on in [`Mode::Rings`].
+const PHASE: f64 = 0.618_033_988_749_895;
+
 /// Sews the chains: the first from the start point (or the longest outline), then the
 /// unsewn chain with an end nearest the needle, from that end.
-fn sew(rings: &Rings, chains: &[Vec<usize>], p: &SpiralParams) -> Vec<Vec<Vec2>> {
+fn sew(
+    rings: &Rings,
+    chains: &[Vec<usize>],
+    pitch: f64,
+    entry: Option<Vec2>,
+    mode: Mode,
+) -> Vec<Vec<Vec2>> {
     let mut pieces = Vec::new();
     if chains.is_empty() {
         return pieces;
     }
+    let mut phase = 0usize;
     let ring = |c: usize, last: bool| {
         let chain = &chains[c];
         &rings.rings[if last {
@@ -233,7 +310,7 @@ fn sew(rings: &Rings, chains: &[Vec<usize>], p: &SpiralParams) -> Vec<Vec<Vec2>>
             chain[0]
         }]
     };
-    let first = match p.entry {
+    let first = match entry {
         Some(e) => (0..chains.len())
             .min_by(|&a, &b| {
                 let d = |c: usize| distance_to(&ring(c, false).points, e);
@@ -245,23 +322,63 @@ fn sew(rings: &Rings, chains: &[Vec<usize>], p: &SpiralParams) -> Vec<Vec<Vec2>>
             .max_by(|&a, &b| ring(a, false).length.total_cmp(&ring(b, false).length))
             .unwrap_or(0),
     };
-    let mut pos = p
-        .entry
-        .unwrap_or_else(|| lowest(&ring(first, false).points));
+    let mut pos = entry.unwrap_or_else(|| lowest(&ring(first, false).points));
     let mut done = vec![false; chains.len()];
     let mut next = Some((first, false));
     while let Some((c, reversed)) = next {
         done[c] = true;
-        let mut order: Vec<&Ring> = chains[c].iter().map(|&i| &rings.rings[i]).collect();
+        let mut ids: Vec<usize> = chains[c].clone();
         if reversed {
-            order.reverse();
+            ids.reverse();
         }
-        let path = chain_path(&order, pos, p.pitch);
-        if let Some(&end) = path.last() {
-            pos = end;
-        }
-        if path.len() >= 2 {
-            pieces.push(path);
+        let order: Vec<&Ring> = ids.iter().map(|&i| &rings.rings[i]).collect();
+        // Between two rings of a chain (two apart in a double spiral), whether a ring there
+        // splits: the turn would leave the other branch's part of it unsewn, so the larger ring
+        // is sewn all round first and the needle steps straight to the next.
+        let level_of = |i: usize| rings.rings[i].level;
+        // Likewise where the next ring is far shorter than an offset makes it (a convex outline
+        // loses 2π·spacing a level): most of the shape ended there and a remnant goes on.
+        let splits_between = |a: usize, b: usize| {
+            let (lo, hi) = (level_of(a).min(level_of(b)), level_of(a).max(level_of(b)));
+            let collapse = (rings.rings[a].length - rings.rings[b].length).abs()
+                > COLLAPSE * std::f64::consts::TAU * rings.spacing * (hi - lo) as f64;
+            collapse
+                || chains[c]
+                    .iter()
+                    .any(|&k| (lo..hi).contains(&level_of(k)) && rings.splits(k))
+        };
+        let paths = match mode {
+            Mode::Spiral => {
+                let full: Vec<bool> = ids.windows(2).map(|w| splits_between(w[0], w[1])).collect();
+                vec![chain_path(&order, &full, pos, pitch)]
+            }
+            Mode::Rings => ring_paths(&order, pos, pitch, &mut phase),
+            Mode::DoubleSpiral => {
+                let inward: Vec<usize> = ids.iter().copied().step_by(2).collect();
+                let mut outward: Vec<usize> = ids.iter().copied().skip(1).step_by(2).collect();
+                outward.reverse();
+                let rings_of = |v: &[usize]| v.iter().map(|&i| &rings.rings[i]).collect::<Vec<_>>();
+                let full_of = |v: &[usize]| {
+                    v.windows(2)
+                        .map(|w| splits_between(w[0], w[1]))
+                        .collect::<Vec<_>>()
+                };
+                let mut path = chain_path(&rings_of(&inward), &full_of(&inward), pos, pitch);
+                if let (Some(&end), false) = (path.last(), outward.is_empty()) {
+                    let back = chain_path(&rings_of(&outward), &full_of(&outward), end, pitch);
+                    path.extend(back);
+                    path = split_long(&path, pitch);
+                }
+                vec![path]
+            }
+        };
+        for path in paths {
+            if let Some(&end) = path.last() {
+                pos = end;
+            }
+            if path.len() >= 2 {
+                pieces.push(path);
+            }
         }
         next = (0..chains.len())
             .filter(|&k| !done[k])
@@ -277,17 +394,77 @@ fn sew(rings: &Rings, chains: &[Vec<usize>], p: &SpiralParams) -> Vec<Vec<Vec2>>
     pieces
 }
 
+/// Each ring of a chain as a closed loop from its point nearest the needle, its start moved on
+/// by the stagger phase, in 4·2ⁿ equal stitches (corners kept).
+fn ring_paths(order: &[&Ring], mut pos: Vec2, pitch: f64, phase: &mut usize) -> Vec<Vec<Vec2>> {
+    let mut out = Vec::new();
+    for ring in order {
+        let closed = closed_polyline(&ring.points);
+        let w = Walker::new(&closed);
+        let len = w.length();
+        let shift = (*phase as f64 * PHASE).fract() * pitch;
+        *phase += 1;
+        let start = (nearest_arc(&closed, pos) + shift) % len.max(1e-9);
+        let loop_path = rotate(&w, start);
+        let count = turn_points(len, pitch);
+        let path: Vec<Vec2> = samples(&loop_path, pitch, count)
+            .into_iter()
+            .map(|(_, q)| q)
+            .collect();
+        if let Some(&end) = path.last() {
+            pos = end;
+        }
+        out.push(path);
+    }
+    out
+}
+
+/// The closed loop `points` (no repeated end point) as needle points from its point nearest
+/// `pos`, once round, in 4·2ⁿ equal stitches (corners kept); for offset fills' echo rings.
+pub(crate) fn loop_from(points: &[Vec2], pos: Vec2, pitch: f64) -> Vec<Vec2> {
+    if points.len() < 3 {
+        return Vec::new();
+    }
+    let closed = closed_polyline(points);
+    let w = Walker::new(&closed);
+    let len = w.length();
+    let loop_path = rotate(&w, nearest_arc(&closed, pos));
+    samples(&loop_path, pitch, turn_points(len, pitch))
+        .into_iter()
+        .map(|(_, q)| q)
+        .collect()
+}
+
+/// Whether a closed loop runs clockwise on screen (y down).
+pub(crate) fn is_clockwise(points: &[Vec2]) -> bool {
+    signed_area(points) > 0.0
+}
+
 /// One chain as a spiral: each turn blends ring `k` into ring `k+1`; the last ring closes
 /// the path when it is long enough. No stitch is longer than `pitch`.
-fn chain_path(order: &[&Ring], pos: Vec2, pitch: f64) -> Vec<Vec2> {
+fn chain_path(order: &[&Ring], full: &[bool], pos: Vec2, pitch: f64) -> Vec<Vec2> {
     let Some(first) = order.first() else {
         return Vec::new();
     };
     let closed = closed_polyline(&first.points);
     let mut a = rotate(&Walker::new(&closed), nearest_arc(&closed, pos));
     let mut path: Vec<Vec2> = vec![a[0]];
-    for ring in &order[1..] {
+    for (i, ring) in order[1..].iter().enumerate() {
         let closed = closed_polyline(&ring.points);
+        if full.get(i).copied().unwrap_or(false) {
+            // A split between the two rings: ring `a` all round, then straight on to `b`.
+            let count = turn_points(Walker::new(&a).length(), pitch);
+            path.extend(
+                samples(&a, pitch, count)
+                    .into_iter()
+                    .skip(1)
+                    .map(|(_, q)| q),
+            );
+            let end = *path.last().expect("non-empty");
+            a = rotate(&Walker::new(&closed), nearest_arc(&closed, end));
+            path.push(a[0]);
+            continue;
+        }
         let b = rotate(&Walker::new(&closed), nearest_arc(&closed, a[0]));
         let (ca, cb) = (corners(&a), corners(&b));
         if !ca.is_empty() && ca.len() == cb.len() {

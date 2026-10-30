@@ -1093,7 +1093,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 IDS,
                 opt(
                     "type",
-                    "fill|satin|programmableFill|motifFill|piping|crossStitch|concentricCircle|radial|spiral|flexibleSpiral|stippling|netFill|zigzagNetFill|decorativeFill|none",
+                    "fill|satin|programmableFill|motifFill|piping|crossStitch|concentricCircle|radial|spiral|flexibleSpiral|stippling|netFill|zigzagNetFill|decorativeFill|contour|none",
                     "Region sew type",
                 ),
                 opt("color", "color", "Thread"),
@@ -1236,7 +1236,26 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     "bool",
                     "Concentric circle / spirals: start at the centre",
                 ),
-                opt("counterclockwise", "bool", "Spirals turn counter-clockwise"),
+                opt(
+                    "counterclockwise",
+                    "bool",
+                    "Spirals and contour fill turn counter-clockwise",
+                ),
+                opt(
+                    "contourStrategy",
+                    "rings|singleSpiral|doubleSpiral",
+                    "Contour fill (beyond PE-DESIGN): every ring a loop, one spiral, or in and back out; rings `spacing` apart, stitches `runPitch` long",
+                ),
+                opt(
+                    "contourJoin",
+                    "round|miter",
+                    "Contour fill: corners of the offset rings",
+                ),
+                opt(
+                    "echoLines",
+                    "int",
+                    "Contour fill: rings outside the shape, 0-30",
+                ),
                 opt(
                     "triple",
                     "bool",
@@ -1512,6 +1531,29 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     }
                     r.start_inside = p.bool("startInside", Some(r.start_inside))?;
                     r.counterclockwise = p.bool("counterclockwise", Some(r.counterclockwise))?;
+                    if p.has("contourStrategy") {
+                        let id = p.string("contourStrategy", None)?;
+                        r.contour_strategy = openstitch_design::ContourStrategy::from_id(&id)
+                            .ok_or_else(|| {
+                                p.invalid(
+                                    "contourStrategy",
+                                    "must be rings, singleSpiral or doubleSpiral",
+                                )
+                            })?;
+                    }
+                    if let Some(j) = choice(
+                        p,
+                        "contourJoin",
+                        &[
+                            ("round", openstitch_design::ContourJoin::Round),
+                            ("miter", openstitch_design::ContourJoin::Miter),
+                        ],
+                    )? {
+                        r.contour_join = j;
+                    }
+                    if p.has("echoLines") {
+                        r.echo_lines = p.req("echoLines", 0.0, 30.0)?.round() as u32;
+                    }
                     r.triple = p.bool("triple", Some(r.triple))?;
                     if p.has("randomShift") {
                         r.random_shift = Some(p.req("randomShift", 0.0, 50.0)?);

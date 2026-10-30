@@ -173,6 +173,20 @@ pub fn generate(
             vec![region.sequence(nearest_next(pieces))]
         }
         RegionType::Stippling => vec![region.loops(stipple(closed, holes, angle, spacing))],
+        RegionType::Contour => {
+            // Beyond PE-DESIGN (see crate::contour): rows that follow the outline.
+            let p = crate::contour::ContourParams {
+                spacing,
+                pitch,
+                strategy: r.contour_strategy,
+                rounded: r.contour_join == crate::model::ContourJoin::Round,
+                echo_lines: r.echo_lines,
+                counterclockwise: r.counterclockwise,
+                start_inside: r.start_inside,
+                entry: r.entry,
+            };
+            vec![region.sequence_raw(crate::contour::contour(closed, holes, &p))]
+        }
         RegionType::NetFill | RegionType::ZigzagNetFill => {
             let id = r.pattern.as_deref().unwrap_or(NET_PATTERNS[0].id);
             let mut out = Vec::new();
