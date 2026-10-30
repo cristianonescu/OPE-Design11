@@ -51,7 +51,9 @@ impl Method {
             Method::AutoPunch => "Colour areas become fill and satin shapes you can edit.",
             Method::CrossStitch => "One cross per grid cell, one stitch pattern per colour.",
             Method::PhotoFill => "Photos: tone becomes stitch coverage in fill rows.",
-            Method::PhotoLines => "Photos: zigzag lines that swing wider where the image is dark.",
+            Method::PhotoLines => {
+                "Photos: a line screen, one angle per thread, zigzag where its colour is needed."
+            }
             Method::DesignCenter => {
                 "Line drawings: lines become line shapes, enclosed areas regions."
             }
@@ -62,10 +64,11 @@ impl Method {
 impl Method {
     /// PE-DESIGN 11.50's Max. Number of Colors default for the method's wizard (round-4
     /// captures): Auto Punch and Cross Stitch count the image's colours (0 = automatic), Photo
-    /// Stitch 10.
+    /// Stitch 1 10, Photo Stitch 2 4 (its Color Set).
     pub fn default_colors(self) -> u32 {
         match self {
-            Method::PhotoFill | Method::PhotoLines => 10,
+            Method::PhotoFill => 10,
+            Method::PhotoLines => 4,
             _ => 0,
         }
     }

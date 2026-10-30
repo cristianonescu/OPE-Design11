@@ -1335,7 +1335,12 @@ Line references are relative to `crates/`.
     needed (about 20 needle points per cm² per thread) and a zigzag 1.8 mm deep advancing
     0.2 mm per stitch where it is (about 300 per cm² in the thread's own area); one jump per
     thread, no trims. The model, the acceptance criteria and the patent facts are in
-    docs/research/photo-stitch-2-halftone.md; the generator waits for the owner's decision.
+    docs/research/photo-stitch-2-halftone.md. Built 2026-10-30 after the owner's "Go ahead"
+    (`screen.rs`, a fixed angle set, no image-derived direction): 13 701 stitches against
+    14 133, angles, spacing, own-area (280–292 / 296–298) and white (21–24 / 21–23) densities
+    and one jump a thread as PE. Left: Auto Select's colour set, where PE mixes green from blue
+    and yellow and adds purple, while OpenStitch gives green its own thread; the named Color
+    Sets; Photo Stitch 2 Mono, Direction and Line interval changes (captures requested).
 - **Sewing-machine stitch files (PMV, 2026-10-29, #130):** OpenStitch now reads the PMV layout
   it writes (pyembroidery's description: 8-byte magic, 36-byte banner, 56-byte preamble, needle
   count and its double, 6-bit relative x / 5-bit absolute y pairs in 0.25 mm, the length and
