@@ -58,34 +58,113 @@ pub struct SpiralParams {
     pub entry: Option<Vec2>,
 }
 
-/// The spiral fill of `closed` minus `holes`: one needle-point path per chain, in sewing
-/// order, no stitch longer than `p.pitch`. The caller joins them (travel inside the region,
-/// or jumps).
-pub fn spiral(closed: &[Contour], holes: &[Contour], p: &SpiralParams) -> Vec<Vec<Vec2>> {
+/// A spiral as PE-DESIGN sews it: the paths to join, and the closing run sewn after a trim.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SpiralStitches {
+    /// One needle-point path per chain, in sewing order (the caller joins them).
+    pub paths: Vec<Vec<Vec2>>,
+    /// When the start point lies inside an outline edge: the stretch from the first corner
+    /// back to the start point, sewn on its own after the spiral (PE-DESIGN trims and jumps).
+    pub closing: Option<Vec<Vec2>>,
+    /// The closing run comes first (the second Start Point button reverses everything).
+    pub closing_first: bool,
+}
+
+/// The spiral fill of `closed` minus `holes`, no stitch longer than `p.pitch`.
+///
+/// Winding and ends follow PE-DESIGN 11.50 (references `spiral-*`, round 5): when the start
+/// point (R1) is a vertex of the outline (a circle's or ellipse's bottom point, a triangle's
+/// corner) the spiral turns counter-clockwise on screen and ends in the middle; when R1 lies
+/// inside an edge (a rectangle's bottom middle) it runs clockwise to the next corner, spirals
+/// from there, and after a trim returns to that corner and runs back to R1, ending where it
+/// began. `reverse_winding` turns either the other way.
+pub fn spiral(closed: &[Contour], holes: &[Contour], p: &SpiralParams) -> SpiralStitches {
+    let mut out = SpiralStitches::default();
     if !(p.spacing > 0.0 && p.pitch > 0.0) {
-        return Vec::new();
+        return out;
     }
     let Some(outer) = closed.iter().filter(|c| c.closed).max_by(|a, b| {
         signed_area(&a.outline_points())
             .abs()
             .total_cmp(&signed_area(&b.outline_points()).abs())
     }) else {
-        return Vec::new();
+        return out;
     };
-    // The outline's own direction (positive signed area: clockwise on screen, y down).
-    let clockwise = (signed_area(&outer.outline_points()) > 0.0) != p.reverse_winding;
+    let on_vertex = p.entry.is_none_or(|e| {
+        outer
+            .points
+            .iter()
+            .any(|v| v.distance(e) < VERTEX_TOLERANCE)
+    });
+    let clockwise = !on_vertex != p.reverse_winding;
     let base: Vec<Contour> = if holes.is_empty() {
         closed.to_vec()
     } else {
         boolean::contours(&boolean::combine(closed, holes, BoolOp::Difference))
     };
     let tree = Tree::build(&base, p.spacing, p.pitch, 0.0, true, clockwise);
-    let mut pieces = tree.sew(p.pitch, p.entry, Mode::Spiral);
+    // R1 inside an edge: lead in along the outline to the next corner and spiral from there.
+    let lead = match (p.entry, on_vertex) {
+        (Some(e), false) => lead_in(outer, e, clockwise, p.pitch),
+        _ => None,
+    };
+    let start = lead.as_ref().and_then(|l| l.last().copied()).or(p.entry);
+    let mut pieces = tree.sew(p.pitch, start, Mode::Spiral);
+    if let Some(lead) = &lead {
+        match pieces.first_mut() {
+            Some(first) => {
+                let mut joined = lead.clone();
+                joined.extend(first.iter().skip(1).copied());
+                *first = joined;
+            }
+            None => pieces.push(lead.clone()),
+        }
+        let mut back = lead.clone();
+        back.reverse();
+        out.closing = Some(back);
+    }
     if p.start_inside {
         pieces.reverse();
         pieces.iter_mut().for_each(|piece| piece.reverse());
+        if let Some(c) = &mut out.closing {
+            c.reverse();
+            out.closing_first = true;
+        }
     }
-    pieces
+    out.paths = pieces;
+    out
+}
+
+/// A start point this close to an outline vertex (0.1 mm) is on it.
+const VERTEX_TOLERANCE: f64 = 1.0;
+
+/// The stretch of `outer` from `entry` to the next vertex in the winding direction, in equal
+/// stitches no longer than `pitch` (PE-DESIGN 11.50: 2.0 mm from a rectangle's bottom middle
+/// to its bottom-left corner).
+fn lead_in(outer: &Contour, entry: Vec2, clockwise: bool, pitch: f64) -> Option<Vec<Vec2>> {
+    let mut points = outer.outline_points();
+    if points.len() < 3 {
+        return None;
+    }
+    if (signed_area(&points) > 0.0) != clockwise {
+        points.reverse();
+    }
+    let closed = closed_polyline(&points);
+    let w = Walker::new(&closed);
+    let len = w.length();
+    let from = nearest_arc(&closed, entry);
+    let to = outer
+        .points
+        .iter()
+        .map(|&v| (nearest_arc(&closed, v) - from).rem_euclid(len))
+        .filter(|&d| d > VERTEX_TOLERANCE)
+        .fold(f64::INFINITY, f64::min);
+    if !to.is_finite() {
+        return None;
+    }
+    let ring = rotate(&w, from);
+    let path = Walker::new(&ring).slice(0.0, to);
+    Some(crate::generate::subdivide(&path, pitch))
 }
 
 /// One ring: a closed loop (no repeated end point), oriented the way the spiral turns.
@@ -282,9 +361,9 @@ impl Tree {
     }
 }
 
-/// A ring shorter than the one before by more than this many times the length an offset
-/// takes from a convex outline (2π·spacing a level) is the remnant of a shape that ended.
-const COLLAPSE: f64 = 1.5;
+/// A ring with a point farther than this many spacings a level from the next ring is where
+/// the shape ended and a remnant goes on (a corner of 30° is 3.9 spacings off).
+const COLLAPSE: f64 = 4.0;
 
 /// Golden-ratio fraction by which each ring's start moves on in [`Mode::Rings`].
 const PHASE: f64 = 0.618_033_988_749_895;
@@ -337,12 +416,24 @@ fn sew(
         // splits: the turn would leave the other branch's part of it unsewn, so the larger ring
         // is sewn all round first and the needle steps straight to the next.
         let level_of = |i: usize| rings.rings[i].level;
-        // Likewise where the next ring is far shorter than an offset makes it (a convex outline
-        // loses 2π·spacing a level): most of the shape ended there and a remnant goes on.
+        // Likewise where part of the larger ring lies far from the smaller one (more than
+        // COLLAPSE spacings a level; a sharp corner is 2–3): most of the shape ended there and
+        // a remnant goes on.
         let splits_between = |a: usize, b: usize| {
             let (lo, hi) = (level_of(a).min(level_of(b)), level_of(a).max(level_of(b)));
-            let collapse = (rings.rings[a].length - rings.rings[b].length).abs()
-                > COLLAPSE * std::f64::consts::TAU * rings.spacing * (hi - lo) as f64;
+            let (big, small) = if level_of(a) < level_of(b) {
+                (a, b)
+            } else {
+                (b, a)
+            };
+            let small_loop = closed_polyline(&rings.rings[small].points);
+            let big_points = &rings.rings[big].points;
+            let step = (big_points.len() / 64).max(1);
+            let limit = COLLAPSE * rings.spacing * (hi - lo) as f64;
+            let collapse = big_points
+                .iter()
+                .step_by(step)
+                .any(|&q| nearest_point(&small_loop, q).distance(q) > limit);
             collapse
                 || chains[c]
                     .iter()

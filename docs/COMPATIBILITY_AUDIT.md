@@ -1197,12 +1197,23 @@ Line references are relative to `crates/`.
     pairs of 1.0 mm and triples of 1.33 mm: key spans of about 2 and 4 mm split into
     ceil(length / pitch) equal stitches. Rounding the 4·2ⁿ points to 0.1 mm explains only part
     of it (OpenStitch's counts are within 3 %); where PE's key points come from is open.
-  - The concentric seam on a Bézier circle, the spiral's winding on a circle (PE turns against
-    the outline there and with it on the rectangle, although its running stitch goes the same
-    way round both) and the return run PE sews after the rectangle spiral's middle (trim, jump to
-    the bottom-left corner, running stitches along the bottom edge to R1): new captures were
-    requested from the reference session on 2026-10-30 (round 5: square, portrait rectangle,
-    reversed drags, ellipse, moved R1 and R2, triangle).
+  - Spiral winding and ending (settled 2026-10-30, round 5: `spiral-square40`,
+    `spiral-rect30x40`, `spiral-rect40x30-drag-reverse`, `spiral-ellipse40x30`,
+    `spiral-circle40-drag-reverse`, `spiral-triangle`): the drag direction does not matter
+    (identical files); what decides is where the start point lies. On an outline vertex (a
+    circle's or ellipse's bottom point, a triangle's bottom-left corner) the spiral turns
+    counter-clockwise on screen and ends in the middle. Inside an edge (a rectangle's bottom
+    middle) it runs clockwise to the next corner, spirals from there and, after a trim, returns to
+    that corner and runs back along the edge to the start point, ending where it began. OpenStitch
+    sews both cases that way now (`crate::spiral`, closing run as its own run); all six specs pass
+    within 3 %. PE-DESIGN shows no R1/R2 markers for Spiral or Concentric Circle regions, so a
+    moved start point cannot be captured. Open: the triangle's first turn reaches further into
+    the base corners in PE (39.7 mm wide against 39.0 mm; width not compared).
+  - The concentric seam on a Bézier circle stays open. Round 5 adds a 30 mm circle (seam at the
+    left edge just above the middle, like the 40 mm one) and a 40 × 30 mm ellipse (seam at the
+    top just right of the middle); no single walking rule fits those and the rectangle's 75.4°.
+    The new specs `concentric-circle30` and `concentric-ellipse40x30` compare counts, bounds and
+    stitch lengths, not the seam.
 - **Image digitizing (Phase 6, issues #127, #128, #132, #129):** the Auto Punch, Cross Stitch
   and Photo Stitch pipelines were this project's own approximations; the Phase 6 gap analysis
   pins their arithmetic. Done 2026-10-29 (#128): mono Photo Stitch uses integer Rec. 601

@@ -185,7 +185,17 @@ pub fn generate(
                 start_inside: r.start_inside,
                 entry: r.entry,
             };
-            vec![region.sequence_raw(crate::spiral::spiral(closed, holes, &p))]
+            let sewn = crate::spiral::spiral(closed, holes, &p);
+            let mut runs = region.sequence_raw(sewn.paths);
+            // The closing run is its own run: the compiler trims before (or after) it.
+            if let Some(closing) = sewn.closing.filter(|c| c.len() >= 2) {
+                if sewn.closing_first {
+                    runs.insert(0, closing);
+                } else {
+                    runs.push(closing);
+                }
+            }
+            vec![runs]
         }
         RegionType::FlexibleSpiral => {
             let spiral = flexible_spiral(closed, spacing, pitch, r.counterclockwise);

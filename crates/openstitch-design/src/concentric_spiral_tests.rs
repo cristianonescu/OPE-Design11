@@ -161,7 +161,7 @@ fn spiral_starts_on_the_outline_and_closes_in_a_row_per_turn() {
     let shape = [circle(200.0)];
     let mut p = spiral_params();
     p.entry = Some(v2(0.0, 200.0));
-    let paths = spiral(&shape, &[], &p);
+    let paths = spiral(&shape, &[], &p).paths;
     assert_eq!(paths.len(), 1, "one continuous path");
     let path = &paths[0];
     assert!(
@@ -193,7 +193,7 @@ fn spiral_turns_on_a_rectangle_are_rectangles_a_row_apart_on_both_axes() {
     let shape = [rectangle()];
     let mut p = spiral_params();
     p.entry = Some(v2(0.0, 150.0));
-    let paths = spiral(&shape, &[], &p);
+    let paths = spiral(&shape, &[], &p).paths;
     assert_eq!(paths.len(), 1);
     let path = &paths[0];
     // PE-DESIGN: crossings 19.85, 19.35, … on x and 14.85, 14.35, … on y: 0.5 mm apart on
@@ -229,7 +229,7 @@ fn spiral_turns_on_a_rectangle_are_rectangles_a_row_apart_on_both_axes() {
 fn spiral_round_a_hole_never_sews_into_it_and_start_point_two_reverses_it() {
     let outer = [circle(200.0)];
     let hole = [circle(75.0)];
-    let paths = spiral(&outer, &hole, &spiral_params());
+    let paths = spiral(&outer, &hole, &spiral_params()).paths;
     assert_eq!(
         paths.len(),
         2,
@@ -241,7 +241,7 @@ fn spiral_round_a_hole_never_sews_into_it_and_start_point_two_reverses_it() {
     }
     let mut p = spiral_params();
     p.start_inside = true;
-    let back = spiral(&outer, &hole, &p);
+    let back = spiral(&outer, &hole, &p).paths;
     let mut fwd: Vec<Vec2> = paths.iter().flatten().copied().collect();
     fwd.reverse();
     let rev: Vec<Vec2> = back.iter().flatten().copied().collect();
@@ -272,4 +272,65 @@ fn both_types_default_to_pe_designs_density_and_sew_through_the_region_code() {
             }
         }
     }
+}
+
+#[test]
+fn spiral_winding_and_ending_follow_where_the_start_point_lies() {
+    // PE-DESIGN 11.50 round 5: from a start point inside an edge (a rectangle's bottom middle)
+    // the spiral runs clockwise to the corner and ends back at the start after a trimmed
+    // closing run; from a vertex (a circle's bottom, a triangle's corner) it turns
+    // counter-clockwise and ends in the middle.
+    let mut p = spiral_params();
+    p.entry = Some(v2(0.0, 150.0));
+    let rect = spiral(&[rectangle()], &[], &p);
+    let path = &rect.paths[0];
+    assert_eq!(path[0], v2(0.0, 150.0), "starts at R1");
+    assert!(
+        path[3].x < -50.0 && (path[3].y - 150.0).abs() < 1e-6,
+        "runs left along the bottom"
+    );
+    let closing = rect.closing.as_ref().expect("a closing run");
+    assert!(
+        closing[0].distance(v2(-200.0, 150.0)) < 1e-6,
+        "from the bottom-left corner"
+    );
+    assert!(
+        closing.last().expect("run").distance(v2(0.0, 150.0)) < 1e-6,
+        "back to R1"
+    );
+    assert!(longest(closing) <= 20.0 + 1e-9);
+    assert!(!rect.closing_first);
+
+    p.entry = Some(v2(0.0, 200.0));
+    let round = spiral(&[circle(200.0)], &[], &p);
+    assert!(round.closing.is_none());
+    let path = &round.paths[0];
+    assert!(
+        path[3].x > 10.0,
+        "runs right from the bottom: {:?}",
+        path[3]
+    );
+    assert!(
+        path.last().expect("path").distance(C) < 15.0,
+        "ends in the middle"
+    );
+
+    let triangle = Contour::new(
+        vec![v2(0.0, -200.0), v2(200.0, 200.0), v2(-200.0, 200.0)],
+        true,
+    );
+    p.entry = Some(v2(-200.0, 200.0));
+    let tri = spiral(&[triangle], &[], &p);
+    assert!(tri.closing.is_none());
+    assert!(
+        tri.paths[0][3].x > -150.0 && tri.paths[0][3].y > 190.0,
+        "runs right along the base"
+    );
+
+    // The second Start Point button: the closing run comes first, reversed.
+    p.entry = Some(v2(0.0, 150.0));
+    p.start_inside = true;
+    let back = spiral(&[rectangle()], &[], &p);
+    assert!(back.closing_first);
+    assert_eq!(back.closing.as_ref().expect("run")[0], v2(0.0, 150.0));
 }
