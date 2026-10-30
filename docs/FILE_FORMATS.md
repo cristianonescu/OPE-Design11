@@ -962,10 +962,13 @@ Not yet the same: when both ends of the first motif-fill row are as far from the
 PE-DESIGN walks right and comes back down the right edge where OpenStitch walks left (the same
 needle points mirrored; one reference cannot tell PE-DESIGN's tie-break), and its motif line adds
 tie-in and tie-off stitches (23 against 16).
-Not yet the same: PE-DESIGN's motif fill travels between rows along the outline at 2 mm
-(130 needle points against OpenStitch's 103, which joins rows with one stitch). The motif line
-ties in and locks as PE-DESIGN does (since 2026-10-30): three 0.3 mm steps out along a first
-stitch over 2.65 mm and back, one lock step at the end; 23 needle points as PE-DESIGN.
+The motif line ties in and locks as PE-DESIGN does (since 2026-10-30): three 0.3 mm steps out
+along a first stitch over 2.65 mm and back, one lock step at the end; 23 needle points as
+PE-DESIGN.
+
+Not yet the same: when both ends of the first motif-fill row are as far from the start point,
+PE-DESIGN walks right and comes back down the right edge where OpenStitch walks left (the same
+needle points mirrored; one reference cannot tell PE-DESIGN's tie-break).
 
 ### Text pattern sources (`.pas`, `.pmf`, `.plf`)
 
