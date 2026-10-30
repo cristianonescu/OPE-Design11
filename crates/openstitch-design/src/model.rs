@@ -664,6 +664,9 @@ pub enum RegionType {
     NetFill,
     ZigzagNetFill,
     DecorativeFill,
+    /// Beyond PE-DESIGN: rows that follow the outline at a constant distance (rings, single or
+    /// double spiral, echo lines; see [`crate::contour`]).
+    Contour,
 }
 
 impl RegionType {
@@ -679,7 +682,7 @@ impl RegionType {
         }
     }
 
-    pub const ALL: [RegionType; 14] = [
+    pub const ALL: [RegionType; 15] = [
         RegionType::Fill,
         RegionType::Satin,
         RegionType::ProgrammableFill,
@@ -694,6 +697,7 @@ impl RegionType {
         RegionType::NetFill,
         RegionType::ZigzagNetFill,
         RegionType::DecorativeFill,
+        RegionType::Contour,
     ];
 
     /// The JSON / command name (`"programmableFill"`).
@@ -713,6 +717,7 @@ impl RegionType {
             RegionType::NetFill => "netFill",
             RegionType::ZigzagNetFill => "zigzagNetFill",
             RegionType::DecorativeFill => "decorativeFill",
+            RegionType::Contour => "contour",
         }
     }
 
@@ -737,8 +742,60 @@ impl RegionType {
             RegionType::NetFill => "Net fill",
             RegionType::ZigzagNetFill => "Zigzag net fill",
             RegionType::DecorativeFill => "Decorative fill",
+            RegionType::Contour => "Contour fill",
         }
     }
+}
+
+/// Contour fill (beyond PE-DESIGN): how the rings that follow the outline are sewn.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ContourStrategy {
+    /// Every ring a closed loop of its own.
+    #[default]
+    Rings,
+    /// One continuous spiral per branch.
+    SingleSpiral,
+    /// Inwards and back out, ending next to the start.
+    DoubleSpiral,
+}
+
+impl ContourStrategy {
+    pub const ALL: [ContourStrategy; 3] = [
+        ContourStrategy::Rings,
+        ContourStrategy::SingleSpiral,
+        ContourStrategy::DoubleSpiral,
+    ];
+
+    /// The JSON / command name.
+    pub fn id(self) -> &'static str {
+        match self {
+            ContourStrategy::Rings => "rings",
+            ContourStrategy::SingleSpiral => "singleSpiral",
+            ContourStrategy::DoubleSpiral => "doubleSpiral",
+        }
+    }
+
+    pub fn from_id(id: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|s| s.id() == id)
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            ContourStrategy::Rings => "Rings",
+            ContourStrategy::SingleSpiral => "Single spiral",
+            ContourStrategy::DoubleSpiral => "Double spiral",
+        }
+    }
+}
+
+/// Contour fill (beyond PE-DESIGN): the corners of the offset rings.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ContourJoin {
+    #[default]
+    Round,
+    Miter,
 }
 
 /// Underlay (under sewing) of fill and satin regions, when `underlay` is on.
@@ -1157,6 +1214,15 @@ pub struct RegionSewing {
     /// Programmable fill: sew a plain fill underneath (base sewing).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub base_sewing: bool,
+    /// Contour fill: rings, single or double spiral.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub contour_strategy: ContourStrategy,
+    /// Contour fill: corners of the offset rings.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub contour_join: ContourJoin,
+    /// Contour fill: rings outside the shape (0–30).
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub echo_lines: u32,
     /// Region entry point (PE-DESIGN R1), 0.1 mm; snapped to the outline when sewn.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub entry: Option<Vec2>,
@@ -1247,6 +1313,9 @@ impl RegionSewing {
             triple: false,
             random_shift: None,
             base_sewing: false,
+            contour_strategy: ContourStrategy::default(),
+            contour_join: ContourJoin::default(),
+            echo_lines: 0,
             entry: None,
             exit: None,
             center: None,
@@ -1363,6 +1432,8 @@ impl RegionSewing {
             RegionType::NetFill => 4.0,
             RegionType::ZigzagNetFill => 5.0,
             RegionType::FlexibleSpiral => 1.0,
+            // The contour fill sketch's default row spacing (echo-quilting look).
+            RegionType::Contour => 2.0,
             _ => 1.0,
         })
     }

@@ -216,7 +216,17 @@ pub fn generate(
                 start_inside: r.start_inside,
                 entry: r.entry,
             };
-            vec![region.sequence_raw(crate::spiral::spiral(closed, holes, &p))]
+            let sewn = crate::spiral::spiral(closed, holes, &p);
+            let mut runs = region.sequence_raw(sewn.paths);
+            // The closing run is its own run: the compiler trims before (or after) it.
+            if let Some(closing) = sewn.closing.filter(|c| c.len() >= 2) {
+                if sewn.closing_first {
+                    runs.insert(0, closing);
+                } else {
+                    runs.push(closing);
+                }
+            }
+            vec![runs]
         }
         RegionType::FlexibleSpiral => {
             let spiral = flexible_spiral(closed, spacing, pitch, r.counterclockwise);
@@ -228,6 +238,20 @@ pub fn generate(
             vec![region.sequence(nearest_next(pieces))]
         }
         RegionType::Stippling => vec![region.loops(stipple(closed, holes, angle, spacing))],
+        RegionType::Contour => {
+            // Beyond PE-DESIGN (see crate::contour): rows that follow the outline.
+            let p = crate::contour::ContourParams {
+                spacing,
+                pitch,
+                strategy: r.contour_strategy,
+                rounded: r.contour_join == crate::model::ContourJoin::Round,
+                echo_lines: r.echo_lines,
+                counterclockwise: r.counterclockwise,
+                start_inside: r.start_inside,
+                entry: r.entry,
+            };
+            vec![region.sequence_raw(crate::contour::contour(closed, holes, &p))]
+        }
         RegionType::NetFill | RegionType::ZigzagNetFill => {
             let id = r.pattern.as_deref().unwrap_or(NET_PATTERNS[0].id);
             let mut out = Vec::new();

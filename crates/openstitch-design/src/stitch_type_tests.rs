@@ -1514,7 +1514,7 @@ fn blob_with_hole() -> Vec<Contour> {
     ]
 }
 
-const NEW_REGION_TYPES: [RegionType; 12] = [
+const NEW_REGION_TYPES: [RegionType; 13] = [
     RegionType::ProgrammableFill,
     RegionType::MotifFill,
     RegionType::Piping,
@@ -1527,6 +1527,7 @@ const NEW_REGION_TYPES: [RegionType; 12] = [
     RegionType::NetFill,
     RegionType::ZigzagNetFill,
     RegionType::DecorativeFill,
+    RegionType::Contour,
 ];
 
 /// The longest stitch a region type may make with default attributes (0.1 mm).
