@@ -68,9 +68,10 @@ fn mm(units: f64) -> u16 {
 
 /// Index of `thread` in the table, appended when new (compared by colour and catalogue number).
 fn thread_index(table: &mut Vec<Thread>, thread: &Thread) -> u16 {
-    // Written as PE-DESIGN writes the colour (BROTHER EMBROIDERY numbers for Brother chart
-    // colours).
-    let thread = &openstitch_formats::pes11::as_pe_writes(thread);
+    // The Appliqué wizard's stage colours as PE-DESIGN's appliqué colours; any other thread
+    // as PE-DESIGN writes the colour (BROTHER EMBROIDERY numbers for Brother chart colours).
+    let thread =
+        &applique_thread(thread).unwrap_or_else(|| openstitch_formats::pes11::as_pe_writes(thread));
     let same = |t: &Thread| {
         t.rgb_value() == thread.rgb_value() && t.catalog_number == thread.catalog_number
     };
@@ -114,6 +115,24 @@ fn stitch_group(
     let thread = |k: usize| indices.get(k).or(indices.last()).copied().unwrap_or(0);
     StitchGroup::from_pattern(&pattern, position, thread)
         .ok_or_else(|| format!("object {id} is a stitch pattern without stitches"))
+}
+
+/// The Appliqué wizard's stage threads as PE-DESIGN's Applique Wizard colours (catalogue
+/// numbers 100 Applique Material, 101 Applique Position, 102 Applique; colour type 2, RGB 0, no
+/// brand: a01-rect-applique). PE-DESIGN sews its tack-down and covering lines in 102; the
+/// wizard's covering line keeps the design's colour.
+fn applique_thread(t: &Thread) -> Option<Thread> {
+    use crate::wizards::applique::{MATERIAL, POSITION, TACK_DOWN};
+    let catalog = match t.name.as_deref()? {
+        MATERIAL => "100",
+        POSITION => "101",
+        TACK_DOWN => "102",
+        _ => return None,
+    };
+    let mut pe = Thread::rgb(0);
+    pe.catalog_number = Some(catalog.into());
+    pe.kind = Some(openstitch_formats::pes11::APPLIQUE_KIND);
+    Some(pe)
 }
 
 fn shape(object: &DesignObject, table: &mut Vec<Thread>) -> Result<Shape, String> {
@@ -321,6 +340,7 @@ fn line(id: u64, l: &LineSewing, s: &mut Shape, table: &mut Vec<Thread>) -> Resu
         LineType::Running => Shape::LINE_RUNNING,
         LineType::Triple => Shape::LINE_TRIPLE,
         LineType::EStitch | LineType::VStitch => Shape::LINE_E_OR_V,
+        LineType::Cutting => Shape::LINE_CUTTING,
         other => {
             return Err(format!(
                 "object {id}: line type {} is not mapped in PES 0110 yet (running, zigzag, triple, E and V are)",
@@ -330,7 +350,12 @@ fn line(id: u64, l: &LineSewing, s: &mut Shape, table: &mut Vec<Thread>) -> Resu
     };
     s.line_sewn = true;
     s.line_color = thread_index(table, &l.thread);
-    s.zigzag_width = l.width as f32;
+    // E and V keep their width in a field of their own; the zigzag width stays PE's default.
+    if s.line_type == Shape::LINE_E_OR_V {
+        s.ev_width = l.width as f32;
+    } else {
+        s.zigzag_width = l.width as f32;
+    }
     s.zigzag_density = l.density as f32;
     s.run_pitch = l.pitch as f32;
     s.line_under_sewing = l.underlay;
@@ -896,6 +921,45 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn applique_stages_become_pe_designs_applique_lines_and_colours() {
+        use crate::wizards::applique::{MATERIAL, POSITION, TACK_DOWN};
+        let stage = |name: &'static str| {
+            let mut t = red();
+            t.name = Some(name.into());
+            t.catalog_number = None;
+            t.brand = None;
+            t
+        };
+        let square = || vec![Contour::rectangle(100.0, 100.0, 200.0, 200.0)];
+        let mut design = Design::new("t", openstitch_design::DesignPage::default());
+        for (kind, name) in [
+            (LineType::Cutting, MATERIAL),
+            (LineType::Running, POSITION),
+            (LineType::VStitch, TACK_DOWN),
+        ] {
+            let mut line = LineSewing::new(kind, stage(name));
+            line.width = 2.0;
+            design.add(DesignObject::shape(square(), None, Some(line)));
+        }
+        let o = objects(&design).expect("objects");
+        let catalogs: Vec<_> = o.threads.iter().map(|t| t.catalog_number.clone()).collect();
+        assert_eq!(
+            catalogs,
+            [Some("100".into()), Some("101".into()), Some("102".into())]
+        );
+        assert!(o.threads.iter().all(
+            |t| t.kind == Some(openstitch_formats::pes11::APPLIQUE_KIND) && t.rgb_value() == 0
+        ));
+        let types: Vec<u16> = o.shapes.iter().map(|s| s.line_type).collect();
+        assert_eq!(
+            types,
+            [Shape::LINE_CUTTING, Shape::LINE_RUNNING, Shape::LINE_E_OR_V]
+        );
+        // The V tack-down's width is the E/V width; the zigzag width stays PE's default.
+        assert_eq!((o.shapes[2].ev_width, o.shapes[2].zigzag_width), (2.0, 2.0));
     }
 
     #[test]

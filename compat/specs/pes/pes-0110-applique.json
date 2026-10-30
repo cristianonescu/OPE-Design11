@@ -1,0 +1,109 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-0110-applique",
+  "area": "pes",
+  "title": "PES 0110 writes the Appliqué wizard's output as PE-DESIGN's appliqué lines and colours",
+  "description": "design.export with pesVersion 11 writes the Appliqué wizard's stages as CEmbLine objects with PE-DESIGN's appliqué colours (catalogue numbers 100 Applique Material, 101 Applique Position, 102 Applique; colour type 2) and line types (running material and position lines, a V tack-down with its width in the E/V field, the covering zigzag), as PE-DESIGN 11.50's Applique Wizard writes them for a 20 mm square (the owner's a01-rect-applique, crates/openstitch-formats/tests/fixtures/pe11/PROVENANCE.md, round 4 Applique Wizard). The square is (10,10)-(30,30) mm in 007 PRUSSIAN BLUE; the wizard runs at PE-DESIGN's dialog defaults (material running, tack-down V 2.0 mm, cover zigzag 3.0 mm at 4.5 line/mm, Add at 3.0 mm).",
+  "covers": {
+    "audit": [
+      5
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES 0110 (PE-DESIGN 11) editable shapes write"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 5"
+    },
+    {
+      "kind": "measured",
+      "note": "docs/FILE_FORMATS.md, PES 0110 object list, Applique Wizard: mapped from the owner's a01-a05; the writer's rewrite of those files is byte-identical outside the documented differences (pes11.rs, written_object_sections_match_pe_designs_bytes_outside_the_documented_differences)"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "a01",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 20,
+        "height": 20,
+        "fill": 1
+      }
+    },
+    {
+      "command": "wizard.applique",
+      "params": {
+        "ids": [
+          1
+        ],
+        "tackDown": "vStitch",
+        "tackDownWidth": 2,
+        "cover": "zigzag",
+        "coverWidth": 3,
+        "coverDensity": 4.5,
+        "output": "add",
+        "distance": 3
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes",
+      "pesVersion": "11"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "pes/pes-0110-applique.pes",
+      "make": "Run `stitchtool compat --only pes-0110-applique` and open target/compat/work/pes-0110-applique/a.pes in PE-DESIGN 11 (App menu > Open). Expected: the 20 mm square and the appliqué lines around it as editable shapes, as the owner's a01-rect-applique.pes: Sewing Order shows the square, then the material line in APPLIQUE MATERIAL, the position line in APPLIQUE POSITION, the V tack-down in APPLIQUE, then the covering zigzag. Record in the MANIFEST notes: whether the file opens and with what warning, the colours each line shows in Sewing Order (APPLIQUE MATERIAL / POSITION / APPLIQUE expected), whether each line's attributes can be changed, and the status-bar size and stitch count against a01's (32,60 x 32,80 mm, 1063 stitches). Then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md). If PE-DESIGN refuses the file or opens it blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": "0110",
+      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature",
+      "reference": {}
+    },
+    {
+      "id": "classes",
+      "measure": {
+        "kind": "pesClasses"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": [
+        "CEmbLine",
+        "CEmbLine",
+        "CEmbLine",
+        "CEmbLine",
+        "CEmbLine",
+        "CGroupObject"
+      ],
+      "evidence": "a01-rect-applique.pes: the square and the four appliqué lines as five CEmbLine objects, then their group; the reader parses the whole list",
+      "reference": {}
+    }
+  ]
+}

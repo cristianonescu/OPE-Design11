@@ -241,12 +241,14 @@ below is pinned by a test in `tests/pes11.rs`.
 | 16 | transform, 6 × f32 (identity so far) | all |
 | 40 | 0 closed, 1 open | r11 line |
 | 42 | line sewn 1, not sewn 0 | r07 |
-| 44 | line sew type: 0 Zigzag, 1 Running, 3 E or V stitch, 4 Triple, 9 while not sewn | r07, r19, the `line-*-default` references |
+| 44 | line sew type: 0 Zigzag, 1 Running, 3 E or V stitch, 4 Triple, 7 the Applique Wizard's cutting line, 9 while not sewn | r07, r19, the `line-*-default` references, a02-applique-cutting |
 | 46 | line colour, a thread-table index | r17 (red 1 → silver 0) |
 | 48 | zigzag width, 0.1 mm | r21 (2.0 → 3.0 mm) |
 | 50 | zigzag density, 0.1 line/mm | r01 (4.5) |
 | 52 | running stitch pitch, 0.1 mm; kept while another line type is chosen | r20 (2.0 → 3.0 mm) |
 | 60 | line under sewing 1 on, 0 off | r22 |
+| 90 | E or V stitch width, 0.1 mm (2.5 by default, 2.0 on the Applique Wizard's tack-down); an E or V line's sewn extent is the bounds ± this width | line-e-default, line-v-default (25, extent ± 25), a01-rect-applique (20, ± 20) |
+| 122 | 1 on the cutting line, 5 on every other object (meaning not mapped) | a02-applique-cutting |
 | 8 (cont.) | the extent of a running or unsewn line equals the bounds; a zigzag adds half its width; the circle's is one unit wider still (589..711) and an open zigzag line's grows only across the line (r11: y ± 10, x unchanged) | r19, r07, r21, r10, r11 |
 | 132 | region sewn 1, Not Sewn 0 (every Round 3 file whose region is Not Sewn has 0; r11's open line keeps 1 with its unused Fill) | o-arc, o-rounded-rect, o-group-two-rects, r11 |
 | 134 | region sew type: 0 Satin, 1 Fill, 2 Programmable fill, 11 Not Sewn (open lines, outlines with the region off, the inner copy of a hole-sewing pair); the Round 3 region types have their own codes (not mapped: `RegionSewType::Other`) | r04, programmable-fill-45, o-group-two-rects, o-arc, hole-sewing-pentagon-star |
@@ -260,7 +262,7 @@ below is pinned by a test in `tests/pes11.rs`.
 | 186 | Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline | region-travel-u-* |
 | 204, 262, 286, 354, 378 | i32 x, y: the bounds' top-left corner, five times (reference points of attributes not identified) | r02, r03, o-closed-curve |
 | 298, 310 | i32 x, y: the bounds' centre (x0 + x1 and y0 + y1 halved, truncated) | r02, r03, o-open-freehand |
-| 386 | the pattern block: u16 10000, u16 polyline count, then the polylines, each six zero bytes, u16 1, u16 n and n × (i16 x, i16 y) in a 1024-unit cell: PE-DESIGN's current programmable fill pattern, as long as the pattern it holds. 53 polylines, byte-identical, in the files made with PE-DESIGN's default pattern (Brother content); one 2-point polyline in the round-4 Manual Punch files (m01 …, 22 bytes), so a body is 386 + the block + 72 bytes | all; m01 |
+| 386 | the pattern block: u16 size (10000; 750 and no polylines on the Applique Wizard's covering line), u16 polyline count, then the polylines, each six zero bytes, u16 1, u16 n and n × (i16 x, i16 y) in a 1024-unit cell: PE-DESIGN's current programmable fill pattern, as long as the pattern it holds. 53 polylines, byte-identical, in the files made with PE-DESIGN's default pattern (Brother content); one 2-point polyline in the round-4 Manual Punch files (m01 …, 22 bytes), so a body is 386 + the block + 72 bytes | all; m01 |
 | 4360 | u16 1000, 1000, then fields not mapped (u16 1, 0, 20, 0, 650, 0, 650, 0, 20, 20, 0, 1 …) | all |
 | 4372, 4388 | i32 x, y: the bounds' centre again | r02, r03 |
 | 4414, 4426 | u16: the index of the outline's last segment (vertices − 1 closed, vertices − 2 open), followed by f32 1.0 | r10 (3), r11 (0), o-open-freehand (16), o-rounded-rect (6) |
@@ -304,6 +306,25 @@ the line; m04, m05, m08 each change only that field). What makes them blocks is 
 PE-DESIGN numbers the lines across the whole object: one object for the eight clicks of m03.
 Manual Punch > Running is an open line with one entry per list, an ordinary shape
 (o-manual-running).
+
+**Applique Wizard** (owner files a01–a05: a 20 mm square at the wizard's defaults, then Cutting,
+no tack-down, a 4 mm cover, Replace) writes ordinary `CEmbLine` objects in one group (a01: the
+four lines, then the square; Replace drops the square):
+
+- The material line (Running, or Cutting: line type 7), the position line (Running) and the
+  tack-down (V, width 2.0 mm in the E/V field +90) on the pattern's outline offset by the
+  distance (a curved outline of 53–56 vertices), then the covering zigzag (width 3.0 mm) on the
+  pattern's own outline or that offset.
+- The stage colours are thread-table entries of colour type 2: catalogue number `100` (Applique
+  Material, PEC 62), `101` (Applique Position, 63) and `102` (Applique, 64), RGB 0, and no chart
+  index, brand or chart. The tack-down and the cover share 102. A cutting line is sewn in PEC
+  65 whatever its colour says (a02's line points at 800 RED).
+- A file with a sewn cutting line sets bit 0x80 of the signature code's first character
+  (`B1 30`: a02, against `10` or `01` in all 854 other `#PES0110` files).
+- The covering line has an empty pattern block (size 750, no polylines) and its own values in
+  fields of the sew types it doesn't use (+58, +178, +364: 0 where others have 1; +70, +72,
+  +82, +218, +220, +238, +240, +260, +334, +336, +346: 50 / 100 where others have 123, 117 or
+  50); not mapped.
 For closed shapes the coordinates sit at fixed fractions of the bounds: A a tenth of the width
 left of the left edge at 60 % of the height, B at the centre and 25 % of the height, C a tenth
 of the width right of the right edge at 60 % (r01, r02, r03, r16, o-rounded-rect, o-region-*);
@@ -411,7 +432,7 @@ segment and parameter fields, the Round 3 region type codes, the text tail's Tex
 and pitch fields, the Text Transform levels other than the default (OpenStitch has none), the
 fit's fifth alignment (stretched), which way PE-DESIGN rounds a Curve Block's handles (OpenStitch's
 are within one unit of its own), the
-appliqué's fifth object and the preview images.
+covering line's fields of unused sew types, and the preview images.
 
 #### Writer
 
@@ -441,8 +462,8 @@ outlines in one object, programmable, motif and the other region types, motif, s
 candlewicking, chain and cutting lines; text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character
-edits or under sewing. Checks: the 114 owner files whose list the reader parses completely (49
-with shapes, 11 of them Manual Punch objects, 19 with plain text, 27 with a Text Transform, 14 with
+edits or under sewing. Checks: the 119 owner files whose list the reader parses completely (54
+with shapes, 11 of them Manual Punch objects, 5 Applique Wizard outputs, 19 with plain text, 27 with a Text Transform, 14 with
 text fitted to an outline, 3 with a stitch group; two of them with gallery shapes) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
@@ -451,10 +472,14 @@ byte-identical to PE-DESIGN's outside these documented differences
   pattern's layout and size (the baseline's 53 point counts, drawn as evenly spaced horizontal
   lines) instead of copying PE-DESIGN's pattern, which is Brother content; a file whose block
   holds another pattern (m01 …) is compared with its block swapped for the placeholder.
-- **Geometry header:** the closed-shape rule for the marks' coordinates and r01's segment and
-  parameter fields (open lines: r11's), so the curved and open owner files differ there.
-- **Extent:** bounds ± half the zigzag width (the circle's 589..711 and the open line's
-  one-axis growth are not reproduced).
+- **Geometry header:** the closed-shape rule for the marks' coordinates, rounded to whole
+  units (a05's 210-unit square: 595 + 52.5 → 648), and r01's segment and parameter fields (open
+  lines: r11's), so the curved and open owner files differ there (the Applique Wizard's offset
+  outlines among them).
+- **Extent:** bounds ± half the zigzag width, or ± the E/V width (the circle's 589..711 and the
+  open line's one-axis growth are not reproduced).
+- **Applique Wizard's covering line:** written with the template's values in the fields of the
+  sew types it doesn't use (above) and OpenStitch's pattern-block placeholder.
 - **+162:** PE-DESIGN points this thread index at 800 RED whatever is sewn; OpenStitch points it
   at the line colour.
 - **Header:** a design on a 100 × 100 mm page is written on PE-DESIGN's default page, a Hoop

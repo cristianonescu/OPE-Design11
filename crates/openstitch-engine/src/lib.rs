@@ -40,7 +40,7 @@ pub mod templates;
 #[cfg(feature = "formats")]
 pub mod transfer;
 pub mod user;
-mod wizards;
+pub(crate) mod wizards;
 
 pub use capabilities::{Capabilities, Capability};
 pub use commands::{CommandSpec, Effect, ParamDoc};
