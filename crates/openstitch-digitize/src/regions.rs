@@ -287,8 +287,47 @@ pub fn width_for(distance: u32) -> f64 {
 }
 
 /// Thickness of a mask in pixels: the width at its deepest point.
+///
+/// The chamfer width reads a stroke an odd number of pixels wide exactly but one pixel short
+/// when the width is even: its centre then falls between two pixel rows, and the deepest
+/// pixels form a ridge two pixels thick. So when a deepest pixel's neighbour on the side away
+/// from its nearest edge is as deep as it is, one pixel is added (#127: Auto Punch's satin
+/// bounds then hold at every working resolution, not only at some).
 pub fn thickness(m: &[bool], mw: usize, mh: usize) -> f64 {
-    width_for(distance_map(m, mw, mh).into_iter().max().unwrap_or(0))
+    let d = distance_map(m, mw, mh);
+    let Some(&max) = d.iter().max() else {
+        return width_for(0);
+    };
+    let at = |x: isize, y: isize| -> u32 {
+        if x < 0 || y < 0 || x >= mw as isize || y >= mh as isize {
+            0
+        } else {
+            d[y as usize * mw + x as usize]
+        }
+    };
+    let steps: [(isize, isize); 4] = [(1, 0), (-1, 0), (0, 1), (0, -1)];
+    let two_thick = (0..mh).any(|y| {
+        (0..mw).any(|x| {
+            if d[y * mw + x] != max {
+                return false;
+            }
+            let (x, y) = (x as isize, y as isize);
+            // The steps towards the nearest edge are those to the shallowest neighbours; the
+            // ridge is two pixels thick when the pixel opposite each of them is as deep.
+            // (At a stroke's end the end itself is one of those steps, and the pixel beyond
+            // it along the stroke does not count.)
+            let shallowest = steps
+                .iter()
+                .map(|(dx, dy)| at(x + dx, y + dy))
+                .min()
+                .unwrap_or(0);
+            steps
+                .iter()
+                .filter(|(dx, dy)| at(x + dx, y + dy) == shallowest)
+                .all(|(dx, dy)| at(x - dx, y - dy) == max)
+        })
+    });
+    width_for(max) + if two_thick { 1.0 } else { 0.0 }
 }
 
 /// Direction of a mask's long axis from its second moments, degrees in (-90, 90], rounded to

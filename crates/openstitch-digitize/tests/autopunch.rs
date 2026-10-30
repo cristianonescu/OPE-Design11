@@ -4,6 +4,7 @@ use common::*;
 use openstitch_design::{Compiler, Design, DesignPage, RegionType};
 use openstitch_digitize::autopunch::{self, AutoPunch, small_region_floor};
 use openstitch_digitize::palette::{self, CENSUS_COLORS, Palette};
+use openstitch_digitize::regions;
 use openstitch_digitize::trace::{marching_squares, signed_area};
 use openstitch_digitize::{DigitizeError, Frame, Raster};
 
@@ -625,4 +626,59 @@ fn working_copy_adds_no_blended_colours() {
     assert_eq!(c.auto_colors(), 5);
     let ramp = Raster::from_fn(256, 64, |x, _| [x as u8, (255 - x) as u8, 128, 255]).expect("size");
     assert!(palette::census(&ramp).auto_colors() <= palette::AUTO_MAX);
+}
+
+/// #127 leftover: the satin bounds hold at every working resolution. The chamfer width read an
+/// even-width stroke one pixel short, so the captured bars' 0.75 mm bar turned fill at 300, 350,
+/// 500, 700, 800 and 960 px and the 7 mm bar satin at 250 px; only 400 and 600 matched PE.
+#[test]
+fn bar_choices_hold_at_every_working_resolution() {
+    let thin = bars(
+        60,
+        70,
+        40,
+        5,
+        &[0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0, 4.0],
+    );
+    let wide = bars(50, 96, 30, 4, &[5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 14.0]);
+    let kinds = |img: &Raster, w_mm: f64, resolution: u32| -> Vec<RegionType> {
+        let p = AutoPunch {
+            resolution,
+            ..Default::default()
+        };
+        autopunch::convert(img, &Frame::new(0.0, 0.0, w_mm, img.width()), &p)
+            .expect("converts")
+            .objects
+            .iter()
+            .map(|o| o.region.as_ref().expect("region").kind)
+            .collect()
+    };
+    let mut thin_want = vec![RegionType::Satin; 8];
+    thin_want.push(RegionType::Fill);
+    let mut wide_want = vec![RegionType::Fill; 5];
+    wide_want.extend([RegionType::Satin; 2]);
+    for resolution in [250, 300, 500, 800] {
+        assert_eq!(
+            kinds(&thin, 59.9, resolution),
+            thin_want,
+            "thin at {resolution} px"
+        );
+        assert_eq!(
+            kinds(&wide, 50.0, resolution),
+            wide_want,
+            "wide at {resolution} px"
+        );
+    }
+}
+
+/// Stroke widths measure exactly whether they are an odd or an even number of pixels.
+#[test]
+fn stroke_width_is_exact_for_odd_and_even_widths() {
+    for w in 1..=12usize {
+        let (mw, mh) = (60, w + 4);
+        let m: Vec<bool> = (0..mh)
+            .flat_map(|y| (0..mw).map(move |x| (5..55).contains(&x) && (2..2 + w).contains(&y)))
+            .collect();
+        assert_eq!(regions::thickness(&m, mw, mh), w as f64, "{w} px bar");
+    }
 }
