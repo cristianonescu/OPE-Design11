@@ -350,7 +350,11 @@ Line references are relative to `crates/`.
   0.3 mm), and text fitted to an outline as `CEmbAText` with its Fit Text to Outline settings
   and the outline it follows (spec `pes-0110-editable-text-fit`, reference: PE-DESIGN 11.50 opens it
   with the text still fitted to the circle and re-fits it when the circle is reshaped; its re-save
-  rewrites only the circle's pattern block and the text's box, which it recomputes);
+  rewrites only the circle's pattern block and the text's box, which it recomputes); Manual
+  Punch columns as PE-DESIGN's Straight and Curve Block objects (specs `pes-0110-manual-punch`,
+  `pes-0110-curve-block`, reference pending; owner files m01–m11 read and rewritten byte for
+  byte outside the pattern block; a Curve Block written from a design has handles within one
+  file unit of PE-DESIGN's, which way PE-DESIGN rounds them not mapped);
   Shapes-gallery shapes (`CEmbSpecialShape`, `CEmbLine` records under another class name)
   round-trip (o-gallery-heart, shape-start-points). Refused for
   now: right-aligned and vertical text, stretched fit, rotation, letter spacing, kerning,

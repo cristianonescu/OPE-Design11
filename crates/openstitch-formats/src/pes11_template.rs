@@ -41,6 +41,8 @@ pub(super) const BODY_TAIL: [u8; 72] = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x80, 0x3F, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x80, 0x3F,
 ];
+/// Bytes of the baseline's pattern block (body 386..4360).
+pub(super) const PATTERN_BYTES: usize = 4360 - 386;
 pub(super) const PATTERN_COUNTS: [u16; 53] = [
     24, 15, 14, 13, 20, 16, 16, 13, 13, 16, 19, 15, 26, 13, 19, 14, 18, 14, 18, 19, 20, 13, 10, 15,
     12, 34, 10, 16, 17, 15, 15, 12, 14, 13, 15, 26, 16, 30, 18, 17, 18, 12, 15, 15, 9, 17, 18, 13,

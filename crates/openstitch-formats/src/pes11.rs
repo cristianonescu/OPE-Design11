@@ -9,7 +9,7 @@
 //! order of appearance. `CEmbLine` (shapes and lines drawn with the shape and line tools) and
 //! `CEmbNText` with its `CTTFLetter`s (text from the Text tool) are read. Reading stops at the
 //! first other class, or at a `CEmbLine` whose geometry doesn't fit its bounds (a variant not
-//! mapped yet, such as a Manual Punch block), and records the class in
+//! mapped yet; Manual Punch blocks are read, see [`Shape::punch_lines`]), and records the class in
 //! [`super::ObjectSection::unparsed`].
 //!
 //! [`write`] is the inverse: a `#PES0110` file whose object list holds the same `CEmbLine`
@@ -42,10 +42,12 @@ const TTF_LETTER: &str = "CTTFLetter";
 const ENVELOPE: usize = 22;
 /// Bytes of a `CTTFLetter` between its character code and its font name.
 const LETTER_ATTRS: usize = 148;
-/// Bytes of a `CEmbLine` body before its geometry, in every reference file mapped so far.
+/// Bytes of a `CEmbLine` body before its geometry with PE-DESIGN's default pattern block (53
+/// polylines); the block is as long as the programmable pattern it holds (m01-straight-1: one
+/// polyline, 462 bytes in all).
 const LINE_BODY: usize = 4432;
-/// Geometry header before the vertex count (three handle marks).
-const GEOMETRY_HEADER: usize = 84;
+/// The geometry header's three marks after its two lists.
+const GEOMETRY_MARKS: usize = 52;
 const VERTEX: usize = 28;
 /// Where the body's pattern block starts and ends (`pattern_block`).
 #[cfg(test)]
@@ -176,6 +178,10 @@ pub struct Shape {
     pub running_path: u16,
     /// From the Shapes gallery (`CEmbSpecialShape`): the same record, kept under that class.
     pub gallery: bool,
+    /// A Manual Punch object (Straight or Curve Block): the number of sewing-direction lines,
+    /// 0 for every other shape. Line k joins vertex k and vertex 2n − 1 − k: the outline is
+    /// the lines' first ends in order, then their second ends back (m01, m03, o-manual-*).
+    pub punch_lines: u16,
     pub vertices: Vec<Vertex>,
 }
 
@@ -210,6 +216,7 @@ impl Shape {
             under_sewing: true,
             running_path: 0,
             gallery: false,
+            punch_lines: 0,
             vertices: Vec::new(),
         }
     }
@@ -834,12 +841,30 @@ fn u16_at(b: &[u8], i: usize) -> u16 {
 /// the mapped layout.
 fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
     let start = r.offset;
-    if r.remaining() < LINE_BODY + GEOMETRY_HEADER + 4 {
+    let Some(len) = line_body_len(&r.bytes[start..]) else {
+        return Ok(None);
+    };
+    if r.remaining() < len + 2 * 4 + GEOMETRY_MARKS + 4 {
         return Ok(None);
     }
-    let body = r.read(LINE_BODY)?;
+    let body = r.read(len)?;
     let bounds = [0, 1, 2, 3].map(|k| u16_at(body, 2 * k) as i16);
-    r.skip(GEOMETRY_HEADER)?;
+    // The geometry header: two lists of outline positions (u32 count, then u32 vertex and f64
+    // t each), then the three marks.
+    let mut lists: [Vec<(u32, f64)>; 2] = [Vec::new(), Vec::new()];
+    for list in &mut lists {
+        let count = r.u32le()? as usize;
+        if count.saturating_mul(12) > r.remaining() {
+            r.offset = start;
+            return Ok(None);
+        }
+        for _ in 0..count {
+            let at = r.u32le()?;
+            let t = f64::from_le_bytes(r.read(8)?.try_into().expect("8 bytes"));
+            list.push((at, t));
+        }
+    }
+    r.skip(GEOMETRY_MARKS)?;
     let n = r.u32le()? as usize;
     if n == 0 || n.saturating_mul(VERTEX) > r.remaining() {
         r.offset = start;
@@ -869,6 +894,27 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         r.offset = start;
         return Ok(None);
     }
+    // One entry per list on every shape; a Manual Punch object lists the lines' ends, in the
+    // vertex order its outline has (anything else is not mapped).
+    let punch_lines = match &lists {
+        [a, b] if a.len() == 1 && b.len() == 1 => 0,
+        [a, b] => {
+            let k = a.len();
+            let punch = k >= 2
+                && b.len() == k
+                && n == 2 * k
+                && a.iter().chain(b).all(|&(_, t)| t == 0.0)
+                && a.iter().enumerate().all(|(i, &(v, _))| v as usize == i)
+                && b.iter()
+                    .enumerate()
+                    .all(|(i, &(v, _))| v as usize == n - 1 - i);
+            if !punch || k > usize::from(u16::MAX) {
+                r.offset = start;
+                return Ok(None);
+            }
+            k as u16
+        }
+    };
     Ok(Some(Shape {
         bounds,
         closed: u16_at(body, 40) == 0,
@@ -888,8 +934,31 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         under_sewing: u16_at(body, 180) != 0,
         running_path: u16_at(body, 186),
         gallery: false,
+        punch_lines,
         vertices,
     }))
+}
+
+/// The length of the `CEmbLine` body at the start of `data`: the 386 bytes before the pattern
+/// block, the block (u16 10000, u16 polyline count, per polyline six zero bytes, u16 1, u16
+/// point count and the points as two u16 each) and the 72 bytes after it. `None` when the
+/// block is not laid out that way.
+fn line_body_len(data: &[u8]) -> Option<usize> {
+    let head = PATTERN_END - template::PATTERN_BYTES;
+    let at = |o: usize| data.get(o..o + 2).map(|b| u16::from_le_bytes([b[0], b[1]]));
+    if at(head)? != 10000 {
+        return None;
+    }
+    let polylines = at(head + 2)?;
+    let mut o = head + 4;
+    for _ in 0..polylines {
+        if at(o + 6)? != 1 {
+            return None;
+        }
+        o += 10 + 4 * usize::from(at(o + 8)?);
+    }
+    let len = o + template::BODY_TAIL.len();
+    (len <= data.len()).then_some(len)
 }
 
 // MARK: Writing
@@ -1454,10 +1523,15 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
         put32(&mut tail, at - base, cx);
         put32(&mut tail, at - base + 4, cy);
     }
-    // The index of the outline's last segment.
+    // Two outline positions (segment, f32 t): the end of the last segment, twice; a Manual
+    // Punch object's second is the start of its second side (line count, t 0).
     let segments = s.vertices.len() - usize::from(!s.closed);
-    for at in [4414, 4426] {
-        put16(&mut tail, at - base, segments.saturating_sub(1) as u16);
+    put16(&mut tail, 4414 - base, segments.saturating_sub(1) as u16);
+    if s.punch_lines > 0 {
+        put16(&mut tail, 4426 - base, s.punch_lines);
+        put32(&mut tail, 4428 - base, 0);
+    } else {
+        put16(&mut tail, 4426 - base, segments.saturating_sub(1) as u16);
     }
     w.append(&tail);
     write_geometry_header(w, s);
@@ -1477,12 +1551,17 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     }
 }
 
-/// The 84-byte geometry header: three marks, each a position on the outline (a segment and a
-/// parameter, not decoded) with its coordinates. The coordinates of PE-DESIGN's closed shapes
-/// sit at fixed fractions of the bounds: a tenth of the width outside the left and right
-/// edges at 60 % of the height, and the centre at 25 % of the height. The segment and
-/// parameter fields are the baseline file's (open lines: the open-line file's).
+/// The geometry header: two lists of outline positions (u32 count, then u32 vertex and f64 t;
+/// one entry each on a shape, a Manual Punch object's line ends), then three marks, each a
+/// position on the outline (a segment and a parameter, not decoded) with its coordinates. The
+/// coordinates of PE-DESIGN's closed shapes sit at fixed fractions of the bounds: a tenth of
+/// the width outside the left and right edges at 60 % of the height, and the centre at 25 % of
+/// the height. The segment and parameter fields are the baseline file's (open lines: the
+/// open-line file's). Manual Punch objects: [`write_punch_geometry_header`].
 fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
+    if s.punch_lines > 0 {
+        return write_punch_geometry_header(w, s);
+    }
     let [x0, y0, x1, y1] = s.bounds.map(f64::from);
     let (width, height) = (x1 - x0, y1 - y0);
     let (left, right, mid) = (
@@ -1513,6 +1592,122 @@ fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
     w.f32le(right.0);
     w.f32le(right.1);
     w.u16le(0);
+}
+
+/// A Manual Punch object's geometry header: the lists of its lines' ends, then the three marks.
+/// The marks hang off the two straight edges that close the block (the left one from the last
+/// vertex to the first, the right one from the first side's last vertex to the second side's
+/// first), cut at the height midway between the outline's top and bottom as its curves reach
+/// them ([`outline_extent`]: m11's sag to 970.25): mark A at the left cut offset by a tenth of
+/// the bounds' width outward and a tenth of their height down, C likewise at the right cut,
+/// and B midway between the cuts a quarter of the height up, each tenth and quarter in whole
+/// units (rounded down). The left cut's parameter runs up its edge, the right's down (m01 …
+/// m11, o-manual-*: 0.5 on a straight block, 0.25 / 0.75 on m09, 0.074375 / 0.925625 on m11).
+fn write_punch_geometry_header(w: &mut ByteWriter, s: &Shape) {
+    let k = usize::from(s.punch_lines);
+    let n = s.vertices.len();
+    w.u32le(k as i64);
+    for i in 0..k {
+        w.u32le(i as i64);
+        w.append(&0f64.to_le_bytes());
+    }
+    w.u32le(k as i64);
+    for i in 0..k {
+        w.u32le((2 * k - 1 - i) as i64);
+        w.append(&0f64.to_le_bytes());
+    }
+    let [_, y_top, _, y_bottom] = outline_extent(&s.vertices);
+    let cut_y = (y_top + y_bottom) / 2.0;
+    let at = |i: usize| (f64::from(s.vertices[i].x), f64::from(s.vertices[i].y));
+    // A cut on the edge from `a` to `b` at height `cut_y`: its parameter and point.
+    let cut = |a: (f64, f64), b: (f64, f64)| {
+        let t = if b.1 == a.1 {
+            0.5
+        } else {
+            (cut_y - a.1) / (b.1 - a.1)
+        };
+        // PE-DESIGN stores the parameter as computed in single precision (m11:
+        // 0.07437500357627869).
+        let point = (a.0 + t * (b.0 - a.0), a.1 + t * (b.1 - a.1));
+        (f64::from(t as f32), point)
+    };
+    let (t_left, left) = cut(at(n - 1), at(0));
+    let (t_right, right) = cut(at(k - 1), at(k));
+    let [x0, y0, x1, y1] = s.bounds.map(i32::from);
+    let (tenth_w, tenth_h, quarter_h) = (
+        f64::from((x1 - x0) / 10),
+        f64::from((y1 - y0) / 10),
+        f64::from((y1 - y0) / 4),
+    );
+    w.f32le(left.0 - tenth_w);
+    w.f32le(left.1 + tenth_h);
+    w.u32le((n - 1) as i64);
+    w.append(&t_left.to_le_bytes());
+    w.u16le(1);
+    w.f32le((left.0 + right.0) / 2.0);
+    w.f32le((left.1 + right.1) / 2.0 - quarter_h);
+    w.u32le((k - 1) as i64);
+    w.append(&t_right.to_le_bytes());
+    w.f32le(right.0 + tenth_w);
+    w.f32le(right.1 + tenth_h);
+    w.u16le(0);
+}
+
+/// `x0, y0, x1, y1` of a closed outline as its segments reach (file units, unrounded): a
+/// segment is a cubic Bézier when its start has [`KIND_CURVE_AFTER`] or its end
+/// [`KIND_CURVE_BEFORE`], else straight. PE-DESIGN's Manual Punch objects store this extent
+/// rounded outward as their bounds (m10's curve bulges to x 591.48: bounds 591).
+pub fn outline_extent(vertices: &[Vertex]) -> [f64; 4] {
+    let mut e = [f64::MAX, f64::MAX, f64::MIN, f64::MIN];
+    let mut take = |x: f64, y: f64| {
+        e[0] = e[0].min(x);
+        e[1] = e[1].min(y);
+        e[2] = e[2].max(x);
+        e[3] = e[3].max(y);
+    };
+    let n = vertices.len();
+    for i in 0..n {
+        let (a, b) = (&vertices[i], &vertices[(i + 1) % n]);
+        let p0 = [f64::from(a.x), f64::from(a.y)];
+        let p3 = [f64::from(b.x), f64::from(b.y)];
+        take(p0[0], p0[1]);
+        let curved = a.kind & KIND_CURVE_AFTER != 0 || b.kind & KIND_CURVE_BEFORE != 0;
+        if !curved {
+            continue;
+        }
+        let p1 = [f64::from(a.handles[1].0), f64::from(a.handles[1].1)];
+        let p2 = [f64::from(b.handles[0].0), f64::from(b.handles[0].1)];
+        // Where each coordinate's derivative is zero inside the segment.
+        for axis in 0..2 {
+            let (a0, a1, a2, a3) = (p0[axis], p1[axis], p2[axis], p3[axis]);
+            let qa = -a0 + 3.0 * a1 - 3.0 * a2 + a3;
+            let qb = 2.0 * (a0 - 2.0 * a1 + a2);
+            let qc = a1 - a0;
+            let mut roots = Vec::new();
+            if qa.abs() < 1e-12 {
+                if qb.abs() > 1e-12 {
+                    roots.push(-qc / qb);
+                }
+            } else {
+                let disc = qb * qb - 4.0 * qa * qc;
+                if disc >= 0.0 {
+                    roots.push((-qb + disc.sqrt()) / (2.0 * qa));
+                    roots.push((-qb - disc.sqrt()) / (2.0 * qa));
+                }
+            }
+            for t in roots.into_iter().filter(|t| *t > 0.0 && *t < 1.0) {
+                let u = 1.0 - t;
+                let point = |k: usize| {
+                    u * u * u * p0[k]
+                        + 3.0 * u * u * t * p1[k]
+                        + 3.0 * u * t * t * p2[k]
+                        + t * t * t * p3[k]
+                };
+                take(point(0), point(1));
+            }
+        }
+    }
+    e
 }
 
 /// After the object list: 10 zero bytes, the group list (u16 count; per group its MFC tag,

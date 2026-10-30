@@ -260,14 +260,50 @@ below is pinned by a test in `tests/pes11.rs`.
 | 186 | Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline | region-travel-u-* |
 | 204, 262, 286, 354, 378 | i32 x, y: the bounds' top-left corner, five times (reference points of attributes not identified) | r02, r03, o-closed-curve |
 | 298, 310 | i32 x, y: the bounds' centre (x0 + x1 and y0 + y1 halved, truncated) | r02, r03, o-open-freehand |
-| 386 | the pattern block: u16 10000, u16 53, then 53 polylines, each six zero bytes, u16 1, u16 n and n × (i16 x, i16 y) in a 1024-unit cell; byte-identical in every `CEmbLine` (the default pattern of PE-DESIGN's programmable fill, Brother content) | all |
+| 386 | the pattern block: u16 10000, u16 polyline count, then the polylines, each six zero bytes, u16 1, u16 n and n × (i16 x, i16 y) in a 1024-unit cell: PE-DESIGN's current programmable fill pattern, as long as the pattern it holds. 53 polylines, byte-identical, in the files made with PE-DESIGN's default pattern (Brother content); one 2-point polyline in the round-4 Manual Punch files (m01 …, 22 bytes), so a body is 386 + the block + 72 bytes | all; m01 |
 | 4360 | u16 1000, 1000, then fields not mapped (u16 1, 0, 20, 0, 650, 0, 650, 0, 20, 20, 0, 1 …) | all |
 | 4372, 4388 | i32 x, y: the bounds' centre again | r02, r03 |
 | 4414, 4426 | u16: the index of the outline's last segment (vertices − 1 closed, vertices − 2 open), followed by f32 1.0 | r10 (3), r11 (0), o-open-freehand (16), o-rounded-rect (6) |
 | 4432 | geometry: an 84-byte header with three marks, a u32 vertex count n, then n vertices | all |
 
-The geometry header is `u32 1, u32 segment, f64 t`, `u32 1, u32 segment, f64 t`, `f32 x, y` (mark A),
-`u32 flag, f64 t, u16 1`, `f32 x, y` (mark B), `u32 segment, f64 t`, `f32 x, y` (mark C), `u16 0`.
+The geometry header is two lists of outline positions, each a u32 count and per entry `u32
+vertex, f64 t` (one entry each on every shape: `u32 1, u32 segment, f64 t`, twice), then `f32 x, y`
+(mark A), `u32 flag, f64 t, u16 1`, `f32 x, y` (mark B), `u32 segment, f64 t`, `f32 x, y` (mark C),
+`u16 0`: 84 bytes on a shape.
+
+**Manual Punch blocks** (Straight Block and Curve Block; owner files m01, m03, m04, m05, m07–m11,
+o-manual-straight, o-manual-curve, and the column of compat satin-zigzag-column) are `CEmbLine`
+objects with every attribute where a shape has it (Satin or the whole region list, density,
+the line; m04, m05, m08 each change only that field). What makes them blocks is the geometry:
+
+- The outline is closed and has one vertex per line end: the lines' first ends in click
+  order, then their second ends back (m01's clicks (10,10) (10,30) (30,10) (30,30) mm give
+  (600,600) (800,600) (800,800) (600,800)). A Straight Block's vertex is its own handle on both
+  sides (shapes write `(0, 0)`), kind 0; a Curve Block's sides are Bézier curves through the
+  ends (kinds `0x01`, `0x11`, `0x10` along each side; the edges joining the sides straight). Its
+  inner handles lie along the line from the point before to the point after, each as long as
+  the circular arc's handle over its segment, 2c / 3(1 + cos a) for a chord c at angle a to
+  that line; an end's handle is its neighbour's mirrored across the segment's perpendicular
+  bisector (m09: (647, 663) from (721, 700)). Stored in whole units; PE-DESIGN's handles in m07,
+  m09, m10, m11 and o-manual-curve are within one unit (0.1 mm) of this rule, which way each
+  is rounded is not mapped. The bounds are the outline's extent as its curves reach it,
+  rounded outward (m10's left side bulges to x 591.48: 591; m11 sags to y 970.25: 971).
+- The two lists hold one entry per line, n each: the first ends' vertices 0 … n − 1 and the
+  second ends' 2n − 1 … n, all at t 0 (m01: 2 and 2 entries, m03: 4 and 4).
+- The marks hang off the two straight edges that close the block, cut at the height midway
+  between the outline's top and bottom as its curves reach them (m11: (600 + 970.25) / 2 =
+  785.125). Mark A is the left cut (segment 2n − 1, its parameter up the edge) offset a tenth
+  of the bounds' width outward and a tenth of their height down; C likewise at the right cut
+  (segment n − 1, its parameter down the edge); B midway between the cuts, a quarter of the
+  height up. The tenths and the quarter are whole units, rounded down; the parameters are
+  single-precision values stored as f64 (m11: 0.07437500357627869). A straight block's cuts sit
+  mid-edge at t 0.5, which is the closed-shape rule (m01, m03).
+- The body's two tail positions (u16 segment, f32 t at +4414 and +4426 on a default-pattern
+  body) are (2n − 1, 1.0) and (n, 0.0), where a shape has the last segment and 1.0 twice.
+
+PE-DESIGN numbers the lines across the whole object: one object for the eight clicks of m03.
+Manual Punch > Running is an open line with one entry per list, an ordinary shape
+(o-manual-running).
 For closed shapes the coordinates sit at fixed fractions of the bounds: A a tenth of the width
 left of the left edge at 60 % of the height, B at the centre and 25 % of the height, C a tenth
 of the width right of the right edge at 60 % (r01, r02, r03, r16, o-rounded-rect, o-region-*);
@@ -373,10 +409,9 @@ Not mapped yet: the fields that differ between E and V, the line's run times, th
 segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
 (kerning, rotation, right alignment; character spacing on plain text), the letter's line width
 and pitch fields, the Text Transform levels other than the default (OpenStitch has none), the
-fit's fifth alignment (stretched), Manual Punch blocks (a `CEmbLine` body whose geometry header
-is a block list: a u32 count, 3 in o-manual-straight and o-manual-curve, then per-block entries;
-owner files with 1, 2 and 3 blocks requested), the appliqué's fifth object and
-the preview images.
+fit's fifth alignment (stretched), which way PE-DESIGN rounds a Curve Block's handles (OpenStitch's
+are within one unit of its own), the
+appliqué's fifth object and the preview images.
 
 #### Writer
 
@@ -397,20 +432,25 @@ click point at the alignment point), and fitted to an outline as `CEmbAText` (th
 character spacing and the outline's archive number; the outline must come before the text),
 and with a Text Transform as `CEmbDText` (the preset's code,
 the default level's strength and, for the arches, the circle measured on OpenStitch's straight
-layout; zeros where PE-DESIGN leaves stale numbers). What it cannot hold fails with the object named: several
+layout; zeros where PE-DESIGN leaves stale numbers), and a Manual Punch column (`shape.column`) as a
+Straight or Curve Block object (its direction lines' ends as the outline and the lists, the
+Curve Block's handles, bounds and marks by the rules above; a Curve Block written from a design
+has handles within one unit of PE-DESIGN's, not byte-identical). What it
+cannot hold fails with the object named: several
 outlines in one object, programmable, motif and the other region types, motif, stem,
 candlewicking, chain and cutting lines; text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character
-edits or under sewing. Checks: the 102 owner files whose list the reader parses completely (37
-with shapes, 19 with plain text, 27 with a Text Transform, 14 with text fitted to an outline,
-3 with a stitch group; two of them with gallery shapes) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
+edits or under sewing. Checks: the 114 owner files whose list the reader parses completely (49
+with shapes, 11 of them Manual Punch objects, 19 with plain text, 27 with a Text Transform, 14 with
+text fitted to an outline, 3 with a stitch group; two of them with gallery shapes) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
 
-- **Pattern block** (body 386–4360): OpenStitch writes its own placeholder of the same layout
-  and size (the baseline's 53 point counts, drawn as evenly spaced horizontal lines) instead of
-  copying PE-DESIGN's default pattern, which is Brother content.
+- **Pattern block** (from body 386): OpenStitch writes its own placeholder of the default
+  pattern's layout and size (the baseline's 53 point counts, drawn as evenly spaced horizontal
+  lines) instead of copying PE-DESIGN's pattern, which is Brother content; a file whose block
+  holds another pattern (m01 …) is compared with its block swapped for the placeholder.
 - **Geometry header:** the closed-shape rule for the marks' coordinates and r01's segment and
   parameter fields (open lines: r11's), so the curved and open owner files differ there.
 - **Extent:** bounds ± half the zigzag width (the circle's 589..711 and the open line's

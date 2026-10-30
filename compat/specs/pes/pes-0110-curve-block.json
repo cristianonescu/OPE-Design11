@@ -1,0 +1,165 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-0110-curve-block",
+  "area": "pes",
+  "title": "PES 0110 writes a curved Manual Punch column as PE-DESIGN's Curve Block object",
+  "description": "design.export with pesVersion 11 writes a shape.column with curved sides as the CEmbLine block object PE-DESIGN 11.50 writes for Manual Punch > Curve Block: the line ends as the outline, each side a Bezier curve whose inner handles lie along the neighbours' direction with the circular arc's length and whose end handles mirror their neighbours', the bounds as the curves reach, and the marks cut the closing edges midway between top and bottom. The design is the owner's m09-curve-bent (crates/openstitch-formats/tests/fixtures/pe11/PROVENANCE.md): clicks (10,10) (10,30) (30,20) (30,40) (50,10) (50,30) mm, three lines, Satin in 007 PRUSSIAN BLUE, line not sewn. OpenStitch's handles are within one file unit (0.1 mm) of PE-DESIGN's on all five owner Curve Blocks.",
+  "covers": {
+    "audit": [
+      5
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES 0110 (PE-DESIGN 11) editable shapes write"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 5"
+    },
+    {
+      "kind": "measured",
+      "note": "docs/FILE_FORMATS.md, PES 0110 object list, Manual Punch: the Curve Block's handles, bounds and marks mapped from the owner's m07, m09, m10, m11 and o-manual-curve; engine test a_curved_block_has_pe_designs_handles_to_a_unit"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "m09",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.column",
+      "params": {
+        "lines": [
+          [
+            [
+              10,
+              10
+            ],
+            [
+              10,
+              30
+            ]
+          ],
+          [
+            [
+              30,
+              20
+            ],
+            [
+              30,
+              40
+            ]
+          ],
+          [
+            [
+              50,
+              10
+            ],
+            [
+              50,
+              30
+            ]
+          ]
+        ],
+        "type": "satin",
+        "fill": 1,
+        "curved": true
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes",
+      "pesVersion": "11"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "pes/pes-0110-curve-block.pes",
+      "make": "Run `stitchtool compat --only pes-0110-curve-block` and open target/compat/work/pes-0110-curve-block/a.pes in PE-DESIGN 11 (App menu > Open). Expected: one Manual Punch Curve Block object through (10,10) (30,20) (50,10) and (10,30) (30,40) (50,30) mm, sagging through the middle pair, as the owner's m09-curve-bent.pes: region Satin Stitch in 007 PRUSSIAN BLUE, line Not Sewn. Record in the MANIFEST notes: whether the file opens and with what warning, whether the object is a curved block (its points can be moved with Edit Points and the sides stay curves), and the status-bar size and stitch count against m09's (40,00 x 30,00 mm, 421 stitches). Then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md). If PE-DESIGN refuses the file or opens it blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": "0110",
+      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature",
+      "reference": {}
+    },
+    {
+      "id": "classes",
+      "measure": {
+        "kind": "pesClasses"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": [
+        "CEmbLine"
+      ],
+      "evidence": "m09-curve-bent.pes: one CEmbLine block object; the reader parses the whole list",
+      "reference": {}
+    },
+    {
+      "id": "colour-blocks",
+      "measure": {
+        "kind": "colorBlocks"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 1,
+      "evidence": "one Satin block in 007 PRUSSIAN BLUE, as m09",
+      "reference": {}
+    },
+    {
+      "id": "width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 40.0,
+      "evidence": "m09-curve-bent: 40,00 x 30,00 mm; PE-DESIGN re-sews the block from the object",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    },
+    {
+      "id": "height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 30.0,
+      "evidence": "as width",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    }
+  ]
+}
