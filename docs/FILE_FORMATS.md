@@ -918,8 +918,9 @@ patterns, `compat/reference/stitches/prog-fill-*.pes`, `motif-fill-2pt.pes`,
   on open and closed lines alike (8 motifs of 4.94 mm on a 39.5 mm line at the 5 mm size).
 
 Not yet the same: PE-DESIGN's motif fill travels between rows along the outline at 2 mm
-(130 needle points against OpenStitch's 103, which joins rows with one stitch), and its motif
-line adds tie-in and tie-off stitches (23 against 16).
+(130 needle points against OpenStitch's 103, which joins rows with one stitch). The motif line
+ties in and locks as PE-DESIGN does (since 2026-10-30): three 0.3 mm steps out along a first
+stitch over 2.65 mm and back, one lock step at the end; 23 needle points as PE-DESIGN.
 
 ### Text pattern sources (`.pas`, `.pmf`, `.plf`)
 

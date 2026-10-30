@@ -297,8 +297,9 @@ with text set in it. Each lands as its own PR with the fixtures' provenance in a
 bundled patterns, motifs and fonts are never read. Done: import of `.pas`/`.pmf`/`.plf` text
 sources in the documented `@DIRECTIVE` layout, checked against six owner-made Programmable
 Stitch Creator files, and programmable fill, motif fill and motif line tiled as PE-DESIGN 11.50
-sews them (2026-10-29: four reference specs). Next: the motif fill's travel between rows and
-the motif line's tie stitches; a decorative-fill reference for free `.plf` lines. Waiting for
+sews them (2026-10-29: four reference specs); the motif line's tie-in and lock (2026-10-30,
+23 needle points as PE). Next: the motif fill's travel between rows; a decorative-fill
+reference for free `.plf` lines. Waiting for
 the owner-made samples: PE-DESIGN's own PMV files and a Font Creator font of one and two
 owner-drawn glyphs with text set in it (pe-refs-4 could not reach Font Creator and Stitch Design
 Factory). Each lands as its own PR with the fixtures' provenance in a MANIFEST.
