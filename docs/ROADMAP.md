@@ -308,8 +308,9 @@ bundled patterns, motifs and fonts are never read. Done: import of `.pas`/`.pmf`
 sources in the documented `@DIRECTIVE` layout, checked against six owner-made Programmable
 Stitch Creator files, and programmable fill, motif fill and motif line tiled as PE-DESIGN 11.50
 sews them (2026-10-29: four reference specs); the motif fill's travel and ties and the motif
-line's tie-in and lock as PE-DESIGN (2026-10-30: 130 and 23 needle points as PE). Next: a decorative-fill
-reference for free `.plf` lines. Waiting for
+line's tie-in and lock as PE-DESIGN (2026-10-30: 130 and 23 needle points as PE); free decorative
+lines placed and spaced as PE-DESIGN sews them (2026-10-30, `deco-fill-1line-100mm`). Next: how often
+PE-DESIGN repeats a free decorative line and its outline travel (needs a second reference). Waiting for
 the owner-made samples: PE-DESIGN's own PMV files and a Font Creator font of one and two
 owner-drawn glyphs with text set in it (pe-refs-4 could not reach Font Creator and Stitch Design
 Factory). Each lands as its own PR with the fixtures' provenance in a MANIFEST.

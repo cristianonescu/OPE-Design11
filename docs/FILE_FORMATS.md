@@ -925,6 +925,7 @@ rows, used by the bundled library (`crates/openstitch-design/patterns/`, generat
 | `rowShift` | decorative only, 0–1 tile widths per row (optional) |
 | `paths` | 1–64 polylines, at least 2 points each, at most 4000 points in all |
 | `regions` | fill only, optional: at most 256 `{"effect": "emboss" \| "engrave", "at": [x, y]}`, each the closed area of the tile around `at` |
+| `freeLines` | decorative only, optional (`true`; since 2026-10-30): the paths are free lines inside the unit tile (x, y 0…1), tiled as a grid centred on the region instead of chained into rows; no `rowShift` |
 
 Coordinates are in the pattern's unit box: motif x −0.5…1.5 (along the line), y −1…1
 (across, scaled by the motif height), one path from (0, 0) to (1, 0); fill x, y 0…1 (the
@@ -957,6 +958,15 @@ patterns, `compat/reference/stitches/prog-fill-*.pes`, `motif-fill-2pt.pes`,
   0.3 mm tie-in and lock: 130 needle points, as PE-DESIGN (2026-10-30).
 - **Motif line:** a whole number of motifs, stretched along the line to fill it from end to end,
   on open and closed lines alike (8 motifs of 4.94 mm on a 39.5 mm line at the 5 mm size).
+- **Decorative fill with free lines** (`compat/reference/stitches/deco-fill-1line-100mm.pes`,
+  2026-10-30): the tile is centred on the region, or starts at the reference point (here the
+  region's centre is also the page's, so the reference cannot tell the two apart); every line of
+  every tile copy is clipped to the region and split evenly at the run pitch (the 56.6 mm
+  diagonal of the 40 mm square in 1.95 mm stitches, the same needle points as PE-DESIGN); pieces
+  are joined by travel along the outline in 2 mm steps, from the piece nearest the start point,
+  with the fill's tie-in and lock. Not yet the same: PE-DESIGN sews the line three times and walks
+  parts of the outline two or three times (292 needle points against OpenStitch's 73); one
+  reference does not show the rule behind it.
 
 Not yet the same: when both ends of the first motif-fill row are as far from the start point,
 PE-DESIGN walks right and comes back down the right edge where OpenStitch walks left (the same
@@ -1001,8 +1011,8 @@ and last points sit at (0, 0) and (1, 0) and is scaled the same way across (PE-D
 line spans the cell, so 1024 cell units are one motif size: a point 256 units off the line sews
 1.25 mm off it at 5 mm). A decorative tile whose lines all run from x = 0 to x = 1024 at one
 height becomes a decorative row; one with free lines (PE-DESIGN's editor draws anywhere on a
-16 × 16 grid) is kept as a fill tile, because OpenStitch's decorative fill chains rows and how
-PE-DESIGN sews free decorative lines has no reference yet. The pattern then obeys the
+16 × 16 grid) becomes a decorative pattern with `freeLines` (since 2026-10-30; before, it was
+kept as a fill tile). The pattern then obeys the
 `openstitch.pattern` rules above and sews at the design's own tile and motif size (PE-DESIGN's
 Default Sizes: 7.5 mm fill/stamp, 5.0 mm motif, 100 mm decorative fill).
 

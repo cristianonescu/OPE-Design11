@@ -253,6 +253,7 @@ pub fn parse(text: &str, id: &str, name: &str) -> Result<TextPattern, String> {
     if total > MAX_POINTS || total + areas.len() > MAX_POINTS {
         return Err(format!("more than {MAX_POINTS} points"));
     }
+    let mut free_lines = false;
     let unit_pt = |p: Vec2| v2(p.x / CELL, p.y / CELL);
     let (role, kind, paths): (TextRole, PatternKind, Vec<Vec<Vec2>>) = match sysenv.as_slice() {
         [w, h, r] => {
@@ -268,26 +269,22 @@ pub fn parse(text: &str, id: &str, name: &str) -> Result<TextPattern, String> {
             if paths.is_empty() {
                 return Err("a decorative tile needs at least one @TILELINE".into());
             }
-            // OpenStitch's decorative fill chains tiles into rows, so it needs every path to
-            // run from the left edge to the right edge at one height. PE-DESIGN's Programmable
-            // Stitch Creator draws free lines on a 16 × 16 grid; a tile whose lines do not
-            // chain is kept as a fill tile (its lines sewn by programmable fill) until a
-            // PE-DESIGN decorative-fill reference pins how such lines are sewn.
+            // Lines that all run from the left edge to the right edge at one height chain
+            // into rows; otherwise they are free lines (PE-DESIGN's Decorative Fill draws
+            // anywhere on its 16 × 16 grid), tiled as a grid centred on the region
+            // (deco-fill-1line-100mm.pes).
             let chains = paths.iter().all(|q| {
                 let (a, b) = (q[0], *q.last().expect("2+ points"));
                 a.x == 0.0 && b.x == 1.0 && (a.y - b.y).abs() <= 1e-9
             });
+            free_lines = !chains;
             (
                 TextRole::Decorative {
                     width: *w,
                     height: *h,
                     repeat: *r,
                 },
-                if chains {
-                    PatternKind::Decorative
-                } else {
-                    PatternKind::Fill
-                },
+                PatternKind::Decorative,
                 paths,
             )
         }
@@ -342,12 +339,15 @@ pub fn parse(text: &str, id: &str, name: &str) -> Result<TextPattern, String> {
         PatternKind::Fill => "fill",
         PatternKind::Decorative => "decorative",
     };
-    let doc = serde_json::json!({
+    let mut doc = serde_json::json!({
         "format": "openstitch.pattern", "version": 1,
         "kind": kind_name,
         "id": id, "name": name,
         "paths": paths.iter().map(|p| p.iter().map(|q| [round6(q.x), round6(q.y)]).collect::<Vec<_>>()).collect::<Vec<_>>(),
     });
+    if free_lines {
+        doc["freeLines"] = serde_json::Value::Bool(true);
+    }
     let pattern = crate::patterns::parse(&doc.to_string())?;
     Ok(TextPattern {
         version,
