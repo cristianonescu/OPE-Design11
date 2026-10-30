@@ -36,7 +36,9 @@ for macOS, Windows and Linux. CI builds and tests all three.
   - Satin and fill options: auto direction, underlays, gradation, feather, split, travel.
   - Region types: programmable fill, motif fill, piping, cross stitch, concentric circle,
     radial, spiral, flexible spiral, stippling, net fill, zigzag net fill, decorative fill;
-    concentric circle and spiral calibrated to PE-DESIGN 11.50 (#138, 14 references).
+    concentric circle and spiral calibrated to PE-DESIGN 11.50 (#138, 14 references;
+    open: the spiral's inner-turn needle counts and the concentric chord splits, rule not found;
+    seam, winding and the rectangle spiral's return run wait for round-5 captures).
 - **Lettering:** text objects with Lato Bold and Pacifico (SIL OFL), text on a path, user
   TrueType/OpenType fonts (CJK through any font with the glyphs), shaping of right-to-left and
   complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits

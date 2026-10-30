@@ -78,7 +78,7 @@
         "percent": 3
       },
       "tier": "internal-regression",
-      "evidence": "KNOWN DIFFERENCE (open, COMPATIBILITY_AUDIT Concentric Circle and Spiral): PE-DESIGN 11.50's file has 1354 stitches, OpenStitch 1284 (-5.2 %), outside the family's 3 %. Suspected cause: at a 3 mm pitch PE puts more needle points on the inner turns than the 4*2^n chord-fits-the-pitch rule gives (the rule matches PE within 2 % at 2 mm); not yet measured turn by turn. This check pins OpenStitch's own count (internal tier) until the rule is found; the other checks compare with PE's file."
+      "evidence": "KNOWN DIFFERENCE (open, COMPATIBILITY_AUDIT Concentric Circle and Spiral): PE-DESIGN 11.50's file has 1354 stitches, OpenStitch 1284 (-5.2 %), outside the family's 3 %. Suspected cause: at a 3 mm pitch PE puts more needle points on the inner turns than the 4*2^n chord-fits-the-pitch rule gives (the rule matches PE within 2 % at 2 mm); not yet measured turn by turn. This check pins OpenStitch's own count (internal tier) until the rule is found; the other checks compare with PE's file. Turn by turn (2026-10-30): 64 points a turn on both down to r = 16.2 mm; below that PE's counts fall off gradually (56, 44, 38, 39, 40 … 28, 25, 22, 19, 16) where OpenStitch's halve (32 from 15.3 mm, 16 from 7.7 mm); PE halves some pieces of a turn and not others, with narrower pieces at the axis directions."
     },
     {
       "id": "bounds-width",
