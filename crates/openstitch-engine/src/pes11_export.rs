@@ -166,21 +166,16 @@ fn shape(object: &DesignObject, table: &mut Vec<Thread>) -> Result<Shape, String
     Ok(s)
 }
 
-/// A Manual Punch column as PE-DESIGN's Straight Block object (m01, m03, o-manual-straight): a
-/// closed `CEmbLine` with one vertex per line end, each vertex its own handle on both sides.
-/// The Curve Block is refused: its handles are not mapped (the owner's curve files have their
-/// points on straight lines, where every rule gives the same handles).
+/// A Manual Punch column as PE-DESIGN's block object: a closed `CEmbLine` with one vertex per
+/// line end. A Straight Block's vertex is its own handle on both sides (m01, m03,
+/// o-manual-straight); a Curved Block's sides are Bézier curves through the ends
+/// ([`curve_side`]).
 fn punch_block(
     object: &DesignObject,
     r: &RegionSewing,
     table: &mut Vec<Thread>,
 ) -> Result<Shape, String> {
     let id = object.id;
-    if r.curved_lines {
-        return Err(format!(
-            "object {id} is a Curved Block: its curves are not mapped in PES 0110 yet (Straight Block is)"
-        ));
-    }
     let lines = &r.direction_lines;
     let punch_lines = u16::try_from(lines.len())
         .map_err(|_| format!("object {id} has {} direction lines", lines.len()))?;
@@ -196,23 +191,103 @@ fn punch_block(
             s.line_color = s.region_color;
         }
     }
-    let ends = lines
-        .iter()
-        .map(|l| l[0])
-        .chain(lines.iter().rev().map(|l| l[1]));
-    s.vertices = ends
-        .map(|p| {
-            let (x, y) = file_xy(p);
+    let side = |pick: usize, reverse: bool| -> Vec<(f64, f64)> {
+        let mut pts: Vec<(f64, f64)> = lines
+            .iter()
+            .map(|l| {
+                let (x, y) = file_xy(l[pick]);
+                (f64::from(x), f64::from(y))
+            })
+            .collect();
+        if reverse {
+            pts.reverse();
+        }
+        pts
+    };
+    for pts in [side(0, false), side(1, true)] {
+        if r.curved_lines {
+            s.vertices.extend(curve_side(&pts));
+        } else {
+            s.vertices.extend(pts.iter().map(|&(x, y)| {
+                let (x, y) = (x as f32, y as f32);
+                Vertex {
+                    x,
+                    y,
+                    handles: [(x, y), (x, y)],
+                    kind: 0,
+                }
+            }));
+        }
+    }
+    // A curved side can bulge past its ends: the bounds are the outline's extent rounded
+    // outward, as PE-DESIGN stores them (m10).
+    let [x0, y0, x1, y1] = openstitch_formats::pes11::outline_extent(&s.vertices);
+    s.bounds = [x0.floor(), y0.floor(), x1.ceil(), y1.ceil()].map(|v| v as i16);
+    Ok(s)
+}
+
+/// One side of a Curved Block as PE-DESIGN draws it through the line ends `pts` (file units):
+/// a Bézier curve whose handles at an inner point lie along the line from the point before to
+/// the point after, each as long as the circular arc's handle over that segment, 2c / 3(1 +
+/// cos a) for a chord c at angle a to the tangent; an end's handle is the mirror image of its
+/// neighbour's across the segment's perpendicular bisector (a two-point side: a third of the
+/// way along). Whole units, rounded. PE-DESIGN's own handles in m07, m09, m10, m11 and
+/// o-manual-curve are all within one unit (0.1 mm) of these; how it rounds is not mapped. The
+/// side's first vertex has kind `0x01`, its last `0x10`, the others `0x11`; the handles on the
+/// straight segments joining the two sides are the vertex itself.
+fn curve_side(pts: &[(f64, f64)]) -> Vec<Vertex> {
+    let n = pts.len();
+    let sub = |a: (f64, f64), b: (f64, f64)| (a.0 - b.0, a.1 - b.1);
+    let len = |v: (f64, f64)| v.0.hypot(v.1);
+    // (arriving, leaving) handles, unrounded.
+    let mut handles = vec![(pts[0], pts[0]); n];
+    for i in 1..n.saturating_sub(1) {
+        let d = sub(pts[i + 1], pts[i - 1]);
+        let t = (d.0 / len(d), d.1 / len(d));
+        let arc = |chord: (f64, f64)| {
+            let c = len(chord);
+            let cos = ((chord.0 * t.0 + chord.1 * t.1) / c).abs();
+            2.0 * c / (3.0 * (1.0 + cos))
+        };
+        let (l_in, l_out) = (arc(sub(pts[i - 1], pts[i])), arc(sub(pts[i + 1], pts[i])));
+        handles[i] = (
+            (pts[i].0 - l_in * t.0, pts[i].1 - l_in * t.1),
+            (pts[i].0 + l_out * t.0, pts[i].1 + l_out * t.1),
+        );
+    }
+    // The ends: the neighbour's handle mirrored across the segment's perpendicular bisector.
+    let mirror = |h: (f64, f64), a: (f64, f64), b: (f64, f64)| {
+        let ab = sub(b, a);
+        let u = (ab.0 / len(ab), ab.1 / len(ab));
+        let m = ((a.0 + b.0) / 2.0, (a.1 + b.1) / 2.0);
+        let along = (h.0 - m.0) * u.0 + (h.1 - m.1) * u.1;
+        (h.0 - 2.0 * along * u.0, h.1 - 2.0 * along * u.1)
+    };
+    if n == 2 {
+        let third =
+            |a: (f64, f64), b: (f64, f64)| (a.0 + (b.0 - a.0) / 3.0, a.1 + (b.1 - a.1) / 3.0);
+        handles[0].1 = third(pts[0], pts[1]);
+        handles[1] = (third(pts[1], pts[0]), pts[1]);
+    } else if n > 2 {
+        handles[0].1 = mirror(handles[1].0, pts[0], pts[1]);
+        handles[n - 1] = (mirror(handles[n - 2].1, pts[n - 2], pts[n - 1]), pts[n - 1]);
+    }
+    let whole = |p: (f64, f64)| (p.0.round() as f32, p.1.round() as f32);
+    (0..n)
+        .map(|i| {
+            let (x, y) = whole(pts[i]);
             Vertex {
                 x,
                 y,
-                handles: [(x, y), (x, y)],
-                kind: 0,
+                handles: [whole(handles[i].0), whole(handles[i].1)],
+                kind: match i {
+                    0 => KIND_CURVE_AFTER,
+                    i if i == n - 1 => KIND_CURVE_BEFORE,
+                    _ => KIND_CURVE_BEFORE | KIND_CURVE_AFTER,
+                },
             }
         })
-        .collect();
-    s.bounds = Shape::bounds_of(&s.vertices);
-    Ok(s)
+        .collect()
 }
 
 fn region(id: u64, r: &RegionSewing, s: &mut Shape, table: &mut Vec<Thread>) -> Result<(), String> {
@@ -765,16 +840,62 @@ mod tests {
             (s.region, s.line_sewn, s.line_type),
             (RegionSewType::Satin, false, Shape::LINE_NOT_SEWN)
         );
-        // A Curved Block is refused with the reason.
-        let mut curved = Design::new("t", openstitch_design::DesignPage::default());
-        r.curved_lines = true;
-        curved.add(DesignObject::shape(
-            vec![Contour::rectangle(100.0, 100.0, 200.0, 200.0)],
-            Some(r),
-            None,
-        ));
-        let err = objects(&curved).expect_err("curved blocks are not mapped");
-        assert!(err.contains("Curved Block"), "{err}");
+    }
+
+    #[test]
+    fn a_curved_block_has_pe_designs_handles_to_a_unit() {
+        // PE-DESIGN's Curve Blocks (tests/fixtures/pe11): the same clicks as a column of
+        // direction lines give the same outline, kinds and, within one file unit, handles.
+        let dir = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../openstitch-formats/tests/fixtures/pe11"
+        );
+        for name in [
+            "m07-curve-1",
+            "m09-curve-bent",
+            "m10-curve-uneven",
+            "m11-curve-4",
+            "o-manual-curve",
+        ] {
+            let bytes = std::fs::read(format!("{dir}/{name}.pes")).expect("fixture");
+            let pe = openstitch_formats::pes::read_objects(&bytes).expect("objects");
+            let pe = &pe.shapes[0];
+            let n = usize::from(pe.punch_lines);
+            let at = |k: usize| {
+                let v = &pe.vertices[k];
+                v2(f64::from(v.x - PAGE_ORIGIN), f64::from(v.y - PAGE_ORIGIN))
+            };
+            let mut r = RegionSewing::new(RegionType::Satin, red());
+            r.direction_lines = (0..n).map(|k| [at(k), at(2 * n - 1 - k)]).collect();
+            r.curved_lines = true;
+            let mut design = Design::new("t", openstitch_design::DesignPage::default());
+            design.add(DesignObject::shape(
+                vec![Contour::rectangle(0.0, 0.0, 10.0, 10.0)],
+                Some(r),
+                None,
+            ));
+            let o = objects(&design).expect("objects");
+            let ours = &o.shapes[0];
+            assert_eq!(ours.punch_lines, pe.punch_lines, "{name}");
+            // The bounds: the curve's extent rounded outward (ours from our handles).
+            for (a, b) in ours.bounds.iter().zip(&pe.bounds) {
+                assert!(
+                    (a - b).abs() <= 1,
+                    "{name}: bounds {:?} against {:?}",
+                    ours.bounds,
+                    pe.bounds
+                );
+            }
+            for (k, (a, b)) in ours.vertices.iter().zip(&pe.vertices).enumerate() {
+                assert_eq!((a.x, a.y, a.kind), (b.x, b.y, b.kind), "{name} vertex {k}");
+                for (h, g) in a.handles.iter().zip(&b.handles) {
+                    assert!(
+                        (h.0 - g.0).abs() <= 1.0 && (h.1 - g.1).abs() <= 1.0,
+                        "{name} vertex {k}: {h:?} against PE-DESIGN's {g:?}"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

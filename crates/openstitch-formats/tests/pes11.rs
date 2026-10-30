@@ -234,6 +234,8 @@ fn manual_punch_blocks_read_as_shapes_with_their_direction_lines() {
     let m07 = &read("m07-curve-1")[0];
     assert_eq!(m07.punch_lines, 2);
     assert!(m07.vertices.iter().any(|v| v.kind != 0));
+    assert_eq!(read("m09-curve-bent")[0].punch_lines, 3);
+    assert_eq!(read("m11-curve-4")[0].punch_lines, 4);
     // Manual Punch > Running is an open line with one entry per list: an ordinary shape.
     assert_eq!(read("o-manual-running")[0].punch_lines, 0);
     // A block object written from these fields reads back the same.
@@ -523,6 +525,9 @@ const FULLY_PARSED: &[&str] = &[
     "m05-straight-1-density",
     "m07-curve-1",
     "m08-straight-1-line",
+    "m09-curve-bent",
+    "m10-curve-uneven",
+    "m11-curve-4",
 ];
 
 /// The fixture's stitches with the header's own name (the PEC label would otherwise become the

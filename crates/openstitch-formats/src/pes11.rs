@@ -1554,12 +1554,14 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
 /// The geometry header: two lists of outline positions (u32 count, then u32 vertex and f64 t;
 /// one entry each on a shape, a Manual Punch object's line ends), then three marks, each a
 /// position on the outline (a segment and a parameter, not decoded) with its coordinates. The
-/// coordinates of PE-DESIGN's closed shapes and Manual Punch objects sit at fixed fractions of
-/// the bounds: a tenth of the width outside the left and right edges at 60 % of the height,
-/// and the centre at 25 % of the height. The segment and parameter fields are the baseline
-/// file's (open lines: the open-line file's); a Manual Punch object's are its last vertex and
-/// its first side's last segment, at t 0.5 (m01, m03).
+/// coordinates of PE-DESIGN's closed shapes sit at fixed fractions of the bounds: a tenth of
+/// the width outside the left and right edges at 60 % of the height, and the centre at 25 % of
+/// the height. The segment and parameter fields are the baseline file's (open lines: the
+/// open-line file's). Manual Punch objects: [`write_punch_geometry_header`].
 fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
+    if s.punch_lines > 0 {
+        return write_punch_geometry_header(w, s);
+    }
     let [x0, y0, x1, y1] = s.bounds.map(f64::from);
     let (width, height) = (x1 - x0, y1 - y0);
     let (left, right, mid) = (
@@ -1567,34 +1569,17 @@ fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
         (x1 + width / 10.0, y0 + height * 0.6),
         ((x0 + x1) / 2.0, y0 + height * 0.25),
     );
-    let (seg_b, t_ab, flag_c, t_cd, seg_d): (i64, f64, i64, f64, i64) = if s.punch_lines > 0 {
-        let k = i64::from(s.punch_lines);
-        (0, 0.0, 2 * k - 1, 0.5, k - 1)
-    } else if s.closed {
+    let (seg_b, t_ab, flag_c, t_cd, seg_d): (i64, f64, i64, f64, i64) = if s.closed {
         (2, 1.0, 1, 0.5, 3)
     } else {
         (0, 0.0, 0, 0.0, 0)
     };
-    if s.punch_lines > 0 {
-        let k = i64::from(s.punch_lines);
-        w.u32le(k);
-        for i in 0..k {
-            w.u32le(i);
-            w.append(&0f64.to_le_bytes());
-        }
-        w.u32le(k);
-        for i in 0..k {
-            w.u32le(2 * k - 1 - i);
-            w.append(&0f64.to_le_bytes());
-        }
-    } else {
-        w.u32le(1);
-        w.u32le(0);
-        w.append(&t_ab.to_le_bytes());
-        w.u32le(1);
-        w.u32le(seg_b);
-        w.append(&t_ab.to_le_bytes());
-    }
+    w.u32le(1);
+    w.u32le(0);
+    w.append(&t_ab.to_le_bytes());
+    w.u32le(1);
+    w.u32le(seg_b);
+    w.append(&t_ab.to_le_bytes());
     w.f32le(left.0);
     w.f32le(left.1);
     w.u32le(flag_c);
@@ -1607,6 +1592,122 @@ fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
     w.f32le(right.0);
     w.f32le(right.1);
     w.u16le(0);
+}
+
+/// A Manual Punch object's geometry header: the lists of its lines' ends, then the three marks.
+/// The marks hang off the two straight edges that close the block (the left one from the last
+/// vertex to the first, the right one from the first side's last vertex to the second side's
+/// first), cut at the height midway between the outline's top and bottom as its curves reach
+/// them ([`outline_extent`]: m11's sag to 970.25): mark A at the left cut offset by a tenth of
+/// the bounds' width outward and a tenth of their height down, C likewise at the right cut,
+/// and B midway between the cuts a quarter of the height up, each tenth and quarter in whole
+/// units (rounded down). The left cut's parameter runs up its edge, the right's down (m01 …
+/// m11, o-manual-*: 0.5 on a straight block, 0.25 / 0.75 on m09, 0.074375 / 0.925625 on m11).
+fn write_punch_geometry_header(w: &mut ByteWriter, s: &Shape) {
+    let k = usize::from(s.punch_lines);
+    let n = s.vertices.len();
+    w.u32le(k as i64);
+    for i in 0..k {
+        w.u32le(i as i64);
+        w.append(&0f64.to_le_bytes());
+    }
+    w.u32le(k as i64);
+    for i in 0..k {
+        w.u32le((2 * k - 1 - i) as i64);
+        w.append(&0f64.to_le_bytes());
+    }
+    let [_, y_top, _, y_bottom] = outline_extent(&s.vertices);
+    let cut_y = (y_top + y_bottom) / 2.0;
+    let at = |i: usize| (f64::from(s.vertices[i].x), f64::from(s.vertices[i].y));
+    // A cut on the edge from `a` to `b` at height `cut_y`: its parameter and point.
+    let cut = |a: (f64, f64), b: (f64, f64)| {
+        let t = if b.1 == a.1 {
+            0.5
+        } else {
+            (cut_y - a.1) / (b.1 - a.1)
+        };
+        // PE-DESIGN stores the parameter as computed in single precision (m11:
+        // 0.07437500357627869).
+        let point = (a.0 + t * (b.0 - a.0), a.1 + t * (b.1 - a.1));
+        (f64::from(t as f32), point)
+    };
+    let (t_left, left) = cut(at(n - 1), at(0));
+    let (t_right, right) = cut(at(k - 1), at(k));
+    let [x0, y0, x1, y1] = s.bounds.map(i32::from);
+    let (tenth_w, tenth_h, quarter_h) = (
+        f64::from((x1 - x0) / 10),
+        f64::from((y1 - y0) / 10),
+        f64::from((y1 - y0) / 4),
+    );
+    w.f32le(left.0 - tenth_w);
+    w.f32le(left.1 + tenth_h);
+    w.u32le((n - 1) as i64);
+    w.append(&t_left.to_le_bytes());
+    w.u16le(1);
+    w.f32le((left.0 + right.0) / 2.0);
+    w.f32le((left.1 + right.1) / 2.0 - quarter_h);
+    w.u32le((k - 1) as i64);
+    w.append(&t_right.to_le_bytes());
+    w.f32le(right.0 + tenth_w);
+    w.f32le(right.1 + tenth_h);
+    w.u16le(0);
+}
+
+/// `x0, y0, x1, y1` of a closed outline as its segments reach (file units, unrounded): a
+/// segment is a cubic Bézier when its start has [`KIND_CURVE_AFTER`] or its end
+/// [`KIND_CURVE_BEFORE`], else straight. PE-DESIGN's Manual Punch objects store this extent
+/// rounded outward as their bounds (m10's curve bulges to x 591.48: bounds 591).
+pub fn outline_extent(vertices: &[Vertex]) -> [f64; 4] {
+    let mut e = [f64::MAX, f64::MAX, f64::MIN, f64::MIN];
+    let mut take = |x: f64, y: f64| {
+        e[0] = e[0].min(x);
+        e[1] = e[1].min(y);
+        e[2] = e[2].max(x);
+        e[3] = e[3].max(y);
+    };
+    let n = vertices.len();
+    for i in 0..n {
+        let (a, b) = (&vertices[i], &vertices[(i + 1) % n]);
+        let p0 = [f64::from(a.x), f64::from(a.y)];
+        let p3 = [f64::from(b.x), f64::from(b.y)];
+        take(p0[0], p0[1]);
+        let curved = a.kind & KIND_CURVE_AFTER != 0 || b.kind & KIND_CURVE_BEFORE != 0;
+        if !curved {
+            continue;
+        }
+        let p1 = [f64::from(a.handles[1].0), f64::from(a.handles[1].1)];
+        let p2 = [f64::from(b.handles[0].0), f64::from(b.handles[0].1)];
+        // Where each coordinate's derivative is zero inside the segment.
+        for axis in 0..2 {
+            let (a0, a1, a2, a3) = (p0[axis], p1[axis], p2[axis], p3[axis]);
+            let qa = -a0 + 3.0 * a1 - 3.0 * a2 + a3;
+            let qb = 2.0 * (a0 - 2.0 * a1 + a2);
+            let qc = a1 - a0;
+            let mut roots = Vec::new();
+            if qa.abs() < 1e-12 {
+                if qb.abs() > 1e-12 {
+                    roots.push(-qc / qb);
+                }
+            } else {
+                let disc = qb * qb - 4.0 * qa * qc;
+                if disc >= 0.0 {
+                    roots.push((-qb + disc.sqrt()) / (2.0 * qa));
+                    roots.push((-qb - disc.sqrt()) / (2.0 * qa));
+                }
+            }
+            for t in roots.into_iter().filter(|t| *t > 0.0 && *t < 1.0) {
+                let u = 1.0 - t;
+                let point = |k: usize| {
+                    u * u * u * p0[k]
+                        + 3.0 * u * u * t * p1[k]
+                        + 3.0 * u * t * t * p2[k]
+                        + t * t * t * p3[k]
+                };
+                take(point(0), point(1));
+            }
+        }
+    }
+    e
 }
 
 /// After the object list: 10 zero bytes, the group list (u16 count; per group its MFC tag,

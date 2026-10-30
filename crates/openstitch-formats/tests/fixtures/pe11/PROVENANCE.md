@@ -107,7 +107,7 @@ no warning. Three of the eleven files are kept here for the readers' tests:
 ## Round 4 (2026-10-30): Manual Punch blocks
 
 Made by the owner's PE-DESIGN 11.50 (Layout & Editing) on Windows 11 Pro 10.0.26300,
-2026-10-30 08:58-09:06, by black-box GUI use only (session pe-refs-4, round4/log.txt). App menu
+2026-10-30 08:58-09:06 (m09-m11 later the same day), by black-box GUI use only (session pe-refs-4, round4/log.txt). App menu
 > New (Hoop Size 100 x 100 mm, grid snap on); Home > Shapes > Manual Punch row (first icon
 Straight Block, second Curve Block); clicks at page mm from the top-left. A block object comes in
 with line Not Sewn, region Satin Stitch, 007 PRUSSIAN BLUE (the session's last colour), under
@@ -124,3 +124,6 @@ not kept.
 | `m05-straight-1-density.pes` | `23ebb6122a4c4778f742461ccbb2d5b4bd83d4865070a44cf57cc00c49a271f5` | m01 (Satin), then density 6,0. 238 st. (Saved as "4,5.pes" by a missed click and renamed; content unchanged.) |
 | `m07-curve-1.pes` | `b970e05335f2d22649b139b7491ba5370b25209e7eed9bec5f04ccb631cab6c2` | Curve Block, the same four clicks as m01. 20,00 x 20,00 mm, 208 st. |
 | `m08-straight-1-line.pes` | `4f46a7198c97f11a443e139eae84b6316ea600a5e870a7bb31de6f441443a553` | m01, then line Running Stitch (run pitch 2,0 mm, run time 1, 007). 253 st. |
+| `m09-curve-bent.pes` | `9cc2dee22b3f5821ec5671751016e35cd6d580d4fc296a903fb991b5a3189f66` | Curve Block: clicks (10,10) (10,30) (30,20) (30,40) (50,10), double-click (50,30); the block sags through the middle pair. 40,00 x 30,00 mm, 421 st. |
+| `m10-curve-uneven.pes` | `ba4087375f473715217951a32b1b1f54f9cdcaac387e76dcb96c213c06124142` | Curve Block: clicks (10,10) (10,30) (20,25) (20,45) (60,10), double-click (60,30); unequal chords. 50,80 x 35,00 mm, 529 st. |
+| `m11-curve-4.pes` | `ce26049eadee96817d4bb716df8dc7bc2af4597a7762e7afc934820cef72d837` | Curve Block: clicks (10,10) (10,30) (25,25) (25,45) (45,25) (45,45) (60,10), double-click (60,30); four lines. 50,00 x 37,00 mm, 537 st. |
