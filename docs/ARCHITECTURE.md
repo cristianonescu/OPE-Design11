@@ -283,8 +283,9 @@ Verified Compatible).
   deepest point (twice the chamfer distance to the outside) is between `satinMinWidth` (0.7
   mm) and `satinMaxWidth` (6.5 mm); otherwise it is fill (#127's centerline-thinness test). As
   PE-DESIGN 11.50 sets them on its captures: satin with Auto direction and no under sewing;
-  fill with under sewing, across the stroke up to 13 mm wide and at 45° beyond. A colour's
-  regions sew largest first.
+  fill with under sewing, in the direction of 90°, 45°, 135° or 0° whose rows spread furthest
+  across the region, a diagonal winning over 90° only with at least one more fill row
+  (`fill_angle`). A colour's regions sew in scan order, reversed for the 1st, 3rd, … colour.
 - **Cross Stitch.** The image's colours are reduced through the same census prepass; each
   cell of a square grid (`round(width / cell) × round(height / cell)`, cells 1–10 mm, default
   2.5 mm) takes the thread most of its modal pixels have (ties to the lower thread; cells

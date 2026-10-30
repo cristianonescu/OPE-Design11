@@ -1306,6 +1306,23 @@ Line references are relative to `crates/`.
     pixels form a two-pixel ridge (a stroke centred between two pixel rows), and every
     resolution from 250 to 960 px gives PE's choice on all 16 bars; widths of 1 to 12 px
     measure exactly. Counts at the default resolution are unchanged (3094 / 4373 on main).
+  - **Specks, fill direction and order (2026-10-30, pe-refs-4's `autopunch-specks-default.pes`,
+    `-specks-noise+1.pes`, `autopunch-right-triangle.pes`):** on a red square, a blue disc and
+    square specks of 1, 2, 3, 5 and 8 px (0.35–2.82 mm) in both colours, PE drops the 1, 2
+    and 3 px specks and keeps the 5 and 8 px ones; one more tick of Noise reduction gives a
+    byte-identical file. OpenStitch already did the same: its 3×3 modal census removes the 1
+    and 2 px specks, and the floor `max(4, round(minArea / mmPerPx²))` = 8 px removes what
+    the census leaves of the 3 px one. Stitches 2355 against 2365. The fill direction was the
+    leftover: PE gave the same disc 45° on one image and 90° on two others, and the isosceles
+    triangle 90°. A single rule gives all 16 fills of the round-4 captures: the direction of
+    90°, 45°, 135° and 0° whose rows spread furthest across the region, a diagonal winning
+    over 90° only with at least one more row at 4.5 lines/mm (the 45° disc's diagonal spread
+    is 0.50 mm wider, the 90° disc's 0.21 mm). It replaces the 13 mm stroke-width rule
+    (`autopunch::fill_angle`). Within a colour PE sews blue (first) from the bottom specks up
+    to the disc and red (second) from the square down to the specks, as it sews the bars
+    bottom first: regions in scan order, reversed for the 1st, 3rd, … colour; it replaces
+    "largest first". Counts: shapes 4384 / 4482, moved 4358 / 4436, specks 2355 / 2365,
+    right triangle 2502 / 2547, bars 3094 / 3197 and 2011 / 2018.
   - **Colour order** (`autopunch-owner-shapes-moved.pes`, the same four colours with every
     shape moved and recoloured): PE sews yellow, blue, red, green again, so the order is a
     property of the colours. It is the reduced colour's R + G + B, highest first (yellow 480,

@@ -682,3 +682,134 @@ fn stroke_width_is_exact_for_odd_and_even_widths() {
         assert_eq!(regions::thickness(&m, mw, mh), w as f64, "{w} px bar");
     }
 }
+
+/// The specks image of PE-DESIGN 11.50's round-4 capture `autopunch-specks-default.pes`, as
+/// pe-refs-4's `wizimg.py` draws it: 240 × 240 px (84.7 mm), a red square and a blue disc, and
+/// square specks of 1, 2, 3, 5 and 8 px in a red row and a blue row, on white.
+fn specks() -> Raster {
+    const R: [u8; 4] = [220, 30, 30, 255];
+    const B: [u8; 4] = [30, 60, 200, 255];
+    Raster::from_fn(240, 240, |x, y| {
+        let (fx, fy) = (f64::from(x) + 0.5, f64::from(y) + 0.5);
+        if (20..100).contains(&x) && (20..100).contains(&y) {
+            return R;
+        }
+        if (fx - 180.0).powi(2) + (fy - 60.0).powi(2) <= 40.0 * 40.0 {
+            return B;
+        }
+        for (colour, row) in [(R, 150u32), (B, 200u32)] {
+            for (size, col) in [(1u32, 30u32), (2, 70), (3, 110), (5, 150), (8, 190)] {
+                if (col..col + size).contains(&x) && (row..row + size).contains(&y) {
+                    return colour;
+                }
+            }
+        }
+        WHITE
+    })
+    .expect("size")
+}
+
+/// PE-DESIGN 11.50 on the specks (round-4 `autopunch-specks-default.pes`; Noise reduction one
+/// tick up gives the same file): the 1, 2 and 3 px specks go, the 5 and 8 px specks stay, in
+/// both colours. Blue sews first, from the bottom specks (8 px, then 5 px) up to its disc;
+/// red then sews its square and down to its 5 px and 8 px specks. The square fills at 45°,
+/// the disc at 90°.
+#[test]
+fn specks_survive_and_sew_as_pe_design() {
+    let out = autopunch::convert(
+        &specks(),
+        &Frame::new(0.0, 0.0, 84.7, 240),
+        &AutoPunch::default(),
+    )
+    .expect("converts");
+    let sizes: Vec<(bool, i64, Option<f64>)> = out
+        .objects
+        .iter()
+        .map(|o| {
+            let r = o.region.as_ref().expect("region");
+            let xs: Vec<f64> = o
+                .contours
+                .iter()
+                .flat_map(|c| c.path())
+                .map(|p| p.x)
+                .collect();
+            let w = xs.iter().copied().fold(f64::MIN, f64::max)
+                - xs.iter().copied().fold(f64::MAX, f64::min);
+            let fill = (r.kind == RegionType::Fill).then_some(r.angle);
+            (
+                r.thread.blue > r.thread.red,
+                (w / 10.0).round() as i64,
+                fill,
+            )
+        })
+        .collect();
+    // (blue?, width in whole mm, fill angle): blue 8 px (2.8 mm), 5 px (1.8 mm), disc; then
+    // red square, 5 px, 8 px.
+    assert_eq!(
+        sizes,
+        vec![
+            (true, 3, None),
+            (true, 2, None),
+            (true, 28, Some(90.0)),
+            (false, 28, Some(45.0)),
+            (false, 2, None),
+            (false, 3, None),
+        ]
+    );
+}
+
+/// PE-DESIGN 11.50 fills a right triangle at 45° (round-4 `autopunch-right-triangle.pes`): its
+/// rows then spread across the hypotenuse's 80 mm against 57 mm at 90°.
+#[test]
+fn right_triangle_fills_at_45_degrees() {
+    let img = Raster::from_fn(240, 240, |x, y| {
+        // (40,40) (40,200) (200,200): the right angle at the bottom left.
+        if x >= 40 && y <= 200 && x <= y && y >= 40 {
+            [220, 30, 30, 255]
+        } else {
+            WHITE
+        }
+    })
+    .expect("size");
+    let out = autopunch::convert(
+        &img,
+        &Frame::new(0.0, 0.0, 84.7, 240),
+        &AutoPunch::default(),
+    )
+    .expect("converts");
+    assert_eq!(out.objects.len(), 1);
+    let r = out.objects[0].region.as_ref().expect("region");
+    assert_eq!((r.kind, r.angle), (RegionType::Fill, 45.0));
+}
+
+/// The fill direction rule on its own: the direction whose rows spread furthest, a diagonal
+/// winning over 90° only with at least one more row (0.22 mm).
+#[test]
+fn fill_direction_spreads_the_rows_furthest() {
+    let mask = |w: usize, h: usize, f: &dyn Fn(usize, usize) -> bool| -> Vec<bool> {
+        (0..h)
+            .flat_map(|y| (0..w).map(move |x| (x, y)))
+            .map(|(x, y)| f(x, y))
+            .collect()
+    };
+    let px = 0.1; // mm per pixel
+    // 30 mm bars: 12 mm wide at 90°, 14 mm wide at 45° (PE's wide-bar capture).
+    let bar12 = mask(300, 120, &|_, _| true);
+    assert_eq!(autopunch::fill_angle(&bar12, 300, 120, px), 90.0);
+    let bar14 = mask(300, 140, &|_, _| true);
+    assert_eq!(autopunch::fill_angle(&bar14, 300, 140, px), 45.0);
+    // A square at 45° (its diagonal), not 135° (an equal spread: the earlier angle wins).
+    let square = mask(200, 200, &|_, _| true);
+    assert_eq!(autopunch::fill_angle(&square, 200, 200, px), 45.0);
+    // An isosceles triangle, base down, wider than tall: 90°.
+    let tri = mask(356, 248, &|x, y| {
+        let half = 178.0 * (y as f64 + 0.5) / 248.0;
+        (x as f64 + 0.5 - 178.0).abs() <= half
+    });
+    assert_eq!(autopunch::fill_angle(&tri, 356, 248, px), 90.0);
+    // A disc is a near tie: 90°.
+    let disc = mask(200, 200, &|x, y| {
+        (x as f64 + 0.5 - 100.0).powi(2) + (y as f64 + 0.5 - 100.0).powi(2) <= 100.0 * 100.0
+    });
+    assert_eq!(autopunch::fill_angle(&disc, 200, 200, px), 90.0);
+}

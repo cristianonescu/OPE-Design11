@@ -57,12 +57,52 @@ impl Default for AutoPunch {
     }
 }
 
-/// Fill direction of wide Auto Punch regions, degrees (PE-DESIGN 11.50's, round-4 captures).
-pub const FILL_ANGLE: f64 = 45.0;
-/// Fill regions up to this stroke width sew across the stroke instead of at [`FILL_ANGLE`], mm:
-/// PE-DESIGN 11.50 sews 7–12 mm bars at 90° across and a 14 mm bar at 45°
-/// (`autopunch-thin-strokes-wide.pes`).
-pub const FILL_ACROSS_MAX_MM: f64 = 13.0;
+/// The fill directions Auto Punch chooses from, degrees counter-clockwise on screen, in order
+/// of preference.
+pub const FILL_ANGLES: [f64; 4] = [90.0, 45.0, 135.0, 0.0];
+/// A later direction in [`FILL_ANGLES`] wins only when its rows spread at least this much
+/// further, mm: one fill row at PE-DESIGN's 4.5 lines/mm.
+pub const FILL_ROW_MM: f64 = 1.0 / 4.5;
+
+/// The fill direction PE-DESIGN 11.50's Auto Punch gives a region: of [`FILL_ANGLES`], the one
+/// whose rows spread furthest across the region (its extent perpendicular to the stitches, so
+/// the most rows), where a later direction must add at least one row ([`FILL_ROW_MM`]) to win.
+/// On the round-4 captures this gives every fill's direction:
+/// - 30 mm bars 7–12 mm wide at 90° and 14 mm wide at 45°;
+/// - squares and rectangles at 45°;
+/// - the isosceles triangle at 90° and the right triangle at 45°;
+/// - the discs at 90°, except one whose diagonal spread is 0.5 mm wider, at 45°. A disc 0.2 mm
+///   wider stays at 90°.
+pub fn fill_angle(m: &[bool], mw: usize, mh: usize, mm_per_px: f64) -> f64 {
+    let margin = if mm_per_px > 0.0 {
+        FILL_ROW_MM / mm_per_px
+    } else {
+        0.0
+    };
+    let mut best: Option<(f64, f64)> = None;
+    for &deg in &FILL_ANGLES {
+        let a = deg.to_radians();
+        // Across the stitches, in pixel coordinates (y down): a counter-clockwise stitch
+        // direction (cos a, −sin a) has the perpendicular (sin a, cos a).
+        let (px, py) = (a.sin(), a.cos());
+        let (mut lo, mut hi) = (f64::INFINITY, f64::NEG_INFINITY);
+        for y in 0..mh {
+            for x in 0..mw {
+                if m[y * mw + x] {
+                    let v = x as f64 * px + y as f64 * py;
+                    lo = lo.min(v);
+                    hi = hi.max(v);
+                }
+            }
+        }
+        // Whole pixels: a pixel spans |px| + |py| across.
+        let extent = hi - lo + px.abs() + py.abs();
+        if best.is_none_or(|b| extent >= b.0 + margin) {
+            best = Some((extent, deg));
+        }
+    }
+    best.map_or(FILL_ANGLES[0], |b| b.1)
+}
 
 /// Most regions one conversion may produce.
 pub const MAX_REGIONS: usize = 5000;
@@ -167,7 +207,10 @@ pub fn convert(image: &Raster, frame: &Frame, p: &AutoPunch) -> Result<Converted
         )));
     }
     // Colours in PE-DESIGN's order (brightest channel sum first); within a colour, regions
-    // largest first, as PE-DESIGN sews its bars widest first (ties in scan order).
+    // in scan order of their first pixel, reversed for the first, third, … colour sewn, as
+    // PE-DESIGN sews them (round-4 captures: the bars bottom first; on the specks image blue,
+    // sewn first, from the bottom specks up to its disc, then red from its square down to its
+    // specks).
     let mut area = vec![0usize; palette.threads.len()];
     for c in &comps {
         area[c.label as usize] += c.area;
@@ -177,14 +220,16 @@ pub fn convert(image: &Raster, frame: &Frame, p: &AutoPunch) -> Result<Converted
         (0..palette.threads.len()).filter(|&t| area[t] > 0),
     );
     let mut objects = Vec::new();
-    for &t in &order {
+    for (colour, &t) in order.iter().enumerate() {
         let thread = palette.threads[t].clone();
         let mut mine: Vec<(usize, &regions::Component)> = comps
             .iter()
             .enumerate()
             .filter(|(_, k)| k.label as usize == t)
             .collect();
-        mine.sort_by_key(|(c, k)| (std::cmp::Reverse(k.area), *c));
+        if colour.is_multiple_of(2) {
+            mine.reverse();
+        }
         for (c, k) in mine {
             let (m, mw, mh) = regions::mask(&id, w, c as u32, k);
             let contours = regions::trace_mask(&m, mw, mh, k.x0, k.y0, &p.trace, &frame);
@@ -206,18 +251,18 @@ pub fn convert(image: &Raster, frame: &Frame, p: &AutoPunch) -> Result<Converted
                 thread.clone(),
             );
             // As PE-DESIGN 11.50 sets them (round-4 captures): satin with Auto direction and
-            // no under sewing; fill with under sewing, across a stroke up to 13 mm wide and at
-            // 45° beyond (the shapes image's triangle at 90° is not explained by this rule).
-            // The axis is measured with the design's y pointing down; region angles are
-            // stored counter-clockwise on screen, as PE-DESIGN gives them.
+            // no under sewing, across the stroke; fill with under sewing, in the direction
+            // whose rows spread furthest across the region ([`fill_angle`]). The axis is
+            // measured with the design's y pointing down; region angles are stored
+            // counter-clockwise on screen, as PE-DESIGN gives them.
             if satin {
                 region.auto_direction = true;
                 region.underlay = false;
             }
-            region.angle = if satin || width_mm <= FILL_ACROSS_MAX_MM {
+            region.angle = if satin {
                 normalize(-across) + 0.0
             } else {
-                FILL_ANGLE
+                fill_angle(&m, mw, mh, frame.mm_per_px())
             };
             let mut o = DesignObject::shape(contours, Some(region), None);
             o.name = Some(format!(
