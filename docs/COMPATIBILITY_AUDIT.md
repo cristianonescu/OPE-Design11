@@ -87,6 +87,8 @@ dearest:
 | 13 | No per-character colour or multi-character selection | Fonts | 4 | Documented difference | Colour grouping |
 | 14 | Programmable fill and fill default to 0° instead of 45° (**fixed**: programmable fill internal regression, fill 2026-10-30 from pes-objects r01; type change rule pending) | Stitches | 3 | Documented difference | No |
 | 15 | Missing fill, satin and zigzag attributes; wrong ranges (**partly fixed**: Frequency and ranges; Stitch Type, Half Stitch, Miter limit pending) | Stitches | 3 | Documented difference | Geometry |
+| 14 | Programmable fill defaults to 0° instead of 45° (**fixed**, internal regression; type change rule pending) | Stitches | 3 | Documented difference | No |
+| 15 | Missing fill, satin and zigzag attributes; wrong ranges (**partly fixed**: Frequency and ranges; Stitch Type 1 = OpenStitch's fill, Stitch Type 2, Half Stitch, Miter limit pending) | Stitches | 3 | Documented difference | Geometry |
 | 16 | Optimize Sewing Order does not move entry and exit points (**fixed**, reference) | Stitches | 3 | Documented difference | No |
 | 17 | Hole sewing not validated or paired (**fixed**, internal regression) | Stitches | 3 | Documented difference | No |
 | 18 | PES thread table drops chart names and colour type (**fixed**: round trip; chart strings pending) | PES | 3 | Documented difference | Chart strings |
@@ -842,8 +844,25 @@ Line references are relative to `crates/`.
     the older nearest-row order with PE's row ends and grid.
   - Tests: `frequency_and_run_times_follow_the_guide_ranges`,
     `fill_frequency_sets_the_row_to_row_needle_shift` (0, 25 and 50 %, ±2 % of the stitch).
-  - Not implemented, needs reference geometry (method 1): Stitch Type (turning ends), Half
-    Stitch for regions, and zigzag Sharp Corners / Miter limit.
+  - Not implemented, needs reference geometry (method 1): Half Stitch for regions, and zigzag
+    Sharp Corners / Miter limit.
+  - **Stitch Type (measured 2026-10-30, round-5 captures `tatami-40-st{1,2}-dir{0,30,90}.pes`,
+    `tatami-40-st2-dir45-freq0.pes`, with round 4's 45° pair; a 40 × 40 mm Fill square, density
+    4.5, step 4.0, Frequency 30 %, under sewing off):**
+    - *Type 1* (the default) is OpenStitch's fill. At 90° it is identical, phase for phase. At
+      0°, 30° and 45° the rows step 1.2 mm each, as OpenStitch's, with a constant offset of at
+      most 0.3 mm (the angled-fill anchor difference below). Stitches: 2006 (0°), 2032 (30°),
+      2068 (45°), 2036 (90°).
+    - *Type 2* sews sloped rows. Each pass runs from one edge at row k's line to the other edge
+      at row k+1's, rising one row spacing over its length (0.20 mm at 0° and 90°, 0.21 at 45°,
+      0.22 at 30°, against 0 for Type 1's flat rows), so consecutive passes meet at the edges in
+      one continuous zigzag, with no step at the row ends. The needle grid along each pass follows
+      the same Frequency rule as Type 1 (at 0°: 1.2 + 4k, then 2.4 + 4k, then 3.6 + 4k mm from the
+      left edge). Stitches: 2001 (0°), 2041 (30°), 2054 (45°), 1989 (90°), 2056 (45°,
+      Frequency 0).
+    - Not implemented: Type 2 needs sloped rows in the fill generator (each row's line tilted by
+      one spacing across the region, joined at the edges), planned after alpha.7 with these
+      seven files as its specs. Fill keeps sewing Type 1.
 - **Test:**
   - `object.setRegion {type:"fill",frequency:60}` and `object.setLine {type:"eStitch",runTimes:6}`
     are refused.
