@@ -26,6 +26,7 @@
 //!
 //! Lengths are 0.1 mm; output is deterministic.
 
+use crate::fmath::Det;
 use crate::geometry::{Contour, Vec2, contains, v2};
 use crate::paths::{clip, order};
 use std::f64::consts::TAU;
@@ -104,7 +105,7 @@ pub fn concentric(closed: &[Contour], holes: &[Contour], p: &ConcentricParams) -
         if e.distance(c) < 1e-9 {
             std::f64::consts::FRAC_PI_2
         } else {
-            (e.y - c.y).atan2(e.x - c.x)
+            (e.y - c.y).datan2(e.x - c.x)
         }
     });
     let seam = cut_radii
@@ -135,7 +136,7 @@ pub fn concentric(closed: &[Contour], holes: &[Contour], p: &ConcentricParams) -
     let start = out.full.last().copied().or_else(|| {
         cut_radii
             .first()
-            .map(|&r| c + v2(r * seam.cos(), r * seam.sin()))
+            .map(|&r| c + v2(r * seam.dcos(), r * seam.dsin()))
     });
     out.arcs = order(pieces, start);
     if p.start_inside {
@@ -150,7 +151,7 @@ pub fn concentric(closed: &[Contour], holes: &[Contour], p: &ConcentricParams) -
 /// decreasing angle), closed: 4·2ⁿ points whose chord fits `pitch`, rounded to 0.1 mm, a
 /// rounded chord over the pitch split in equal stitches.
 fn circle(c: Vec2, r: f64, seam: f64, pitch: f64) -> Vec<Vec2> {
-    let chord = |n: usize| 2.0 * r * (std::f64::consts::PI / n as f64).sin();
+    let chord = |n: usize| 2.0 * r * (std::f64::consts::PI / n as f64).dsin();
     let mut n = MIN_CIRCLE_POINTS;
     while chord(n) > pitch + 1e-9 && n < 1 << 20 {
         n *= 2;
@@ -163,7 +164,7 @@ fn circle(c: Vec2, r: f64, seam: f64, pitch: f64) -> Vec<Vec2> {
     let keys: Vec<Vec2> = (0..=n)
         .map(|j| {
             let t = seam - TAU * j as f64 / n as f64;
-            let q = c + v2(r * t.cos(), r * t.sin());
+            let q = c + v2(r * t.dcos(), r * t.dsin());
             v2(q.x.round(), q.y.round())
         })
         .collect();
@@ -194,7 +195,7 @@ fn crosses(c: Vec2, r: f64, edges: &[(Vec2, Vec2)]) -> bool {
 /// Walking the circle of radius `r` about `c` counter-clockwise on screen from angle `from`,
 /// the first angle where it enters or leaves the region (to 0.05°).
 fn first_crossing(c: Vec2, r: f64, from: f64, inside: &impl Fn(Vec2) -> bool) -> Option<f64> {
-    let at = |t: f64| c + v2(r * t.cos(), r * t.sin());
+    let at = |t: f64| c + v2(r * t.dcos(), r * t.dsin());
     let steps = 7200;
     let start = inside(at(from));
     let mut prev = from;

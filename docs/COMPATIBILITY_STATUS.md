@@ -81,6 +81,8 @@ Specs: 253 · pass 253 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `pes/pes-0110-editable-shapes` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text-fit` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text-transform` | pass | internal-regression | pass | — | pending | — |
+| `pes/pes-0110-editable-text-fit` | pass | internal-regression | pass | — | pending | — |
+| `pes/pes-0110-editable-text-transform` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-stitches` | pass | internal-regression | pass | — | pending | — |
 | `pes/pes-csewseg-trims` | pass | reference | pass | — | pass | — |

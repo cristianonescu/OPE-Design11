@@ -7,6 +7,7 @@
 //! horizontal in warped space are copies of the curve shifted across the region; they never
 //! cross each other.
 
+use crate::fmath::Det;
 use crate::generate::Run;
 use crate::geometry::{Contour, Transform, Vec2, v2};
 use crate::model::RegionType;
@@ -64,7 +65,7 @@ impl Warp {
         if chord.length() < 1.0 {
             return Err(CurveError::TooShort);
         }
-        let angle = chord.y.atan2(chord.x).to_degrees();
+        let angle = chord.y.datan2(chord.x).to_degrees();
         let to_frame =
             Transform::translation(-a.x, -a.y).then(&Transform::rotation(-angle, v2(0.0, 0.0)));
         let from_frame =

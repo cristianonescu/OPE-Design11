@@ -10,6 +10,7 @@ use crate::commands::{
 use crate::params::{CommandError, Params};
 use crate::session::EngineState;
 use openstitch_design::boolean;
+use openstitch_design::fmath::Det;
 use openstitch_design::paths;
 use openstitch_design::patterns::{self, PatternKind};
 use openstitch_design::{
@@ -296,7 +297,7 @@ fn echo_clipped(
     spacing: f64,
 ) -> Result<Vec<Contour>, CommandError> {
     let reach = Rect::enclosing(area.iter().chain(around).flat_map(Contour::outline_points))
-        .map_or(0.0, |b| b.width().hypot(b.height()));
+        .map_or(0.0, |b| b.width().dhypot(b.height()));
     let rings = ((reach / spacing).ceil() as usize + 1).min(MAX_RINGS);
     let mut pieces = Vec::new();
     for k in 1..=rings {
@@ -346,7 +347,7 @@ fn hatch(region: &[Contour], angle: f64, gap: f64) -> Vec<Vec<Vec2>> {
         return Vec::new();
     };
     let r = angle.to_radians();
-    let (u, n) = (v2(r.cos(), r.sin()), v2(-r.sin(), r.cos()));
+    let (u, n) = (v2(r.dcos(), r.dsin()), v2(-r.dsin(), r.dcos()));
     let corners = [
         v2(b.min_x, b.min_y),
         v2(b.max_x, b.min_y),

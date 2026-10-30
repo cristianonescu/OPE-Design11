@@ -2552,6 +2552,7 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "i_overlay",
+ "libm",
  "openstitch-core",
  "rustybuzz",
  "serde",

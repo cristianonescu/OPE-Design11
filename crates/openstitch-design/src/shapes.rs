@@ -2,6 +2,7 @@
 //! approximations of elliptical arcs). Lengths are 0.1 mm, angles degrees, +y down, positive
 //! angles clockwise on screen.
 
+use crate::fmath::Det;
 use crate::geometry::{Bezier, Contour, Rect, Transform, Vec2, v2};
 use std::f64::consts::{FRAC_PI_2, TAU};
 
@@ -23,9 +24,9 @@ pub fn arc(center: Vec2, rx: f64, ry: f64, start: f64, sweep: f64, mode: ArcMode
     let full = sweep.abs() >= 360.0;
     let n = ((sweep.abs() / 90.0).ceil() as usize).max(1);
     let step = sweep.to_radians() / n as f64;
-    let k = 4.0 / 3.0 * (step / 4.0).tan();
-    let at = |a: f64| v2(center.x + rx * a.cos(), center.y + ry * a.sin());
-    let tangent = |a: f64| v2(-rx * a.sin(), ry * a.cos());
+    let k = 4.0 / 3.0 * (step / 4.0).dtan();
+    let at = |a: f64| v2(center.x + rx * a.dcos(), center.y + ry * a.dsin());
+    let tangent = |a: f64| v2(-rx * a.dsin(), ry * a.dcos());
     let a0 = start.to_radians();
     let mut points: Vec<Vec2> = (0..=n).map(|i| at(a0 + step * i as f64)).collect();
     let mut curves: Vec<Option<Bezier>> = (0..n)
@@ -88,7 +89,7 @@ pub fn star(points: usize, inner: f64) -> Contour {
 }
 
 fn unit(a: f64) -> Vec2 {
-    v2(a.cos(), a.sin())
+    v2(a.dcos(), a.dsin())
 }
 
 /// Symmetric heart of four cubic segments, point at the bottom.
@@ -116,7 +117,7 @@ pub fn rounded_rectangle(w: f64, h: f64, r: f64) -> Contour {
     if r <= 0.0 {
         return Contour::rectangle(0.0, 0.0, w, h);
     }
-    let k = r * (4.0 / 3.0 * (std::f64::consts::PI / 8.0).tan());
+    let k = r * (4.0 / 3.0 * (std::f64::consts::PI / 8.0).dtan());
     // Straight edge then corner curve, clockwise from the top edge.
     let points = vec![
         v2(r, 0.0),
@@ -185,7 +186,7 @@ pub fn cross(arm: f64) -> Contour {
 pub fn crescent(bite: f64) -> Contour {
     // Intersections of x² + y² = 1 and (x − d)² + y² = 1 lie at x = d/2.
     let d = bite.clamp(0.05, 1.95);
-    let half = (d / 2.0).acos().to_degrees();
+    let half = (d / 2.0).dacos().to_degrees();
     let outer = arc(
         v2(0.0, 0.0),
         1.0,
