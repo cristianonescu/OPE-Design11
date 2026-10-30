@@ -56,3 +56,22 @@ fn repository_specs_pass_and_the_status_table_is_current() {
     );
     let _ = std::fs::remove_dir_all(work);
 }
+
+/// The reference MANIFEST is public: its provenance notes name the owner's notes folder in words,
+/// never a local absolute path (a drive letter, a home folder) that would leak a machine's layout.
+#[test]
+fn the_manifest_names_no_local_paths() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest =
+        std::fs::read_to_string(root.join("compat/reference/MANIFEST.json")).expect("manifest");
+    for (n, line) in manifest.lines().enumerate() {
+        let bytes = line.as_bytes();
+        let drive = bytes
+            .windows(3)
+            .any(|w| w[0].is_ascii_alphabetic() && w[1] == b':' && (w[2] == b'/' || w[2] == b'\\'));
+        let home = ["/Users/", "/home/", "\\Users\\", "AppData"]
+            .iter()
+            .any(|p| line.contains(p));
+        assert!(!drive && !home, "MANIFEST.json line {}: {line}", n + 1);
+    }
+}
