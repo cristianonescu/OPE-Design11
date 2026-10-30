@@ -44,8 +44,10 @@ The SVGs in `assets/icons/commands` were generated for OpenStitch with Higgsfiel
 (https://higgsfield.ai, Recraft V4.1 vector model) from the prompts in
 `assets/icons/commands/prompts.tsv`, under the project owner's account and Higgsfield's terms
 for it, then cleaned by `tools/clean_icons.py` (generator metadata and background removed,
-fills snapped to the palette). They contain no third-party artwork and are distributed under
-the repository's licence. See docs/LEGAL_AND_LICENSING.md.
+fills snapped to the palette). The 49 icons added on 2026-10-30 (from `connect` on in
+`prompts.tsv`) were made the same way, with seven off-palette fills set to the palette by hand.
+They contain no third-party artwork and are distributed under the repository's licence. See
+docs/LEGAL_AND_LICENSING.md.
 
 ## Illustrations and fabric texture — generated with Higgsfield
 
@@ -53,7 +55,8 @@ The SVGs in `assets/illustrations` and the texture `assets/textures/fabric_cotto
 generated for OpenStitch with Higgsfield (https://higgsfield.ai, Recraft V4.1) from the prompts
 in `assets/illustrations/prompts.tsv` and `assets/illustrations/README.md`, under the project
 owner's account and Higgsfield's terms for it. The SVGs were cleaned by `tools/clean_icons.py`
-(and five fills set to the palette by hand); the texture was cropped, made to tile and scaled
+(and five fills set to the palette by hand; `sew_empty`, `no_media` and `no_image` were added
+on 2026-10-30); the texture was cropped, made to tile and scaled
 down. They contain no third-party artwork and are distributed under the repository's licence.
 See docs/LEGAL_AND_LICENSING.md.
 

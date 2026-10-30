@@ -93,6 +93,13 @@ harness. The details per item are in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDI
 
 ## Still to do
 
+Assets (owner's rule of 2026-10-30, [research/asset-audit.md](research/asset-audit.md)): the
+P1 half of the audit is done (49 command icons for commands that showed another command's
+icon, including the suite windows' own commands, and three empty-state illustrations, all
+generated with Higgsfield). Next: the P2 half, about 45 icons for commands that share a
+sibling's icon (image tools, block and skeleton tools, hoop sections, Creator's New commands)
+and illustrations for the objects list and the update dialog.
+
 Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDIT.md):
 
 Done 2026-10-30: stitch generation is bit-identical on Windows, macOS and Linux (transcendental

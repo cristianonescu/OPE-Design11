@@ -260,7 +260,7 @@ fn color_tab(app: &mut EditorApp, ui: &mut egui::Ui) {
     let colors = app.pattern.threads.clone();
     let blocks = app.stats.colors.clone();
     if blocks.is_empty() {
-        ui.label(RichText::new("Nothing is sewn yet").weak());
+        crate::art::notice(ui, crate::art::Art::SewEmpty, 64.0, "Nothing is sewn yet");
     }
     egui::ScrollArea::vertical()
         .max_height(ui.available_height() - 40.0)

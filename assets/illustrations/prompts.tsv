@@ -12,3 +12,6 @@ wizard_cutwork	2B2F36 FFFFFF 8A52C8 A0A6AE	a plain white square cloth with one l
 wizard_image	2B2F36 FFFFFF 2E9D58 E0A21B D8433A 2A7AD8	a landscape photo with a green hill, a blue sky and a golden sun in a rectangular frame, and a sewing needle with red thread piercing its lower right corner
 pattern_library	2B2F36 FFFFFF 2A7AD8 2E9D58 E0A21B	three overlapping square fabric swatches fanned out, blue, green and golden, each with a different simple pattern of bold white stitch lines
 name_drop	2B2F36 FFFFFF A0A6AE D8433A	a white rectangular name tag label with a red dashed stitched border and three short grey horizontal bars inside standing for a name
+sew_empty	2B2F36 FFFFFF A0A6AE 2A7AD8	a row of three empty white thread spools with grey flat ends and no thread wound on them, and one short loose blue thread end lying in front
+no_media	2B2F36 FFFFFF A0A6AE 2A7AD8 E0A21B	a blue USB flash drive and a small golden memory card lying beside an empty slot drawn as a dashed grey rounded outline
+no_image	2B2F36 FFFFFF A0A6AE 2E9D58	an empty picture frame with a dashed grey border holding only a faint grey outline of a hill and a sun, with a bold green plus sign in a circle at its lower right corner

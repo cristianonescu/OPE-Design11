@@ -1111,17 +1111,18 @@ fn command(app: &mut EditorApp, ui: &mut egui::Ui, a: Action, large: bool) {
     }
 }
 
-/// Draws a ribbon button of any window (`icon`: the editor command whose glyph it shows) and
-/// returns its response with the ScreenTip attached.
+/// Draws a ribbon button of any window (`icon_of`: the icon it shows) and returns its response
+/// with the ScreenTip attached.
 pub fn button(
     ui: &mut egui::Ui,
     info: &Info,
-    icon_of: Action,
+    icon_of: impl Into<icons::Icon>,
     large: bool,
     on: bool,
     pressed: bool,
     menu: bool,
 ) -> egui::Response {
+    let icon_of = icon_of.into();
     let visuals = ui.visuals().clone();
     let fg = if on {
         visuals.text_color()
@@ -1422,10 +1423,11 @@ fn app_menu_row(app: &mut EditorApp, ui: &mut egui::Ui, a: Action) {
 pub fn qat_button(
     ui: &mut egui::Ui,
     info: &Info,
-    icon_of: Action,
+    icon_of: impl Into<icons::Icon>,
     on: bool,
     pressed: bool,
 ) -> egui::Response {
+    let icon_of = icon_of.into();
     let (r, resp) = ui.allocate_exact_size(vec2(22.0, 20.0), Sense::click());
     let visuals = ui.visuals();
     if pressed {

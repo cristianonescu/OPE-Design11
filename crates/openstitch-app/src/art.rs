@@ -24,11 +24,14 @@ pub enum Art {
     WizardImage,
     PatternLibrary,
     NameDrop,
+    SewEmpty,
+    NoMedia,
+    NoImage,
 }
 
 impl Art {
     #[cfg(test)]
-    const ALL: [Art; 13] = [
+    const ALL: [Art; 16] = [
         Art::EmptyCanvas,
         Art::DbChoose,
         Art::DbEmpty,
@@ -42,6 +45,9 @@ impl Art {
         Art::WizardImage,
         Art::PatternLibrary,
         Art::NameDrop,
+        Art::SewEmpty,
+        Art::NoMedia,
+        Art::NoImage,
     ];
 
     fn svg(self) -> (&'static str, &'static str) {
@@ -67,6 +73,9 @@ impl Art {
             Art::WizardImage => svg!("wizard_image"),
             Art::PatternLibrary => svg!("pattern_library"),
             Art::NameDrop => svg!("name_drop"),
+            Art::SewEmpty => svg!("sew_empty"),
+            Art::NoMedia => svg!("no_media"),
+            Art::NoImage => svg!("no_image"),
         }
     }
 }
@@ -127,6 +136,16 @@ pub fn empty_state(ui: &mut egui::Ui, art: Art, size: f32, text: &str) {
             ui.add_space(8.0);
             ui.label(egui::RichText::new(text).weak());
         });
+    });
+}
+
+/// A small empty state inside a pane: the illustration above a short weak text, taking only
+/// the room they need.
+pub fn notice(ui: &mut egui::Ui, art: Art, size: f32, text: &str) {
+    ui.vertical_centered(|ui| {
+        let (r, _) = ui.allocate_exact_size(vec2(size, size), egui::Sense::hover());
+        paint(ui.painter(), r, art, ui.visuals().text_color(), 0.9);
+        ui.label(egui::RichText::new(text).weak());
     });
 }
 

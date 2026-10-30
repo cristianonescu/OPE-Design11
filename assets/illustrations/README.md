@@ -17,6 +17,10 @@ hand. As with the icons, the charcoal outline (`#2b2f36`) is drawn in the theme'
 so they read on the light and the dark theme. A test in `art.rs` checks that every SVG renders
 and is used. See docs/LEGAL_AND_LICENSING.md for where they come from.
 
+`sew_empty` (Color pane with nothing sewn), `no_media` (Send to USB Media with no stick or card)
+and `no_image` (Modify Image without a background image) were added on 2026-10-30 the same way,
+with no hand edits.
+
 ## Textures
 
 `../textures/fabric_cotton.png` (192 × 192, greyscale) is the cloth under the stitches in the

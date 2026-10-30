@@ -74,3 +74,52 @@ offset	2B2F36 2A7AD8 2E9D58 E0A21B	three nested concentric rounded square outlin
 flower	2B2F36 F28CB8 E0A21B	a simple flower with six round pink petals and a golden centre
 entry_exit	2B2F36 2A7AD8 2E9D58 D8433A	a blue ring with a green dot at its upper left start and a red dot at its lower right end
 hoop	2B2F36 D8433A	a rectangular frame with rounded corners and a thick dark charcoal border, white inside, with a red dashed horizontal line across its middle
+connect	2B2F36 2A7AD8 2E9D58	two thick curved lines, one blue and one green, whose ends meet and join in the middle at a bold round dot
+divide_color	2B2F36 D8433A 2A7AD8 E0A21B	a rounded square split into three vertical strips coloured red, blue and golden with clear white gaps between the strips
+split_stitches	2B2F36 2A7AD8	a bold blue zigzag stitch line broken into two halves that are pulled apart with a wide gap in the middle
+design_center	2B2F36 FFFFFF E0A21B 2A7AD8	a white sheet of paper with a bold golden star outline drawn on it and a thick blue curved arrow arching over its top
+machine	2B2F36 FFFFFF 2A7AD8	a simple household sewing machine seen from the side, white body with a blue stripe, a needle under its arm
+stitch_creator	2B2F36 2E9D58 FFFFFF	a square green tile filled with a white repeating diamond lattice of stitch lines
+stitch_factory	2B2F36 8A52C8 E0A21B	a purple square tile with one big golden four petal flower ornament made of thick looping stitch lines in its centre (prompt also says: no letters)
+font_creator	2B2F36 2A7AD8 D8433A	a bold capital letter A shape outlined in blue with small red square edit nodes on its corners
+text_size	2B2F36 2A7AD8	a large capital letter T and a small capital letter T side by side with a blue double headed arrow under them
+font_filter	2B2F36 E0A21B 2A7AD8	a golden funnel with a small blue capital letter A falling into its top
+running	2B2F36 D8433A	a gently curved line made of evenly spaced short red dashes like a running stitch
+feed	2B2F36 A0A6AE 2A7AD8	a long thin grey straight line with three small dots on it, ending in a bold blue arrowhead
+view_solid	2B2F36 2A7AD8	a single plain blue circle completely filled with flat solid blue colour, nothing drawn inside it
+view_stitch	2B2F36 2A7AD8	a rounded square outline filled only with thin parallel blue diagonal stitch lines with white gaps between them
+view_realistic	2B2F36 2A7AD8 FFFFFF	a rounded square made of thick glossy blue satin thread rows, with two bright white highlight stripes like shiny thread
+thread_trim	2B2F36 A0A6AE D8433A	small open grey scissors cutting through a bold red thread line
+pane_order	2B2F36 2A7AD8 D8433A E0A21B	a vertical stack of three rounded cards coloured blue, red and golden with a bold charcoal down arrow beside the stack
+pane_simulator	2B2F36 2E9D58 D8433A	a big green play triangle button with a short red dashed stitch line under it
+pane_attributes	2B2F36 A0A6AE 2A7AD8	a rounded panel with three horizontal grey slider bars, each with a round blue knob at a different position
+reference_window	2B2F36 A0A6AE 2A7AD8	a grey miniature map rectangle with a bold blue viewing rectangle outlined on part of it
+dir_delete	2B2F36 2A7AD8 D8433A	a bold blue straight arrow crossed out by a thick red X
+dir_reverse	2B2F36 2A7AD8	a thick blue arrow making a U turn back on itself
+sewing_points	2B2F36 D8433A	a red crosshair target, a circle with four tick lines and a dot in its centre
+grid_axes	2B2F36 A0A6AE D8433A	a grey square grid with a bold red horizontal axis and a bold red vertical axis crossing at its centre
+fabric	2B2F36 2A7AD8 FFFFFF	a folded stack of blue cloth fabric with a white dashed stitched edge
+thread_chart	2B2F36 FFFFFF D8433A 2E9D58 2A7AD8 E0A21B	a white card holding a row of four small thread spools coloured red, green, blue and golden
+measure	2B2F36 E0A21B FFFFFF	a round golden tape measure reel with its white tape pulled out to the side
+refresh	2B2F36 2E9D58	two green curved arrows chasing each other around a circle
+parent_folder	2B2F36 E0A21B 2A7AD8	a golden file folder with a bold blue arrow pointing straight up out of it
+new_folder	2B2F36 E0A21B 2E9D58	a golden file folder with a bold green plus sign on its front
+rename	2B2F36 FFFFFF 2A7AD8	a white text field rectangle with a bold blue text cursor I-beam inside it
+thumbs_large	2B2F36 2A7AD8	four big blue rounded squares arranged in a two by two grid
+thumbs_small	2B2F36 2A7AD8	nine small blue rounded squares arranged in a three by three grid
+details	2B2F36 A0A6AE 2A7AD8	a list of four horizontal rows, each a small blue square bullet followed by a long grey bar
+status_bar	2B2F36 FFFFFF 2A7AD8	a white window rectangle with a thick blue bar along its bottom edge
+toolbar	2B2F36 FFFFFF 2A7AD8	a white window rectangle with a blue strip along its top edge holding three small white squares
+usb	2B2F36 A0A6AE 2A7AD8	a USB flash drive stick with a grey metal plug and a blue body
+wireless	2B2F36 2A7AD8	three bold blue curved wireless signal arcs fanning up from a round dot
+read_card	2B2F36 2A7AD8 E0A21B	a blue memory card with golden contacts and a bold charcoal arrow pointing out of it to the right
+writing_list	2B2F36 FFFFFF A0A6AE 2A7AD8	a white list sheet with three grey rows and a bold blue arrow pointing out of its right side
+csv	2B2F36 FFFFFF 2E9D58	a white document page with a green table grid of cells on it and a folded top right corner
+convert_format	2B2F36 FFFFFF 2A7AD8 E0A21B	two document pages, one blue and one golden, with a bold curved arrow from the blue page to the golden page
+print_preview	2B2F36 FFFFFF 2A7AD8	a white printed page with a blue magnifying glass over its lower right corner
+print_setup	2B2F36 A0A6AE 2A7AD8	a grey desktop printer with a blue gear wheel in front of its lower right corner
+flip_v	2B2F36 2A7AD8 A0A6AE	a blue triangle above a dashed horizontal line with its grey mirror image upside down below the line
+flip_h	2B2F36 2A7AD8 A0A6AE	a blue triangle left of a dashed vertical line with its grey mirror image on the right of the line
+region_engrave	2B2F36 A0A6AE 2A7AD8	a grey square plate with a blue rounded shape pressed down into it as a sunken groove
+region_emboss	2B2F36 A0A6AE E0A21B	a grey square plate with a golden rounded shape raised up out of it like a bump
+swap	2B2F36 2A7AD8 D8433A	two bold horizontal arrows, the upper one blue pointing right and the lower one red pointing left
