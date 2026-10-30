@@ -616,8 +616,18 @@ Line references are relative to `crates/`.
   height (rotation applied; the custom page when no hoop is chosen) in mm as the v6 header's
   hoop fields, where pyembroidery's constant 100 × 100 stood. PE-DESIGN 11.50 stores the hoop
   the same way in its own `#PES0110` files (u16 100, u16 100, then the hoop name "nv880e-S"
-  for a 100 × 100 mm page, in all 163 owner-drawn reference files). The page, grid and flag
-  fields keep pyembroidery's values, and v1 still writes its fixed hoop. Over-size designs
+  for a 100 × 100 mm page, in all 163 owner-drawn reference files). Since 2026-10-30 the
+  v6 "Design Page Is Custom" field is 1 for a custom page size, "Hoop Rotation" is 1 for a hoop
+  turned 90°, and a custom page's size goes in the sixth and seventh u16 (EduTechWiki's
+  "DesignWidth" / "DesignHeight"). Checked by opening OpenStitch's exports in PE-DESIGN 11.50
+  (reference session, files in the owner's round-5 notes): a 130 × 180 hoop rotated 90°
+  (hoop fields 180, 130, rotation 1) opens as Hoop Size 130 × 180 with Rotate 90 Degrees
+  ticked; a custom 300 × 200 page written with pyembroidery's constant 200, 200 in the design
+  fields opened as a 200 × 200 Custom Size page, which is how the design fields were found.
+  Both opened without a warning, with the design centred on the page and the single-needle
+  machine type (the v6 header carries neither position nor machine type). The page, grid and
+  display fields after them keep pyembroidery's values, and v1 still writes its fixed hoop: the
+  public description puts the hoop in the first u16 in one place and the second in another. Over-size designs
   (round-4 capture `hoop-oversize-100.dst`): PE-DESIGN neither rejects a 129 × 105 mm design
   on a 100 × 100 mm page nor promotes it to a larger hoop; Save As warns and saves on Yes,
   Export writes silently. OpenStitch writes it and returns a warning, `fitsPage: false` and
