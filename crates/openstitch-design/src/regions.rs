@@ -23,9 +23,9 @@ const MAX_POINTS: usize = 2_000_000;
 /// OpenStitch's general long-stitch bound, 12 mm.
 pub const PROGRAMMABLE_MAX_STITCH: f64 = 120.0;
 
-/// Longest travel stitch of a motif fill, 0.1 mm: between rows and from the start point and
-/// back, PE-DESIGN 11.50 walks the outline in even steps of at most 2 mm
-/// (compat/reference/stitches/motif-fill-2pt.pes).
+/// Longest travel stitch of a motif or decorative fill, 0.1 mm: between rows and from the
+/// start point and back, PE-DESIGN 11.50 walks the outline in even steps of at most 2 mm
+/// (compat/reference/stitches/motif-fill-2pt.pes, deco-fill-1line-100mm.pes).
 pub const MOTIF_FILL_TRAVEL_PITCH: f64 = 20.0;
 
 /// Layers (runs) of region type `r.kind` (not fill or satin), rows at `angle` degrees.
@@ -128,6 +128,37 @@ pub fn generate(
         }
         RegionType::DecorativeFill => {
             let pattern = patterns::resolve(user, PatternKind::Decorative, r.pattern.as_deref());
+            if pattern.free_lines {
+                let origin = match r.reference {
+                    // `region::layers` moved the region so the reference point is (0, 0).
+                    Some(_) => v2(0.0, 0.0),
+                    None => match Rect::enclosing(closed.iter().flat_map(|c| c.outline_points())) {
+                        Some(b) => v2(
+                            (b.min_x + b.max_x - pw) / 2.0,
+                            (b.min_y + b.max_y - ph) / 2.0,
+                        ),
+                        None => return Vec::new(),
+                    },
+                };
+                let mut pieces = free_line_pieces(closed, holes, pattern, origin, pw, ph, angle);
+                // Start with the piece nearest the start point, then the nearest next.
+                if let Some(e) = r.entry
+                    && let Some(i) = (0..pieces.len()).min_by(|&a, &b| {
+                        let d = |k: usize| {
+                            let p = &pieces[k];
+                            p[0].distance(e).min(p[p.len() - 1].distance(e))
+                        };
+                        d(a).total_cmp(&d(b))
+                    })
+                {
+                    pieces.swap(0, i);
+                    let p = &mut pieces[0];
+                    if p[p.len() - 1].distance(e) < p[0].distance(e) {
+                        p.reverse();
+                    }
+                }
+                return vec![region.sequence(nearest_next(pieces))];
+            }
             let mut pieces = Vec::new();
             for path in &pattern.paths {
                 let unit: Vec<Vec2> = path.iter().map(|q| v2(q.x * pw, q.y * ph)).collect();
@@ -185,7 +216,17 @@ pub fn generate(
                 start_inside: r.start_inside,
                 entry: r.entry,
             };
-            vec![region.sequence_raw(crate::spiral::spiral(closed, holes, &p))]
+            let sewn = crate::spiral::spiral(closed, holes, &p);
+            let mut runs = region.sequence_raw(sewn.paths);
+            // The closing run is its own run: the compiler trims before (or after) it.
+            if let Some(closing) = sewn.closing.filter(|c| c.len() >= 2) {
+                if sewn.closing_first {
+                    runs.insert(0, closing);
+                } else {
+                    runs.push(closing);
+                }
+            }
+            vec![runs]
         }
         RegionType::FlexibleSpiral => {
             let spiral = flexible_spiral(closed, spacing, pitch, r.counterclockwise);
@@ -197,6 +238,20 @@ pub fn generate(
             vec![region.sequence(nearest_next(pieces))]
         }
         RegionType::Stippling => vec![region.loops(stipple(closed, holes, angle, spacing))],
+        RegionType::Contour => {
+            // Beyond PE-DESIGN (see crate::contour): rows that follow the outline.
+            let p = crate::contour::ContourParams {
+                spacing,
+                pitch,
+                strategy: r.contour_strategy,
+                rounded: r.contour_join == crate::model::ContourJoin::Round,
+                echo_lines: r.echo_lines,
+                counterclockwise: r.counterclockwise,
+                start_inside: r.start_inside,
+                entry: r.entry,
+            };
+            vec![region.sequence_raw(crate::contour::contour(closed, holes, &p))]
+        }
         RegionType::NetFill | RegionType::ZigzagNetFill => {
             let id = r.pattern.as_deref().unwrap_or(NET_PATTERNS[0].id);
             let mut out = Vec::new();
@@ -774,6 +829,60 @@ fn order_rows(rows: Vec<Vec<Vec<Vec2>>>, angle: f64) -> Vec<Vec<Vec2>> {
 fn nearest_next(pieces: Vec<Vec<Vec2>>) -> Vec<Vec<Vec2>> {
     let start = pieces.first().map(|p| p[0]);
     order(pieces, start)
+}
+
+// ------------------------------------------------------------------ free decorative lines
+
+/// Decorative fill with free lines: the tile (`pw` × `ph`, origin `origin`, turned by `angle`
+/// about it) repeated as a grid over the region, every line of every copy clipped to the region
+/// minus `holes`. PE-DESIGN 11.50 centres its 100 mm tile on the region
+/// (compat/reference/stitches/deco-fill-1line-100mm.pes: the line (128, 128)–(896, 896) of the
+/// cell crosses the 40 mm square from corner to corner).
+fn free_line_pieces(
+    closed: &[Contour],
+    holes: &[Contour],
+    pattern: &Pattern,
+    origin: Vec2,
+    pw: f64,
+    ph: f64,
+    angle: f64,
+) -> Vec<Vec<Vec2>> {
+    if pw <= 0.0 || ph <= 0.0 {
+        return Vec::new();
+    }
+    let rad = angle.to_radians();
+    // The region in tile coordinates, to know which copies can reach it.
+    let Some(b) = Rect::enclosing(
+        closed
+            .iter()
+            .flat_map(|c| c.outline_points())
+            .map(|p| (p - origin).rotated(-rad)),
+    ) else {
+        return Vec::new();
+    };
+    let (i0, i1) = ((b.min_x / pw).floor() as i64, (b.max_x / pw).ceil() as i64);
+    let (j0, j1) = ((b.min_y / ph).floor() as i64, (b.max_y / ph).ceil() as i64);
+    let copies = (i1 - i0 + 1).max(0) as usize * (j1 - j0 + 1).max(0) as usize;
+    if copies.saturating_mul(pattern.paths.len()) > MAX_ROWS {
+        return Vec::new();
+    }
+    let mut pieces = Vec::new();
+    for j in j0..=j1 {
+        for i in i0..=i1 {
+            for path in &pattern.paths {
+                let poly: Vec<Vec2> = path
+                    .iter()
+                    .map(|q| origin + v2((i as f64 + q.x) * pw, (j as f64 + q.y) * ph).rotated(rad))
+                    .collect();
+                pieces.extend(
+                    clip(&poly, closed, holes)
+                        .into_iter()
+                        .filter(|p| p.len() >= 2),
+                );
+            }
+        }
+    }
+    pieces
 }
 
 // ------------------------------------------------------------------ cross stitch

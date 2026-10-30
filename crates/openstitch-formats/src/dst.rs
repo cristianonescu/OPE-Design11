@@ -151,8 +151,11 @@ fn left_pad(s: String, width: usize) -> String {
 /// records is never shorter than `trim_jumps` (the machine trims on such a run, and PE-DESIGN
 /// trims every interior move); a stitch longer than 12.1 mm as jumps plus one stitch for the
 /// remainder (one needle penetration); a colour change as `C3` with no move; and, after the
-/// last stitch, a padded jump run back to (0, 0) before the end record. `ST` counts every
-/// record, the end record included.
+/// last stitch, a jump run back to (0, 0) before the end record, padded to `trim_jumps` only
+/// when the way back is a single record (`machine-formats.dst`: two zero jumps, then 5 mm);
+/// a longer way back is written as its pieces alone (`sample-basic.DST`: 2 records,
+/// `hoop-oversize-100.dst`: 3, `long-jump-300.dst`: 12; #135). `ST` counts every record, the
+/// end record included.
 pub fn write_with(input: &StitchPattern, options: WriteOptions) -> Result<Vec<u8>> {
     let events = layout::events(input);
     let n = options.trim_jumps.max(1);
@@ -219,7 +222,9 @@ pub fn write_with(input: &StitchPattern, options: WriteOptions) -> Result<Vec<u8
                 run = 0;
             }
             Event::End => {
-                frame_move(&mut body, &mut at, &mut run, n, (0, 0))?;
+                let pieces = layout::split_proportional(-at.0, -at.1, max).len();
+                let pad_to = if pieces == 1 { n } else { 0 };
+                frame_move(&mut body, &mut at, &mut run, pad_to, (0, 0))?;
                 break;
             }
         }

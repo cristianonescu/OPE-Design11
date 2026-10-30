@@ -283,8 +283,9 @@ Verified Compatible).
   deepest point (twice the chamfer distance to the outside) is between `satinMinWidth` (0.7
   mm) and `satinMaxWidth` (6.5 mm); otherwise it is fill (#127's centerline-thinness test). As
   PE-DESIGN 11.50 sets them on its captures: satin with Auto direction and no under sewing;
-  fill with under sewing, across the stroke up to 13 mm wide and at 45° beyond. A colour's
-  regions sew largest first.
+  fill with under sewing, in the direction of 90°, 45°, 135° or 0° whose rows spread furthest
+  across the region, a diagonal winning over 90° only with at least one more fill row
+  (`fill_angle`). A colour's regions sew in scan order, reversed for the 1st, 3rd, … colour.
 - **Cross Stitch.** The image's colours are reduced through the same census prepass; each
   cell of a square grid (`round(width / cell) × round(height / cell)`, cells 1–10 mm, default
   2.5 mm) takes the thread most of its modal pixels have (ties to the lower thread; cells
@@ -300,9 +301,17 @@ Verified Compatible).
   needle, the closest unsewn run end within 2 cells across and 2 rows down is entered with a
   travel stitch (a hop to the next row leaves out the last needle point so the row turns, as
   a fill row does), and only a run with nothing that close is jumped to, so a colour sews in
-  few long paths as PE-DESIGN's does. *Lines* (after Photo Stitch 2): zigzag rows
-  whose swing follows darkness (mono) or the local share of each thread (colour); light areas
-  break the line. Lighter threads sew first. Mono works on integer Rec. 601 luminance
+  few long paths as PE-DESIGN's does. *Lines* (Photo Stitch 2, `screen.rs`, #129): a line
+  screen. Each thread sews straight lines a Line interval apart (default 2.0 mm) across the
+  whole image at a fixed angle: 0°, 45°, 90°, 135° in sewing order, turned by Direction. A
+  line is a 2.5 mm running stitch where the thread's share of the local colour is under 0.08,
+  and a zigzag 90 % of the interval deep elsewhere, its stitches closer as the share grows
+  (0.17 mm at full share for Max. Density 4.5). Shares come from the fabric plus a
+  non-negative mix of the threads' reduced colours on a 0.5 mm grid; colour mode reduces to N
+  threads besides the fabric (default 4), or takes a named Color Set's four fixed threads in
+  its order (CMYK, RGBK, CRYK, BMYK). Mono's share is a ramp from 17 % to 86 % darkness, as
+  PE's. Lines are sewn serpentine with one jump per thread.
+  No image-derived direction is used (docs/research/beyond/patents.md). Lighter threads sew first. Mono works on integer Rec. 601 luminance
   `(30 R + 59 G + 11 B) / 100` and stretches contrast first over the full range, darkest grey to
   0 and lightest to 255, only when the range is between 1 and 255 exclusive (#128).
 - **Design Center** in PE-DESIGN's four stages: (1) line image: luminance below a threshold;

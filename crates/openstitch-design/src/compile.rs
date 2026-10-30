@@ -287,8 +287,12 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
             .cloned()
             .unwrap_or(Thread::rgb(0))
     };
-    // Where the last jump landed: the first needle point of the run after it (PE-DESIGN files
-    // and compiled patterns have no zero-length stitch there).
+    // Where the last jump landed: the first needle point of the run after it (compiled
+    // patterns, and PE-DESIGN's PEC in most files, have no zero-length stitch there). A block that does carry a stitch
+    // on the landing keeps it: `stitches.import` restores the one PE-DESIGN's own designs have
+    // there (its machine exports write it; `pec::restore_jump_landings`, compat
+    // machine-sample-basic), so the run starts with the landing twice and the writer sews the
+    // second as the zero-length stitch after the jump.
     let mut landing: Option<Vec2> = None;
     for s in &block.stitches {
         match s.command {
@@ -297,9 +301,12 @@ fn sew_block(w: &mut Writer, block: &StitchBlock) {
                 let p = v2(s.x, s.y);
                 if let Some(l) = landing.take()
                     && run.is_empty()
-                    && l != p
                 {
                     run.push(l);
+                    if l == p {
+                        run.push(p);
+                        continue;
+                    }
                 }
                 run.push(p);
             }
@@ -369,13 +376,17 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
                 // concentric-*, spiral-*): no travel from R1 or to R2, no reversal.
                 *top = if matches!(
                     region.kind,
-                    RegionType::ConcentricCircle | RegionType::Spiral
+                    RegionType::ConcentricCircle | RegionType::Spiral | RegionType::Contour
                 ) {
                     runs
                 } else {
-                    // Travel from the start point and to the end point: PE-DESIGN's motif fill
-                    // walks it in steps of at most 2 mm (motif-fill-2pt).
-                    let pitch = if region.kind == RegionType::MotifFill {
+                    // Travel from the start point and to the end point: PE-DESIGN's motif and
+                    // decorative fills walk it in steps of at most 2 mm (motif-fill-2pt,
+                    // deco-fill-1line-100mm).
+                    let pitch = if matches!(
+                        region.kind,
+                        RegionType::MotifFill | RegionType::DecorativeFill
+                    ) {
                         regions::MOTIF_FILL_TRAVEL_PITCH
                     } else {
                         25.0
@@ -395,11 +406,15 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
             {
                 layers = vec![region::join_layers(layers, &closed, holes, path)];
             }
-            // Satin, fill and motif fill tie in and lock as PE-DESIGN 11 sews them
-            // (motif-fill-2pt: one 0.3 mm step out and back at the start and at the end).
+            // Satin, fill, motif and decorative fill tie in and lock as PE-DESIGN 11 sews them
+            // (motif-fill-2pt, deco-fill-1line-100mm: one 0.3 mm step out and back at the
+            // start and at the end).
             if matches!(
                 region.kind,
-                RegionType::Satin | RegionType::Fill | RegionType::MotifFill
+                RegionType::Satin
+                    | RegionType::Fill
+                    | RegionType::MotifFill
+                    | RegionType::DecorativeFill
             ) {
                 region::tie_and_lock(&mut layers);
             }

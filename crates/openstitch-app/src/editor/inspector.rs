@@ -234,6 +234,7 @@ pub fn region_controls_with(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> 
             | RegionType::Radial
             | RegionType::Spiral
             | RegionType::FlexibleSpiral
+            | RegionType::Contour
     );
     if !r.auto_direction && !centred {
         v.push(num(
@@ -254,6 +255,7 @@ pub fn region_controls_with(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> 
             | RegionType::DecorativeFill
             | RegionType::NetFill
             | RegionType::FlexibleSpiral
+            | RegionType::Contour
     );
     if uses_density {
         let unit = if r.kind == RegionType::ZigzagNetFill {
@@ -678,6 +680,44 @@ fn region_type_controls(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> {
                 r.random_shift,
                 0.0,
                 50.0,
+            ));
+        }
+        RegionType::Contour => {
+            v.push(choice(
+                "Contour",
+                "contourStrategy",
+                r.contour_strategy.id(),
+                &[
+                    ("rings", "Rings"),
+                    ("singleSpiral", "Single spiral"),
+                    ("doubleSpiral", "Double spiral"),
+                ],
+            ));
+            v.push(spacing("Spacing", 0.5));
+            v.push(pitch);
+            v.push(choice(
+                "Corners",
+                "contourJoin",
+                match r.contour_join {
+                    openstitch_design::ContourJoin::Round => "round",
+                    openstitch_design::ContourJoin::Miter => "miter",
+                },
+                &[("round", "Round"), ("miter", "Mitred")],
+            ));
+            v.push(num(
+                "Echo lines",
+                "region.echoLines",
+                "echoLines",
+                r.echo_lines as f64,
+                (0.0, 30.0),
+                1.0,
+                "",
+            ));
+            v.push(toggle("Start inside", "startInside", r.start_inside));
+            v.push(toggle(
+                "Counter-clockwise",
+                "counterclockwise",
+                r.counterclockwise,
             ));
         }
     }

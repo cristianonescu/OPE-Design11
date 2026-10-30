@@ -5,7 +5,7 @@
 //! times or absolute paths. The status table holds no measured numbers at all, so it is the
 //! same on every platform.
 
-use crate::compare::Difference;
+use crate::compare::{Difference, DroppedRepeats};
 use crate::spec::{Covers, RowRef, Tier};
 use crate::tolerance::{Mismatch, Tolerance};
 use serde::Serialize;
@@ -84,6 +84,9 @@ pub struct Check {
     pub unlisted_differences: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Zero-length stitches a `dropRepeats` compare left out, per side.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dropped_repeats: Option<DroppedRepeats>,
 }
 
 fn is_zero(n: &usize) -> bool {
@@ -362,6 +365,32 @@ pub fn summary_markdown(r: &Report) -> String {
     if !details.is_empty() {
         let _ = writeln!(s, "\n## Failures and differences");
         s.push_str(&details);
+    }
+    let dropped: Vec<(&SpecResult, &Check, DroppedRepeats)> = r
+        .specs
+        .iter()
+        .flat_map(|sp| {
+            sp.checks
+                .iter()
+                .filter_map(move |c| c.dropped_repeats.map(|d| (sp, c, d)))
+        })
+        .collect();
+    if !dropped.is_empty() {
+        let _ = writeln!(
+            s,
+            "\n## Zero-length stitches left out by `dropRepeats`\n\n| Spec | Measurement | Status | Reference | OpenStitch |\n|---|---|---|---|---|"
+        );
+        for (sp, c, d) in dropped {
+            let _ = writeln!(
+                s,
+                "| `{}` | `{}` | {} | {} | {} |",
+                sp.id,
+                c.measurement,
+                c.status.as_str(),
+                d.expected,
+                d.actual
+            );
+        }
     }
     let pending: Vec<(&SpecResult, &Check)> = r
         .specs

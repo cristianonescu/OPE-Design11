@@ -9,7 +9,7 @@
 //! order of appearance. `CEmbLine` (shapes and lines drawn with the shape and line tools) and
 //! `CEmbNText` with its `CTTFLetter`s (text from the Text tool) are read. Reading stops at the
 //! first other class, or at a `CEmbLine` whose geometry doesn't fit its bounds (a variant not
-//! mapped yet, such as a Manual Punch block), and records the class in
+//! mapped yet; Manual Punch blocks are read, see [`Shape::punch_lines`]), and records the class in
 //! [`super::ObjectSection::unparsed`].
 //!
 //! [`write`] is the inverse: a `#PES0110` file whose object list holds the same `CEmbLine`
@@ -19,7 +19,10 @@
 
 use crate::io::{ByteReader, ByteWriter};
 use crate::{FormatError, Result, pec};
-use openstitch_core::{PEC_CHART, StitchPattern, Thread, nearest_index, round_coordinate};
+use openstitch_core::{
+    BROTHER_EMBROIDERY_BRAND, PEC_CHART, StitchPattern, Thread, brother_embroidery_code,
+    nearest_index, pec_basic_chart, round_coordinate,
+};
 use std::borrow::Cow;
 
 #[path = "pes11_template.rs"]
@@ -42,10 +45,12 @@ const TTF_LETTER: &str = "CTTFLetter";
 const ENVELOPE: usize = 22;
 /// Bytes of a `CTTFLetter` between its character code and its font name.
 const LETTER_ATTRS: usize = 148;
-/// Bytes of a `CEmbLine` body before its geometry, in every reference file mapped so far.
+/// Bytes of a `CEmbLine` body before its geometry with PE-DESIGN's default pattern block (53
+/// polylines); the block is as long as the programmable pattern it holds (m01-straight-1: one
+/// polyline, 462 bytes in all).
 const LINE_BODY: usize = 4432;
-/// Geometry header before the vertex count (three handle marks).
-const GEOMETRY_HEADER: usize = 84;
+/// The geometry header's three marks after its two lists.
+const GEOMETRY_MARKS: usize = 52;
 const VERTEX: usize = 28;
 /// Where the body's pattern block starts and ends (`pattern_block`).
 #[cfg(test)]
@@ -55,6 +60,11 @@ const PATTERN_END: usize = LINE_BODY - template::BODY_TAIL.len();
 /// File units are 0.1 mm, and the page's top-left corner is at this offset on both axes in
 /// every owner file (100 × 100 mm and 200 × 200 mm pages alike).
 pub const PAGE_ORIGIN: f32 = 500.0;
+
+/// Thread-table colour type of the Applique Wizard's colours: catalogue number `100` (Applique
+/// Material, PEC 62), `101` (Applique Position, PEC 63) and `102` (Applique, PEC 64), RGB 0, no
+/// chart index, brand or chart (a01-rect-applique … a05). PE-DESIGN's chart colours are 10.
+pub const APPLIQUE_KIND: u32 = 2;
 
 /// Region sew type (`CEmbLine` body +134).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -158,6 +168,10 @@ pub struct Shape {
     pub zigzag_width: f32,
     /// Zigzag density, line/mm.
     pub zigzag_density: f32,
+    /// E or V stitch width, mm (body +90; PE-DESIGN's default 2.5, the Applique Wizard's
+    /// tack-down 2.0: line-e-default, line-v-default, a01-rect-applique). An E or V line's sewn
+    /// extent is the bounds plus this width.
+    pub ev_width: f32,
     /// Running stitch pitch, mm. Kept while another line type is chosen, as PE's tool keeps it.
     pub run_pitch: f32,
     pub line_under_sewing: bool,
@@ -176,6 +190,10 @@ pub struct Shape {
     pub running_path: u16,
     /// From the Shapes gallery (`CEmbSpecialShape`): the same record, kept under that class.
     pub gallery: bool,
+    /// A Manual Punch object (Straight or Curve Block): the number of sewing-direction lines,
+    /// 0 for every other shape. Line k joins vertex k and vertex 2n − 1 − k: the outline is
+    /// the lines' first ends in order, then their second ends back (m01, m03, o-manual-*).
+    pub punch_lines: u16,
     pub vertices: Vec<Vertex>,
 }
 
@@ -186,6 +204,9 @@ impl Shape {
     pub const LINE_E_OR_V: u16 = 3;
     pub const LINE_TRIPLE: u16 = 4;
     pub const LINE_NOT_SEWN: u16 = 9;
+    /// The Applique Wizard's cutting line (Applique Material: Cutting, a02-applique-cutting):
+    /// PE-DESIGN sews it with its cutting colour (PEC 65) whatever the line colour says.
+    pub const LINE_CUTTING: u16 = 7;
 
     /// A shape with PE-DESIGN 11.50's default attributes (the baseline file r01: line Zigzag
     /// 2.0 mm at 4.5 line/mm with under sewing, run pitch 2.0 mm; region Fill at 4.5 line/mm,
@@ -199,6 +220,7 @@ impl Shape {
             line_color: 0,
             zigzag_width: 2.0,
             zigzag_density: 4.5,
+            ev_width: 2.5,
             run_pitch: 2.0,
             line_under_sewing: true,
             region: RegionSewType::Fill,
@@ -210,6 +232,7 @@ impl Shape {
             under_sewing: true,
             running_path: 0,
             gallery: false,
+            punch_lines: 0,
             vertices: Vec::new(),
         }
     }
@@ -834,12 +857,30 @@ fn u16_at(b: &[u8], i: usize) -> u16 {
 /// the mapped layout.
 fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
     let start = r.offset;
-    if r.remaining() < LINE_BODY + GEOMETRY_HEADER + 4 {
+    let Some(len) = line_body_len(&r.bytes[start..]) else {
+        return Ok(None);
+    };
+    if r.remaining() < len + 2 * 4 + GEOMETRY_MARKS + 4 {
         return Ok(None);
     }
-    let body = r.read(LINE_BODY)?;
+    let body = r.read(len)?;
     let bounds = [0, 1, 2, 3].map(|k| u16_at(body, 2 * k) as i16);
-    r.skip(GEOMETRY_HEADER)?;
+    // The geometry header: two lists of outline positions (u32 count, then u32 vertex and f64
+    // t each), then the three marks.
+    let mut lists: [Vec<(u32, f64)>; 2] = [Vec::new(), Vec::new()];
+    for list in &mut lists {
+        let count = r.u32le()? as usize;
+        if count.saturating_mul(12) > r.remaining() {
+            r.offset = start;
+            return Ok(None);
+        }
+        for _ in 0..count {
+            let at = r.u32le()?;
+            let t = f64::from_le_bytes(r.read(8)?.try_into().expect("8 bytes"));
+            list.push((at, t));
+        }
+    }
+    r.skip(GEOMETRY_MARKS)?;
     let n = r.u32le()? as usize;
     if n == 0 || n.saturating_mul(VERTEX) > r.remaining() {
         r.offset = start;
@@ -869,6 +910,27 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         r.offset = start;
         return Ok(None);
     }
+    // One entry per list on every shape; a Manual Punch object lists the lines' ends, in the
+    // vertex order its outline has (anything else is not mapped).
+    let punch_lines = match &lists {
+        [a, b] if a.len() == 1 && b.len() == 1 => 0,
+        [a, b] => {
+            let k = a.len();
+            let punch = k >= 2
+                && b.len() == k
+                && n == 2 * k
+                && a.iter().chain(b).all(|&(_, t)| t == 0.0)
+                && a.iter().enumerate().all(|(i, &(v, _))| v as usize == i)
+                && b.iter()
+                    .enumerate()
+                    .all(|(i, &(v, _))| v as usize == n - 1 - i);
+            if !punch || k > usize::from(u16::MAX) {
+                r.offset = start;
+                return Ok(None);
+            }
+            k as u16
+        }
+    };
     Ok(Some(Shape {
         bounds,
         closed: u16_at(body, 40) == 0,
@@ -877,6 +939,7 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         line_color: u16_at(body, 46),
         zigzag_width: f32::from(u16_at(body, 48)) / 10.0,
         zigzag_density: f32::from(u16_at(body, 50)) / 10.0,
+        ev_width: f32::from(u16_at(body, 90)) / 10.0,
         run_pitch: f32::from(u16_at(body, 52)) / 10.0,
         line_under_sewing: u16_at(body, 60) != 0,
         region: RegionSewType::from_raw(u16_at(body, 134)),
@@ -888,8 +951,31 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         under_sewing: u16_at(body, 180) != 0,
         running_path: u16_at(body, 186),
         gallery: false,
+        punch_lines,
         vertices,
     }))
+}
+
+/// The length of the `CEmbLine` body at the start of `data`: the 386 bytes before the pattern
+/// block, the block (u16 size, u16 polyline count, per polyline six zero bytes, u16 1, u16
+/// point count and the points as two u16 each) and the 72 bytes after it. `None` when the
+/// block is not laid out that way.
+fn line_body_len(data: &[u8]) -> Option<usize> {
+    let head = PATTERN_END - template::PATTERN_BYTES;
+    let at = |o: usize| data.get(o..o + 2).map(|b| u16::from_le_bytes([b[0], b[1]]));
+    // The pattern's size (10000 for PE-DESIGN's default; 750 and no polylines on the Applique
+    // Wizard's covering line, a01-rect-applique's fifth object), then its polylines.
+    at(head)?;
+    let polylines = at(head + 2)?;
+    let mut o = head + 4;
+    for _ in 0..polylines {
+        if at(o + 6)? != 1 {
+            return None;
+        }
+        o += 10 + 4 * usize::from(at(o + 8)?);
+    }
+    let len = o + template::BODY_TAIL.len();
+    (len <= data.len()).then_some(len)
 }
 
 // MARK: Writing
@@ -1012,7 +1098,17 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     let pec_placeholder = w.len();
     w.u32le(0);
     w.u16le(1);
-    w.append(&objects.code.unwrap_or(*b"10"));
+    // A file's own code as read (`10`, `01`, a02's `B1 30`); a design's is `10`, with bit 0x80
+    // of the first character set when it has a sewn cutting line (`B1 30`: a02-applique-cutting,
+    // the one owner file with a cutting line, against `10` or `01` in all 854 others).
+    let cutting = objects
+        .shapes
+        .iter()
+        .any(|s| s.line_sewn && s.line_type == Shape::LINE_CUTTING);
+    let code = objects
+        .code
+        .unwrap_or(if cutting { [b'1' | 0x80, b'0'] } else { *b"10" });
+    w.append(&code);
     for key in crate::pes::METADATA_KEYS {
         crate::pes::write_string8(&mut w, pattern.metadata.get(key).map(String::as_str));
     }
@@ -1270,48 +1366,17 @@ fn write_mfc_unicode(w: &mut ByteWriter, s: &str) {
     }
 }
 
-/// The BROTHER EMBROIDERY catalogue number of the PEC chart colours PE-DESIGN 11.50 writes in its
-/// thread tables, as `(PEC index, catalogue number)`: every pair found in the owner's own
-/// `#PES0110` files (compat/reference, tests/fixtures/pe11 and the round-4 captures, 2026-10-29;
-/// each with brand `EMBROIDERY`, an empty chart name and exactly the PEC chart's RGB). The other
-/// 39 chart colours have no owner sample yet.
-pub const BROTHER_EMBROIDERY: [(usize, &str); 25] = [
-    (1, "007"),
-    (2, "405"),
-    (3, "534"),
-    (4, "070"),
-    (5, "800"),
-    (12, "208"),
-    (13, "205"),
-    (14, "513"),
-    (16, "005"),
-    (20, "900"),
-    (22, "869"),
-    (24, "058"),
-    (25, "086"),
-    (28, "030"),
-    (29, "001"),
-    (32, "019"),
-    (33, "126"),
-    (37, "509"),
-    (48, "807"),
-    (50, "519"),
-    (51, "107"),
-    (55, "614"),
-    (56, "515"),
-    (58, "206"),
-    (61, "027"),
-];
-
 /// `t` as PE-DESIGN writes the colour in its thread tables. A colour from OpenStitch's Brother
 /// PEC chart (brand `Brother`, its chart number as the catalogue number, the chart's exact RGB)
-/// gets the BROTHER EMBROIDERY catalogue number and brand `EMBROIDERY` (PE-DESIGN showed
+/// gets its BROTHER EMBROIDERY catalogue number and brand `EMBROIDERY`, for all 61 entries
+/// (`openstitch_core::BROTHER_EMBROIDERY`; PE-DESIGN showed
 /// `16 / Brother` with no thread chart otherwise: compat pes-0110-editable-shapes, the owner's
 /// check of 2026-10-29); every thread gets its nearest PEC chart index as its name, where
 /// PE-DESIGN writes it for its own colours. For a design's threads:
 /// [`write`] writes a thread table as given, so a PE-DESIGN file keeps its own strings.
 pub fn as_pe_writes(t: &Thread) -> Thread {
-    let Some(index) = nearest_index(t, &PEC_CHART) else {
+    // PE-DESIGN matches to its 61-entry chart only (#119).
+    let Some(index) = nearest_index(t, pec_basic_chart()) else {
         return t.clone();
     };
     // PE-DESIGN writes its colours' PEC chart index where a thread's name goes.
@@ -1324,10 +1389,10 @@ pub fn as_pe_writes(t: &Thread) -> Thread {
         && PEC_CHART[index]
             .as_ref()
             .is_some_and(|c| c.rgb_value() == t.rgb_value());
-    match BROTHER_EMBROIDERY.iter().find(|&&(i, _)| i == index) {
-        Some(&(_, catalog)) if from_pec_chart => Thread {
+    match brother_embroidery_code(index) {
+        Some(catalog) if from_pec_chart => Thread {
             catalog_number: Some(Cow::Borrowed(catalog)),
-            brand: Some(Cow::Borrowed("EMBROIDERY")),
+            brand: Some(Cow::Borrowed(BROTHER_EMBROIDERY_BRAND)),
             chart: None,
             ..t.clone()
         },
@@ -1341,12 +1406,15 @@ pub fn as_pe_writes(t: &Thread) -> Thread {
 fn write_threads(w: &mut ByteWriter, threads: &[Thread]) {
     w.u16le(threads.len() as i64);
     for t in threads {
-        let index = nearest_index(t, &PEC_CHART).unwrap_or(0);
+        let index = nearest_index(t, pec_basic_chart()).unwrap_or(0);
         write_mfc_unicode(w, t.catalog_number.as_deref().unwrap_or(""));
         w.append(&[t.red, t.green, t.blue, 0]);
         w.u32le(i64::from(t.kind.unwrap_or(Thread::CUSTOM_KIND)));
         match t.name.as_deref() {
             Some(name) => write_mfc_unicode(w, name),
+            // The Applique Wizard's colours (kind 2: Applique Material, Position, Applique) have
+            // no chart index (a01-rect-applique).
+            None if t.kind == Some(APPLIQUE_KIND) => write_mfc_unicode(w, ""),
             None => write_mfc_unicode(w, &index.to_string()),
         }
         write_mfc_unicode(w, t.brand.as_deref().unwrap_or(""));
@@ -1401,11 +1469,12 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     for (k, v) in s.bounds.iter().enumerate() {
         put16(&mut head, 2 * k, *v as u16);
     }
-    // Sewn extent: the bounds plus half the zigzag width while a zigzag line is sewn.
-    let half = if s.line_sewn && s.line_type == Shape::LINE_ZIGZAG {
-        (s.zigzag_width * 5.0).round() as i16
-    } else {
-        0
+    // Sewn extent: the bounds plus half the zigzag width while a zigzag line is sewn, plus
+    // the E or V width while an E or V line is.
+    let half = match (s.line_sewn, s.line_type) {
+        (true, Shape::LINE_ZIGZAG) => (s.zigzag_width * 5.0).round() as i16,
+        (true, Shape::LINE_E_OR_V) => (s.ev_width * 10.0).round() as i16,
+        _ => 0,
     };
     for (k, v) in [x0 - half, y0 - half, x1 + half, y1 + half]
         .iter()
@@ -1421,6 +1490,12 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     put16(&mut head, 50, tenths(s.zigzag_density));
     put16(&mut head, 52, tenths(s.run_pitch));
     put16(&mut head, 60, u16::from(s.line_under_sewing));
+    put16(&mut head, 90, tenths(s.ev_width));
+    // +122: 1 on PE-DESIGN's cutting line where every other object has 5 (a02-applique-
+    // cutting; the field's meaning is not mapped).
+    if s.line_type == Shape::LINE_CUTTING {
+        put16(&mut head, 122, 1);
+    }
     put16(
         &mut head,
         132,
@@ -1454,10 +1529,15 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
         put32(&mut tail, at - base, cx);
         put32(&mut tail, at - base + 4, cy);
     }
-    // The index of the outline's last segment.
+    // Two outline positions (segment, f32 t): the end of the last segment, twice; a Manual
+    // Punch object's second is the start of its second side (line count, t 0).
     let segments = s.vertices.len() - usize::from(!s.closed);
-    for at in [4414, 4426] {
-        put16(&mut tail, at - base, segments.saturating_sub(1) as u16);
+    put16(&mut tail, 4414 - base, segments.saturating_sub(1) as u16);
+    if s.punch_lines > 0 {
+        put16(&mut tail, 4426 - base, s.punch_lines);
+        put32(&mut tail, 4428 - base, 0);
+    } else {
+        put16(&mut tail, 4426 - base, segments.saturating_sub(1) as u16);
     }
     w.append(&tail);
     write_geometry_header(w, s);
@@ -1477,18 +1557,25 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     }
 }
 
-/// The 84-byte geometry header: three marks, each a position on the outline (a segment and a
-/// parameter, not decoded) with its coordinates. The coordinates of PE-DESIGN's closed shapes
-/// sit at fixed fractions of the bounds: a tenth of the width outside the left and right
-/// edges at 60 % of the height, and the centre at 25 % of the height. The segment and
-/// parameter fields are the baseline file's (open lines: the open-line file's).
+/// The geometry header: two lists of outline positions (u32 count, then u32 vertex and f64 t;
+/// one entry each on a shape, a Manual Punch object's line ends), then three marks, each a
+/// position on the outline (a segment and a parameter, not decoded) with its coordinates. The
+/// coordinates of PE-DESIGN's closed shapes sit at fixed fractions of the bounds: a tenth of
+/// the width outside the left and right edges at 60 % of the height, and the centre at 25 % of
+/// the height. The segment and parameter fields are the baseline file's (open lines: the
+/// open-line file's). Manual Punch objects: [`write_punch_geometry_header`].
 fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
+    if s.punch_lines > 0 {
+        return write_punch_geometry_header(w, s);
+    }
     let [x0, y0, x1, y1] = s.bounds.map(f64::from);
     let (width, height) = (x1 - x0, y1 - y0);
+    // Whole units, rounded (a05-applique-replace's 210-unit square: the centre mark at
+    // 595 + 52.5 → 648).
     let (left, right, mid) = (
-        (x0 - width / 10.0, y0 + height * 0.6),
-        (x1 + width / 10.0, y0 + height * 0.6),
-        ((x0 + x1) / 2.0, y0 + height * 0.25),
+        ((x0 - width / 10.0).round(), (y0 + height * 0.6).round()),
+        ((x1 + width / 10.0).round(), (y0 + height * 0.6).round()),
+        (((x0 + x1) / 2.0).round(), (y0 + height * 0.25).round()),
     );
     let (seg_b, t_ab, flag_c, t_cd, seg_d): (i64, f64, i64, f64, i64) = if s.closed {
         (2, 1.0, 1, 0.5, 3)
@@ -1513,6 +1600,122 @@ fn write_geometry_header(w: &mut ByteWriter, s: &Shape) {
     w.f32le(right.0);
     w.f32le(right.1);
     w.u16le(0);
+}
+
+/// A Manual Punch object's geometry header: the lists of its lines' ends, then the three marks.
+/// The marks hang off the two straight edges that close the block (the left one from the last
+/// vertex to the first, the right one from the first side's last vertex to the second side's
+/// first), cut at the height midway between the outline's top and bottom as its curves reach
+/// them ([`outline_extent`]: m11's sag to 970.25): mark A at the left cut offset by a tenth of
+/// the bounds' width outward and a tenth of their height down, C likewise at the right cut,
+/// and B midway between the cuts a quarter of the height up, each tenth and quarter in whole
+/// units (rounded down). The left cut's parameter runs up its edge, the right's down (m01 …
+/// m11, o-manual-*: 0.5 on a straight block, 0.25 / 0.75 on m09, 0.074375 / 0.925625 on m11).
+fn write_punch_geometry_header(w: &mut ByteWriter, s: &Shape) {
+    let k = usize::from(s.punch_lines);
+    let n = s.vertices.len();
+    w.u32le(k as i64);
+    for i in 0..k {
+        w.u32le(i as i64);
+        w.append(&0f64.to_le_bytes());
+    }
+    w.u32le(k as i64);
+    for i in 0..k {
+        w.u32le((2 * k - 1 - i) as i64);
+        w.append(&0f64.to_le_bytes());
+    }
+    let [_, y_top, _, y_bottom] = outline_extent(&s.vertices);
+    let cut_y = (y_top + y_bottom) / 2.0;
+    let at = |i: usize| (f64::from(s.vertices[i].x), f64::from(s.vertices[i].y));
+    // A cut on the edge from `a` to `b` at height `cut_y`: its parameter and point.
+    let cut = |a: (f64, f64), b: (f64, f64)| {
+        let t = if b.1 == a.1 {
+            0.5
+        } else {
+            (cut_y - a.1) / (b.1 - a.1)
+        };
+        // PE-DESIGN stores the parameter as computed in single precision (m11:
+        // 0.07437500357627869).
+        let point = (a.0 + t * (b.0 - a.0), a.1 + t * (b.1 - a.1));
+        (f64::from(t as f32), point)
+    };
+    let (t_left, left) = cut(at(n - 1), at(0));
+    let (t_right, right) = cut(at(k - 1), at(k));
+    let [x0, y0, x1, y1] = s.bounds.map(i32::from);
+    let (tenth_w, tenth_h, quarter_h) = (
+        f64::from((x1 - x0) / 10),
+        f64::from((y1 - y0) / 10),
+        f64::from((y1 - y0) / 4),
+    );
+    w.f32le(left.0 - tenth_w);
+    w.f32le(left.1 + tenth_h);
+    w.u32le((n - 1) as i64);
+    w.append(&t_left.to_le_bytes());
+    w.u16le(1);
+    w.f32le((left.0 + right.0) / 2.0);
+    w.f32le((left.1 + right.1) / 2.0 - quarter_h);
+    w.u32le((k - 1) as i64);
+    w.append(&t_right.to_le_bytes());
+    w.f32le(right.0 + tenth_w);
+    w.f32le(right.1 + tenth_h);
+    w.u16le(0);
+}
+
+/// `x0, y0, x1, y1` of a closed outline as its segments reach (file units, unrounded): a
+/// segment is a cubic Bézier when its start has [`KIND_CURVE_AFTER`] or its end
+/// [`KIND_CURVE_BEFORE`], else straight. PE-DESIGN's Manual Punch objects store this extent
+/// rounded outward as their bounds (m10's curve bulges to x 591.48: bounds 591).
+pub fn outline_extent(vertices: &[Vertex]) -> [f64; 4] {
+    let mut e = [f64::MAX, f64::MAX, f64::MIN, f64::MIN];
+    let mut take = |x: f64, y: f64| {
+        e[0] = e[0].min(x);
+        e[1] = e[1].min(y);
+        e[2] = e[2].max(x);
+        e[3] = e[3].max(y);
+    };
+    let n = vertices.len();
+    for i in 0..n {
+        let (a, b) = (&vertices[i], &vertices[(i + 1) % n]);
+        let p0 = [f64::from(a.x), f64::from(a.y)];
+        let p3 = [f64::from(b.x), f64::from(b.y)];
+        take(p0[0], p0[1]);
+        let curved = a.kind & KIND_CURVE_AFTER != 0 || b.kind & KIND_CURVE_BEFORE != 0;
+        if !curved {
+            continue;
+        }
+        let p1 = [f64::from(a.handles[1].0), f64::from(a.handles[1].1)];
+        let p2 = [f64::from(b.handles[0].0), f64::from(b.handles[0].1)];
+        // Where each coordinate's derivative is zero inside the segment.
+        for axis in 0..2 {
+            let (a0, a1, a2, a3) = (p0[axis], p1[axis], p2[axis], p3[axis]);
+            let qa = -a0 + 3.0 * a1 - 3.0 * a2 + a3;
+            let qb = 2.0 * (a0 - 2.0 * a1 + a2);
+            let qc = a1 - a0;
+            let mut roots = Vec::new();
+            if qa.abs() < 1e-12 {
+                if qb.abs() > 1e-12 {
+                    roots.push(-qc / qb);
+                }
+            } else {
+                let disc = qb * qb - 4.0 * qa * qc;
+                if disc >= 0.0 {
+                    roots.push((-qb + disc.sqrt()) / (2.0 * qa));
+                    roots.push((-qb - disc.sqrt()) / (2.0 * qa));
+                }
+            }
+            for t in roots.into_iter().filter(|t| *t > 0.0 && *t < 1.0) {
+                let u = 1.0 - t;
+                let point = |k: usize| {
+                    u * u * u * p0[k]
+                        + 3.0 * u * u * t * p1[k]
+                        + 3.0 * u * t * t * p2[k]
+                        + t * t * t * p3[k]
+                };
+                take(point(0), point(1));
+            }
+        }
+    }
+    e
 }
 
 /// After the object list: 10 zero bytes, the group list (u16 count; per group its MFC tag,
@@ -1621,17 +1824,23 @@ mod tests {
         );
         let red = PEC_CHART[5].clone().expect("red");
         assert_eq!(strings(&red).0.as_deref(), Some("800"));
-        // A custom colour, and a chart colour with no owner sample, keep their own strings
+        // Every chart entry 1–61 has its code now (6 REDDISH BROWN is 337, from the chart's
+        // names); a custom colour and an entry outside PE's chart keep their own strings
         // (every thread gets its chart index as its name, as PE-DESIGN writes its colours).
+        let reddish = PEC_CHART[6].clone().expect("chart colour");
+        assert_eq!(
+            strings(&reddish),
+            (Some("337".into()), Some("EMBROIDERY".into()), None)
+        );
+        assert_eq!(as_pe_writes(&reddish).name.as_deref(), Some("6"));
         let mut custom = Thread::rgb(0x12_34_56);
         custom.catalog_number = Some("42".into());
         assert_eq!(strings(&custom), (Some("42".into()), None, None));
-        let unsampled = PEC_CHART[6].clone().expect("chart colour");
+        let orange = PEC_CHART[62].clone().expect("62");
         assert_eq!(
-            strings(&unsampled),
-            (Some("6".into()), Some("Brother".into()), None)
+            strings(&orange),
+            (Some("62".into()), Some("Brother".into()), None)
         );
-        assert_eq!(as_pe_writes(&unsampled).name.as_deref(), Some("6"));
         // A chart RGB under another brand is not relabelled.
         let mut other = silver.clone();
         other.brand = Some("Madeira".into());

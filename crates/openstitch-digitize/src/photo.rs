@@ -5,9 +5,11 @@
 //!   thread colours plus the fabric colour. Each thread sews its cells as staggered fill rows,
 //!   the runs visited nearest first so a colour sews in few long paths (see `fill_layer`);
 //!   fabric cells stay unsewn, so tone becomes stitch coverage.
-//! - [`PhotoStyle::Lines`] (after Photo Stitch 2): rows of zigzag lines whose amplitude follows
-//!   the tone (mono: darkness; colour: how much of each thread the dithered image holds
-//!   locally). Light areas break the line.
+//! - [`PhotoStyle::Lines`] (Photo Stitch 2, as PE-DESIGN 11.50 sews it): a line screen. Each
+//!   thread sews parallel lines a Line interval apart over the whole image at its own fixed
+//!   angle (0°, 45°, 90°, 135° in sewing order, turned by the Direction), straight where its
+//!   share of the local colour is near zero and a zigzag across the line where it is higher
+//!   ([`crate::screen`], #129).
 //!
 //! Mono mode works on integer Rec. 601 luminance (`(30 R + 59 G + 11 B) / 100`) and first
 //! stretches the image's contrast over the full 0–255 range from its darkest to its lightest
@@ -29,6 +31,37 @@ pub enum PhotoStyle {
     Lines,
 }
 
+/// Photo Stitch 2's Color Set (PE-DESIGN 11.50's list: Auto Select, CMYK, RGBK, CRYK, BMYK).
+/// A named set is four fixed chart threads, sewn in the listed order, which also gives each its
+/// screen angle (round-4 captures `photostitch2-cmyk/-rgbk/-crvk/-bmyk.pes`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ColorSet {
+    /// The threads come from the image's colours ([`PhotoMode::Color`]'s count).
+    #[default]
+    Auto,
+    /// Sky Blue, Dark Fuchsia, Yellow, Black.
+    Cmyk,
+    /// Red, Blue, Lime Green, Black.
+    Rgbk,
+    /// Sky Blue, Red, Yellow, Black.
+    Cryk,
+    /// Blue, Dark Fuchsia, Yellow, Black.
+    Bmyk,
+}
+
+impl ColorSet {
+    /// The set's PEC chart numbers in sewing order, `None` for Auto Select.
+    pub fn pec(self) -> Option<[usize; 4]> {
+        match self {
+            ColorSet::Auto => None,
+            ColorSet::Cmyk => Some([32, 51, 13, 20]),
+            ColorSet::Rgbk => Some([5, 2, 14, 20]),
+            ColorSet::Cryk => Some([32, 5, 13, 20]),
+            ColorSet::Bmyk => Some([2, 51, 13, 20]),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum PhotoMode {
     /// Reduce to this many PEC threads.
@@ -48,10 +81,17 @@ pub struct PhotoStitch {
     /// sewn and the image's light areas get the page thread instead of bare fabric. Mono and
     /// Lines ignore it (PE-DESIGN's Mono has no such option).
     pub sew_page: bool,
-    /// Distance between rows, mm.
+    /// Distance between rows (Fill) or the Line interval (Lines), mm.
     pub row_spacing_mm: f64,
-    /// Fill stitch length or zigzag pitch, mm.
+    /// Fill: stitch length (Run Pitch). Lines: the straight running stitch where a thread's
+    /// colour is not needed, mm.
     pub stitch_mm: f64,
+    /// Lines: Max. Density, zigzag lines per mm at full colour (PE-DESIGN's default 4.5).
+    pub max_density: f64,
+    /// Lines: Direction, degrees added to every thread's screen angle (default 0).
+    pub direction_deg: f64,
+    /// Lines, colour mode: the Color Set (default Auto Select).
+    pub color_set: ColorSet,
 }
 
 impl PhotoStitch {
@@ -61,7 +101,9 @@ impl PhotoStitch {
             // (160-210 needle points per cm² in the tone bands of the round-4 capture
             // `photostitch1-default-plus-cross.pes`; 12 860 needle points against its 12 255).
             PhotoStyle::Fill => (FILL_ROW_SPACING_MM, RUN_PITCH_MM),
-            PhotoStyle::Lines => (1.2, 0.8),
+            // PE-DESIGN 11.50's Photo Stitch 2: Line interval 2.0 mm; its straight runs are
+            // 2.4–2.5 mm (round-4 `photostitch2-color-owner-shapes.pes`).
+            PhotoStyle::Lines => (LINE_INTERVAL_MM, LINE_RUN_MM),
         };
         let sew_page = style == PhotoStyle::Fill && matches!(mode, PhotoMode::Color(_));
         PhotoStitch {
@@ -73,9 +115,21 @@ impl PhotoStitch {
             sew_page,
             row_spacing_mm,
             stitch_mm,
+            max_density: MAX_DENSITY,
+            direction_deg: 0.0,
+            color_set: ColorSet::Auto,
         }
     }
 }
+
+/// Photo Stitch 2's default Line interval, mm (PE-DESIGN 11.50).
+pub const LINE_INTERVAL_MM: f64 = 2.0;
+/// Photo Stitch 2's straight running stitch where a thread's colour is not needed, mm.
+pub const LINE_RUN_MM: f64 = 2.5;
+/// Photo Stitch 2's default Max. Density, lines per mm (PE-DESIGN 11.50).
+pub const MAX_DENSITY: f64 = 4.5;
+/// Photo Stitch 2's thread count with Color Set Auto Select (four on the round-4 capture).
+pub const LINE_COLORS: usize = 4;
 
 /// Photo Stitch 1's default Run Pitch, mm (PE-DESIGN 11.50).
 pub const RUN_PITCH_MM: f64 = 3.0;
@@ -133,18 +187,55 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
         stretch(&mut cells);
     }
     let fabric_pec = palette::nearest_pec(p.fabric).0;
-    let threads: Vec<Thread> = match &p.mode {
-        PhotoMode::Mono(t) => vec![t.clone()],
-        PhotoMode::Color(n) => {
+    // Threads, and for the line screen the image colour each one stands for (its reduced
+    // colour), against which the screen measures each thread's share.
+    // A named Color Set: four fixed chart threads, sewn in the set's order.
+    let fixed = match (&p.mode, p.style, p.color_set.pec()) {
+        (PhotoMode::Color(_), PhotoStyle::Lines, Some(pec)) => Some(pec),
+        _ => None,
+    };
+    let (threads, stands_for): (Vec<Thread>, Vec<[f64; 3]>) = match (&p.mode, fixed) {
+        (_, Some(pec)) => pec
+            .iter()
+            .filter_map(|&i| openstitch_core::PEC_CHART.get(i).cloned().flatten())
+            .map(|t| {
+                let c = rgb_f(&t);
+                (t, c)
+            })
+            .unzip(),
+        (PhotoMode::Mono(t), _) => (vec![t.clone()], vec![[0.0; 3]]),
+        (PhotoMode::Color(n), None) => {
             let colors: Vec<Rgb> = cells.iter().flatten().map(|c| c.map(|v| v as u8)).collect();
-            let pal = Palette::build(&colors, (*n).clamp(1, 64));
+            let n = (*n).clamp(1, 64);
+            // Photo Stitch 2's Color Set holds N threads besides the page, so the line screen
+            // reduces to one colour more and leaves the page's out.
+            let boxes = if p.style == PhotoStyle::Lines {
+                n + 1
+            } else {
+                n
+            };
+            let pal = Palette::build(&colors, boxes.min(64));
             // A thread matching the fabric is left out: the fabric shows instead.
             pal.chart
                 .iter()
                 .zip(&pal.threads)
-                .filter(|(c, _)| **c != fabric_pec)
-                .map(|(_, t)| t.clone())
-                .collect()
+                .enumerate()
+                .filter(|(_, (c, _))| **c != fabric_pec)
+                .take(if p.style == PhotoStyle::Lines {
+                    n
+                } else {
+                    usize::MAX
+                })
+                .map(|(k, (_, t))| {
+                    let mean = pal
+                        .means
+                        .iter()
+                        .zip(&pal.thread_of)
+                        .find(|(_, of)| **of == k)
+                        .map_or_else(|| rgb_f(t), |(m, _)| m.map(f64::from));
+                    (t.clone(), mean)
+                })
+                .unzip()
         }
     };
     if threads.is_empty() {
@@ -171,30 +262,39 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
         threads.push(palette::nearest_pec(p.fabric).1);
     }
     let dithered = palette::dither(&cells, cols, rows, &targets);
-    // Light threads first, so darker detail sews on top.
+    // Light threads first, so darker detail sews on top; a named Color Set keeps its order.
     let mut order: Vec<usize> = (0..threads.len()).collect();
-    order.sort_by(|&a, &b| {
-        luma(targets[b])
-            .total_cmp(&luma(targets[a]))
-            .then(a.cmp(&b))
-    });
+    if fixed.is_none() {
+        order.sort_by(|&a, &b| {
+            luma(targets[b])
+                .total_cmp(&luma(targets[a]))
+                .then(a.cmp(&b))
+        });
+    }
     let mut objects = Vec::new();
     let mut counts = Vec::new();
     let mut sewn_threads = Vec::new();
     let mut total = 0;
+    // Lines: each thread's share of the local colour, on a fine grid over the image.
+    let screen = (p.style == PhotoStyle::Lines).then(|| {
+        let shares = if mono {
+            crate::screen::Shares::mono(image, frame)
+        } else {
+            crate::screen::Shares::colour(image, frame, &stands_for, fabric)
+        };
+        let settings = crate::screen::Screen {
+            interval: p.row_spacing_mm.clamp(0.5, 10.0) * 10.0,
+            run: p.stitch_mm.clamp(0.5, 7.0) * 10.0,
+            max_density: p.max_density.clamp(0.5, 10.0),
+        };
+        (shares, settings)
+    });
     for (layer, &t) in order.iter().enumerate() {
-        let stitches = match p.style {
-            PhotoStyle::Fill => fill_layer(&dithered, cols, rows, t, frame, cw, ch),
-            PhotoStyle::Lines => {
-                let weight: Vec<f64> = match &p.mode {
-                    PhotoMode::Mono(_) => cells
-                        .iter()
-                        .map(|c| c.map_or(0.0, |c| 1.0 - c[0] / 255.0))
-                        .collect(),
-                    PhotoMode::Color(_) => share(&dithered, cols, rows, t),
-                };
-                let offset = (layer as f64 + 0.5) / order.len() as f64;
-                lines_layer(&weight, cols, rows, frame, cw, ch, offset, order.len())
+        let stitches = match &screen {
+            None => fill_layer(&dithered, cols, rows, t, frame, cw, ch),
+            Some((shares, settings)) => {
+                let angle = crate::screen::angle(layer, p.direction_deg);
+                crate::screen::layer(shares, t, angle, frame, settings)
             }
         };
         if stitches.iter().all(|s| s.command != Command::Stitch) {
@@ -395,78 +495,6 @@ fn fill_layer(
         }
         last_len = xs.len();
         pen = Some((xs[xs.len() - 1], run.row));
-    }
-    out
-}
-
-/// Share of thread `t` among the dithered cells of each cell's 3×3 neighbourhood.
-fn share(d: &[Option<usize>], cols: usize, rows: usize, t: usize) -> Vec<f64> {
-    let mut out = vec![0.0; cols * rows];
-    for y in 0..rows {
-        for x in 0..cols {
-            let (mut hit, mut n) = (0.0, 0.0);
-            for ny in y.saturating_sub(1)..(y + 2).min(rows) {
-                for nx in x.saturating_sub(1)..(x + 2).min(cols) {
-                    n += 1.0;
-                    if d[ny * cols + nx] == Some(t) {
-                        hit += 1.0;
-                    }
-                }
-            }
-            out[y * cols + x] = hit / n;
-        }
-    }
-    out
-}
-
-/// Below this weight a line breaks.
-const LINE_THRESHOLD: f64 = 0.08;
-
-/// Zigzag lines along each row (offset by `offset` of a row within it, serpentine), one
-/// needle point per sample, swinging ±weight × 45 % of the row spacing.
-#[allow(clippy::too_many_arguments)]
-fn lines_layer(
-    weight: &[f64],
-    cols: usize,
-    rows: usize,
-    frame: &Frame,
-    cw: f64,
-    ch: f64,
-    offset: f64,
-    layers: usize,
-) -> Vec<Stitch> {
-    let mut out = Vec::new();
-    // Colour layers share each row, so each swings within its own band.
-    let amplitude = ch * 0.45 / layers.max(1) as f64;
-    for y in 0..rows {
-        let row_y = frame.origin.y + (y as f64 + offset) * ch;
-        let xs: Vec<usize> = if y % 2 == 0 {
-            (0..cols).collect()
-        } else {
-            (0..cols).rev().collect()
-        };
-        let mut run: Vec<Stitch> = Vec::new();
-        let flush = |run: &mut Vec<Stitch>, out: &mut Vec<Stitch>| {
-            if run.len() >= 2 {
-                out.push(Stitch::new(run[0].x, run[0].y, Command::Jump));
-                out.append(run);
-            }
-            run.clear();
-        };
-        for (i, &x) in xs.iter().enumerate() {
-            let w = weight[y * cols + x];
-            if w < LINE_THRESHOLD {
-                flush(&mut run, &mut out);
-                continue;
-            }
-            let sign = if i % 2 == 0 { -1.0 } else { 1.0 };
-            run.push(Stitch::new(
-                frame.origin.x + (x as f64 + 0.5) * cw,
-                row_y + sign * w * amplitude,
-                Command::Stitch,
-            ));
-        }
-        flush(&mut run, &mut out);
     }
     out
 }

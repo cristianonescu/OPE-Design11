@@ -45,6 +45,10 @@ pub struct Pattern {
     pub paths: Vec<Vec<Vec2>>,
     /// Fill tiles: embossed and engraved areas, in the order they were applied.
     pub regions: Vec<PatternRegion>,
+    /// Decorative only: the paths are free lines in the unit tile (x, y 0…1), tiled as a grid
+    /// centred on the region instead of chained into rows (PE-DESIGN's Decorative Fill lines,
+    /// drawn anywhere on its 16 × 16 grid).
+    pub free_lines: bool,
 }
 
 /// The effect of an area of a fill tile.
@@ -88,6 +92,12 @@ pub struct PatternFile {
     paths: Vec<Vec<[f64; 2]>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     regions: Vec<RegionFile>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    free_lines: bool,
+}
+
+fn is_false(v: &bool) -> bool {
+    !*v
 }
 
 fn is_zero(v: &f64) -> bool {
@@ -123,6 +133,7 @@ impl From<Pattern> for PatternFile {
                     at: [r.at.x, r.at.y],
                 })
                 .collect(),
+            free_lines: p.free_lines,
         }
     }
 }
@@ -212,6 +223,15 @@ fn validate(f: PatternFile) -> Result<Pattern, String> {
                 return Err("a motif is one path from (0, 0) to (1, 0)".into());
             }
         }
+        PatternKind::Decorative if f.free_lines => {
+            if paths
+                .iter()
+                .flatten()
+                .any(|q| !(0.0..=1.0).contains(&q.x) || !(0.0..=1.0).contains(&q.y))
+            {
+                return Err("free decorative lines lie inside the unit tile (0…1)".into());
+            }
+        }
         PatternKind::Decorative => {
             for p in &paths {
                 let (a, b) = (p[0], *p.last().expect("2+ points"));
@@ -221,6 +241,12 @@ fn validate(f: PatternFile) -> Result<Pattern, String> {
             }
         }
         PatternKind::Fill => {}
+    }
+    if f.free_lines && f.kind != PatternKind::Decorative {
+        return Err("only decorative patterns have free lines".into());
+    }
+    if f.free_lines && f.row_shift != 0.0 {
+        return Err("free decorative lines are tiled as a grid: no rowShift".into());
     }
     if !f.regions.is_empty() && f.kind != PatternKind::Fill {
         return Err("only fill/stamp patterns have embossed or engraved regions".into());
@@ -249,6 +275,7 @@ fn validate(f: PatternFile) -> Result<Pattern, String> {
         row_shift: f.row_shift,
         paths,
         regions,
+        free_lines: f.free_lines,
     })
 }
 

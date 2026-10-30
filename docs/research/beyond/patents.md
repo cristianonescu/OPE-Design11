@@ -13,7 +13,7 @@ registers before relying on it. Claim gists are paraphrases, not claim text.
 | Patent | Holder | Priority | Status shown | Touches | Reading |
 |---|---|---|---|---|---|
 | US 8,532,810 B2 | Vistaprint (Cimpress) | 1998-08-17 | Expired (fee related), term ended 2018 | auto-digitizing (Auto Punch), B4 routing | expired; the survey had mis-described it as a skeleton-satin patent (corrected below) |
-| US 7,996,103 B2 | Brother Industries | 2007-11-26 | **Active** until 2030-03-27 | F16 direction-aware photo stitch (deferred); Photo Stitch 2's fixed-angle line screen (#129, [photo-stitch-2-halftone.md](../photo-stitch-2-halftone.md), held for the owner's decision); B4's "travel over sewn lines" rule needs a look | the one live patent on the list |
+| US 7,996,103 B2 | Brother Industries | 2007-11-26 | **Active** until 2030-03-27 | F16 direction-aware photo stitch (deferred); Photo Stitch 2's fixed-angle line screen (#129, [photo-stitch-2-halftone.md](../photo-stitch-2-halftone.md); built after the owner's decision of 2026-10-30, see below); B4's "travel over sewn lines" rule needs a look | the one live patent on the list |
 | US 5,541,847 A | Pulse Microsystems | 1994-10-14 | Expired (lifetime) 2014 | B1 contour fill | expired |
 | US 6,934,599 B2 | VSM Group (now Singer Sourcing) | 2002-04-22 | Expired (lifetime) 2023 | D12 TrueType to satin, Font Creator | expired |
 | US 6,587,745 B1 | Wilcom | 1998-09-07 | Expired (fee related), lapsed 2007 | B2 guided fills, today's direction curve | expired |
@@ -64,6 +64,22 @@ Everything else on the list is shown as expired or ceased.
   B4's auto-routing decides connectors by graph structure (route inspection) and by a length
   threshold, not by per-pixel angle features or colour-difference tests, and does not start
   from an image; this is the fact for the lawyer to check against claim 1's combination.
+- Owner's decision, 2026-10-30, for Photo Stitch 2 (#129): asked "Can the Photo Stitch 2
+  halftone model go ahead despite Brother's patent?", the owner answered "Go ahead". The
+  question stated the fixed angle set's difference from the patent's per-pixel direction
+  field.
+  - What was built (`crates/openstitch-digitize/src/screen.rs`): a line screen with one fixed
+    angle per thread, 0°, 45°, 90° and 135° in sewing order, turned only by the user's
+    Direction setting. The lines are straight and a Line interval apart. Each zigzags where its
+    thread's colour share is above a threshold.
+  - What it deliberately leaves out:
+    - (1) no angle feature is computed from the image, per pixel or otherwise;
+    - (2) no line segments are derived from such features;
+    - (3) no connector decision uses coverage by later segments, colour difference or crossing
+      angles. A move between line ends is sewn when it is shorter than three intervals and
+      jumped otherwise.
+  - Any later change that adds an image-derived direction or such a connector test needs the
+    same question put to the owner again. Not legal advice.
 - Design-around for F16 (facts to check): the claim combines (1) per-pixel angle features
   from an image, (2) segments from them, (3) the three-test connector decision. The Sfumato
   family of F16 uses density-modulated meanders per shade with no angle field and no

@@ -80,7 +80,7 @@ fn motif_files_run_from_0_0_to_1_0() {
 }
 
 #[test]
-fn a_decorative_file_with_a_free_line_is_kept_as_a_tile() {
+fn a_decorative_file_with_a_free_line_keeps_it_free() {
     let deco = import("psc-deco-1line.plf");
     assert_eq!(
         deco.role,
@@ -90,11 +90,113 @@ fn a_decorative_file_with_a_free_line_is_kept_as_a_tile() {
             repeat: 1
         }
     );
-    // The line does not run edge to edge, so OpenStitch's row-chaining decorative fill
-    // cannot sew it; it is kept as a fill tile (see docs/FILE_FORMATS.md).
-    assert_eq!(deco.pattern.kind, PatternKind::Fill);
+    // The line does not run edge to edge: a free line, tiled as a grid centred on the
+    // region (PE-DESIGN's deco-fill-1line-100mm.pes sews it corner to corner).
+    assert_eq!(deco.pattern.kind, PatternKind::Decorative);
+    assert!(deco.pattern.free_lines);
     assert_eq!(
         deco.pattern.paths,
         vec![cell(&[(128.0, 128.0), (896.0, 896.0)])]
+    );
+}
+
+#[test]
+fn free_decorative_lines_are_tiled_centred_on_the_region() {
+    use openstitch_core::Thread;
+    use openstitch_design::model::{RegionSewing, RegionType};
+    use openstitch_design::{Contour, region};
+    let deco = import("psc-deco-1line.plf").pattern;
+    // PE-DESIGN's deco-fill-1line-100mm: a 40 mm square, the 100 mm tile centred on it, so
+    // the line (128, 128)-(896, 896) of the cell runs from corner to corner.
+    let square = Contour::rectangle(300.0, 300.0, 400.0, 400.0);
+    let mut r = RegionSewing::new(RegionType::DecorativeFill, Thread::rgb(0));
+    r.pattern = Some(deco.id.clone());
+    r.pattern_width = Some(100.0);
+    r.pattern_height = Some(100.0);
+    r.angle = 0.0;
+    r.run_pitch = Some(2.0);
+    r.underlay = false;
+    let runs = region::layers_with(std::slice::from_ref(&square), &r, &[], &[deco])
+        .pop()
+        .expect("top layer");
+    let pts: Vec<Vec2> = runs.into_iter().flatten().collect();
+    let on_outline = |p: &Vec2| {
+        (p.x - 300.0).abs() < 0.5
+            || (p.x - 700.0).abs() < 0.5
+            || (p.y - 300.0).abs() < 0.5
+            || (p.y - 700.0).abs() < 0.5
+    };
+    let diagonal: Vec<&Vec2> = pts
+        .iter()
+        .filter(|p| !on_outline(p) && (p.x - p.y).abs() < 0.5)
+        .collect();
+    assert!(
+        pts.iter().all(|p| on_outline(p) || (p.x - p.y).abs() < 0.5),
+        "every needle point lies on the outline or the line"
+    );
+    // 28 inner points: the 56.6 mm line split evenly at the 2 mm run pitch (1.95 mm), as
+    // PE-DESIGN sews it.
+    assert_eq!(diagonal.len(), 28, "{diagonal:?}");
+    assert!(pts.iter().any(|p| p.distance(v2(300.0, 300.0)) < 0.5));
+    assert!(pts.iter().any(|p| p.distance(v2(700.0, 700.0)) < 0.5));
+}
+
+#[test]
+fn the_free_line_tile_is_centred_on_the_shapes_box() {
+    use openstitch_core::Thread;
+    use openstitch_design::model::{RegionSewing, RegionType};
+    use openstitch_design::{Contour, region};
+    let sew = |file: &str, rect: Contour| -> Vec<Vec2> {
+        let deco = import(file).pattern;
+        let mut r = RegionSewing::new(RegionType::DecorativeFill, Thread::rgb(0));
+        r.pattern = Some(deco.id.clone());
+        r.pattern_width = Some(100.0);
+        r.pattern_height = Some(100.0);
+        r.angle = 0.0;
+        r.run_pitch = Some(2.0);
+        r.underlay = false;
+        region::layers_with(std::slice::from_ref(&rect), &r, &[], &[deco])
+            .pop()
+            .unwrap_or_default()
+            .into_iter()
+            .flatten()
+            .collect()
+    };
+    // PE-DESIGN's deco-fill-1line-offcentre: the 40 x 60 mm rectangle at (10, 20) mm centres
+    // the 100 mm tile on (30, 50) mm, so the line runs (10, 30) -> (50, 70): y = x + 20 mm,
+    // from the left edge 10 mm below the top to the right edge 10 mm above the bottom.
+    let pts = sew(
+        "psc-deco-1line.plf",
+        Contour::rectangle(100.0, 200.0, 400.0, 600.0),
+    );
+    let on_line: Vec<&Vec2> = pts
+        .iter()
+        .filter(|p| p.x > 100.5 && p.x < 499.5 && p.y > 200.5 && p.y < 799.5)
+        .collect();
+    assert_eq!(on_line.len(), 28, "{on_line:?}");
+    assert!(
+        on_line.iter().all(|p| (p.y - p.x - 200.0).abs() < 0.5),
+        "{on_line:?}"
+    );
+    // PE-DESIGN's deco-fill-2lines: the two-line tile on the 40 mm square puts its lines at
+    // y = 25 and 75 mm, both outside the square: nothing of the pattern is sewn inside.
+    let two = import("psc-deco-2lines.plf");
+    assert_eq!(
+        two.role,
+        TextRole::Decorative {
+            width: 10000,
+            height: 10000,
+            repeat: 2
+        }
+    );
+    assert!(two.pattern.free_lines && two.pattern.paths.len() == 2);
+    let pts = sew(
+        "psc-deco-2lines.plf",
+        Contour::rectangle(300.0, 300.0, 400.0, 400.0),
+    );
+    assert!(
+        pts.iter()
+            .all(|p| p.x < 300.5 || p.x > 699.5 || p.y < 300.5 || p.y > 699.5),
+        "no needle point inside the square: {pts:?}"
     );
 }

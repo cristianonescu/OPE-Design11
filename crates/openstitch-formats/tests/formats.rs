@@ -811,7 +811,11 @@ fn hus_written_by_openstitch_reads_back_as_the_oracle_design() {
     let written = hus::write(&original).expect("write");
     assert_golden("openstitch.hus", &written);
     let back = hus::read(&written).expect("reread");
-    assert_eq!(relative(&back), relative(&original));
+    // The oracle has a stitch on each jump landing, written a second time after the move's
+    // own zero-length stitch (as PE-DESIGN does): the same needle points once repeats fold.
+    let mut points = relative(&back);
+    points.dedup();
+    assert_eq!(points, relative(&original));
     assert_eq!(hexes(&back.threads), hexes(&original.threads));
     assert_eq!(back.count(Command::Trim), original.count(Command::Trim));
     assert_eq!(
@@ -845,10 +849,11 @@ fn hus_long_moves_split_and_commands_round_trip() {
     p.push(Command::End);
     let back = hus::read(&hus::write(&p).expect("write")).expect("read");
     // The trim is PE-DESIGN's zero-length jump after the move; the 50 mm stitch is four
-    // stitches of up to 12 mm (HUS alone splits a stitch into stitches).
+    // stitches of up to 12 mm (HUS alone splits a stitch into stitches); the stitch on the
+    // jump's landing follows the move's own zero-length stitch, as PE-DESIGN writes it.
     assert_eq!(back.count(Command::Trim), 1);
     assert_eq!(back.count(Command::ColorChange), 1);
-    assert_eq!(back.count(Command::Stitch), 2 + 4 + 1);
+    assert_eq!(back.count(Command::Stitch), 2 + 4 + 1 + 1);
     assert_eq!(relative(&back).last(), Some(&[-480.0, 210.0]));
     assert_eq!(hexes(&back.threads), ["#ff0000", "#00c600"]); // nearest HUS chart entries
 }
@@ -1107,11 +1112,15 @@ fn every_fixture_round_trips_through_file_type() {
         let t = FileType::from_path(name).expect("type");
         let original = t.read(&data(name)).expect("read");
         let back = t.read(&t.write(&original).expect("write")).expect("reread");
-        let mut points = relative(&back);
-        if t == FileType::Sew {
-            points.dedup(); // PE-DESIGN's zero-length stitch before a colour change
+        let (mut points, mut expected) = (relative(&back), relative(&original));
+        if matches!(t, FileType::Sew | FileType::Hus | FileType::Pcs) {
+            // SEW: PE-DESIGN's zero-length stitch before a colour change; HUS and PCS: a stitch
+            // the design has on a jump's landing is written as a second zero-length record
+            // after the move's own, as PE-DESIGN writes it (machine-sample-basic).
+            points.dedup();
+            expected.dedup();
         }
-        assert_eq!(points, relative(&original), "{name}");
+        assert_eq!(points, expected, "{name}");
         assert_eq!(
             back.count(Command::ColorChange),
             original.count(Command::ColorChange),

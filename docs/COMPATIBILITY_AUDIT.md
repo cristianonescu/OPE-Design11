@@ -350,7 +350,13 @@ Line references are relative to `crates/`.
   0.3 mm), and text fitted to an outline as `CEmbAText` with its Fit Text to Outline settings
   and the outline it follows (spec `pes-0110-editable-text-fit`, reference: PE-DESIGN 11.50 opens it
   with the text still fitted to the circle and re-fits it when the circle is reshaped; its re-save
-  rewrites only the circle's pattern block and the text's box, which it recomputes);
+  rewrites only the circle's pattern block and the text's box, which it recomputes); Manual
+  Punch columns as PE-DESIGN's Straight and Curve Block objects (specs `pes-0110-manual-punch`,
+  `pes-0110-curve-block`, reference pending; owner files m01–m11 read and rewritten byte for
+  byte outside the pattern block; a Curve Block written from a design has handles within one
+  file unit of PE-DESIGN's, which way PE-DESIGN rounds them not mapped); the Appliqué wizard's stages as PE-DESIGN's appliqué lines and colours (spec
+  `pes-0110-applique`, reference pending; owner files a01–a05 read and rewritten byte for byte
+  outside the documented differences);
   Shapes-gallery shapes (`CEmbSpecialShape`, `CEmbLine` records under another class name)
   round-trip (o-gallery-heart, shape-start-points). Refused for
   now: right-aligned and vertical text, stretched fit, rotation, letter spacing, kerning,
@@ -418,8 +424,17 @@ Line references are relative to `crates/`.
     the direction uniform.
   - Guide, [region sewing attributes](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html):
     for satin text, Direction cannot be set.
+- **Measured (2026-10-30, [research/stroke-lettering.md](research/stroke-lettering.md)):** the
+  owner's Lato Bold references show PE-DESIGN cutting each TrueType letter into strokes, for
+  Fill as for Satin: the satin H is sewn as the left stem's top part, its bottom part (sewn
+  upwards), the crossbar with vertical crossings and the right stem (285 needle points against
+  OpenStitch's 243, all horizontal); in B the rows turn with each bowl in steps of 12-20°; x and
+  g are sewn in two runs with a trim between (11 trims in "OpenStitch" against 9). The note lists
+  the open rules (cutting at junctions and corners, order, under sewing, size) and the owner
+  captures requested to settle them.
 - **REA:** none. Font internals are in the prohibited category.
-- **Grade:** Documented difference. The per-stroke angles need a reference.
+- **Grade:** Documented difference. The per-stroke angles are measured on the H, A, B, x and g;
+  the cutting rules need the requested captures.
 - **Test:**
   - Inputs: `text.add {"text":"AVOW","size":30,"x":50,"y":50}` →
     `object.setRegion {"id":1,"type":"satin"}` → `design.generate`.
@@ -1103,12 +1118,27 @@ Line references are relative to `crates/`.
   0.5 mm on 21 of the 26 presets for "OpenStitch" (specs text-transform-N-openstitch)
   and 18 of 26 for "Agjy 123" (text-transform-N-agjy; the arches 1 and 2 and 18 fail
   there as well, by 0.6-1.3 mm);
-  parked (owner's round-4 notes, numbers there): 3 (maxY 0.8 mm low), 9 (minX 1.1 mm), 10
-  (maxX 1.4 mm), 14 (minX 1.7, maxX 2.1 mm: the fan-in fit from HHHHHHH does not hold for
-  descender letters) and 17 (maxY 0.7 mm): the envelopes were fitted on the HHHHHHH box and
-  PE-DESIGN applies them to the cap-height box, so letters below the baseline (p, g, j, y)
-  and round tops land differently. The other-level files wait for a level parameter on
-  `text.add` (none today) and the per-preset fit as a function of the stored value.
+  parked until 2026-10-30 (owner's round-4 notes, numbers there): 3 (maxY 0.8 mm low), 9 (minX
+  1.1 mm), 10 (maxX 1.4 mm), 14 (minX 1.7, maxX 2.1 mm) and 17 (maxY 0.7 mm): the envelopes were
+  fitted on the HHHHHHH box and PE-DESIGN applies them to the cap-height box, so letters below
+  the baseline (p, g, j, y) and round tops landed differently; all pass since the cap-height box
+  (below). Since 2026-10-30 `text.add` / `object.setText` take
+  `envelopeLevel` (the stored value; a new preset resets it, as in PE-DESIGN), which scales
+  how far the preset's envelope bows from straight (the slants by the shear's tangent, the
+  arches' angle with the radius keeping the text length), and the PES 0110 writer stores it.
+  Since the same day the envelope warps the cap-height box (the capital line to the baseline,
+  as PE-DESIGN does: the envelopes were fitted on HHHHHHH, whose box it is), so letters below
+  the baseline go on below the bottom edge instead of squeezing the envelope: 105 of the 108
+  level captures and 25 of the 26 default-level captures on "Agjy 123" (all 26 on
+  "OpenStitch") keep the box within 0.5 mm (specs `text-transform-N-openstitch[-lL]`,
+  `text-transform-N-agjy[-lL]`). Parked (round4\text, not in the repository): arch 2 on
+  "Agjy 123" at the default level (minX 0.6 mm) and on "OpenStitch" at level 25 (minX
+  0.6 mm), taper 4 at level 100 (maxX 1.1 mm) and slant 9 at level 100 (maxX 0.6 mm). Checked
+  across the levels (2026-10-30), no single rule fixes them: arch 2 sits 0.3-0.6 mm left
+  (minX) at every level while its right edge moves from -0.2 to +0.3 mm, so a shift would push
+  level 100 out; taper 4 is within 0.1 mm at every level but 100 (the full taper); slant 9's
+  right edge is already 0.4 mm short at the default and 0.6 mm at level 100 (the fitted envelope,
+  not the level scaling). Left parked.
 - **Sewing order inside a text (checked 2026-10-27):** not a gap. PE-DESIGN 11.50 also sews
   every letter's region first, then every letter's outline, one colour block each (spec
   text-sewing-order, reference tier). Still open: the guide disables "some editing of
@@ -1197,12 +1227,23 @@ Line references are relative to `crates/`.
     pairs of 1.0 mm and triples of 1.33 mm: key spans of about 2 and 4 mm split into
     ceil(length / pitch) equal stitches. Rounding the 4·2ⁿ points to 0.1 mm explains only part
     of it (OpenStitch's counts are within 3 %); where PE's key points come from is open.
-  - The concentric seam on a Bézier circle, the spiral's winding on a circle (PE turns against
-    the outline there and with it on the rectangle, although its running stitch goes the same
-    way round both) and the return run PE sews after the rectangle spiral's middle (trim, jump to
-    the bottom-left corner, running stitches along the bottom edge to R1): new captures were
-    requested from the reference session on 2026-10-30 (round 5: square, portrait rectangle,
-    reversed drags, ellipse, moved R1 and R2, triangle).
+  - Spiral winding and ending (settled 2026-10-30, round 5: `spiral-square40`,
+    `spiral-rect30x40`, `spiral-rect40x30-drag-reverse`, `spiral-ellipse40x30`,
+    `spiral-circle40-drag-reverse`, `spiral-triangle`): the drag direction does not matter
+    (identical files); what decides is where the start point lies. On an outline vertex (a
+    circle's or ellipse's bottom point, a triangle's bottom-left corner) the spiral turns
+    counter-clockwise on screen and ends in the middle. Inside an edge (a rectangle's bottom
+    middle) it runs clockwise to the next corner, spirals from there and, after a trim, returns to
+    that corner and runs back along the edge to the start point, ending where it began. OpenStitch
+    sews both cases that way now (`crate::spiral`, closing run as its own run); all six specs pass
+    within 3 %. PE-DESIGN shows no R1/R2 markers for Spiral or Concentric Circle regions, so a
+    moved start point cannot be captured. Open: the triangle's first turn reaches further into
+    the base corners in PE (39.7 mm wide against 39.0 mm; width not compared).
+  - The concentric seam on a Bézier circle stays open. Round 5 adds a 30 mm circle (seam at the
+    left edge just above the middle, like the 40 mm one) and a 40 × 30 mm ellipse (seam at the
+    top just right of the middle); no single walking rule fits those and the rectangle's 75.4°.
+    The new specs `concentric-circle30` and `concentric-ellipse40x30` compare counts, bounds and
+    stitch lengths, not the seam.
 - **Image digitizing (Phase 6, issues #127, #128, #132, #129):** the Auto Punch, Cross Stitch
   and Photo Stitch pipelines were this project's own approximations; the Phase 6 gap analysis
   pins their arithmetic. Done 2026-10-29 (#128): mono Photo Stitch uses integer Rec. 601
@@ -1299,6 +1340,30 @@ Line references are relative to `crates/`.
     averaged the bar edges into greys that became extra threads and thin grey regions (3446 /
     4639 stitches, 2 and 4 threads). The working copy now keeps each box's most common colour,
     and the colour count is automatic as PE's is (2 for the bars, 5 for the shapes).
+    At other working resolutions the choices did not hold (checked 2026-10-30): the chamfer
+    width read an even-width stroke one pixel short, so the 0.75 mm bar turned fill at 300,
+    350, 500, 700, 800 and 960 px (the 1 mm bar too at 300) and the 7 mm bar satin at 250 px;
+    only 400 and 600 px matched PE. `regions::thickness` now adds the pixel when the deepest
+    pixels form a two-pixel ridge (a stroke centred between two pixel rows), and every
+    resolution from 250 to 960 px gives PE's choice on all 16 bars; widths of 1 to 12 px
+    measure exactly. Counts at the default resolution are unchanged (3094 / 4373 on main).
+  - **Specks, fill direction and order (2026-10-30, pe-refs-4's `autopunch-specks-default.pes`,
+    `-specks-noise+1.pes`, `autopunch-right-triangle.pes`):** on a red square, a blue disc and
+    square specks of 1, 2, 3, 5 and 8 px (0.35–2.82 mm) in both colours, PE drops the 1, 2
+    and 3 px specks and keeps the 5 and 8 px ones; one more tick of Noise reduction gives a
+    byte-identical file. OpenStitch already did the same: its 3×3 modal census removes the 1
+    and 2 px specks, and the floor `max(4, round(minArea / mmPerPx²))` = 8 px removes what
+    the census leaves of the 3 px one. Stitches 2355 against 2365. The fill direction was the
+    leftover: PE gave the same disc 45° on one image and 90° on two others, and the isosceles
+    triangle 90°. A single rule gives all 16 fills of the round-4 captures: the direction of
+    90°, 45°, 135° and 0° whose rows spread furthest across the region, a diagonal winning
+    over 90° only with at least one more row at 4.5 lines/mm (the 45° disc's diagonal spread
+    is 0.50 mm wider, the 90° disc's 0.21 mm). It replaces the 13 mm stroke-width rule
+    (`autopunch::fill_angle`). Within a colour PE sews blue (first) from the bottom specks up
+    to the disc and red (second) from the square down to the specks, as it sews the bars
+    bottom first: regions in scan order, reversed for the 1st, 3rd, … colour; it replaces
+    "largest first". Counts: shapes 4384 / 4482, moved 4358 / 4436, specks 2355 / 2365,
+    right triangle 2502 / 2547, bars 3094 / 3197 and 2011 / 2018.
   - **Colour order** (`autopunch-owner-shapes-moved.pes`, the same four colours with every
     shape moved and recoloured): PE sews yellow, blue, red, green again, so the order is a
     property of the colours. It is the reduced colour's R + G + B, highest first (yellow 480,
@@ -1335,7 +1400,26 @@ Line references are relative to `crates/`.
     needed (about 20 needle points per cm² per thread) and a zigzag 1.8 mm deep advancing
     0.2 mm per stitch where it is (about 300 per cm² in the thread's own area); one jump per
     thread, no trims. The model, the acceptance criteria and the patent facts are in
-    docs/research/photo-stitch-2-halftone.md; the generator waits for the owner's decision.
+    docs/research/photo-stitch-2-halftone.md. Built 2026-10-30 after the owner's "Go ahead"
+    (`screen.rs`, a fixed angle set, no image-derived direction): 13 701 stitches against
+    14 133, angles, spacing, own-area (280–292 / 296–298) and white (21–24 / 21–23) densities
+    and one jump a thread as PE. Second round of captures (2026-10-30: the four named Color
+    Sets, Direction 30°, Line interval 3 / Max. Density 2.5, Mono, Auto Select on a two-colour
+    image):
+    - Angles follow the sewing position in every file.
+    - A named set is four fixed threads sewn in order; OpenStitch now offers `colorSet`.
+    - Direction turns the whole screen.
+    - Interval and density act as modelled: 6666 stitches against 6842.
+    - Mono follows a tone ramp from 17 % to 86 % darkness, now OpenStitch's too: 4671 against
+      4665 stitches, every grey band within 6 % but 150–179.
+
+    Left (open):
+    - The mixing law within a set. PE gives an area's main thread nearly full coverage, and its
+      choices are neither nearest-thread nor least squares; OpenStitch's named sets sew 8–15 %
+      fewer stitches.
+    - Auto Select's thread choice. PE always picks four threads; OpenStitch reduces to the
+      image's colours, so where PE mixes green from blue and yellow, OpenStitch gives green its
+      own thread.
 - **Sewing-machine stitch files (PMV, 2026-10-29, #130):** OpenStitch now reads the PMV layout
   it writes (pyembroidery's description: 8-byte magic, 36-byte banner, 56-byte preamble, needle
   count and its double, 6-bit relative x / 5-bit absolute y pairs in 0.25 mm, the length and
@@ -1353,6 +1437,19 @@ Line references are relative to `crates/`.
   Stitch Creator files and the fills sewn from them are requested from the reference round).
   Brother's bundled patterns are never read.
   what changes is the palette's weighting.
+- **Decorative fill with the owner's free-line pattern (reference, 2026-10-30, #131):**
+  PE-DESIGN 11.50's Decorative Fill of `psc-deco-1line.plf` at 100 mm on a 40 mm square
+  (`deco-fill-1line-100mm`) centres the tile on the region and sews the line corner to corner in
+  1.95 mm stitches, travelling along the outline at 2 mm. OpenStitch imported such a `.plf` as a
+  fill tile, so Decorative Fill could not use it and sewed a bundled pattern instead; it now keeps
+  the lines free (`freeLines`) and sews the same needle points on the line, the same travel pitch
+  and tie-in. Left: PE-DESIGN sews the line three times and walks parts of the outline two or
+  three times (292 needle points against 73). The off-centre rectangle (`deco-fill-1line-offcentre`,
+  2026-10-30) settled the placement: the tile is centred on the shape's bounding box, which
+  OpenStitch does (the same 28 needle points on the line). Still open: the repeat rule (the line
+  three times, the outline walked whole: 357 against 83 there), and a two-line tile whose lines
+  fall outside the shape (`deco-fill-2lines`, parked: PE-DESIGN walks the border, 245 needle
+  points, OpenStitch sews nothing).
 - **CSewSeg drops trims:** not a difference (reference, `pes-csewseg-trims`). `CSewSeg` has
   no trim type: PE-DESIGN 11's own Ver.6.0 file stores a trim as a plain jump segment, as
   OpenStitch does, and keeps the trim through the PEC section's `0x20` flag.
@@ -1471,9 +1568,11 @@ Line references are relative to `crates/`.
 - **Readers against PE-DESIGN's ten-format export (2026-10-29, #135):** pe-refs-4's
   `sample-basic` (a satin S and a fill, exported to every type) found four reader problems.
   (1) PES "drops PE's tie-in records" (471 needle points against PE's 475): not a reader
-  bug. PE-DESIGN's PEC section has no zero-length stitch at all; its DST has the same 471
-  points plus 4 zero-length ones (2 jump landings, 2 repeats), and its status bar counts 1–9
-  more than the PEC in 99 of 114 references. The points are not in the file. (2) CSD read as
+  bug. That sample's PEC section has none of the 4 zero-length stitches its DST has (2 jump
+  landings, 2 repeats; the other 471 points equal), and the status bar counts 1–9 more than
+  the PEC in 99 of 114 references: the points are not in the file. (Corrected 2026-10-30: PE's
+  PEC writer does not drop zero-length stitches as a rule; 28 of 249 PE references carry them,
+  so OpenStitch's PEC writer keeps its own and the "drop them" follow-up was not done.) (2) CSD read as
   2 stitches and 51 colour changes: the mask index was the byte offset minus one; with the
   offset itself PE's CSD equals its DST needle for needle, with PE's colours and colour order
   (fixture `sample-basic.csd`, reference-checked). (3) SHV read an extra colour change at the
@@ -1481,18 +1580,50 @@ Line references are relative to `crates/`.
   end; the reader now follows the word counts (fixture `sample-basic.shv`). (4) Importing PE's
   DST merged its two colour blocks: a DST has no colours, so the stitch block got none and the
   blocks were merged as one colour; each block now gets its own Brother chart colour on import.
-  Left for the parked `machine-sample-basic` spec: the writers' compare must skip PE's
-  zero-length stitches, and OpenStitch's DST/EXP/HUS/VIP write a trim where PE writes only the
-  colour change.
+  The ten-format sample is now spec `machine-sample-basic` (2026-10-30, reference tier): PE's
+  PES is imported as stitches and the eight writable formats are compared with PE's exports
+  needle for needle. Three writer fixes made them equal: the design centre floors on an odd
+  extent; DST pads the way back to the origin to a trim run only when it is one record; and a
+  PE-DESIGN `#PES0110` import gets back the stitch at each jump landing that PE's PEC leaves
+  out, which the folding formats (JEF, SEW, VIP, XXX) fold onto. The compare drops zero-length
+  stitches on both sides (`dropRepeats`) and the report lists how many per side (section
+  "Zero-length stitches left out by `dropRepeats`" of the summary, `droppedRepeats` in
+  report.json). For this spec, PE / OpenStitch: DST 4 / 2, EXP 4 / 2, PCS 5 / 3, HUS 6 / 4,
+  VIP 0 / 0, JEF 0 / 0, SEW 1 / 1, XXX 2 / 2 (PCS and HUS were 5 / 1 and 6 / 2 before their
+  writers wrote the landing twice, 2026-10-30). Every repeat OpenStitch writes is at a point where
+  PE writes one too (the jump landings, SEW's and XXX's entry points); none is OpenStitch's
+  alone. The ones only PE writes:
+  - two repeats inside the S's satin, at (17.9, 37.9) and (25.9, 31.9) mm from the design's
+    minimum corner, in DST, EXP, PCS and HUS: in PE's own stitch data, absent from its PES, so
+    no OpenStitch import can have them;
+  - fixed: PCS and HUS write each jump landing twice (the move's own zero-length record, then
+    the design's landing stitch) where OpenStitch wrote it once; both writers now keep the
+    design's landing stitch after their own (in `machine-formats`, a stitch file PE only opened,
+    there is no landing stitch to keep, and nothing changes). What is left in every format is
+    the two repeats inside the S.
+  The "trim before the colour change" the round-4 notes saw does not occur in this sample.
 - **Brother catalogue codes (2026-10-29, #119, #136):** pe-refs-4 read PE-DESIGN 11.50's BROTHER
   EMBROIDERY chart from Sewing Attributes ▸ Color: 61 rows, codes 001 WHITE to 900 BLACK, brand
   EMBROIDERY, no row for PEC 62–64 (so the 61-entry match set of #119 is PE's own chart).
   Matched to the PEC chart by name, every code lands on one PEC entry 1–61 and all 30 pairs PE
   writes in the owner's `#PES0110` thread tables agree. pyembroidery's table names PEC 42 and 57
   both "Flesh Pink"; PE's files put 124 FLESH PINK at 57, so 307 LINEN is 42, and the chart
-  table now calls 42 "Linen" (PE's RGB for it is still pyembroidery's guess). The dialog's own
+  table now calls 42 "Linen", with PE's RGB (254, 227, 197) since 2026-10-30 (the reference
+  session's 307 LINEN sample; every coded thread in PE's own files now matches the chart,
+  `pe_design_thread_tables_match_the_pec_chart`). The dialog's own
   first column (1 BLACK, 2 WHITE, 3 RED, …) is not the PEC index. API:
   `openstitch_core::BROTHER_EMBROIDERY`, `brother_embroidery_code`, `pec_index_of_brother_code`.
+- **Contour fill (2026-10-30, B1):** an OpenStitch extension, region type `contour`. It
+  reuses PE-DESIGN's Spiral Stitch's offset rings but no reference spec sets it, so every
+  PE-DESIGN spec is unchanged; its tests are internal regressions. A design using it opens in
+  PE-DESIGN as plain stitches. Label it "Implemented (beyond PE-DESIGN)" in FEATURE_MATRIX.md.
+- **Imported colours snap to the chart (2026-10-30, #119):** `import.svg` gives every fill and
+  stroke the nearest Brother chart thread 1–61, as PE-DESIGN's vector import does, and
+  `thread-match-swatches` now imports the very SVG PE-DESIGN imported and compares the whole
+  thread table (RGB, name, code, brand, chart, type) with PE's file: equal, reference tier. The
+  PES 0110 writer takes the codes of all 61 entries from core (its own table had 25) and picks
+  the PEC index among 1–61. Hex colours given to commands (`fill: "#rrggbb"`) stay exact on
+  purpose: PE-DESIGN has no free-RGB colour field to match, and exact RGB is what PES v6 keeps.
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 - **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,
@@ -1528,18 +1659,30 @@ Line references are relative to `crates/`.
     jump records of (92, -121) units plus one of (90, -118): the vector divided evenly into
     records whose longer axis is the 121-unit maximum, never halved; the runs from and to
     the origin are 11 x (-121, 121) + (-119, 119). OpenStitch's DST agrees on the total
-    jump length and the bounds (long-jump-300, reference tier). Its PES is parked: the PEC
-    writes the move as one trim-flagged long-form jump of (-45.5, +168.5) mm followed by 39
-    jump records of (+7.0, 0) mm, which a plain 12-bit decode (OpenStitch's reader included)
-    sums to (227.5, 168.5) mm, not the DST's (211.6, 278.3): the PEC encoding of a move
-    longer than 204.7 mm is open (raw bytes `9e 39 96 95` then 39 x `80 46 00`).
+    jump length and the bounds (long-jump-300, reference tier). Its PES stays parked, settled
+    2026-10-30: PE-DESIGN does not encode the move in the PEC at all. After the colour change
+    its PEC has one jump of (-45.5, +168.5) mm to (0, 180.0) mm (`9e 39 96 95`) and then 46
+    stitch records in a straight 280 mm row at y = 180 mm (39 of them the 7.0 mm long form
+    `80 46 00`), where the design's second block is a 39.5 x 6 mm satin like the first. The
+    block header says 290 x 190 mm; the PEC holds 233 needle points (186 + 47), the status bar
+    372 (186 + 186). For a design whose moves leave the 12-bit range, PE's PEC section is a
+    stand-in, not the stitches, so it cannot be a reference for a long move; OpenStitch's
+    split at 2047 units (#126, as PE's DST splits) stays. Reading it gives 280 x 174.5 mm.
   - *Hoop limits (#125):* a design scaled to 129 x 105 mm on a 100 x 100 mm Hoop-Size page
     is neither rejected nor promoted to a larger hoop. Save As warns "Please keep all designs
     within the Design Page. Saved data cannot be sent to the original card or the embroidery
     machine. Do you want to save the data anyway?" and saves on Yes; Export to DST writes
     the file with no warning (hoop-oversize-export, reference tier on the DST bounds). Its
-    PES is parked: OpenStitch reads 211 x 229 mm bounds from it where the DST and the status
-    bar say 129 x 105 (a sectioned layout for the hoop is the suspicion).
+    PES (settled 2026-10-30, now a formats fixture) has an empty machine section: the PEC's
+    "no colours" form and a 13-byte stitch block with only the design's size (1290 x 1050
+    units) and the end byte, which is what "cannot be sent to the embroidery machine" means;
+    the design is only in the object section (13 threads, `CGroupObject` and `CEmbLine`). The
+    211 x 229 mm OpenStitch read was its reader decoding the preview icons as 169 stitches and
+    the colour byte `FF` as 256 colours; it now reports that the PEC holds no stitches for this
+    129 x 105 mm design (`pe_design_oversize_save_has_no_machine_stitches`). OpenStitch's own
+    export of an oversize design still writes its stitches, with a warning (#125, #157); PE
+    writes none to the PEC. An empty OpenStitch PES (same "no colours" form) now reads back
+    without the 256 Sky Blue threads it used to give.
   - *Thread picks (#119, #136):* twelve 20 x 20 mm squares with chosen RGB fills imported
     from an owner SVG. PE-DESIGN mapped rgb(255,0,0) 800, (0,255,0) 513, (0,0,255) 405,
     (255,255,0) 205, (0,255,255) 019, (255,0,255) 086, (128,128,128) 817, (200,150,100)

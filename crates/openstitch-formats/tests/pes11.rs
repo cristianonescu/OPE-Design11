@@ -196,17 +196,121 @@ fn text_letters_and_attributes_read() {
 }
 
 #[test]
+fn manual_punch_blocks_read_as_shapes_with_their_direction_lines() {
+    // Manual Punch > Straight or Curve Block: a CEmbLine whose geometry lists hold the lines'
+    // ends (FILE_FORMATS.md, "PES 0110 object list"). Clicks (10,10) (10,30) (30,10) (30,30)
+    // make one line per click pair: the outline is the first ends, then the second ends back.
+    let read = |name: &str| objects_of(&data(&format!("pe11/{name}.pes"))).shapes;
+    let m01 = read("m01-straight-1");
+    let [s] = m01.as_slice() else {
+        panic!("one block object: {m01:?}")
+    };
+    assert_eq!(s.punch_lines, 2);
+    assert!(s.closed);
+    let xy: Vec<(f32, f32)> = s.vertices.iter().map(|v| (v.x, v.y)).collect();
+    assert_eq!(
+        xy,
+        [
+            (600.0, 600.0),
+            (800.0, 600.0),
+            (800.0, 800.0),
+            (600.0, 800.0)
+        ]
+    );
+    assert_eq!(
+        (s.region, s.density, s.line_sewn, s.line_type),
+        (RegionSewType::Satin, 4.5, false, Shape::LINE_NOT_SEWN)
+    );
+    assert_eq!(read("m03-straight-3")[0].punch_lines, 4);
+    assert_eq!(read("o-manual-straight")[0].punch_lines, 3);
+    assert_eq!(read("m04-straight-1-fill")[0].region, RegionSewType::Fill);
+    assert_eq!(read("m05-straight-1-density")[0].density, 6.0);
+    let m08 = &read("m08-straight-1-line")[0];
+    assert_eq!(
+        (m08.line_sewn, m08.line_type, m08.run_pitch),
+        (true, Shape::LINE_RUNNING, 2.0)
+    );
+    // The Curve Block: the same lines, the sides as smooth curves through their ends.
+    let m07 = &read("m07-curve-1")[0];
+    assert_eq!(m07.punch_lines, 2);
+    assert!(m07.vertices.iter().any(|v| v.kind != 0));
+    assert_eq!(read("m09-curve-bent")[0].punch_lines, 3);
+    assert_eq!(read("m11-curve-4")[0].punch_lines, 4);
+    // Manual Punch > Running is an open line with one entry per list: an ordinary shape.
+    assert_eq!(read("o-manual-running")[0].punch_lines, 0);
+    // A block object written from these fields reads back the same.
+    let objects = objects_of(&data("pe11/m03-straight-3.pes"));
+    let written =
+        pes11::write(&objects, &stitches_of(&data("pe11/m03-straight-3.pes"))).expect("write");
+    assert_eq!(objects_of(&written).shapes, objects.shapes);
+}
+
+#[test]
+fn applique_wizard_objects_read_with_their_lines_and_colours() {
+    // Applique Wizard on a 20 mm square at its defaults (a01): the square, then the material
+    // (running), position (running) and tack-down (V, 2.0 mm) lines on an outline 3 mm out,
+    // then the covering zigzag (3.0 mm), all in one group; the stage colours are PE-DESIGN's
+    // appliqué colours 100, 101, 102.
+    let a01 = objects_of(&data("pe11/a01-rect-applique.pes"));
+    assert!(a01.unparsed.is_none());
+    let lines: Vec<(u16, u16)> = a01
+        .shapes
+        .iter()
+        .map(|s| (s.line_type, s.line_color))
+        .collect();
+    assert_eq!(
+        lines,
+        [
+            (Shape::LINE_NOT_SEWN, 1),
+            (Shape::LINE_RUNNING, 2),
+            (Shape::LINE_RUNNING, 3),
+            (Shape::LINE_E_OR_V, 4),
+            (Shape::LINE_ZIGZAG, 4)
+        ]
+    );
+    assert_eq!(a01.shapes[3].ev_width, 2.0);
+    assert_eq!(a01.shapes[4].zigzag_width, 3.0);
+    // One group: the four lines, then the square.
+    assert_eq!(a01.groups, [vec![1, 2, 3, 4, 0]]);
+    for (t, catalog) in a01.threads[2..].iter().zip(["100", "101", "102"]) {
+        assert_eq!(t.catalog_number.as_deref(), Some(catalog));
+        assert_eq!((t.kind, t.rgb_value()), (Some(pes11::APPLIQUE_KIND), 0));
+    }
+    // Material Cutting (a02): a cutting line, and bit 0x80 of the signature code.
+    let a02 = data("pe11/a02-applique-cutting.pes");
+    assert_eq!(objects_of(&a02).shapes[1].line_type, Shape::LINE_CUTTING);
+    assert_eq!(a02[14..16], [0xB1, b'0']);
+    // No tack-down (a03): one object fewer; a 4 mm cover (a04); Replace (a05): the square gone.
+    assert_eq!(
+        objects_of(&data("pe11/a03-applique-no-tackdown.pes"))
+            .shapes
+            .len(),
+        4
+    );
+    let a04 = objects_of(&data("pe11/a04-applique-cover-4mm.pes"));
+    assert_eq!(a04.shapes.last().map(|s| s.zigzag_width), Some(4.0));
+    let a05 = objects_of(&data("pe11/a05-applique-replace.pes"));
+    assert_eq!(a05.shapes.len(), 4);
+    assert!(
+        a05.shapes
+            .iter()
+            .all(|s| s.region == RegionSewType::NotSewn)
+    );
+}
+
+#[test]
 fn unmapped_layouts_stop_reading_instead_of_misreading() {
-    // A Manual Punch block and the appliqué's fifth object: layouts not mapped yet must end
-    // the list as "unparsed", with the shapes read before them intact and every vertex inside
-    // its bounds. The eight Shape-tool start-point shapes (five of them gallery shapes) read
+    // Layouts not mapped yet must end the list as "unparsed", with the shapes read before them
+    // intact and every vertex inside its bounds. The Manual Punch column of
+    // satin-zigzag-column reads as one block object since its layout was mapped (m01, m03),
+    // and the eight Shape-tool start-point shapes (five of them gallery shapes) read
     // completely.
     let dir = concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../compat/reference/stitches"
     );
     for (name, read, stop) in [
-        ("satin-zigzag-column", 0, "CEmbLine (unmapped variant)"),
+        ("satin-zigzag-column", 1, ""),
         ("shape-start-points", 8, ""),
     ] {
         let bytes = std::fs::read(format!("{dir}/{name}.pes")).expect("reference");
@@ -362,7 +466,15 @@ fn round_3_object_files_read_their_stitches_and_stop_cleanly() {
 
 /// The owner files whose object list the reader parses completely (every object a `CEmbLine`
 /// or a `CEmbNText`, groups included): the writer's round-trip and byte-comparison set.
-const FULLY_PARSED: [&str; 102] = [
+const FULLY_PARSED: &[&str] = &[
+    "a01-rect-applique",
+    "a02-applique-cutting",
+    "a03-applique-no-tackdown",
+    "a04-applique-cover-4mm",
+    "a05-applique-replace",
+    "o-manual-straight",
+    "o-manual-curve",
+    "o-manual-running",
     "pes-default-v6",
     "pes-csewseg-trims",
     "pes-design-properties",
@@ -465,6 +577,15 @@ const FULLY_PARSED: [&str; 102] = [
     "o-region-stippling",
     "o-region-zigzag-net",
     "o-rounded-rect",
+    "m01-straight-1",
+    "m03-straight-3",
+    "m04-straight-1-fill",
+    "m05-straight-1-density",
+    "m07-curve-1",
+    "m08-straight-1-line",
+    "m09-curve-bent",
+    "m10-curve-uneven",
+    "m11-curve-4",
 ];
 
 /// The fixture's stitches with the header's own name (the PEC label would otherwise become the
@@ -551,7 +672,7 @@ fn region_not_sewn_groups_and_page_size_read() {
 
 #[test]
 fn written_files_read_back_to_the_same_objects() {
-    for name in FULLY_PARSED {
+    for &name in FULLY_PARSED {
         let fixture = owner_file(name);
         let objects = objects_of(&fixture);
         assert_eq!(objects.unparsed, None, "{name}");
@@ -598,22 +719,83 @@ fn list_offset(bytes: &[u8]) -> usize {
 
 /// Byte offsets of the leading `CEmbLine` / `CEmbSpecialShape` bodies in `bytes` (the byte after
 /// the class name or tag); `count` of them, which must come first in the list.
-fn body_offsets(bytes: &[u8], count: usize) -> Vec<usize> {
+/// One `CEmbLine` record in a file: where its body, pattern block and geometry start, and where
+/// the geometry header's marks end.
+#[derive(Clone, Copy)]
+struct Body {
+    start: usize,
+    pattern_end: usize,
+    geometry: usize,
+    marks_end: usize,
+}
+
+fn u16_at(bytes: &[u8], at: usize) -> usize {
+    usize::from(u16::from_le_bytes([bytes[at], bytes[at + 1]]))
+}
+
+fn u32_at(bytes: &[u8], at: usize) -> usize {
+    u32::from_le_bytes(bytes[at..at + 4].try_into().expect("u32")) as usize
+}
+
+/// The `count` `CEmbLine` records after the list start: the pattern block (u16 10000, u16
+/// polyline count, per polyline 6 zero bytes, u16 1, u16 point count, points) is as long as
+/// the pattern it holds, and the geometry header's two lists as long as their counts.
+fn bodies(bytes: &[u8], count: usize) -> Vec<Body> {
     let mut out = Vec::new();
     let mut at = list_offset(bytes) + 2;
     for _ in 0..count {
         // The MFC tag: a class name the first time (FFFF, schema, u16 length, name), else u16.
         at += if bytes[at..at + 2] == [0xFF, 0xFF] {
-            6 + usize::from(u16::from_le_bytes([bytes[at + 4], bytes[at + 5]]))
+            6 + u16_at(bytes, at + 4)
         } else {
             2
         };
-        out.push(at);
-        let n = u32::from_le_bytes(bytes[at + 4516..at + 4520].try_into().expect("n")) as usize;
-        at += 4520 + 28 * n;
+        let start = at;
+        let mut o = start + 388;
+        let polylines = u16_at(bytes, o);
+        o += 2;
+        for _ in 0..polylines {
+            o += 10 + 4 * u16_at(bytes, o + 8);
+        }
+        let pattern_end = o;
+        let geometry = pattern_end + 72;
+        let mut g = geometry;
+        for _ in 0..2 {
+            g += 4 + 12 * u32_at(bytes, g);
+        }
+        let marks_end = g + 52;
+        let n = u32_at(bytes, marks_end);
+        out.push(Body {
+            start,
+            pattern_end,
+            geometry,
+            marks_end,
+        });
+        at = marks_end + 4 + 28 * n;
     }
     out
 }
+
+/// `fixture` with every record's pattern block replaced by `placeholder` (the writer's own),
+/// so the rest of each record compares at the writer's offsets.
+fn with_pattern(fixture: &[u8], records: &[Body], placeholder: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(fixture.len());
+    let mut from = 0;
+    for b in records {
+        out.extend_from_slice(&fixture[from..b.start + 386]);
+        out.extend_from_slice(placeholder);
+        from = b.pattern_end;
+    }
+    out.extend_from_slice(&fixture[from..]);
+    out
+}
+
+/// The covering line's unmapped fields that differ from every other object's (a01-rect-applique:
+/// 0 where others have 1 at +58, +178, +364; 50 / 50 / 100 where others have 123 / 123 / 50 or
+/// 117 / 117 at +70, +72, +82, +218, +220, +238, +240, +260, +334, +336, +346).
+const COVER_FIELDS: [usize; 14] = [
+    58, 70, 72, 82, 178, 218, 220, 238, 240, 260, 334, 336, 346, 364,
+];
 
 #[test]
 fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differences() {
@@ -627,6 +809,13 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
         "shape-start-points",
         "r10-circle",
         "r11-line",
+        // Manual Punch > Running: an open running line, placed like r11's.
+        "o-manual-running",
+        // The Applique Wizard's lines follow a curved outline offset from the pattern.
+        "a01-rect-applique",
+        "a02-applique-cutting",
+        "a03-applique-no-tackdown",
+        "a04-applique-cover-4mm",
         "o-arc",
         "o-arc-string",
         "o-closed-curve",
@@ -645,12 +834,27 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
         "o-region-stippling",
         "o-region-zigzag-net",
     ];
-    for name in FULLY_PARSED {
+    for &name in FULLY_PARSED {
         let fixture = owner_file(name);
         let objects = objects_of(&fixture);
         let pattern = stitches_of(&fixture);
         let written = pes11::write(&objects, &pattern).expect("write");
-        let pec = u32::from_le_bytes(fixture[8..12].try_into().expect("offset")) as usize;
+        // Every pattern block is OpenStitch's placeholder (4 + 3970 bytes); PE-DESIGN's is as
+        // long as the programmable pattern it holds (53 polylines in most files, one in m01).
+        let records = bodies(&fixture, objects.shapes.len());
+        // Records whose pattern block is empty (the Applique Wizard's covering line).
+        let empty: Vec<bool> = records
+            .iter()
+            .map(|r| r.pattern_end == r.start + 390)
+            .collect();
+        let original_len = fixture.len();
+        let fixture = match bodies(&written, objects.shapes.len()).first() {
+            Some(w) => with_pattern(&fixture, &records, &written[w.start + 386..w.pattern_end]),
+            None => fixture,
+        };
+        let shift = fixture.len() as isize - original_len as isize;
+        let pec = (u32::from_le_bytes(fixture[8..12].try_into().expect("offset")) as isize + shift)
+            as usize;
         let pec_w = u32::from_le_bytes(written[8..12].try_into().expect("offset")) as usize;
         // The header up to the object list: the fields after the metadata strings are the
         // file's own, written back verbatim (page, hoop and machine fields). The metadata
@@ -670,22 +874,26 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
         assert_eq!(list - list_w, pec - pec_w, "{name}: PEC offset");
         // The object list and the trailer, compared from the list start.
         let (fixture, written) = (&fixture[list..pec], &written[list_w..pec_w]);
-        let bodies = body_offsets(fixture, objects.shapes.len());
+        let records = bodies(fixture, objects.shapes.len());
         // The circle's sewn extent is one unit wider than the bounds plus half the zigzag width,
         // and an open zigzag line's extent grows across the line only, not past its ends.
         let extent_differs = name == "r10-circle" || name == "r11-line";
         let allowed = |from: usize, to: usize| {
-            bodies.iter().any(|&b| {
-                let gh = b + 4432;
-                (b + 386 <= from && to <= b + 4360)
-                    // +162: PE-DESIGN's default-colour index, OpenStitch's line colour.
-                    || (b + 162 <= from && to <= b + 164)
+            records.iter().enumerate().any(|(k, r)| {
+                let (b, gh) = (r.start, r.geometry);
+                // +162: PE-DESIGN's default-colour index, OpenStitch's line colour.
+                (b + 162 <= from && to <= b + 164)
+                    // The Applique Wizard's covering line (its pattern block empty, size 750)
+                    // stores its own values in fields of the sew types it doesn't use.
+                    || (empty.get(k) == Some(&true)
+                        && COVER_FIELDS.iter().any(|&o| b + o <= from && to <= b + o + 2))
                     || (extent_differs && b + 8 <= from && to <= b + 16)
-                    || (gh + 8 <= from && to <= gh + 16)
-                    || (gh + 24 <= from && to <= gh + 32)
+                    // The two lists' positions on a shape (one entry each): their t values.
+                    || (r.marks_end - r.geometry == 84
+                        && ((gh + 8 <= from && to <= gh + 16) || (gh + 24 <= from && to <= gh + 32)))
                     || ((marks_differ.contains(&name) || name.starts_with("text-fit"))
                         && gh <= from
-                        && to <= gh + 84)
+                        && to <= r.marks_end)
             })
         };
         // Text: a letter field that is f32 -0.0 in r12–r26 and 0.0 in the later owner files
@@ -701,7 +909,21 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
             .into_iter()
             .filter(|&(s, e)| !allowed(s, e) && !text_quirk(s, e))
             .collect();
-        assert!(unexplained.is_empty(), "{name}: {unexplained:?}");
+        let located: Vec<String> = unexplained
+            .iter()
+            .map(|&(f, t)| match records.iter().rposition(|r| r.start <= f) {
+                Some(k) => {
+                    let r = records[k];
+                    if f >= r.geometry {
+                        format!("#{k} geo+{}..{}", f - r.geometry, t - r.geometry)
+                    } else {
+                        format!("#{k} body+{}..{}", f - r.start, t - r.start)
+                    }
+                }
+                None => format!("{f}..{t}"),
+            })
+            .collect();
+        assert!(unexplained.is_empty(), "{name}: {located:?}");
     }
 }
 
@@ -1094,4 +1316,90 @@ fn a_stitch_group_built_from_stitches_round_trips() {
         }
     }
     assert_eq!(back, objects);
+}
+
+/// PE-DESIGN 11.50 saves a design outside its Design Page with an empty machine section (no
+/// colours, a 13-byte stitch block that only gives the design's size, 129 x 105 mm): reading
+/// it says so instead of decoding the preview icons as 169 stitches and 256 colours, and the
+/// object section still reads (#125).
+#[test]
+fn pe_design_oversize_save_has_no_machine_stitches() {
+    let bytes = data("pe11/oversize-hoop100.pes");
+    let err = pes::read(&bytes).expect_err("no machine stitches");
+    let msg = err.to_string();
+    assert!(
+        msg.contains("129.0 x 105.0 mm") && msg.contains("Design Page"),
+        "{msg}"
+    );
+    let objects = pes::read_objects(&bytes).expect("objects");
+    assert_eq!(objects.version, "0110");
+    assert_eq!(objects.threads.len(), 13);
+}
+
+/// OpenStitch's own empty design writes the same "no colours" form in its PEC section: a
+/// machine-only (`1t`) file reads back with no threads and no stitches (it used to read as 256
+/// Sky Blue threads).
+#[test]
+fn empty_pes_reads_back_with_no_threads() {
+    let mut p = openstitch_core::StitchPattern::new();
+    p.push(openstitch_core::Command::End);
+    let options = pes::WriteOptions::parse("1t").expect("1t");
+    let back = pes::read(&pes::write_with(&p, &options).expect("write")).expect("read");
+    assert!(back.threads.is_empty(), "{}", back.threads.len());
+    assert_eq!(back.count(openstitch_core::Command::Stitch), 0);
+}
+/// Every BROTHER EMBROIDERY thread in PE-DESIGN 11.50's own `#PES0110` files (the pe11
+/// fixtures and `compat/reference`) has OpenStitch's PEC chart RGB for its code: the chart
+/// table agrees with PE wherever PE has written a colour (issues #119, #136; 42 LINEN from
+/// `thread-307-linen.pes`).
+#[test]
+fn pe_design_thread_tables_match_the_pec_chart() {
+    use openstitch_core::{PEC_CHART, pec_index_of_brother_code};
+    fn walk(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+        for e in std::fs::read_dir(dir).expect("dir").flatten() {
+            let p = e.path();
+            if p.is_dir() {
+                walk(&p, out);
+            } else if p.extension().is_some_and(|x| x.eq_ignore_ascii_case("pes")) {
+                out.push(p);
+            }
+        }
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let mut files = Vec::new();
+    walk(&root.join("tests/fixtures/pe11"), &mut files);
+    walk(&root.join("../../compat/reference"), &mut files);
+    let mut checked = std::collections::BTreeSet::new();
+    for path in &files {
+        let bytes = std::fs::read(path).expect("read");
+        if !bytes.starts_with(b"#PES0110") {
+            continue;
+        }
+        let Ok(section) = pes::read_objects(&bytes) else {
+            continue;
+        };
+        for t in &section.threads {
+            let (Some(code), Some("EMBROIDERY")) =
+                (t.catalog_number.as_deref(), t.brand.as_deref())
+            else {
+                continue;
+            };
+            let Some(i) = pec_index_of_brother_code(code) else {
+                continue;
+            };
+            let chart = PEC_CHART[i].as_ref().expect("chart entry");
+            assert_eq!(
+                chart.hex(),
+                t.hex(),
+                "{} code {code} (PEC {i})",
+                path.display()
+            );
+            checked.insert(i);
+        }
+    }
+    assert!(
+        checked.contains(&42) && checked.contains(&57),
+        "{checked:?}"
+    );
+    assert!(checked.len() >= 20, "{checked:?}");
 }

@@ -1093,7 +1093,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 IDS,
                 opt(
                     "type",
-                    "fill|satin|programmableFill|motifFill|piping|crossStitch|concentricCircle|radial|spiral|flexibleSpiral|stippling|netFill|zigzagNetFill|decorativeFill|none",
+                    "fill|satin|programmableFill|motifFill|piping|crossStitch|concentricCircle|radial|spiral|flexibleSpiral|stippling|netFill|zigzagNetFill|decorativeFill|contour|none",
                     "Region sew type",
                 ),
                 opt("color", "color", "Thread"),
@@ -1193,9 +1193,13 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 opt(
                     "patternWidth",
                     "mm",
-                    "Pattern width; zigzag net: zigzag width, 0.5-50",
+                    "Pattern width; zigzag net: zigzag width, 0.5-50 (decorative fill 0.5-100)",
                 ),
-                opt("patternHeight", "mm", "Pattern height, 0.5-50"),
+                opt(
+                    "patternHeight",
+                    "mm",
+                    "Pattern height, 0.5-50 (decorative fill 0.5-100)",
+                ),
                 opt(
                     "spacing",
                     "mm",
@@ -1236,7 +1240,26 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     "bool",
                     "Concentric circle / spirals: start at the centre",
                 ),
-                opt("counterclockwise", "bool", "Spirals turn counter-clockwise"),
+                opt(
+                    "counterclockwise",
+                    "bool",
+                    "Spirals and contour fill turn counter-clockwise",
+                ),
+                opt(
+                    "contourStrategy",
+                    "rings|singleSpiral|doubleSpiral",
+                    "Contour fill (beyond PE-DESIGN): every ring a loop, one spiral, or in and back out; rings `spacing` apart, stitches `runPitch` long",
+                ),
+                opt(
+                    "contourJoin",
+                    "round|miter",
+                    "Contour fill: corners of the offset rings",
+                ),
+                opt(
+                    "echoLines",
+                    "int",
+                    "Contour fill: rings outside the shape, 0-30",
+                ),
                 opt(
                     "triple",
                     "bool",
@@ -1467,11 +1490,17 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         }
                         r.pattern = Some(id);
                     }
+                    // PE-DESIGN 11.50's Decorative Fill defaults to a 100 mm tile.
+                    let max_size = if r.kind == RegionType::DecorativeFill {
+                        100.0
+                    } else {
+                        50.0
+                    };
                     if p.has("patternWidth") {
-                        r.pattern_width = Some(p.req("patternWidth", 0.5, 50.0)?);
+                        r.pattern_width = Some(p.req("patternWidth", 0.5, max_size)?);
                     }
                     if p.has("patternHeight") {
-                        r.pattern_height = Some(p.req("patternHeight", 0.5, 50.0)?);
+                        r.pattern_height = Some(p.req("patternHeight", 0.5, max_size)?);
                     }
                     if p.has("spacing") {
                         let lo = if r.kind == RegionType::MotifFill {
@@ -1512,6 +1541,29 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     }
                     r.start_inside = p.bool("startInside", Some(r.start_inside))?;
                     r.counterclockwise = p.bool("counterclockwise", Some(r.counterclockwise))?;
+                    if p.has("contourStrategy") {
+                        let id = p.string("contourStrategy", None)?;
+                        r.contour_strategy = openstitch_design::ContourStrategy::from_id(&id)
+                            .ok_or_else(|| {
+                                p.invalid(
+                                    "contourStrategy",
+                                    "must be rings, singleSpiral or doubleSpiral",
+                                )
+                            })?;
+                    }
+                    if let Some(j) = choice(
+                        p,
+                        "contourJoin",
+                        &[
+                            ("round", openstitch_design::ContourJoin::Round),
+                            ("miter", openstitch_design::ContourJoin::Miter),
+                        ],
+                    )? {
+                        r.contour_join = j;
+                    }
+                    if p.has("echoLines") {
+                        r.echo_lines = p.req("echoLines", 0.0, 30.0)?.round() as u32;
+                    }
                     r.triple = p.bool("triple", Some(r.triple))?;
                     if p.has("randomShift") {
                         r.random_shift = Some(p.req("randomShift", 0.0, 50.0)?);
@@ -2016,6 +2068,11 @@ fn text_docs(text_required: bool) -> Vec<ParamDoc> {
             "Text Transform preset, 1-26 in the palette's reading order; null turns it off. Not for text fitted to an outline",
         ),
         opt(
+            "envelopeLevel",
+            "number | null",
+            "Text Transform strength as PE-DESIGN stores it: % of the font size (straight-edged presets, default 50; -100...100), % (bows and waves 5, 6, 15, 16, 19, 20, 23, 24, default 20), degrees (slants 9, 10, default 10; fans 13, 14, default 30; -80...80), the arch's half-sweep in degrees (1, 2, default 30; 1...90). Choosing a preset resets it to the default unless given; null resets it",
+        ),
+        opt(
             "lineSpacing",
             "mm",
             "Extra space between lines on top of the %, -100...100 (default 0)",
@@ -2092,7 +2149,20 @@ fn text_params(
                 "Text Transform is not available for text fitted to an outline; release it first",
             ));
         }
+        if spec.envelope != Some(n) {
+            // Choosing a preset resets its level, as PE-DESIGN does.
+            spec.envelope_level = None;
+        }
         spec.envelope = Some(n);
+    }
+    if p.is_null("envelopeLevel") {
+        spec.envelope_level = None;
+    } else if p.has("envelopeLevel") {
+        let Some(n) = spec.envelope else {
+            return Err(p.invalid("envelopeLevel", "needs a Text Transform preset"));
+        };
+        let (lo, hi) = text::envelope_level_range(n);
+        spec.envelope_level = Some(p.req("envelopeLevel", lo, hi)?);
     }
     Ok(())
 }
@@ -2290,6 +2360,7 @@ fn text_commands() -> Vec<CommandSpec> {
                 if let Some(path) = path {
                     spec.path = Some(path);
                     spec.envelope = None;
+                    spec.envelope_level = None;
                     spec.transform = Transform::IDENTITY;
                 }
                 object.text = Some(spec);
@@ -2424,6 +2495,7 @@ fn text_commands() -> Vec<CommandSpec> {
                         t.path = Some(path);
                         // Fitting to an outline cancels Text Transform (the guide).
                         t.envelope = None;
+                        t.envelope_level = None;
                         t.fit = fit;
                         t.align = align;
                         t.transform = Transform::IDENTITY;
@@ -2610,6 +2682,11 @@ fn codec_commands() -> Vec<CommandSpec> {
                 // and were merged, issue #135).
                 if pattern.threads.len() < pattern.color_block_count() {
                     pattern.fix_thread_count(None);
+                }
+                // PE-DESIGN 11's own PES leaves the needle point at each jump landing out of its
+                // PEC section; put it back so the design's exports match PE-DESIGN's (#135).
+                if pattern.metadata.get("pes.version").map(String::as_str) == Some("0110") {
+                    openstitch_formats::pec::restore_jump_landings(&mut pattern.stitches);
                 }
                 let found = openstitch_design::DesignProperties::from_metadata(&pattern.metadata);
                 let adopt = p.bool("adoptProperties", Some(s.design.properties.is_empty()))?
