@@ -122,6 +122,17 @@ pub(crate) fn events(pattern: &StitchPattern) -> Vec<Event> {
     out
 }
 
+/// Whether the stream's first stitch or jump is a stitch: then [`events`] starts with a move it
+/// made up to that stitch, and the stitch at the move's end is that same needle point, not a
+/// landing stitch of its own.
+pub(crate) fn starts_with_stitch(pattern: &StitchPattern) -> bool {
+    pattern
+        .stitches
+        .iter()
+        .find(|s| matches!(s.command, Command::Stitch | Command::Jump))
+        .is_some_and(|s| s.command == Command::Stitch)
+}
+
 fn position(events: &[Event]) -> i64 {
     events
         .iter()

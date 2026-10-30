@@ -122,7 +122,8 @@ pub fn read(data: &[u8]) -> Result<StitchPattern> {
 /// record count of stitches and jumps, then a colour record (palette index of the nearest
 /// entry in its first byte, `ctrl` 3) before each block; every frame move as a jump record at
 /// the current position, a jump to the move's end and a stitch there (the first needle point;
-/// the first move of the design is the stitch alone); coordinates in 1/6 mm with a 1/256
+/// the first move of the design is the stitch alone), followed by the stream's own stitch at
+/// that point if it has one; coordinates in 1/6 mm with a 1/256
 /// fraction byte (truncated) and the design's centre at [`CENTER`]. Trims are dropped (PCS has no trim record); a stop
 /// is written as a colour change to the same thread.
 pub fn write(input: &StitchPattern) -> Result<Vec<u8>> {
@@ -134,6 +135,7 @@ pub fn write(input: &StitchPattern) -> Result<Vec<u8>> {
         .map(|t| nearest_index(t, &palette).unwrap_or(0))
         .collect();
     let events = layout::events(&pattern);
+    let made_up_first_move = layout::starts_with_stitch(&pattern);
 
     let mut w = ByteWriter::default();
     w.u8(i64::from(VERSION));
@@ -175,12 +177,17 @@ pub fn write(input: &StitchPattern) -> Result<Vec<u8>> {
                     record(&mut w, tx, ty, 0x04);
                     records += 2;
                 }
-                // The stitch at the move's end is the first needle point; a stitch of the
-                // stream at that very point is the same penetration.
+                // The stitch at the move's end is the first needle point. A stitch the stream
+                // has at that very point (a PE-DESIGN design's landing stitch) is written as
+                // well, a second zero-length record, as PE-DESIGN writes it
+                // (compat machine-sample-basic, #135).
                 record(&mut w, tx, ty, 0x00);
                 records += 1;
-                if layout::next_stitch(&events, i) == Some((tx, ty)) {
-                    i += 1;
+                if !started
+                    && made_up_first_move
+                    && layout::next_stitch(&events, i) == Some((tx, ty))
+                {
+                    i += 1; // the move made up to the first stitch ends on that stitch
                 }
                 started = true;
                 (x, y) = (tx, ty);

@@ -1489,17 +1489,19 @@ Line references are relative to `crates/`.
   out, which the folding formats (JEF, SEW, VIP, XXX) fold onto. The compare drops zero-length
   stitches on both sides (`dropRepeats`) and the report lists how many per side (section
   "Zero-length stitches left out by `dropRepeats`" of the summary, `droppedRepeats` in
-  report.json). For this spec, PE / OpenStitch: DST 4 / 2, EXP 4 / 2, PCS 5 / 1, HUS 6 / 2,
-  VIP 0 / 0, JEF 0 / 0, SEW 1 / 1, XXX 2 / 2. Every repeat OpenStitch writes is at a point where
+  report.json). For this spec, PE / OpenStitch: DST 4 / 2, EXP 4 / 2, PCS 5 / 3, HUS 6 / 4,
+  VIP 0 / 0, JEF 0 / 0, SEW 1 / 1, XXX 2 / 2 (PCS and HUS were 5 / 1 and 6 / 2 before their
+  writers wrote the landing twice, 2026-10-30). Every repeat OpenStitch writes is at a point where
   PE writes one too (the jump landings, SEW's and XXX's entry points); none is OpenStitch's
-  alone. The ones only PE writes are open differences:
+  alone. The ones only PE writes:
   - two repeats inside the S's satin, at (17.9, 37.9) and (25.9, 31.9) mm from the design's
     minimum corner, in DST, EXP, PCS and HUS: in PE's own stitch data, absent from its PES, so
     no OpenStitch import can have them;
-  - PCS and HUS write each jump landing twice (a zero-length stitch after the landing's own
-    zero-length record) where OpenStitch writes it once: a writer difference, not fixed yet
-    (in `machine-formats`, PE's export of a stitch file it only opened, there is no landing to
-    double).
+  - fixed: PCS and HUS write each jump landing twice (the move's own zero-length record, then
+    the design's landing stitch) where OpenStitch wrote it once; both writers now keep the
+    design's landing stitch after their own (in `machine-formats`, a stitch file PE only opened,
+    there is no landing stitch to keep, and nothing changes). What is left in every format is
+    the two repeats inside the S.
   The "trim before the colour change" the round-4 notes saw does not occur in this sample.
 - **Brother catalogue codes (2026-10-29, #119, #136):** pe-refs-4 read PE-DESIGN 11.50's BROTHER
   EMBROIDERY chart from Sewing Attributes ▸ Color: 61 rows, codes 001 WHITE to 900 BLACK, brand
