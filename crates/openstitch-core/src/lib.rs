@@ -30,6 +30,18 @@ pub fn pec_basic_chart() -> &'static [Option<Thread>] {
     &PEC_CHART[..=PEC_BASIC_COLORS]
 }
 
+/// The Brother chart thread PE-DESIGN 11.50 gives an imported colour: the nearest entry 1–61
+/// ([`nearest_index`] over [`pec_basic_chart`]), as the [`PEC_CHART`] thread (its name, chart
+/// number and brand `Brother`; the PES writers write its BROTHER EMBROIDERY code,
+/// [`brother_embroidery_code`]). PE-DESIGN does this to every fill and stroke colour of a
+/// vector import (`compat/reference/pes/thread-match-swatches.pes`: twelve RGB fills, twelve
+/// chart threads; issue #119).
+pub fn nearest_brother_thread(color: &Thread) -> Thread {
+    nearest_index(color, pec_basic_chart())
+        .and_then(|i| PEC_CHART[i].clone())
+        .unwrap_or_else(|| color.clone())
+}
+
 /// Machine command attached to a needle position.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

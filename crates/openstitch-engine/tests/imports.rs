@@ -47,14 +47,17 @@ fn svg_paths_become_grouped_editable_shapes_in_one_undo_step() {
     assert!(d.objects.iter().all(|o| o.kind == ObjectKind::Shape));
     let group = d.objects[0].group.expect("grouped");
     assert!(d.objects.iter().all(|o| o.group == Some(group)));
-    // Fill → fill region in the SVG colour; stroke → running line; open path → line only.
+    // Fill → fill region in the nearest Brother chart colour, as PE-DESIGN imports it
+    // (#e01010 → 800 RED, PEC 5); stroke → running line; open path → line only.
+    let fill = d.objects[0].region.as_ref().map(|r| r.thread.clone());
+    assert_eq!(fill, openstitch_core::PEC_CHART[5].clone());
     assert_eq!(
-        d.objects[0]
-            .region
+        d.objects[1]
+            .line
             .as_ref()
-            .map(|r| r.thread.hex())
+            .map(|l| l.thread.hex())
             .as_deref(),
-        Some("#e01010")
+        Some("#000000")
     );
     assert!(d.objects[0].line.is_none());
     assert!(d.objects[1].region.is_some() && d.objects[1].line.is_some());
@@ -268,4 +271,32 @@ fn background_image_turns_crops_adjusts_and_saves_as_shown() {
             "{id} without an image"
         );
     }
+}
+
+/// PE-DESIGN 11.50 gives every imported colour the nearest BROTHER EMBROIDERY chart thread
+/// (compat thread-match-swatches); `exactColors: true` keeps the SVG's own RGB instead.
+#[test]
+fn svg_colours_snap_to_the_brother_chart_unless_exact() {
+    let dir = temp_dir();
+    std::fs::write(
+        dir.join("o.svg"),
+        r##"<svg xmlns="http://www.w3.org/2000/svg" width="20mm" height="20mm" viewBox="0 0 20 20"><rect x="0" y="0" width="20" height="20" fill="rgb(255,128,0)" stroke="none"/></svg>"##,
+    )
+    .expect("write");
+    let thread = |exact: bool| {
+        let mut s = Session::new(&dir);
+        run(
+            &mut s,
+            "import.svg",
+            json!({"path": "o.svg", "exactColors": exact}),
+        );
+        s.design().objects[0]
+            .region
+            .as_ref()
+            .map(|r| r.thread.clone())
+            .expect("region")
+    };
+    // PE-DESIGN picked 214 DEEP GOLD (PEC 11) for this orange, not 62 Orange.
+    assert_eq!(Some(thread(false)), openstitch_core::PEC_CHART[11].clone());
+    assert_eq!(thread(true).hex(), "#ff8000");
 }

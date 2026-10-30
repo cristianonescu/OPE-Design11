@@ -202,7 +202,8 @@ back.
    move (its `long-jump-300` PES has a stand-in row instead), settled 2026-10-30. Colour matching is equal-weight squared Euclidean
    with an "approximate" city-block matcher since 2026-10-29 (#119), checked against the owner's
    twelve-swatch capture, and the 61 BROTHER EMBROIDERY catalogue codes are known since the
-   round-4 chart reading; left: snapping SVG and hex fills to them, the sew palette
+   round-4 chart reading; SVG imports snap to them as PE-DESIGN's do since 2026-10-30
+   (`thread-match-swatches` compares the thread table); left: the sew palette
    and user-chart CSV schema (#136), per-machine export limits and hoop codes (#125).
 8. **Formats:** CSD export (no public writer). Thread charts: OpenStitch's own CSV is
    documented and exported since 2026-10-29 (#136; PE-DESIGN keeps charts as binary `.btc2`,

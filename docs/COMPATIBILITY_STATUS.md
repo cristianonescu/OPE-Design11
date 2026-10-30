@@ -100,7 +100,7 @@ Specs: 370 · pass 370 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `pes/pes-objects-owner-patterns` | pass | reference | pass | — | pass | — |
 | `pes/pes-objects-psc-patterns` | pass | reference | — | — | pass | — |
 | `pes/pes-thread-chart-roundtrip` | pass | oracle | — | pass | — | — |
-| `pes/thread-match-swatches` | pass | reference | pass | — | pass | — |
+| `pes/thread-match-swatches` | pass | reference | — | — | pass | — |
 | `stitches/attribute-ranges` | pass | internal-regression | pass | — | — | — |
 | `stitches/auto-satin-bent-band` | pass | reference | pass | — | pass | — |
 | `stitches/concentric-circle30` | pass | reference | — | — | pass | — |

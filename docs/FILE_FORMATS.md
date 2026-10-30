@@ -950,8 +950,12 @@ shapes to paths. Each visible filled or stroked path becomes one shape object:
 
 - subpaths → contours; lines stay straight, cubic Béziers stay exact, quadratics are raised
   to cubics; a filled path closes every subpath (as SVG filling does);
-- solid fill → fill region in that colour; solid stroke → running line in that colour;
-  gradient or pattern paint → black; an open path's fill becomes its line colour;
+- solid fill → fill region, solid stroke → running line, each in the nearest BROTHER
+  EMBROIDERY chart thread (PEC entries 1–61, `openstitch_core::nearest_brother_thread`), as
+  PE-DESIGN 11.50's vector import does (`thread-match-swatches`: twelve RGB fills, PE's twelve
+  chart picks, thread tables equal; #119); `exactColors: true` keeps the SVG's own RGB (an
+  OpenStitch extra); gradient or pattern paint → black; an open path's fill becomes its line
+  colour;
 - several paths → one group; the artwork keeps its physical size (or `width`) and is centred
   on the Design Page unless `x`/`y` are given; one Undo.
 

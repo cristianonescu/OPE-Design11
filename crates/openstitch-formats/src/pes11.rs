@@ -19,7 +19,10 @@
 
 use crate::io::{ByteReader, ByteWriter};
 use crate::{FormatError, Result, pec};
-use openstitch_core::{PEC_CHART, StitchPattern, Thread, nearest_index, round_coordinate};
+use openstitch_core::{
+    BROTHER_EMBROIDERY_BRAND, PEC_CHART, StitchPattern, Thread, brother_embroidery_code,
+    nearest_index, pec_basic_chart, round_coordinate,
+};
 use std::borrow::Cow;
 
 #[path = "pes11_template.rs"]
@@ -1363,48 +1366,17 @@ fn write_mfc_unicode(w: &mut ByteWriter, s: &str) {
     }
 }
 
-/// The BROTHER EMBROIDERY catalogue number of the PEC chart colours PE-DESIGN 11.50 writes in its
-/// thread tables, as `(PEC index, catalogue number)`: every pair found in the owner's own
-/// `#PES0110` files (compat/reference, tests/fixtures/pe11 and the round-4 captures, 2026-10-29;
-/// each with brand `EMBROIDERY`, an empty chart name and exactly the PEC chart's RGB). The other
-/// 39 chart colours have no owner sample yet.
-pub const BROTHER_EMBROIDERY: [(usize, &str); 25] = [
-    (1, "007"),
-    (2, "405"),
-    (3, "534"),
-    (4, "070"),
-    (5, "800"),
-    (12, "208"),
-    (13, "205"),
-    (14, "513"),
-    (16, "005"),
-    (20, "900"),
-    (22, "869"),
-    (24, "058"),
-    (25, "086"),
-    (28, "030"),
-    (29, "001"),
-    (32, "019"),
-    (33, "126"),
-    (37, "509"),
-    (48, "807"),
-    (50, "519"),
-    (51, "107"),
-    (55, "614"),
-    (56, "515"),
-    (58, "206"),
-    (61, "027"),
-];
-
 /// `t` as PE-DESIGN writes the colour in its thread tables. A colour from OpenStitch's Brother
 /// PEC chart (brand `Brother`, its chart number as the catalogue number, the chart's exact RGB)
-/// gets the BROTHER EMBROIDERY catalogue number and brand `EMBROIDERY` (PE-DESIGN showed
+/// gets its BROTHER EMBROIDERY catalogue number and brand `EMBROIDERY`, for all 61 entries
+/// (`openstitch_core::BROTHER_EMBROIDERY`; PE-DESIGN showed
 /// `16 / Brother` with no thread chart otherwise: compat pes-0110-editable-shapes, the owner's
 /// check of 2026-10-29); every thread gets its nearest PEC chart index as its name, where
 /// PE-DESIGN writes it for its own colours. For a design's threads:
 /// [`write`] writes a thread table as given, so a PE-DESIGN file keeps its own strings.
 pub fn as_pe_writes(t: &Thread) -> Thread {
-    let Some(index) = nearest_index(t, &PEC_CHART) else {
+    // PE-DESIGN matches to its 61-entry chart only (#119).
+    let Some(index) = nearest_index(t, pec_basic_chart()) else {
         return t.clone();
     };
     // PE-DESIGN writes its colours' PEC chart index where a thread's name goes.
@@ -1417,10 +1389,10 @@ pub fn as_pe_writes(t: &Thread) -> Thread {
         && PEC_CHART[index]
             .as_ref()
             .is_some_and(|c| c.rgb_value() == t.rgb_value());
-    match BROTHER_EMBROIDERY.iter().find(|&&(i, _)| i == index) {
-        Some(&(_, catalog)) if from_pec_chart => Thread {
+    match brother_embroidery_code(index) {
+        Some(catalog) if from_pec_chart => Thread {
             catalog_number: Some(Cow::Borrowed(catalog)),
-            brand: Some(Cow::Borrowed("EMBROIDERY")),
+            brand: Some(Cow::Borrowed(BROTHER_EMBROIDERY_BRAND)),
             chart: None,
             ..t.clone()
         },
@@ -1434,7 +1406,7 @@ pub fn as_pe_writes(t: &Thread) -> Thread {
 fn write_threads(w: &mut ByteWriter, threads: &[Thread]) {
     w.u16le(threads.len() as i64);
     for t in threads {
-        let index = nearest_index(t, &PEC_CHART).unwrap_or(0);
+        let index = nearest_index(t, pec_basic_chart()).unwrap_or(0);
         write_mfc_unicode(w, t.catalog_number.as_deref().unwrap_or(""));
         w.append(&[t.red, t.green, t.blue, 0]);
         w.u32le(i64::from(t.kind.unwrap_or(Thread::CUSTOM_KIND)));
@@ -1852,17 +1824,23 @@ mod tests {
         );
         let red = PEC_CHART[5].clone().expect("red");
         assert_eq!(strings(&red).0.as_deref(), Some("800"));
-        // A custom colour, and a chart colour with no owner sample, keep their own strings
+        // Every chart entry 1–61 has its code now (6 REDDISH BROWN is 337, from the chart's
+        // names); a custom colour and an entry outside PE's chart keep their own strings
         // (every thread gets its chart index as its name, as PE-DESIGN writes its colours).
+        let reddish = PEC_CHART[6].clone().expect("chart colour");
+        assert_eq!(
+            strings(&reddish),
+            (Some("337".into()), Some("EMBROIDERY".into()), None)
+        );
+        assert_eq!(as_pe_writes(&reddish).name.as_deref(), Some("6"));
         let mut custom = Thread::rgb(0x12_34_56);
         custom.catalog_number = Some("42".into());
         assert_eq!(strings(&custom), (Some("42".into()), None, None));
-        let unsampled = PEC_CHART[6].clone().expect("chart colour");
+        let orange = PEC_CHART[62].clone().expect("62");
         assert_eq!(
-            strings(&unsampled),
-            (Some("6".into()), Some("Brother".into()), None)
+            strings(&orange),
+            (Some("62".into()), Some("Brother".into()), None)
         );
-        assert_eq!(as_pe_writes(&unsampled).name.as_deref(), Some("6"));
         // A chart RGB under another brand is not relabelled.
         let mut other = silver.clone();
         other.brand = Some("Madeira".into());
