@@ -187,9 +187,7 @@ back.
    `pes-0110-editable-text`). Left: PE-DESIGN's confirmation of the Hoop Size page (probe p3);
    the design's machine type and hoop in the header; BROTHER EMBROIDERY numbers for the chart colours with no owner sample; turn the `#PES0110` shapes and texts the reader
    parses into editable OpenStitch objects; the fitted text's box as PE-DESIGN computes it
-   (`pes-0110-editable-text-fit`: PE-DESIGN opens the fit editable and recomputes the box); right-aligned and vertical text; Manual Punch blocks and the appliqué's objects (owner files
-   parses into editable OpenStitch objects; PE-DESIGN opening text fitted to an outline
-   (`pes-0110-editable-text-fit`) and a written stitch group (`pes-0110-stitches`); right-aligned and vertical text; Manual Punch blocks and the appliqué's objects (owner files
+   (`pes-0110-editable-text-fit`: PE-DESIGN opens the fit editable and recomputes the box); PE-DESIGN opening a written stitch group (`pes-0110-stitches`); right-aligned and vertical text; Manual Punch blocks and the appliqué's objects (owner files
    requested); the other region and line types, hole-sewing pairs and several outlines per object; the hoop
    fields; PES v7–v10 (from the owner's own files only, as
    [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
