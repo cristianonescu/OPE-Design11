@@ -134,7 +134,9 @@ back.
    High. The motif line cannot be compared: PE-DESIGN's default motif is Brother's own artwork.
 4. **Lettering:** stroke-wise sewing of TrueType text as PE-DESIGN does it (every letter is
    split into strokes, each sewn as a column with its rows across the stroke, for Fill and Satin
-   text alike; the 'H' references match only because an H's stems are vertical) — the structural
+   text alike; the 'H' references match only because an H's stems are vertical; measured and
+   planned in [research/stroke-lettering.md](research/stroke-lettering.md), 2026-10-30, with the
+   captures it needs) — the structural
    gap behind text-fit-*, text-transform-* and text-sewing-order; the fitted circle's running
    stitch follows PE-DESIGN's Bézier halving since 2026-10-28 (text-fit-default mean needle
    distance 0.27 → 0.20 mm); Text Transform presets 13 and 14 (fan out / in) done 2026-10-28; round 4 (2026-10-29)

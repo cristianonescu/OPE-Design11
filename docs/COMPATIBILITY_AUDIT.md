@@ -424,8 +424,17 @@ Line references are relative to `crates/`.
     the direction uniform.
   - Guide, [region sewing attributes](https://support.brother.com/g/s/hf/htmldoc/ped/im/ped11/en/PED11_EN/pages/16_1293518.html):
     for satin text, Direction cannot be set.
+- **Measured (2026-10-30, [research/stroke-lettering.md](research/stroke-lettering.md)):** the
+  owner's Lato Bold references show PE-DESIGN cutting each TrueType letter into strokes, for
+  Fill as for Satin: the satin H is sewn as the left stem's top part, its bottom part (sewn
+  upwards), the crossbar with vertical crossings and the right stem (285 needle points against
+  OpenStitch's 243, all horizontal); in B the rows turn with each bowl in steps of 12-20°; x and
+  g are sewn in two runs with a trim between (11 trims in "OpenStitch" against 9). The note lists
+  the open rules (cutting at junctions and corners, order, under sewing, size) and the owner
+  captures requested to settle them.
 - **REA:** none. Font internals are in the prohibited category.
-- **Grade:** Documented difference. The per-stroke angles need a reference.
+- **Grade:** Documented difference. The per-stroke angles are measured on the H, A, B, x and g;
+  the cutting rules need the requested captures.
 - **Test:**
   - Inputs: `text.add {"text":"AVOW","size":30,"x":50,"y":50}` →
     `object.setRegion {"id":1,"type":"satin"}` → `design.generate`.
