@@ -443,15 +443,10 @@ Fit Text to Outline option changed per file.
 Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
 segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
 (kerning, rotation, right alignment; character spacing on plain text), the letter's line width
-and pitch fields, the Text Transform levels other than the default (OpenStitch has none), the
+and pitch fields, the
 fit's fifth alignment (stretched), which way PE-DESIGN rounds a Curve Block's handles (OpenStitch's
 are within one unit of its own), the
 covering line's fields of unused sew types, and the preview images.
-and pitch fields, the
-fit's fifth alignment (stretched), Manual Punch blocks (a `CEmbLine` body whose geometry header
-is a block list: a u32 count, 3 in o-manual-straight and o-manual-curve, then per-block entries;
-owner files with 1, 2 and 3 blocks requested), the appliqué's fifth object and
-the preview images.
 
 #### Writer
 
@@ -460,8 +455,8 @@ design) writes the layout above: the header with the metadata strings and the De
 the thread table in sewing order (region thread, then line thread, per object; strings in the
 MFC Unicode form, the PEC chart index of the nearest chart colour, `kind` 10; a colour from
 OpenStitch's Brother PEC chart gets the BROTHER EMBROIDERY catalogue number and brand
-`EMBROIDERY` PE-DESIGN writes for it, from the 25 pairs found in the owner's files
-(`pes11::BROTHER_EMBROIDERY`: 1 → 007, 5 → 800, 16 → 005, 20 → 900 …), any other thread its own
+`EMBROIDERY` PE-DESIGN writes for it, from core's codes for all 61 entries
+(`openstitch_core::brother_embroidery_code`: 1 → 007, 5 → 800, 16 → 005, 20 → 900 …), any other thread its own
 catalogue number, brand and chart), one `CEmbLine` per visible shape with every mapped field set,
 one `CEmbOne` per stitch pattern (its needle points in runs cut as version 6 cuts them, a jump
 run where the pattern jumps or trims, each colour block's thread added to the table), the
