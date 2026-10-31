@@ -17,6 +17,7 @@
 
 use crate::raster::{Frame, Raster};
 use openstitch_core::{Command, Stitch};
+use openstitch_design::fmath::Det;
 
 /// Coverage grid cell side, mm.
 pub const GRID_MM: f64 = 0.5;
@@ -89,7 +90,7 @@ impl Shares {
                         * if v <= 0.04045 {
                             v / 12.92
                         } else {
-                            ((v + 0.055) / 1.055).powf(2.4)
+                            ((v + 0.055) / 1.055).dpowf(2.4)
                         }
                 })
             } else {
@@ -287,8 +288,8 @@ pub fn layer(shares: &Shares, t: usize, angle_deg: f64, frame: &Frame, s: &Scree
     let a = angle_deg.to_radians();
     // Along the line (y down on screen, so a counter-clockwise angle turns towards −y), and
     // across it.
-    let u = (a.cos(), -a.sin());
-    let n = (a.sin(), a.cos());
+    let u = (a.dcos(), -a.dsin());
+    let n = (a.dsin(), a.dcos());
     let corners = [(0.0, 0.0), (width, 0.0), (0.0, height), (width, height)];
     let proj = |p: (f64, f64)| p.0 * n.0 + p.1 * n.1;
     let lo = corners
@@ -345,7 +346,7 @@ pub fn layer(shares: &Shares, t: usize, angle_deg: f64, frame: &Frame, s: &Scree
                          pen: &mut Option<(f64, f64)>,
                          down: &mut bool| {
                 let at = (frame.origin.x + p.0, frame.origin.y + p.1);
-                let near = pen.is_some_and(|q| (q.0 - at.0).hypot(q.1 - at.1) <= 3.0 * s.interval);
+                let near = pen.is_some_and(|q| (q.0 - at.0).dhypot(q.1 - at.1) <= 3.0 * s.interval);
                 if !*down && !near {
                     out.push(Stitch::new(at.0, at.1, Command::Jump));
                 }
@@ -393,7 +394,7 @@ pub fn layer(shares: &Shares, t: usize, angle_deg: f64, frame: &Frame, s: &Scree
                 .is_some()
             {
                 let at = (frame.origin.x + end.0, frame.origin.y + end.1);
-                if pen.is_none_or(|q| (q.0 - at.0).hypot(q.1 - at.1) > 1e-6) {
+                if pen.is_none_or(|q| (q.0 - at.0).dhypot(q.1 - at.1) > 1e-6) {
                     out.push(Stitch::new(at.0, at.1, Command::Stitch));
                     pen = Some(at);
                 }

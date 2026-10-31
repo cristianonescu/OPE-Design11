@@ -54,3 +54,40 @@ impl std::error::Error for DigitizeError {}
 
 /// Most needle points one conversion may generate.
 pub const MAX_STITCHES: usize = 500_000;
+
+#[cfg(test)]
+mod tests {
+    /// The crate's own code calls no platform transcendental function: every such call goes
+    /// through `openstitch_design::fmath::Det`, so an image converts to the same stitches on
+    /// macOS, Windows and Linux (the platforms' C math libraries differ in the last bit, see
+    /// `openstitch_design::fmath`). Tests may compare against the platform's functions.
+    #[test]
+    fn the_crate_uses_no_platform_transcendental_functions() {
+        let names = [
+            "sin", "cos", "sin_cos", "tan", "asin", "acos", "atan", "atan2", "sinh", "cosh",
+            "tanh", "exp", "exp2", "exp_m1", "ln", "log", "log2", "log10", "ln_1p", "powf",
+            "hypot", "cbrt",
+        ];
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let mut found = Vec::new();
+        for entry in std::fs::read_dir(&dir).expect("src") {
+            let path = entry.expect("entry").path();
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if !name.ends_with(".rs") {
+                continue;
+            }
+            let text = std::fs::read_to_string(&path).expect("read");
+            // Code before the file's own test module only.
+            let code = text.split("#[cfg(test)]").next().unwrap_or("");
+            for (n, line) in code.lines().enumerate() {
+                let line = line.split("//").next().unwrap_or("");
+                for f in names {
+                    if line.contains(&format!(".{f}(")) {
+                        found.push(format!("{name}:{}: .{f}(", n + 1));
+                    }
+                }
+            }
+        }
+        assert!(found.is_empty(), "platform math calls: {found:?}");
+    }
+}

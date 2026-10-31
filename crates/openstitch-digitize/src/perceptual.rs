@@ -3,6 +3,7 @@
 //! PE-DESIGN mode never uses this module; its colour arithmetic stays in RGB (#119, #127).
 
 use crate::palette::Rgb;
+use openstitch_design::fmath::Det;
 
 /// CIELAB coordinates (L*, a*, b*), D65 white.
 pub type Lab = [f64; 3];
@@ -12,7 +13,7 @@ fn linear(v: u8) -> f64 {
     if c <= 0.04045 {
         c / 12.92
     } else {
-        ((c + 0.055) / 1.055).powf(2.4)
+        ((c + 0.055) / 1.055).dpowf(2.4)
     }
 }
 
@@ -24,7 +25,7 @@ pub fn lab(c: Rgb) -> Lab {
     let z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
     let f = |t: f64| {
         if t > 216.0 / 24389.0 {
-            t.cbrt()
+            t.dcbrt()
         } else {
             (24389.0 / 27.0 * t + 16.0) / 116.0
         }
@@ -55,7 +56,7 @@ pub fn rgb(l: Lab) -> Rgb {
         let s = if c <= 0.0031308 {
             12.92 * c
         } else {
-            1.055 * c.powf(1.0 / 2.4) - 0.055
+            1.055 * c.dpowf(1.0 / 2.4) - 0.055
         };
         (s * 255.0).round() as u8
     })
@@ -65,15 +66,15 @@ pub fn rgb(l: Lab) -> Rgb {
 pub fn de2000(p: Lab, q: Lab) -> f64 {
     let (l1, a1, b1) = (p[0], p[1], p[2]);
     let (l2, a2, b2) = (q[0], q[1], q[2]);
-    let cb7 = ((a1.hypot(b1) + a2.hypot(b2)) / 2.0).powi(7);
+    let cb7 = ((a1.dhypot(b1) + a2.dhypot(b2)) / 2.0).powi(7);
     let g = 0.5 * (1.0 - (cb7 / (cb7 + 25f64.powi(7))).sqrt());
     let (a1p, a2p) = ((1.0 + g) * a1, (1.0 + g) * a2);
-    let (c1p, c2p) = (a1p.hypot(b1), a2p.hypot(b2));
+    let (c1p, c2p) = (a1p.dhypot(b1), a2p.dhypot(b2));
     let hue = |b: f64, a: f64| {
         if b == 0.0 && a == 0.0 {
             0.0
         } else {
-            b.atan2(a).to_degrees().rem_euclid(360.0)
+            b.datan2(a).to_degrees().rem_euclid(360.0)
         }
     };
     let (h1p, h2p) = (hue(b1, a1p), hue(b2, a2p));
@@ -86,7 +87,7 @@ pub fn de2000(p: Lab, q: Lab) -> f64 {
     } else if dh < -180.0 {
         dh += 360.0;
     }
-    let dhp = 2.0 * (c1p * c2p).sqrt() * (dh / 2.0).to_radians().sin();
+    let dhp = 2.0 * (c1p * c2p).sqrt() * (dh / 2.0).to_radians().dsin();
     let (lbp, cbp) = ((l1 + l2) / 2.0, (c1p + c2p) / 2.0);
     let hbp = if c1p * c2p == 0.0 {
         h1p + h2p
@@ -99,19 +100,19 @@ pub fn de2000(p: Lab, q: Lab) -> f64 {
     } else {
         (h1p + h2p) / 2.0
     };
-    let t = 1.0 - 0.17 * (hbp - 30.0).to_radians().cos()
-        + 0.24 * (2.0 * hbp).to_radians().cos()
-        + 0.32 * (3.0 * hbp + 6.0).to_radians().cos()
-        - 0.20 * (4.0 * hbp - 63.0).to_radians().cos();
+    let t = 1.0 - 0.17 * (hbp - 30.0).to_radians().dcos()
+        + 0.24 * (2.0 * hbp).to_radians().dcos()
+        + 0.32 * (3.0 * hbp + 6.0).to_radians().dcos()
+        - 0.20 * (4.0 * hbp - 63.0).to_radians().dcos();
     let sl = 1.0 + 0.015 * (lbp - 50.0).powi(2) / (20.0 + (lbp - 50.0).powi(2)).sqrt();
     let sc = 1.0 + 0.045 * cbp;
     let sh = 1.0 + 0.015 * cbp * t;
     let cbp7 = cbp.powi(7);
     let rt = -2.0
         * (cbp7 / (cbp7 + 25f64.powi(7))).sqrt()
-        * (60.0 * (-((hbp - 275.0) / 25.0).powi(2)).exp())
+        * (60.0 * (-((hbp - 275.0) / 25.0).powi(2)).dexp())
             .to_radians()
-            .sin();
+            .dsin();
     ((dlp / sl).powi(2) + (dcp / sc).powi(2) + (dhp / sh).powi(2) + rt * (dcp / sc) * (dhp / sh))
         .sqrt()
 }

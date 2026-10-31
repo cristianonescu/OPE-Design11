@@ -13,6 +13,7 @@ use crate::raster::{Frame, Raster};
 use crate::regions::{self, NONE, TraceOptions};
 use crate::{DigitizeError, Mode};
 use openstitch_core::Thread;
+use openstitch_design::fmath::Det;
 use openstitch_design::{DesignObject, RegionSewing, RegionType};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -88,7 +89,7 @@ pub fn fill_angle(m: &[bool], mw: usize, mh: usize, mm_per_px: f64) -> f64 {
         let a = deg.to_radians();
         // Across the stitches, in pixel coordinates (y down): a counter-clockwise stitch
         // direction (cos a, −sin a) has the perpendicular (sin a, cos a).
-        let (px, py) = (a.sin(), a.cos());
+        let (px, py) = (a.dsin(), a.dcos());
         let (mut lo, mut hi) = (f64::INFINITY, f64::NEG_INFINITY);
         for y in 0..mh {
             for x in 0..mw {

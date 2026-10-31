@@ -4,6 +4,7 @@
 use crate::raster::Frame;
 use crate::trace::{self, signed_area};
 use openstitch_design::Contour;
+use openstitch_design::fmath::Det;
 
 /// Pixels that are not sewn.
 pub const NONE: u16 = u16::MAX;
@@ -373,6 +374,6 @@ pub fn principal_axis(m: &[bool], mw: usize, mh: usize) -> f64 {
     if (a - c).abs() < 1e-9 * n * n && b.abs() < 1e-9 * n * n {
         return 0.0;
     }
-    let deg = (0.5 * (2.0 * b).atan2(a - c)).to_degrees().round();
+    let deg = (0.5 * (2.0 * b).datan2(a - c)).to_degrees().round();
     if deg <= -90.0 { deg + 180.0 } else { deg }
 }
