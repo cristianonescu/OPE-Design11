@@ -47,7 +47,7 @@ through its normal interface are committed under `compat/reference/`. The compat
 <!-- status:glance -->
 | | |
 |---|---|
-| Feature matrix rows | 170: 143 implemented (2 of them partially compatible), 3 documented only, 10 blocked, 14 planned beyond PE-DESIGN |
+| Feature matrix rows | 171: 143 implemented (2 of them partially compatible), 3 documented only, 10 blocked, 15 planned beyond PE-DESIGN |
 | Compatibility specs | 386: 386 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
 | Matrix rows covered by specs | 32: 25 at the reference tier, 5 at the internal-regression tier, 2 at the oracle tier |
 | Open audit differences | 11 ([audit](docs/COMPATIBILITY_AUDIT.md#summary)) |
@@ -332,6 +332,7 @@ PE-DESIGN 11 does not. Each item is sketched in
 [docs/research/beyond](docs/research/beyond/readiness.md) and will be off unless chosen:
 
 <!-- status:beyond-planned -->
+- Image wizards' "OpenStitch" mode (B16): compatMode: openStitch on Auto Punch, colours reduced by k-means in CIELAB and matched to threads by CIEDE2000, regions under 3 mm² merged with one majority pass; PE-DESIGN mode stays the default; then Photo Stitch 1's perceptual palette and error diffusion, SLIC segmentation
 - Density profiles on fills and satin columns, two-colour blend command, hidden travel for open fills (B6)
 - 3D puff satin mode: density, caps, no underlay or pull compensation, foam stop, ordering (B7)
 - Crosshatch, curved crosshatch and double-zigzag lace as a region type (B8)
