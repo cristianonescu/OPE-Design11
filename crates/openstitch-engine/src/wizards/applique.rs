@@ -1,16 +1,17 @@
 //! Appliqué wizard (PE-DESIGN Tutorial 9-1): from the selected outlines, the appliqué material
 //! line (sewn or cut), a stop, the position line, a stop, the tack-down, a stop, then the
 //! covering stitch. Each stage is a line object; the stops are colour changes between threads
-//! named after the stages.
+//! named after the stages, in PE-DESIGN's appliqué colours: PEC 62 material, 63 position, 64
+//! appliqué for the tack-down and the covering stitch, which so sew as one block (PE-DESIGN
+//! 11.50's Applique Wizard files a01-a05: PEC colours 1, 62, 63, 64).
 
 use super::{
-    MAX_PIECES, closed_outlines, footprint, insert_stages, outer, outline_regions, pattern_colour,
-    selected, stage, stage_thread,
+    MAX_PIECES, closed_outlines, footprint, insert_stages, outer, outline_regions, selected, stage,
 };
 use crate::commands::{CommandSpec, Effect, MM, opt, req, spec, thread};
 use crate::params::{CommandError, CommandResult, Params};
 use crate::session::EngineState;
-use openstitch_core::Thread;
+use openstitch_core::{PEC_CHART, Thread};
 use openstitch_design::boolean;
 use openstitch_design::{ChainShape, DesignObject, LineSewing, LineType};
 use serde_json::json;
@@ -20,6 +21,15 @@ use serde_json::json;
 pub const MATERIAL: &str = "Appliqué material";
 pub const POSITION: &str = "Appliqué position";
 pub const TACK_DOWN: &str = "Appliqué tack-down";
+/// Thread name of the tack-down and, by default, the covering stitch: PE-DESIGN's "Applique".
+pub const APPLIQUE: &str = "Appliqué";
+
+/// PE-DESIGN's appliqué colour at PEC chart index `pec` (62–64), named `name`.
+fn applique_colour(pec: usize, name: &'static str) -> Thread {
+    let mut t = PEC_CHART[pec].clone().expect("PEC 62-64");
+    t.name = Some(name.into());
+    t
+}
 
 pub fn commands() -> Vec<CommandSpec> {
     vec![spec(
@@ -98,7 +108,7 @@ pub fn commands() -> Vec<CommandSpec> {
             opt(
                 "color",
                 "color",
-                "Covering thread (default the first pattern's colour)",
+                "Covering thread (default PE-DESIGN's Applique colour, PEC 64, as the tack-down)",
             ),
         ],
         applique,
@@ -123,12 +133,11 @@ fn applique(s: &mut EngineState, p: &Params) -> CommandResult {
         return Err(p.invalid("distance", "applies to output add only"));
     }
     let holes = p.bool("holes", Some(true))?;
-    let color = match thread(p, "color")? {
-        Some(t) => t,
-        None => pattern_colour(&s.design.objects[idx[0]]),
-    };
-    let tack = tack_down(p, &color)?;
-    let cover = cover(p, color.clone())?;
+    let tack = tack_down(p)?;
+    let cover = cover(
+        p,
+        thread(p, "color")?.unwrap_or_else(|| applique_colour(64, APPLIQUE)),
+    )?;
 
     let outline = if replace {
         closed_outlines(p, &s.design, &idx)?;
@@ -161,13 +170,13 @@ fn applique(s: &mut EngineState, p: &Params) -> CommandResult {
             } else {
                 LineType::Running
             },
-            stage_thread(&color, MATERIAL),
+            applique_colour(62, MATERIAL),
         );
         // Cut lines keep short bridges (cut by hand afterwards), as PE-DESIGN does.
         line.leave_uncut = cut;
         stages.push(stage(MATERIAL, outline.clone(), line));
     }
-    let position = LineSewing::new(LineType::Running, stage_thread(&color, POSITION));
+    let position = LineSewing::new(LineType::Running, applique_colour(63, POSITION));
     stages.push(stage(POSITION, outline.clone(), position));
     if let Some(t) = tack {
         stages.push(stage(TACK_DOWN, outline.clone(), t));
@@ -184,7 +193,7 @@ fn applique(s: &mut EngineState, p: &Params) -> CommandResult {
     Ok(json!({ "ids": ids, "removed": removed }))
 }
 
-fn tack_down(p: &Params, color: &Thread) -> Result<Option<LineSewing>, CommandError> {
+fn tack_down(p: &Params) -> Result<Option<LineSewing>, CommandError> {
     let kind = match p.string("tackDown", Some("zigzag"))?.as_str() {
         "zigzag" => LineType::Zigzag,
         "eStitch" => LineType::EStitch,
@@ -194,7 +203,7 @@ fn tack_down(p: &Params, color: &Thread) -> Result<Option<LineSewing>, CommandEr
             return Err(p.invalid("tackDown", "must be zigzag, eStitch, vStitch or none"));
         }
     };
-    let mut l = LineSewing::new(kind, stage_thread(color, TACK_DOWN));
+    let mut l = LineSewing::new(kind, applique_colour(64, APPLIQUE));
     l.width = p.opt("tackDownWidth", 2.0, 0.5, 10.0)?;
     l.density = p.opt("tackDownDensity", 1.0, 0.2, 5.0)?;
     l.spacing = Some(p.opt("tackDownInterval", 3.0, 0.5, 10.0)?);
