@@ -309,6 +309,15 @@ Done beyond PE-DESIGN so far: the seeded random tatami stagger (#123, 2026-10-29
 random` with `staggerSeed`, reproducible; PE-DESIGN's Fill pane offers the regular Frequency
 brick only, which stays the default).
 
+In progress for alpha.9: **image similarity (B16.1)**, a measured plan to make the image
+wizards' results look like their images, in [research/beyond/image-similarity-plan.md]
+(research/beyond/image-similarity-plan.md). One agreed score (structure, colour and a
+perceptual term on a thread render seen at actual size) judges every change; the targets
+are 95 % for logos, clip art and lettering and 85 % for Photo Stitch 1 at High fidelity, at
+PE-DESIGN's sewing density. All of it lives in the wizards' OpenStitch mode: the
+PE-DESIGN-compatible mode and its specs stay as they are, and every result is the same on
+macOS, Windows and Linux. Phases 0–5 are rows in [FEATURE_MATRIX.md](FEATURE_MATRIX.md).
+
 | Phase | Backlog items | Scope |
 |---|---|---|
 | A Fill library | B1 contour/spiral fill · B6 density profiles and two-colour blend · B7 3D puff mode · B8 crosshatch and lace · B12 carving lines and knockdown fill | `openstitch-design` generators and inspector rows |

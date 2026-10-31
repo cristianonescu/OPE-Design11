@@ -47,7 +47,7 @@ through its normal interface are committed under `compat/reference/`. The compat
 <!-- status:glance -->
 | | |
 |---|---|
-| Feature matrix rows | 172: 146 implemented (3 of them partially compatible), 2 documented only, 10 blocked, 14 planned beyond PE-DESIGN |
+| Feature matrix rows | 178: 146 implemented (3 of them partially compatible), 2 documented only, 10 blocked, 20 planned beyond PE-DESIGN |
 | Compatibility specs | 443: 443 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
 | Matrix rows covered by specs | 33: 26 at the reference tier, 5 at the internal-regression tier, 2 at the oracle tier |
 | Open audit differences | 11 ([audit](docs/COMPATIBILITY_AUDIT.md#summary)) |
@@ -371,6 +371,12 @@ PE-DESIGN 11 does not. Each item is sketched in
 [docs/research/beyond](docs/research/beyond/readiness.md) and will be off unless chosen:
 
 <!-- status:beyond-planned -->
+- Image similarity, Phase 0 (measurement): the similarity score (0.4 MS-SSIM, 0.4 CIEDE2000, 0.2 DISTS on a thread render at actual size from 40 cm) with a sewability report, a calibration test card and a realistic render fitted to its photographed sew-out, deterministic digitizing maths and cross-platform golden hashes (B16.1)
+- Image similarity, Phase 1 (shared colour engine): thread selection by backward elimination, multi-brand charts and My Threads as an additive source, dithering only in tonal regions, a Standard / High fidelity setting in the image dialog (B16.1)
+- Image similarity, Phase 2 (Photo Stitch 2): least-squares thread shares with 4–6 threads and a sew-out-calibrated coverage model; target photo mean ≥ 75 (B16.1)
+- Image similarity, Phase 3 (Photo Stitch 1 High fidelity): fine colour sampling with variable stitch boundaries, rate-constrained rows under 2.1 needle points/mm², a saliency-weighted budget, metric-driven local search; firm target 85 % (B16.1)
+- Image similarity, Phase 4 (Auto Punch): a sewn coloured background, SLIC regions that keep line art, skeleton satin for outlines; target 95 % for logos, clip art and lettering (B16.1)
+- Image similarity, Phase 5 (Cross Stitch and Design Center): OpenStitch modes for both, with mean-Lab cells, edge part-crosses and an Otsu line threshold; targets g07 ≥ 85, g03 and g04 ≥ 95 (B16.1)
 - Density profiles on fills and satin columns, two-colour blend command, hidden travel for open fills (B6)
 - 3D puff satin mode: density, caps, no underlay or pull compensation, foam stop, ordering (B7)
 - Crosshatch, curved crosshatch and double-zigzag lace as a region type (B8)
