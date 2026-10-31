@@ -1591,8 +1591,11 @@ Line references are relative to `crates/`.
       own thread. Round 5 (eight test images, 2026-10-31) shows the picks come from the 29
       Ver4 Option colours. Seven of the eight are PE's CMYK set (70, 90, 89, 75) with navy or
       purple swapped in. Neither a least-squares mixing optimum (PE's set ranks 62nd to
-      6530th) nor a nearest-colour mapping (13 of 32 picks) reproduces them; round 6's
-      single-colour swatches are requested (docs/research/photo-stitch-2-halftone.md).
+      6530th) nor a nearest-colour mapping (13 of 32 picks) reproduces them. Round 6's 23
+      single-colour swatches show the image's nearest Ver4 colour in the set (14 of 20) and
+      fillers from a short list (84, 83, 91, 81). The best simple rule still matches only 68
+      of 124 picks, so OpenStitch's Auto Select is unchanged
+      (docs/research/photo-stitch-2-halftone.md).
 - **Sewing-machine stitch files (PMV, 2026-10-29, #130):** OpenStitch now reads the PMV layout
   it writes (pyembroidery's description: 8-byte magic, 36-byte banner, 56-byte preamble, needle
   count and its double, 6-bit relative x / 5-bit absolute y pairs in 0.25 mm, the length and

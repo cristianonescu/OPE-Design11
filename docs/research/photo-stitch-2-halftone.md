@@ -265,10 +265,47 @@ What they show:
   Ver4 colour, plainly or after full saturation, matches at best 13 of the 32 picks. "Always
   CMYK with navy for sky blue" matches 24.
 
-So the rule is not settled. Round 6 sends 20 flat single-colour swatches and 3 two-colour
-pairs through Auto Select (the owner's notes folder, `round6/autoselect-input`, outside
-the repository). Single colours should show which threads each hue and lightness pulls in.
-OpenStitch's Auto Select is unchanged until then.
+### Round 6: single colours (2026-10-31)
+
+The reference session ran 20 flat swatches and 3 two-colour pairs through Auto Select at
+defaults:
+- 12 hues every 30°;
+- navy, maroon, brown, tan, grey, black, teal and olive;
+- the pairs red + blue, yellow + magenta, and tan + navy.
+
+Each swatch was placed at 50 mm on white; the threads were read from the dialog (Ver4
+numbers, in its order).
+
+| Image | Picks | Image | Picks |
+|---|---|---|---|
+| hue 0° (255,0,0) | 84 90 81 83 | navy | 66 75 69 86 |
+| hue 30° | 89 90 84 83 | maroon | 75 81 83 91 |
+| hue 60° (yellow) | 89 84 83 91 | brown | 75 84 80 67 |
+| hue 90° | 80 83 84 92 | tan | 89 78 90 85 |
+| hue 120° (green) | 71 84 83 91 | grey 128 | 84 81 83 91 |
+| hue 150° | 73 85 84 89 | black | 75 69 85 83 |
+| hue 180° (cyan) | 74 84 81 91 | teal | 66 72 68 87 |
+| hue 210° | 68 82 84 91 | olive | 89 84 75 87 |
+| hue 240° (blue) | 67 82 84 91 | red + blue | 67 90 84 82 |
+| hue 270° | 76 92 84 82 | yellow + magenta | 89 92 84 83 |
+| hue 300° (magenta) | 92 84 83 81 | tan + navy | 66 89 75 90 |
+| hue 330° | 90 84 83 81 | | |
+
+What they show:
+- **The image's own colour.** In 14 of 20 swatches, the Ver4 colour nearest the swatch by
+  RGB is in the set, usually in the first slot. The exceptions sit between two grid colours
+  (hue 90°, 210°, 270°, 330°, teal) or are neutral (grey).
+- **Fillers.** A flat colour still gets four threads. The rest come from a short list:
+  - red 84 (13 of 20), light blue 83 (10), deep rose 91 (7), leaf green 81 (6);
+  - a filler close to the image's colour is replaced by a neighbour: 82 for 83 next to blue,
+    92 for 91 next to violet, 81 for 91 next to rose.
+- **Pairs.** Each colour of a pair gets its own nearest thread, and fillers complete the four.
+
+Still not a rule. "Nearest colours of the image's main clusters, then fillers from 84, 83,
+81, 91 skipping any close to a chosen colour" reproduces 68 of the 124 picks over rounds 5
+and 6. Floyd–Steinberg dithering onto the 29 colours, keeping the four most used, reproduces
+51. OpenStitch's Auto Select stays as it is. The captures and their notes are in the owner's
+folder (`round6/autoselect`).
 
 ## Captures still needed (owner-made, at defaults unless named)
 
