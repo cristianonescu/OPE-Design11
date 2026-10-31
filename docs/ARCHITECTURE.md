@@ -281,8 +281,13 @@ Verified Compatible).
     from the ones already on a thread takes its next-nearest free thread;
   - pixels are classified against the centres by CIEDE2000
     (`Palette::from_census_perceptual`);
-  - the small-region default is 3 mm², with one majority pass. When that cleanup leaves
-    nothing (thin line art), PE-DESIGN's cleanup is used instead.
+  - only the background colour's own pixels are left out, not every colour that shares its
+    thread;
+  - the small-region default is 3 mm², with no majority pass. On line art (the left-out
+    background covers at least 75 % of the image), a small region at most 0.5 mm wide on
+    average and at least twice as long stays as a piece of a line
+    (`regions::merge_small_except`). When the cleanup leaves nothing, PE-DESIGN's cleanup is
+    used instead.
 
   PE-DESIGN mode is the default and is unchanged.
 - **Auto Punch.** Optional extra majority smoothing of the labels (3×3, default none),
@@ -308,7 +313,9 @@ Verified Compatible).
   centre → bottom-left, then "/" whole to the top-right; coming back, top-right → centre →
   bottom-right, then "\" whole to the top-left (Triple sews each whole diagonal three times).
 - **Photo Stitch.** *Fill* (after Photo Stitch 1): a grid of row spacing × stitch length is
-  error-diffused onto the threads plus the fabric colour; fabric cells stay unsewn, so tone
+  error-diffused onto the threads plus the fabric colour (in OpenStitch mode, `compatMode:
+  openStitch`, the threads are the perceptual palette and the diffusion runs in CIELAB:
+  `Palette::build_perceptual`, `palette::dither_perceptual`, B16); fabric cells stay unsewn, so tone
   becomes coverage, unless Sew Page Color (on by default in Color mode, as in PE-DESIGN; Mono has
   none) makes the fabric colour a thread of its own that sews first; defaults Run Pitch 3.0 mm, 0.25 mm rows, 10
   colours; rows are staggered by thirds. A thread's runs are sewn nearest first: from the

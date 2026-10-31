@@ -87,8 +87,8 @@ pub struct ImageWizard {
     pub width_mm: Option<f64>,
     pub colors: u32,
     pub skip_background: bool,
-    /// Auto Punch: OpenStitch's improved method (`compatMode: openStitch`) instead of
-    /// PE-DESIGN's.
+    /// Auto Punch and Photo Stitch 1 in colour: OpenStitch's improved method
+    /// (`compatMode: openStitch`) instead of PE-DESIGN's.
     pub open_stitch: bool,
     // Auto Punch
     pub min_area: f64,
@@ -141,7 +141,9 @@ impl ImageWizard {
         }
         // 0 asks Auto Punch and Cross Stitch for the automatic count.
         let colors = json!(self.colors.min(64));
-        if self.open_stitch && self.method == Method::AutoPunch {
+        let improvable =
+            self.method == Method::AutoPunch || (self.method == Method::PhotoFill && !self.mono);
+        if self.open_stitch && improvable {
             p.insert("compatMode".into(), json!("openStitch"));
         }
         let command = match self.method {
@@ -298,7 +300,16 @@ mod tests {
         assert_eq!(r.params["compatMode"], "openStitch");
         let photo = ImageWizard {
             method: Method::PhotoFill,
+            mono: false,
             ..open
+        };
+        assert_eq!(
+            photo.request().expect("request").params["compatMode"],
+            "openStitch"
+        );
+        let photo = ImageWizard {
+            method: Method::PhotoLines,
+            ..photo
         };
         assert!(
             photo

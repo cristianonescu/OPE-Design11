@@ -11,8 +11,7 @@ Realistic view (`openstitch --show realistic --screenshot`, 1440x900 window), cr
 area and writes docs/images/readme/gallery/<id>.png (480 px wide, 128 colours). The README
 table between the `gallery:start` and `gallery:end` markers is rewritten with the source, the
 result and a caption (wizard, settings, stitches, trims, colours). The images in MODES are also
-converted by Auto Punch in both modes (`compatMode`) for the table between the
-`gallery-modes` markers. `--release` uses the release build. Needs Pillow.
+converted in both modes (`compatMode`) for the table between the `gallery-modes` markers. `--release` uses the release build. Needs Pillow.
 """
 
 import argparse
@@ -69,17 +68,20 @@ GALLERY = {
             "digitize.crossStitch", {}),
 }
 
-# Auto Punch in PE-DESIGN mode next to OpenStitch mode (`compatMode`, B16,
-# docs/research/beyond/image-digitizing.md): id -> image, rendered as <id>-pe and <id>-os.
+# PE-DESIGN mode next to OpenStitch mode (`compatMode`, B16,
+# docs/research/beyond/image-digitizing.md): id -> (image, wizard, command, parameters),
+# rendered as <id>-pe and <id>-os.
 MODES = {
-    "g05": "g05-robot-cartoon.png",
-    "g06": "g06-watercolour-lemons.jpg",
-    "p03": "p03-storybook.jpg",
+    "g05": ("g05-robot-cartoon.png", "Auto Punch", "digitize.autoPunch", {}),
+    "g06": ("g06-watercolour-lemons.jpg", "Auto Punch", "digitize.autoPunch", {}),
+    "p03": ("p03-storybook.jpg", "Auto Punch", "digitize.autoPunch", {}),
+    "p01": ("p01-portrait.jpg", "Photo Stitch 1", "digitize.photoStitch", {"style": "fill"}),
+    "p06": ("p06-sunset.jpg", "Photo Stitch 1", "digitize.photoStitch", {"style": "fill"}),
 }
-for _key, _image in MODES.items():
-    GALLERY[f"{_key}-pe"] = (_image, "Auto Punch, PE-DESIGN mode", "digitize.autoPunch", {})
-    GALLERY[f"{_key}-os"] = (_image, "Auto Punch, OpenStitch mode", "digitize.autoPunch",
-                             {"compatMode": "openStitch"})
+for _key, (_image, _wizard, _command, _params) in MODES.items():
+    GALLERY[f"{_key}-pe"] = (_image, f"{_wizard}, PE-DESIGN mode", _command, _params)
+    GALLERY[f"{_key}-os"] = (_image, f"{_wizard}, OpenStitch mode", _command,
+                             {**_params, "compatMode": "openStitch"})
 
 
 def run(args, cwd):
@@ -157,8 +159,8 @@ def table(stats):
 
 def modes_table(stats):
     rows = ["| Image | PE-DESIGN mode | OpenStitch mode |", "|---|---|---|"]
-    for key, image in MODES.items():
-        rows.append(f"| <img src=\"examples/images/{image}\" width=\"200\"> "
+    for key, (image, wizard, _, _) in MODES.items():
+        rows.append(f"| <img src=\"examples/images/{image}\" width=\"200\"><br>{wizard} "
                     f"| <img src=\"docs/images/readme/gallery/{key}-pe.png\" width=\"260\"><br>"
                     f"{result(stats.get(key + '-pe'))} "
                     f"| <img src=\"docs/images/readme/gallery/{key}-os.png\" width=\"260\"><br>"

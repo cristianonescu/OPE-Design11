@@ -69,7 +69,7 @@ fn hexes(threads: &[Thread]) -> Vec<String> {
 
 /// The `compatMode` parameter, shared with the region attribute of the same name: PE-DESIGN's
 /// method (`peDesign`, the default) or OpenStitch's improved one (`openStitch`).
-fn mode(p: &Params) -> Result<Mode, CommandError> {
+fn compat_mode(p: &Params) -> Result<Mode, CommandError> {
     Ok(
         match choice(p, "compatMode", "peDesign", &["peDesign", "openStitch"])? {
             "openStitch" => Mode::OpenStitch,
@@ -129,7 +129,7 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt(
                     "smooth",
                     "int 0-5",
-                    "Extra majority-filter passes on the labels after the 3×3 modal colour census (default 0; 1 in OpenStitch mode)",
+                    "Extra majority-filter passes on the labels after the 3×3 modal colour census (default 0)",
                 ),
                 opt(
                     "simplify",
@@ -164,18 +164,18 @@ pub fn commands() -> Vec<CommandSpec> {
             ]),
             |s, p| {
                 let (image, frame) = load(s, p)?;
-                let mode = mode(p)?;
-                // OpenStitch mode also cleans up: regions under 3 mm² merge and the labels get
-                // one majority pass, unless the caller sets them.
-                let (min_area, smooth) = match mode {
-                    Mode::PeDesign => (1.0, 0),
-                    Mode::OpenStitch => (3.0, 1),
+                let mode = compat_mode(p)?;
+                // OpenStitch mode also cleans up: specks under 3 mm² merge, unless the caller
+                // sets the area.
+                let min_area = match mode {
+                    Mode::PeDesign => 1.0,
+                    Mode::OpenStitch => 3.0,
                 };
                 let options = AutoPunch {
                     colors: count(p, "colors", AutoPunch::default().colors as i64, 0, 64)?,
                     resolution: count(p, "resolution", 400, 64, 2048)? as u32,
                     min_area_mm2: p.opt("minArea", min_area, 0.0, 1000.0)?,
-                    smooth: count(p, "smooth", smooth, 0, 5)? as u32,
+                    smooth: count(p, "smooth", 0, 0, 5)? as u32,
                     trace: trace_options(p, 0.7)?,
                     satin_max_mm: p.opt("satinMaxWidth", 6.5, 1.0, 12.0)?,
                     satin_min_mm: p.opt("satinMinWidth", 0.7, 0.0, 6.0)?,
@@ -294,6 +294,11 @@ pub fn commands() -> Vec<CommandSpec> {
                     "Lines, colour mode: the Color Set; a named set is four fixed threads in its order (default auto)",
                 ),
                 opt(
+                    "compatMode",
+                    "peDesign|openStitch",
+                    "Fill, colour mode: peDesign as PE-DESIGN 11.50 (default); openStitch picks the threads and dithers in CIELAB (k-means, CIEDE2000)",
+                ),
+                opt(
                     "direction",
                     "degrees",
                     "Lines: Direction, turns every thread's screen angle (0/45/90/135), -180-180 (default 0)",
@@ -340,6 +345,7 @@ pub fn commands() -> Vec<CommandSpec> {
                     "bmyk" => ColorSet::Bmyk,
                     _ => ColorSet::Auto,
                 };
+                options.compat = compat_mode(p)?;
                 let out = photo::convert(&image, &frame, &options).map_err(|e| failed(p, e))?;
                 Ok(json!({
                     "colors": hexes(&out.threads),

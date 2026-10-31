@@ -107,13 +107,25 @@ pub fn majority(labels: &mut [u16], w: usize, h: usize, passes: u32) {
 /// unsewn pixels become unsewn. Smallest first; repeated until none is left (at most 8
 /// rounds).
 pub fn merge_small(labels: &mut [u16], w: usize, h: usize, min_area: usize) {
+    merge_small_except(labels, w, h, min_area, |_| false);
+}
+
+/// [`merge_small`], keeping the small components `keep` accepts (OpenStitch mode keeps the
+/// long, thin pieces of line art and merges only compact specks).
+pub fn merge_small_except(
+    labels: &mut [u16],
+    w: usize,
+    h: usize,
+    min_area: usize,
+    keep: impl Fn(&Component) -> bool,
+) {
     if min_area <= 1 {
         return;
     }
     for _ in 0..8 {
         let (id, comps) = components(labels, w, h);
         let mut small: Vec<usize> = (0..comps.len())
-            .filter(|&c| comps[c].area < min_area)
+            .filter(|&c| comps[c].area < min_area && !keep(&comps[c]))
             .collect();
         if small.is_empty() {
             return;

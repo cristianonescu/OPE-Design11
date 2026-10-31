@@ -101,6 +101,21 @@ named; `python3 tools/gallery.py` regenerates them.
 | <img src="examples/images/g15-folk-bird.png" width="200"> | <img src="docs/images/readme/gallery/g15.png" width="260"> | **Cross Stitch, defaults**<br>4,467 stitches, 4 colours |
 <!-- gallery:end -->
 
+Auto Punch and Photo Stitch 1 also have an **OpenStitch** mode (➕, the image dialog's Mode
+choice): colours are reduced, matched to threads and mixed by how they look, and Auto Punch
+merges specks under 3 mm². PE-DESIGN mode stays the default
+([research](docs/research/beyond/image-digitizing.md)).
+
+<!-- gallery-modes:start -->
+| Image | PE-DESIGN mode | OpenStitch mode |
+|---|---|---|
+| <img src="examples/images/g05-robot-cartoon.png" width="200"><br>Auto Punch | <img src="docs/images/readme/gallery/g05-pe.png" width="260"><br>11,897 stitches, 231 trims, 6 colours | <img src="docs/images/readme/gallery/g05-os.png" width="260"><br>11,176 stitches, 204 trims, 5 colours |
+| <img src="examples/images/g06-watercolour-lemons.jpg" width="200"><br>Auto Punch | <img src="docs/images/readme/gallery/g06-pe.png" width="260"><br>18,278 stitches, 284 trims, 9 colours | <img src="docs/images/readme/gallery/g06-os.png" width="260"><br>13,662 stitches, 111 trims, 7 colours |
+| <img src="examples/images/p03-storybook.jpg" width="200"><br>Auto Punch | <img src="docs/images/readme/gallery/p03-pe.png" width="260"><br>41,676 stitches, 699 trims, 8 colours | <img src="docs/images/readme/gallery/p03-os.png" width="260"><br>30,627 stitches, 284 trims, 10 colours |
+| <img src="examples/images/p01-portrait.jpg" width="200"><br>Photo Stitch 1 | <img src="docs/images/readme/gallery/p01-pe.png" width="260"><br>12,512 stitches, 385 trims, 7 colours | <img src="docs/images/readme/gallery/p01-os.png" width="260"><br>12,983 stitches, 451 trims, 8 colours |
+| <img src="examples/images/p06-sunset.jpg" width="200"><br>Photo Stitch 1 | <img src="docs/images/readme/gallery/p06-pe.png" width="260"><br>11,038 stitches, 370 trims, 11 colours | <img src="docs/images/readme/gallery/p06-os.png" width="260"><br>11,352 stitches, 474 trims, 11 colours |
+<!-- gallery-modes:end -->
+
 ## Features
 
 Features marked **➕** go beyond PE-DESIGN 11: they are off unless you choose them, so
@@ -163,6 +178,9 @@ PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
   regions, cross stitches or photo-style lines. These are independent approximations of
   PE-DESIGN's wizards, compared with its output.
 - **Design Center** pipeline (image → outline → figure → sew settings) and the Stitch Wizard.
+- ➕ **OpenStitch mode for Auto Punch and Photo Stitch 1**: colours reduced, matched to threads
+  and (in Photo Stitch 1) mixed by how they look; Auto Punch also merges specks. PE-DESIGN mode
+  stays the default.
 - **Background images** (PNG, JPEG, BMP or the clipboard): place, crop, rotate, adjust and trace
   over.
 

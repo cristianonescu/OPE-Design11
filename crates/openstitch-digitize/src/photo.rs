@@ -19,9 +19,9 @@
 //! Specified from PE-DESIGN 11's public guide (Photo Stitch 1/2 create stitching from photos
 //! in colour, sepia/grey or mono); the algorithms are this project's own.
 
-use crate::DigitizeError;
 use crate::palette::{self, Palette, Rgb, rgb_f};
 use crate::raster::{Frame, Raster};
+use crate::{DigitizeError, Mode};
 use openstitch_core::{Command, Stitch, Thread};
 use openstitch_design::{DesignObject, StitchBlock};
 
@@ -92,6 +92,9 @@ pub struct PhotoStitch {
     pub direction_deg: f64,
     /// Lines, colour mode: the Color Set (default Auto Select).
     pub color_set: ColorSet,
+    /// Fill, colour mode: PE-DESIGN's palette and dithering, or OpenStitch's perceptual ones
+    /// ([`Palette::build_perceptual`], [`palette::dither_perceptual`]).
+    pub compat: Mode,
 }
 
 impl PhotoStitch {
@@ -118,6 +121,7 @@ impl PhotoStitch {
             max_density: MAX_DENSITY,
             direction_deg: 0.0,
             color_set: ColorSet::Auto,
+            compat: Mode::PeDesign,
         }
     }
 }
@@ -187,6 +191,9 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
         stretch(&mut cells);
     }
     let fabric_pec = palette::nearest_pec(p.fabric).0;
+    // OpenStitch mode reaches Photo Stitch 1 in colour only; Photo Stitch 2's line screen and
+    // Mono stay as PE-DESIGN's.
+    let perceptual = p.compat == Mode::OpenStitch && p.style == PhotoStyle::Fill && !mono;
     // Threads, and for the line screen the image colour each one stands for (its reduced
     // colour), against which the screen measures each thread's share.
     // A named Color Set: four fixed chart threads, sewn in the set's order.
@@ -214,7 +221,11 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
             } else {
                 n
             };
-            let pal = Palette::build(&colors, boxes.min(64));
+            let pal = if perceptual {
+                Palette::build_perceptual(&colors, boxes.min(64))
+            } else {
+                Palette::build(&colors, boxes.min(64))
+            };
             // A thread matching the fabric is left out: the fabric shows instead.
             pal.chart
                 .iter()
@@ -261,7 +272,11 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
     if p.sew_page && p.style == PhotoStyle::Fill && !mono {
         threads.push(palette::nearest_pec(p.fabric).1);
     }
-    let dithered = palette::dither(&cells, cols, rows, &targets);
+    let dithered = if perceptual {
+        palette::dither_perceptual(&cells, cols, rows, &targets)
+    } else {
+        palette::dither(&cells, cols, rows, &targets)
+    };
     let mut objects = Vec::new();
     let mut counts = Vec::new();
     let mut sewn_threads = Vec::new();
