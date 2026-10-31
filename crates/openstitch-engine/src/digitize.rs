@@ -296,7 +296,7 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt(
                     "compatMode",
                     "peDesign|openStitch",
-                    "Fill, colour mode: peDesign as PE-DESIGN 11.50 (default); openStitch picks the threads and dithers in CIELAB (k-means, CIEDE2000)",
+                    "Colour mode: peDesign as PE-DESIGN 11.50 (default); openStitch picks the threads in CIELAB (k-means, CIEDE2000), dithers in CIELAB (fill) or mixes the line screen in linear light (lines)",
                 ),
                 opt(
                     "direction",

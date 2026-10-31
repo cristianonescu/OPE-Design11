@@ -171,3 +171,28 @@ fn perceptual_dither_mixes_by_lightness() {
         "CIELAB dithering mixes {perceptual}"
     );
 }
+
+/// Photo Stitch 2's OpenStitch mode solves the line screen's mix in linear light: a grey that
+/// reflects half the light of white (sRGB 188) is half black thread over white fabric, where
+/// the sRGB mix gives it about a quarter.
+#[test]
+fn linear_mix_covers_a_mid_grey_by_half() {
+    use openstitch_digitize::screen::Shares;
+    let frame = Frame::new(0.0, 0.0, 40.0, 40);
+    let black = [[0.0, 0.0, 0.0]];
+    let white = [255.0; 3];
+    let share = |grey: u8, linear: bool| {
+        let img = flat(40, 40, |_, _| [grey; 3]);
+        Shares::colour_in(&img, &frame, &black, white, linear).usage(0)
+    };
+    // A black image is full coverage in both: the share per cell is usage over this.
+    let full = share(0, true);
+    assert!((share(0, false) - full).abs() < 1e-6);
+    let linear = share(188, true) / full;
+    let srgb = share(188, false) / full;
+    assert!((linear - 0.5).abs() < 0.02, "linear light mixes {linear}");
+    assert!(
+        (srgb - (255.0 - 188.0) / 255.0).abs() < 0.02,
+        "sRGB mixes {srgb}"
+    );
+}

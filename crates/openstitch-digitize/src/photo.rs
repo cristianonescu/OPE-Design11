@@ -92,8 +92,10 @@ pub struct PhotoStitch {
     pub direction_deg: f64,
     /// Lines, colour mode: the Color Set (default Auto Select).
     pub color_set: ColorSet,
-    /// Fill, colour mode: PE-DESIGN's palette and dithering, or OpenStitch's perceptual ones
-    /// ([`Palette::build_perceptual`], [`palette::dither_perceptual`]).
+    /// Colour mode: PE-DESIGN's method, or OpenStitch's: the perceptual palette
+    /// ([`Palette::build_perceptual`]; Photo Stitch 2's Auto Select too), dithering in CIELAB
+    /// (Photo Stitch 1, [`palette::dither_perceptual`]) and the line screen's mix in linear
+    /// light (Photo Stitch 2, [`crate::screen::Shares::colour_in`]).
     pub compat: Mode,
 }
 
@@ -191,9 +193,11 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
         stretch(&mut cells);
     }
     let fabric_pec = palette::nearest_pec(p.fabric).0;
-    // OpenStitch mode reaches Photo Stitch 1 in colour only; Photo Stitch 2's line screen and
-    // Mono stay as PE-DESIGN's.
-    let perceptual = p.compat == Mode::OpenStitch && p.style == PhotoStyle::Fill && !mono;
+    // OpenStitch mode reaches both styles in colour: Photo Stitch 1 and Photo Stitch 2's Auto
+    // Select take the perceptual palette, Photo Stitch 1 dithers in CIELAB and Photo Stitch 2
+    // mixes in linear light. Mono stays as PE-DESIGN's.
+    let perceptual = p.compat == Mode::OpenStitch && !mono;
+    let linear = perceptual && p.style == PhotoStyle::Lines;
     // Threads, and for the line screen the image colour each one stands for (its reduced
     // colour), against which the screen measures each thread's share.
     // A named Color Set: four fixed chart threads, sewn in the set's order.
@@ -286,7 +290,7 @@ pub fn convert(image: &Raster, frame: &Frame, p: &PhotoStitch) -> Result<Convert
         let shares = if mono {
             crate::screen::Shares::mono(image, frame)
         } else {
-            crate::screen::Shares::colour(image, frame, &stands_for, fabric)
+            crate::screen::Shares::colour_in(image, frame, &stands_for, fabric, linear)
         };
         let settings = crate::screen::Screen {
             interval: p.row_spacing_mm.clamp(0.5, 10.0) * 10.0,

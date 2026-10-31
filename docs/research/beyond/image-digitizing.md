@@ -147,6 +147,47 @@ Across the nine images:
 The test `perceptual_dither_mixes_by_lightness` pins the difference: a grey of lightness 50
 between black and white threads mixes 50 % white in OpenStitch mode, against 47 % by RGB.
 
+## 2.4 Photo Stitch 2 and Cross Stitch (2026-10-31)
+
+**Photo Stitch 2.** Three variants were measured on seven images: Auto Select on five
+photos, the gradient, and the poppies with Color Set CMYK.
+- **Perceptual palette** for Auto Select's threads (3.1): the poppies 19.8 → 14.4 and the cat
+  15.5 → 11.6, but the portrait 13.4 → 17.1.
+- **Linear-light mix.** The line screen solves each cell's thread shares as thread and
+  fabric light averaged in linear RGB, not in sRGB: side by side, they average their light.
+  Alone it is worse on Auto Select's sets, but it lifts the fixed CMYK set: poppies
+  31.5 → 17.5.
+- **Both together, without PE-DESIGN's full-coverage rule for saturated colours**
+  (`screen::saturate`, which is PE's habit rather than a better mix).
+
+The last is OpenStitch mode:
+
+| Image | ΔE | Stitches |
+|---|---|---|
+| p08 poppies, Auto Select | 19.8 → 13.4 | 32,921 → 32,394 |
+| p08 poppies, CMYK | 31.5 → 16.6 | 35,725 → 33,239 |
+| p04 cat | 15.5 → 11.1 | 28,016 → 29,653 |
+| p06 sunset | 20.5 → 17.3 | 18,514 → 18,536 |
+| g09 gradient | 21.9 → 20.8 | 19,507 → 18,949 |
+| p07 fruit | 15.8 → 15.9 | 29,416 → 30,381 |
+| p01 portrait | 13.4 → 18.3 | 18,673 → 20,516 |
+
+Mean ΔE falls 18 %, from 19.8 to 16.2, with stitches about the same. The portrait is worse:
+PE-DESIGN mode keeps three threads there, because the fourth matches the fabric and is left
+out, and those three suit the skin and the teal. The perceptual palette's four mix the
+portrait less well.
+
+**Cross Stitch: no measurable gain, skipped.** On seven images (g07, g15, g02, g05, g12,
+p03, p04):
+- **Perceptual palette:** the mean ΔE fell 4 % (16.0 → 15.3), almost all from the storybook
+  (23.9 → 18.5), which got three more threads. The colour error of the sewn cells rose on
+  four of the seven images.
+- **Each cell taking the thread nearest its mean colour** (instead of a vote of its pixels):
+  slightly worse on its own (16.0 → 16.2).
+
+The error is dominated by the gaps between crosses, which neither changes. Cross Stitch stays
+PE-only.
+
 ## 3. Methods
 
 For each method: what it would improve, its cost, the Rust crates, the licence, and the
@@ -252,8 +293,9 @@ one.
 
   Settings the user changes still win.
 - **Photo Stitch 1 in colour** gets the perceptual palette and CIELAB dithering (2.3).
-- **Other wizards:** Cross Stitch, Mono and Photo Stitch 2 stay PE-only until a method beats
-  PE-DESIGN mode on their test images.
+- **Photo Stitch 2 in colour** gets the perceptual palette for Auto Select and the line
+  screen's mix in linear light, without PE's full-coverage rule (2.4).
+- **Other wizards:** Cross Stitch (no measurable gain, 2.4) and Mono stay PE-only.
 
 ## 5. Next steps
 
