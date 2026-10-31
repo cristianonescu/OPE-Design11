@@ -198,7 +198,8 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    on opening); PE-DESIGN's confirmation of the Hoop Size page (probe p3); the design's machine
    type and hoop in the header; turn the `#PES0110` shapes and texts the reader parses into
    editable OpenStitch objects; right-aligned and vertical text; the other region and line types,
-   hole-sewing pairs and several outlines per object; the hoop in v1 (the public
+   several hole sewing pairs in one file or with groups (one pair without groups is written since
+   2026-10-31) and several outlines per object; the hoop in v1 (the public
    description contradicts itself); PES v7–v10 (from the owner's own files only, as
    [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest

@@ -1,0 +1,147 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-0110-hole-sewing",
+  "area": "pes",
+  "title": "PES 0110 writes a hole sewing pair as PE-DESIGN's paired objects",
+  "description": "design.export with pesVersion 11 writes a hole sewing pair as PE-DESIGN 11.50 writes Modify Overlap > Set hole sewing: the inner shape Not Sewn and the pair [outer, inner] in the sixteen bytes before the group list (owner files concentric-ring40-hole15 and spiral-ring40-hole15, compat/reference/stitches). The design is those files' rings with a Fill region: a 15 mm circle inside a 40 mm one, both centred on (50,50) mm, the outer one sewn as Fill in Red around the inner one, which is not sewn.",
+  "covers": {
+    "audit": [
+      5
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES 0110 (PE-DESIGN 11) editable shapes write"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 5"
+    },
+    {
+      "kind": "measured",
+      "note": "docs/FILE_FORMATS.md, PES 0110 object list, hole sewing: mapped from the owner's concentric-ring40-hole15, spiral-ring40-hole15 and hole-sewing-pentagon-star; the writer's rewrite of those files is byte-identical outside the documented differences (pes11.rs, written_object_sections_match_pe_designs_bytes_outside_the_documented_differences)"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "ring",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 50,
+        "cy": 50,
+        "rx": 7.5
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 50,
+        "cy": 50,
+        "rx": 20
+      }
+    },
+    {
+      "command": "object.setHoleSewing",
+      "params": {
+        "ids": [
+          1,
+          2
+        ],
+        "enabled": true
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 2,
+        "type": "fill",
+        "color": "Red"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 2,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes",
+      "pesVersion": "11"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "pes/pes-0110-hole-sewing.pes",
+      "make": "Run `stitchtool compat --only pes-0110-hole-sewing` and open target/compat/work/pes-0110-hole-sewing/a.pes in PE-DESIGN 11 (App menu > Open). Expected: a 40 mm circle sewn as Fill Stitch in Red around a 15 mm circle that is not sewn, both centred on (50,50) mm, as the owner's ring files: Home > Modify Overlap > Hole sewing shows Cancel hole sewing enabled with the outer circle selected, and the fill leaves the inner circle empty. Record in the MANIFEST notes: whether the file opens and with what warning, whether the hole sewing pair is recognised (Cancel hole sewing enabled), and the status-bar size and stitch count. Then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md). If PE-DESIGN refuses the file or opens it blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": "0110",
+      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature",
+      "reference": {}
+    },
+    {
+      "id": "classes",
+      "measure": {
+        "kind": "pesClasses"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": [
+        "CEmbLine",
+        "CEmbLine"
+      ],
+      "evidence": "the ring files: the inner circle and the outer one, two CEmbLine objects; the reader parses the whole list",
+      "reference": {}
+    },
+    {
+      "id": "colour-blocks",
+      "measure": {
+        "kind": "colorBlocks"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 1,
+      "evidence": "one Red fill; the inner circle is not sewn",
+      "reference": {}
+    }
+  ]
+}

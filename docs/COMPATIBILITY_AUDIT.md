@@ -354,7 +354,9 @@ Line references are relative to `crates/`.
   Punch columns as PE-DESIGN's Straight and Curve Block objects (specs `pes-0110-manual-punch`,
   `pes-0110-curve-block`, reference pending; owner files m01–m11 read and rewritten byte for
   byte outside the pattern block; Text > Convert to Blocks' output (stroke-blocks-H, -A) read as
-  blocks and running pieces, its blocks' marks equal but for the floats' last bits; a Curve Block written from a design has handles within one
+  blocks and running pieces, its blocks' marks equal but for the floats' last bits; hole sewing
+  pairs read and written (spec `pes-0110-hole-sewing`, reference pending; one pair per file
+  without groups, from the owner's three hole files); a Curve Block written from a design has handles within one
   file unit of PE-DESIGN's, which way PE-DESIGN rounds them not mapped); the Appliqué wizard's stages as PE-DESIGN's appliqué lines and colours (spec
   `pes-0110-applique`, reference pending; owner files a01–a05 read and rewritten byte for byte
   outside the documented differences);
