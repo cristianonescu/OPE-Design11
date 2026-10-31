@@ -1377,6 +1377,21 @@ Line references are relative to `crates/`.
       carry about 2·π·r / pitch + 20 needle points instead of 4·2ⁿ; the density-1.0 triangle
       spiral (441 against 425: more corner stitches on the short inner sides); the 36 mm
       circle's width (36.0 against 35.6) and the portrait ellipse's height (39.0 against 39.5).
+  - Spiral round a hole, round 7 (2026-10-31, 6 references: 40 mm rings with 10, 15 and 20 mm
+    holes, the 15 mm ring at density 1.0 and pitch 3.0, an offset hole, a square with a square
+    hole). Decision (coordinator, 2026-10-31): the default is to sew PE-DESIGN's band, with an
+    OpenStitch mode (`compatMode: "openStitch"`, the vocabulary shared with the image wizards)
+    keeping today's single travel. What the files show: PE sews the outline's spiral in to the
+    middle of the band, then the band as separate trimmed pieces, then the hole's spiral. On
+    concentric rings the pieces are about 5.5° wide every 11.25° (31 pieces, 64 trims; every
+    22.5° with a 10 mm hole); their needle counts repeat with quarter-circle symmetry (6, 12,
+    18, 25, 34, 42); the bigger ones zigzag inside a sliver. An offset hole leaves almost no
+    band (3 tiny pieces); a square with a square hole gives three side segments. The pieces are
+    the gaps PE's own turn sampling leaves between its last outer and last hole turns, so they
+    cannot be reproduced before that sampling rule is known (the same open item as the spiral
+    needles per turn). Not implemented yet; the counts of the four concentric-ring files (and
+    the offset hole's stitch lengths) are pinned at the internal tier with PE's values in their
+    evidence, everything else, and the whole square-with-hole file, at the reference tier.
   - Cut circles on the outline (fixed 2026-10-31): a circle that only grazes the outline or a
     hole's edge (nowhere more than 0.1 mm outside: the 40 mm circle's 20 mm circle, the ring's
     7.5 mm circle on its hole) is sewn as one loop, as PE-DESIGN does, instead of breaking into

@@ -5399,6 +5399,78 @@
       "settings": "Shapes > isosceles Triangle dragged (20,40)-(80,70) mm; region Spiral Stitch. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 59,50 x 29,50 mm, 941 st.",
       "sha256": "32ce72862c7ffc2fc86b7f91b93d241b7332e673c7e652bbb077eb57597279b4",
       "notes": "pe-refs-4 round 6 (#138 follow-ups), round6/spiral/spiral-triangle-wide.pes: starts at the bottom-left corner (-29.8,+14.8), ends at (+0.2,+2.4)."
+    },
+    {
+      "file": "stitches/spiral-ring40-hole10.pes",
+      "spec": "spiral-ring40-hole10",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "a 40 mm Circle (30,30)-(70,70) with a 10 mm Circle (45,45)-(55,55) as hole (Set hole sewing, inner region Not Sewn); region Spiral Stitch on the outer shape. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 39,30 x 39,70 mm, 1917 st.",
+      "sha256": "98a5fab338906307315c98db1306eff3181ef632bf632661ea15754632577122",
+      "notes": "pe-refs-4 round 7 (#138 follow-ups), round7/spiral/spiral-ring40-hole10.pes: PE sews the outline's spiral inwards to the middle of the band, then the band where the two spirals meet as separate trimmed pieces (each with a tie-in and a lock), then the hole's spiral: 15 band pieces at r 12.2-12.7 mm, alternating 7-needle 17° runs with longer ones; 32 trims."
+    },
+    {
+      "file": "stitches/spiral-ring40-hole20.pes",
+      "spec": "spiral-ring40-hole20",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "a 40 mm Circle with a 20 mm Circle (40,40)-(60,60) as hole; region Spiral Stitch on the outer shape. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 39,30 x 39,70 mm, 1918 st.",
+      "sha256": "38435e8dbda65bed44ccd01708a7c4b2adc95e54eb97e117149c7d3a4fe55694",
+      "notes": "pe-refs-4 round 7 (#138 follow-ups), round7/spiral/spiral-ring40-hole20.pes: PE sews the outline's spiral inwards to the middle of the band, then the band where the two spirals meet as separate trimmed pieces (each with a tie-in and a lock), then the hole's spiral: 31 pieces about 5.5° wide every 11.25° at r 14.7-15.3 mm; 64 trims."
+    },
+    {
+      "file": "stitches/spiral-ring40-hole15-d1p0.pes",
+      "spec": "spiral-ring40-hole15-d1p0",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "round 4's 40 mm ring with a 15 mm hole; region Spiral Stitch on the outer shape. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 38,90 x 39,40 mm, 1219 st.",
+      "sha256": "6cafb35bf922daa8832cf907630450f3575f18885386a9f1fc1d89b9f9c50e77",
+      "notes": "pe-refs-4 round 7 (#138 follow-ups), round7/spiral/spiral-ring40-hole15-d1p0.pes: Density 1,0. PE sews the outline's spiral inwards to the middle of the band, then the band where the two spirals meet as separate trimmed pieces (each with a tie-in and a lock), then the hole's spiral: 31 pieces every 11.25° at r 13.2-14.2 mm; 64 trims."
+    },
+    {
+      "file": "stitches/spiral-ring40-hole15-pitch3p0.pes",
+      "spec": "spiral-ring40-hole15-pitch3p0",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "round 4's 40 mm ring with a 15 mm hole; region Spiral Stitch on the outer shape. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 39,30 x 39,70 mm, 1632 st.",
+      "sha256": "71ce762733965e587c6ba7b4a449ba10893806af345dc51f4e8206a41401eba0",
+      "notes": "pe-refs-4 round 7 (#138 follow-ups), round7/spiral/spiral-ring40-hole15-pitch3p0.pes: Run pitch 3,0. PE sews the outline's spiral inwards to the middle of the band, then the band where the two spirals meet as separate trimmed pieces (each with a tie-in and a lock), then the hole's spiral: 31 pieces every 11.25°; 64 trims."
+    },
+    {
+      "file": "stitches/spiral-ring40-hole15-offset.pes",
+      "spec": "spiral-ring40-hole15-offset",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "a 40 mm Circle with a 15 mm Circle (47,42.5)-(62,57.5) as hole, its centre 4.5 mm right; region Spiral Stitch on the outer shape. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 39,30 x 39,70 mm, 1601 st.",
+      "sha256": "00fa356cf20e550ce60c953fb7701ae97b5c4f0eba873041693515ab7f739cf1",
+      "notes": "pe-refs-4 round 7 (#138 follow-ups), round7/spiral/spiral-ring40-hole15-offset.pes: almost no band: pieces of 1243, 6, 1, 6 and 345 needles; 8 trims; one jump crosses the hole."
+    },
+    {
+      "file": "stitches/spiral-square40-hole16.pes",
+      "spec": "spiral-square40-hole16",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "a 40 mm square Rectangle (30,30)-(70,70) with a 16 mm square (42,42)-(58,58) as hole; region Spiral Stitch on the outer shape. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 39,90 x 39,70 mm, 1686 st.",
+      "sha256": "78f2bc4cbcefb4fe74f53e6d34d4a13ba37dc787b95783d6c19c14ba0500e6e2",
+      "notes": "pe-refs-4 round 7 (#138 follow-ups), round7/spiral/spiral-square40-hole16.pes: 6 pieces: the outline's spiral (959), three side segments of about 76° (62, 26, 26 needles), the hole's spiral (598) and a 15-needle return to the start corner; 10 trims."
     }
   ]
 }
