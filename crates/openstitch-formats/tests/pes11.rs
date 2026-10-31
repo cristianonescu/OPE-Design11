@@ -347,6 +347,25 @@ fn hole_sewing_pairs_read() {
 }
 
 #[test]
+fn a_group_of_some_objects_reads_and_two_groups_are_not_mapped() {
+    // Home > Group on the first two of three rectangles: one group, its number one more than
+    // its last member's archive number (4, where the CGroupObject class is 5).
+    let partial = objects_of(&data("pe11/group-partial.pes"));
+    assert_eq!(partial.groups, [vec![0, 1]]);
+    let bytes = data("pe11/group-partial.pes");
+    let at = bytes
+        .windows(12)
+        .position(|w| w == b"CGroupObject")
+        .expect("group")
+        + 12;
+    assert_eq!(bytes[at..at + 2], [4, 0]);
+    // Two groups of two (built on group-partial): a layout not mapped yet, so no group is read.
+    let two = objects_of(&data("pe11/group-two.pes"));
+    assert_eq!(two.shapes.len(), 4);
+    assert!(two.groups.is_empty());
+}
+
+#[test]
 fn unmapped_layouts_stop_reading_instead_of_misreading() {
     // Layouts not mapped yet must end the list as "unparsed", with the shapes read before them
     // intact and every vertex inside its bounds. The Manual Punch column of
@@ -518,6 +537,7 @@ const FULLY_PARSED: &[&str] = &[
     "hole-sewing-pentagon-star",
     "concentric-ring40-hole15",
     "spiral-ring40-hole15",
+    "group-partial",
     "a01-rect-applique",
     "a02-applique-cutting",
     "a03-applique-no-tackdown",
@@ -877,6 +897,9 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
     let marks_differ = [
         "o-gallery-heart",
         "shape-start-points",
+        // Three rectangles whose second position's segment differs from r01's (the documented
+        // geometry-header difference).
+        "group-partial",
         "r10-circle",
         "r11-line",
         // A vector import's pentagon and star: outlines that are not rectangles.

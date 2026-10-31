@@ -373,17 +373,17 @@ Line references are relative to `crates/`.
   PES section byte for byte; it re-sews the group without the zero-length stitch that
   `stitches.import` restores on each run's first needle point, issue #135);
   `pes-0110-applique`, reference tier: PE-DESIGN 11.50 opens the export with no group of a
-  partial set of objects, its lines editable in PE-DESIGN's appliqué colours, and re-saves it
+  group of its four lines (number corrected), its lines editable in PE-DESIGN's appliqué colours, and re-saves it
   unchanged but for its pattern blocks, 2026-10-31; owner files a01–a05 read and rewritten byte
   for byte outside the documented differences; **open:** the wizard's V tack-down shows as an E
   stitch (the field telling E from V is not mapped), and the appliqué sews 29 x 29 mm where
   PE-DESIGN's wizard sews the same square 32,6 x 32,8 mm, OpenStitch's outline offset);
   Shapes-gallery shapes (`CEmbSpecialShape`, `CEmbLine` records under another class name)
-  round-trip (o-gallery-heart, shape-start-points). Groups: PE-DESIGN 11.50 refuses a file whose
-  one group leaves an object out ("Unexpected file format", the appliqué export of 2026-10-30,
-  2026-10-31); the export writes only a group of every object, the one layout in the owner's
-  files, and leaves other grouping out (open until owner captures show partial and several
-  groups). Refused for
+  round-trip (o-gallery-heart, shape-start-points). Groups: the group's number is one more than its last
+  member's archive number (a01, o-group-two-rects, group-partial); OpenStitch wrote the class's
+  number, which PE-DESIGN 11.50 refused ("Unexpected file format") for the appliqué export's
+  group of four lines without the square (2026-10-31), fixed; several groups (PE-DESIGN's
+  group-two) are not mapped and are left out of the file (open). Refused for
   now: right-aligned and vertical text, stretched fit, rotation, letter spacing, kerning,
   per-character edits, other fonts.
   **PE-DESIGN's check (reference tier, `pes-0110-editable-text`):** it opens the file as

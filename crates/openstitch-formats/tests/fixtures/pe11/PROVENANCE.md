@@ -193,3 +193,16 @@ empty code, RGB on a 0/85/170/255 grid, type 0x0B, id string 66-94 (row n = 65 +
 | File | SHA-256 | Made as |
 |---|---|---|
 | `ver4-option-color-29.pes` | `ef52278a045822f4a7e97d1e687e55cf98bd76fc49464657cd3ce4160b3b79ff` | as above |
+
+## Round 6 (2026-10-31): groups
+
+Made by the owner's PE-DESIGN 11.50 (Layout & Editing) on Windows 11 Pro 10.0.26300,
+2026-10-31, by black-box GUI use only (session pe-refs-4). App menu > New (Hoop Size 100 x 100
+mm); Rectangle tool at its default (line Zigzag Stitch, region Fill Stitch, red); 10 mm squares,
+each 12 x 12 mm with its zigzag; a pair selected with a drag box, Home > Group > Group; Save As
+"Layout & Editing Ver.11.0 File" (#PES0110).
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `group-partial.pes` | `f19726f9bfdd56a3b9a8685b490f4d23ab3150750541255fef8dd02f2265b4b6` | Squares at (10,10), (30,10), (50,10) mm; the first two grouped. 52 x 12 mm, 1257 st (the group 32 x 12 mm, 838 st). |
+| `group-two.pes` | `ff88f4d44d6f9cdc62fbbd6ebb6f2706c3dfa52c7b2cd0637d4858fb7c69a654` | group-partial with a fourth square at (70,10) mm; the last two grouped as well. 72 x 12 mm, 1676 st. |

@@ -386,13 +386,12 @@ A rectangle starts in the middle of its bottom edge and runs round the corners; 
 four smooth vertices whose handles lie 0.5523 × the radius along the tangent. The record ends
 after its last vertex.
 
-Every owner file with a group has one group of all its objects (the Applique Wizard's output with
-the original shape, vector imports, Convert to Blocks, o-group-two-rects, the machine-* files),
-and PE-DESIGN 11.50 refused ("Unexpected file format") a file whose one group left an object out:
-OpenStitch's appliqué export of 2026-10-30 grouped its four lines without the square, while the
-same file with all five grouped, or with no group, opens (2026-10-31). The writer's export
-therefore writes a group only when one group holds every object; how PE-DESIGN stores a group of
-some of the objects, or several groups, is not mapped (captures requested).
+Until 2026-10-31 OpenStitch wrote the `CGroupObject` class's archive number there (the objects'
+count + 2), which equals PE-DESIGN's number only when the group holds the last object: PE-DESIGN
+11.50 refused ("Unexpected file format") the appliqué export, whose group held the four lines
+without the square (7 written, 6 due); the same file with all five grouped, or none, opened.
+PE-DESIGN's group-two (two groups of two) writes the second group differently (`06 80 08 00 …`);
+that layout is not mapped, and the reader reads no group from it.
 
 After the list: 10 zero bytes, or with a **hole sewing pair** 16 bytes, u16 0, 3, 3, the
 outer and inner objects' list positions and 6 zero bytes (Modify Overlap > Set hole sewing on a
@@ -402,8 +401,10 @@ turns the user's own inner shape Not Sewn; the vector import adds a Not Sewn cop
 after the pentagon and keeps the star sewn. All three files hold one pair and no groups, so
 where the group list goes after a pair, and how two pairs are listed, are not mapped (the
 writer refuses both). Then the **group list**, a u16 count then per group its MFC tag
-(`FFFF 0000 0C00 CGroupObject` the first time), a u16 with the `CGroupObject` class's archive
-number (the objects' count + 2: 1 is `CEmbLine`, 2.. the objects, then the class), the u16
+(`FFFF 0000 0C00 CGroupObject` the first time), a u16 one more than the archive number of the
+group's last-archived member (a01-rect-applique's group of all five objects, numbers 2 … 6: 7;
+o-group-two-rects: 4; group-partial, the first two of three rectangles: 4, where the
+`CGroupObject` class itself is 5), the u16
 member count and the members' object indexes as u16 (o-group-two-rects, machine-rbr …
 machine-trim-bound); 12 zero bytes; then the **sewing-order list**: u32 1 and, for every object in
 sewing order, (object index, part, 1) triples, part 2 the region, 1 the line and 0 the connection
@@ -527,8 +528,8 @@ OpenStitch's Brother PEC chart gets the BROTHER EMBROIDERY catalogue number and 
 catalogue number, brand and chart), one `CEmbLine` per visible shape with every mapped field set,
 one `CEmbOne` per stitch pattern (its needle points in runs cut as version 6 cuts them, a jump
 run where the pattern jumps or trims, each colour block's thread added to the table), the
-groups (a design's one group of every object; other grouping is left out, see the group list
-above), the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
+groups (one group, of any of the objects; a design with several groups keeps none in the file:
+PE-DESIGN's group-two writes two groups in a layout not mapped yet), the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
 as `CEmbNText` (letters at the text's size, Satin or Fill, an optional running, triple or
 zigzag line at PE's defaults, line breaks, the line spacing %, left or centre alignment and the
 click point at the alignment point), and fitted to an outline as `CEmbAText` (the fit settings, the
