@@ -38,7 +38,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
     radial, spiral, flexible spiral, stippling, net fill, zigzag net fill, decorative fill;
     concentric circle and spiral calibrated to PE-DESIGN 11.50 (#138, 14 references;
     open: the spiral's inner-turn needle counts, the concentric chord splits and its seam on
-    Bézier outlines; the spiral's winding and closing run settled with round 5).
+    Bézier outlines; the spiral's winding and closing run settled with round 5; tie-in and lock
+    per run, grazing cut circles and the triangle spiral settled 2026-10-31).
 - **Lettering:** text objects with Lato Bold and Pacifico (SIL OFL), text on a path, user
   TrueType/OpenType fonts (CJK through any font with the glyphs), shaping of right-to-left and
   complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits

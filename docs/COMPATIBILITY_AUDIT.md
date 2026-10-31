@@ -1292,8 +1292,20 @@ Line references are relative to `crates/`.
     that corner and runs back along the edge to the start point, ending where it began. OpenStitch
     sews both cases that way now (`crate::spiral`, closing run as its own run); all six specs pass
     within 3 %. PE-DESIGN shows no R1/R2 markers for Spiral or Concentric Circle regions, so a
-    moved start point cannot be captured. Open: the triangle's first turn reaches further into
-    the base corners in PE (39.7 mm wide against 39.0 mm; width not compared).
+    moved start point cannot be captured.
+  - Tie-in, lock and the triangle (fixed 2026-10-31): PE-DESIGN ties in at the start and locks
+    at the end of every Concentric Circle and Spiral run it separates with a trim (the whole and
+    the cut circles; a spiral and its closing run). OpenStitch did neither, so a spiral's start
+    point was only a jump target: the triangle's start corner went unsewn (39.0 mm wide against
+    PE's 39.7). Each run now gets the tie-in and lock fill and satin use; the triangle measures
+    39.8 × 39.3 mm (PE 39.7 × 39.2) and its width is compared again. A cornered turn's sides are
+    now split by their own length, between the two rings' sides (triangle 854 stitches against
+    PE's 842, +1.4 %, was +3.4 %; mean stitch 1.88 mm against 1.90).
+  - Cut circles on the outline (fixed 2026-10-31): a circle that only grazes the outline or a
+    hole's edge (nowhere more than 0.1 mm outside: the 40 mm circle's 20 mm circle, the ring's
+    7.5 mm circle on its hole) is sewn as one loop, as PE-DESIGN does, instead of breaking into
+    fragments joined by travel where it crosses the flattened outline (ring with a hole: 1541
+    stitches against PE's 1581, was 1634 with the tie-ins; 30 mm circle 1140 against 1121).
   - The concentric seam on a Bézier circle stays open. Round 5 adds a 30 mm circle (seam at the
     left edge just above the middle, like the 40 mm one) and a 40 × 30 mm ellipse (seam at the
     top just right of the middle); no single walking rule fits those and the rectangle's 75.4°.
