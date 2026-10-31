@@ -224,8 +224,8 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    listed since 2026-10-30 (PE's Ver4 Option Color chart as ids 66–94, `sewPalette`; the 0110 writer writes those
    threads with their ids as PE does); where
    PE-DESIGN matches colours to it is not verified (no capture). PEC 62–64 have PE-DESIGN's appliqué RGB since
-   2026-10-31. Left: appliqué stages written as PEC 62–64 and the `#PES0110` colour list after
-   the PEC as PE writes it; whether PE-DESIGN's Import Chart reads a CSV (#136, capture
+   2026-10-31. The `#PES0110` colour list after the PEC is written as PE writes it
+   (2026-10-31). Left: appliqué stages written as PEC 62–64; whether PE-DESIGN's Import Chart reads a CSV (#136, capture
    requested); the machine type and hoop in the `#PES0110` header (#125, capture requested).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.

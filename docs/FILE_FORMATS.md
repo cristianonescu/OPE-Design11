@@ -393,9 +393,12 @@ is three bytes R, G, B (`0E 1F 7C` for 1 PRUSSIAN BLUE) on a Hoop Size page and 
 all zero on a Custom Size page (385). Other per-block codes: `FE FF FF` a thread with no
 catalogue number (a name read from another file, an Option colour), `FA FF FF`, `FB FF FF`,
 `FC FF FF` the Applique Wizard's material, position and appliqué (PEC 62–64), `F9` and the
-cut's number as u16 for a cutting line (PEC 65, a02). OpenStitch's writers still write the RGB
-as u24 little-endian (B, G, R, as pyembroidery does for version 6) and `0D` with the number
-for every block.
+cut's number as u16 for a cutting line (PEC 65, a02). OpenStitch's `#PES0110` writer writes the list
+this way since 2026-10-31 (R, G, B on a Hoop Size page and zeros on a Custom Size page; `0D` and
+the BROTHER EMBROIDERY number for a Brother chart colour, `FA`–`FC` for PEC 62–64, `FE FF FF` for
+a thread with no number; `colour_list_after_the_pec_is_written_as_pe_design_writes_it` against
+every block of PE's files with a number); the icons stay blank. The version 6 writer keeps
+pyembroidery's u24 little-endian RGB (B, G, R) and has no codes.
 
 #### `CEmbNText` (text)
 
