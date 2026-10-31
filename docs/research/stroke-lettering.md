@@ -230,6 +230,25 @@ not before, so every reference in the repository has a spec that reads it.
 4. **Order, travel and trims inside a letter.** Order the strokes, travel along stroke edges at
    2 mm, and trim between a letter's separate runs (x, g, i). Specs: trim counts on
    `text-size-hg` (4) and the "OpenStitch" transforms (11).
+   **Order done 2026-10-31** (`GlyphStrokes::blocks`), from PE-DESIGN's own blocks
+   (stroke-blocks-H, -A: the direction lines' order gives the sewing direction):
+   - strokes through a junction that continue each other within 40° are one column (H's stems,
+     A's legs, T's bar);
+   - sewing starts at the column end nearest the letter's top-left; of two ends within 1 mm (A's
+     legs at the apex), the left column's;
+   - a column another stroke leaves from is sewn to that junction, then from its far end back to
+     it, then the junction square in the first part's direction, and the leaving stroke follows;
+   - a column entered through a junction is sewn whole from its upper end (H's right stem, A's
+     right leg from the apex, though its foot is nearer).
+
+   H gives PE-DESIGN's five blocks within 0.5 mm (top 0-8.8, foot 20.6 up to 11.6, square
+   8.8-11.6, bar 3.8-13.6, right stem 0-20.6); A gives its five in PE's order and directions, the
+   left leg and bar within 1 mm from the left foot. T is its bar's two halves, the square and the
+   stem. Open: A's right leg starts 3.4 mm below the apex, where PE-DESIGN's takes the apex in
+   (apex ownership; the rungs stop where both sides end). Lato's A is 20.2 mm wide here, against
+   16.7 mm between PE-DESIGN's foot lines. X gives two diagonals through a square where
+   PE-DESIGN sews two chevrons with a trim. Travel between the blocks and trims are not
+   generated yet: blocks are not sewn (step 2's switch).
 5. **Under sewing per stroke:** the outline type, a run round each stroke before its satin
    (`stroke-us-*`: +68 to +69 needle points on H and A). **Convert to Blocks** emits one Manual
    Punch block per stroke (`stroke-blocks-*`), **Convert to Outline** keeps today's single region

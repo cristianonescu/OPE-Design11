@@ -10,8 +10,9 @@
 //! (a V's foot, an A's apex; an L's right angle stays one stroke, as PE-DESIGN fans it), and a
 //! closed loop with no junction (an O) is one closed stroke. Free ends reach out to the outline.
 //!
-//! Which stroke is sewn first, which stroke owns a junction and when two strokes through a
-//! junction are sewn as one are routing decisions, made where the strokes are sewn. Own algorithm;
+//! [`GlyphStrokes::blocks`] orders them as PE-DESIGN's Convert to Blocks does: strokes that
+//! continue each other straight through a junction are one column, a column another stroke
+//! leaves from is sewn in two parts and its junction square, and the rest whole. Own algorithm;
 //! lengths are 0.1 mm.
 
 use crate::fmath::Det;
@@ -1024,6 +1025,435 @@ impl GlyphStrokes {
     }
 }
 
+// ------------------------------------------------------------------ order
+
+/// Two strokes through a junction whose directions out of it differ from straight by at most
+/// this (degrees) are one column through it (H's stems, A's legs, T's bar).
+const THROUGH: f64 = 40.0;
+
+/// One column of a letter as PE-DESIGN 11.50 sews it (its Convert to Blocks blocks): rungs in
+/// sewing order, each `[left, right]` across the column.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Block {
+    pub rungs: Vec<[Vec2; 2]>,
+    /// The junction square: the piece of a column under the stroke that leaves it there.
+    pub junction: bool,
+}
+
+/// A stroke's end: `(stroke, 0 or 1)`.
+type StrokeAt = (usize, usize);
+
+/// Strokes sewn as one column: `(stroke, reversed)` along it, and the junction between each
+/// two.
+struct Column {
+    parts: Vec<(usize, bool)>,
+    through: Vec<usize>,
+}
+
+impl GlyphStrokes {
+    /// The direction a stroke leaves junction end `end` in (towards its inside).
+    fn out_of(&self, s: usize, end: usize) -> Vec2 {
+        let c = &self.strokes[s].centre;
+        let (from, along): (Vec2, Vec<Vec2>) = if end == 0 {
+            (c[0], c.clone())
+        } else {
+            (c[c.len() - 1], c.iter().rev().copied().collect())
+        };
+        // A point about a stroke width in, so the junction's own bend does not count.
+        let reach = self.strokes[s]
+            .widths
+            .iter()
+            .copied()
+            .fold(0.0, f64::max)
+            .max(10.0);
+        let to = point_at(&along, reach.min(length(&along)));
+        let d = to - from;
+        let len = d.length();
+        if len > 1e-9 {
+            d * (1.0 / len)
+        } else {
+            v2(0.0, 0.0)
+        }
+    }
+
+    /// The columns: strokes through a junction that continue each other straight are joined.
+    fn columns(&self) -> Vec<Column> {
+        let n = self.strokes.len();
+        // next[s][end] = (stroke, its end, junction) joined at that end.
+        let mut next: Vec<[Option<(usize, usize, usize)>; 2]> = vec![[None, None]; n];
+        for j in 0..self.junctions.len() {
+            let at: Vec<(usize, usize)> = (0..n)
+                .flat_map(|s| (0..2).map(move |e| (s, e)))
+                .filter(|&(s, e)| {
+                    !self.strokes[s].closed && self.strokes[s].ends[e] == StrokeEnd::Junction(j)
+                })
+                .collect();
+            let mut best: Option<(f64, StrokeAt, StrokeAt)> = None;
+            for (i, &a) in at.iter().enumerate() {
+                for &b in &at[i + 1..] {
+                    if a.0 == b.0 {
+                        continue;
+                    }
+                    let (da, db) = (self.out_of(a.0, a.1), self.out_of(b.0, b.1));
+                    let cos = (-(da.x * db.x + da.y * db.y)).clamp(-1.0, 1.0);
+                    let off = cos.dacos().to_degrees();
+                    if off <= THROUGH && best.is_none_or(|(o, _, _)| off < o) {
+                        best = Some((off, a, b));
+                    }
+                }
+            }
+            if let Some((_, a, b)) = best {
+                next[a.0][a.1] = Some((b.0, b.1, j));
+                next[b.0][b.1] = Some((a.0, a.1, j));
+            }
+        }
+        let mut used = vec![false; n];
+        let mut out = Vec::new();
+        // Chains from an unjoined end first, then what is left (a ring through junctions).
+        let starts = (0..n)
+            .flat_map(|s| (0..2).map(move |e| (s, e)))
+            .filter(|&(s, e)| next[s][e].is_none())
+            .chain((0..n).map(|s| (s, 0)));
+        for (s, e) in starts {
+            if used[s] {
+                continue;
+            }
+            let mut col = Column {
+                parts: Vec::new(),
+                through: Vec::new(),
+            };
+            // Enter stroke s at end e.
+            let (mut s, mut e) = (s, e);
+            loop {
+                used[s] = true;
+                col.parts.push((s, e == 1));
+                match next[s][1 - e] {
+                    Some((t, te, j)) if !used[t] => {
+                        col.through.push(j);
+                        (s, e) = (t, te);
+                    }
+                    _ => break,
+                }
+            }
+            out.push(col);
+        }
+        out
+    }
+
+    /// A column's centre line and widths, start to end.
+    fn column_stroke(&self, col: &Column) -> Stroke {
+        let mut centre: Vec<Vec2> = Vec::new();
+        let mut widths = Vec::new();
+        for &(s, rev) in &col.parts {
+            let st = &self.strokes[s];
+            let mut c = st.centre.clone();
+            let mut w = st.widths.clone();
+            if rev {
+                c.reverse();
+                w.reverse();
+            }
+            // Joined at the junction's centre: one point there.
+            let skip = usize::from(!centre.is_empty());
+            centre.extend(c.into_iter().skip(skip));
+            widths.extend(w.into_iter().skip(skip));
+        }
+        let first = col.parts[0];
+        let last = col.parts[col.parts.len() - 1];
+        let end =
+            |(s, rev): (usize, bool), start: bool| self.strokes[s].ends[usize::from(rev == start)];
+        Stroke {
+            centre,
+            widths,
+            closed: col.parts.len() == 1 && self.strokes[first.0].closed,
+            ends: [end(first, true), end(last, false)],
+        }
+    }
+
+    /// The letter's blocks in PE-DESIGN 11.50's sewing order, rungs `spacing` apart (0.1 mm).
+    ///
+    /// PE-DESIGN's Convert to Blocks of Lato's H and A (stroke-blocks-H, -A) gives the rule:
+    /// strokes through a junction that continue each other straight are one column; sewing
+    /// starts at the column end nearest the letter's top-left; a column that a later stroke
+    /// leaves from is sewn to that junction, then from its far end back to it, then the junction
+    /// square, and the stroke leaving it follows; a column entered at a junction with nothing
+    /// left to leave by is sewn whole from its nearer end. H: the left stem's top, its bottom
+    /// (upwards), the junction square, the bar, the right stem whole; A: the left leg's upper
+    /// and lower parts, the square, the bar, the right leg whole with the apex.
+    pub fn blocks(&self, contours: &[Contour], spacing: f64) -> Vec<Block> {
+        let cols = self.columns();
+        if cols.is_empty() || spacing <= 0.0 {
+            return Vec::new();
+        }
+        let col_strokes: Vec<Stroke> = cols.iter().map(|c| self.column_stroke(c)).collect();
+        let merged = GlyphStrokes {
+            strokes: col_strokes,
+            junctions: self.junctions.clone(),
+        };
+        let rungs = merged.rungs(contours, spacing);
+        let mut order = Order {
+            g: self,
+            cols: &cols,
+            strokes: &merged.strokes,
+            rungs: &rungs,
+            done: vec![false; cols.len()],
+            out: Vec::new(),
+            at: v2(0.0, 0.0),
+        };
+        let Some(b) = Rect::enclosing(merged.strokes.iter().flat_map(|s| s.centre.iter().copied()))
+        else {
+            return Vec::new();
+        };
+        order.at = v2(b.min_x, b.min_y);
+        // Each piece of the letter from the column end nearest where the sewing is.
+        while let Some((c, end)) = order.nearest_end() {
+            order.visit(c, Entry::End(end));
+        }
+        order.out
+    }
+}
+
+/// Where a column is entered: at one of its ends, or at a junction it runs through.
+#[derive(Clone, Copy)]
+enum Entry {
+    End(usize),
+    Through,
+}
+
+struct Order<'a> {
+    g: &'a GlyphStrokes,
+    cols: &'a [Column],
+    strokes: &'a [Stroke],
+    rungs: &'a [Vec<[Vec2; 2]>],
+    done: Vec<bool>,
+    out: Vec<Block>,
+    /// Where the needle is.
+    at: Vec2,
+}
+
+impl Order<'_> {
+    /// The column end nearest the needle; of ends within 1 mm of the nearest (an A's two legs
+    /// at its apex), the leftmost column's (PE-DESIGN starts the A on its left leg).
+    fn nearest_end(&self) -> Option<(usize, usize)> {
+        let ends: Vec<(f64, f64, usize, usize)> = self
+            .strokes
+            .iter()
+            .enumerate()
+            .filter(|&(c, s)| !self.done[c] && !s.centre.is_empty())
+            .flat_map(|(c, s)| {
+                let mid = s.centre.iter().map(|p| p.x).sum::<f64>() / s.centre.len() as f64;
+                [(0, s.centre[0]), (1, s.centre[s.centre.len() - 1])]
+                    .map(|(end, p)| (p.distance(self.at), mid, c, end))
+            })
+            .collect();
+        let nearest = ends.iter().map(|e| e.0).fold(f64::INFINITY, f64::min);
+        ends.into_iter()
+            .filter(|e| e.0 <= nearest + 10.0)
+            .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.total_cmp(&b.0)))
+            .map(|e| (e.2, e.3))
+    }
+
+    /// Arc length along column `c` of each through junction.
+    fn through_at(&self, c: usize) -> Vec<(usize, f64)> {
+        let s = &self.strokes[c];
+        self.cols[c]
+            .through
+            .iter()
+            .map(|&j| (j, project(&s.centre, false, self.g.junctions[j].at).0))
+            .collect()
+    }
+
+    /// The other columns at junction `j`, not sewn yet.
+    fn waiting_at(&self, j: usize, except: usize) -> Vec<usize> {
+        (0..self.cols.len())
+            .filter(|&k| k != except && !self.done[k])
+            .filter(|&k| {
+                let s = &self.strokes[k];
+                s.ends.contains(&StrokeEnd::Junction(j)) || self.cols[k].through.contains(&j)
+            })
+            .collect()
+    }
+
+    /// Half the width of the strokes leaving column `c` at junction `j`: the square's reach.
+    fn square_half(&self, c: usize, j: usize) -> f64 {
+        self.waiting_at(j, c)
+            .iter()
+            .map(|&k| {
+                let s = &self.strokes[k];
+                let near = if s.centre[0].distance(self.g.junctions[j].at)
+                    <= s.centre[s.centre.len() - 1].distance(self.g.junctions[j].at)
+                {
+                    0
+                } else {
+                    s.centre.len() - 1
+                };
+                // The width a little way out of the junction, where the stroke is itself.
+                let k_in = if near == 0 {
+                    (s.widths.len() / 2).min(3)
+                } else {
+                    s.widths
+                        .len()
+                        .saturating_sub(1 + (s.widths.len() / 2).min(3))
+                };
+                s.widths.get(k_in).copied().unwrap_or(0.0) * 0.5
+            })
+            .fold(0.0, f64::max)
+    }
+
+    /// Rungs of column `c` between arc lengths `from` and `to` (either order), in that order,
+    /// with a rung at each end.
+    fn piece(&self, c: usize, from: f64, to: f64) -> Vec<[Vec2; 2]> {
+        let s = &self.strokes[c];
+        let rs = &self.rungs[c];
+        if rs.len() < 2 {
+            return Vec::new();
+        }
+        let at: Vec<f64> = rs
+            .iter()
+            .map(|r| project(&s.centre, false, r[0].lerp(r[1], 0.5)).0)
+            .collect();
+        let rung_at = |x: f64| -> [Vec2; 2] {
+            let k = at
+                .iter()
+                .position(|&a| a >= x)
+                .unwrap_or(rs.len() - 1)
+                .max(1);
+            let (a0, a1) = (at[k - 1], at[k]);
+            let t = if a1 - a0 > 1e-9 {
+                ((x - a0) / (a1 - a0)).clamp(0.0, 1.0)
+            } else {
+                0.0
+            };
+            [
+                rs[k - 1][0].lerp(rs[k][0], t),
+                rs[k - 1][1].lerp(rs[k][1], t),
+            ]
+        };
+        let (lo, hi) = (from.min(to), from.max(to));
+        let lo = lo.max(at[0]);
+        let hi = hi.min(at[at.len() - 1]);
+        if hi - lo < 1e-6 {
+            return Vec::new();
+        }
+        let mut v = vec![rung_at(lo)];
+        v.extend(
+            rs.iter()
+                .zip(&at)
+                .filter(|&(_, &a)| a > lo + 1e-6 && a < hi - 1e-6)
+                .map(|(r, _)| *r),
+        );
+        v.push(rung_at(hi));
+        if from > to {
+            v.reverse();
+        }
+        v
+    }
+
+    fn emit(&mut self, rungs: Vec<[Vec2; 2]>, junction: bool) {
+        if let Some(last) = rungs.last() {
+            self.at = last[0].lerp(last[1], 0.5);
+            self.out.push(Block { rungs, junction });
+        }
+    }
+
+    fn visit(&mut self, c: usize, entry: Entry) {
+        if self.done[c] {
+            return;
+        }
+        self.done[c] = true;
+        // A ring (an O): one block round it.
+        if self.strokes[c].closed {
+            let ring = self.rungs[c].clone();
+            self.emit(ring, false);
+            return;
+        }
+        let len = self.strokes[c].length();
+        let through = self.through_at(c);
+        // The first junction along the column, from where it is entered, that another stroke
+        // leaves from.
+        let leave = match entry {
+            Entry::End(e) => {
+                let mut t: Vec<&(usize, f64)> = through
+                    .iter()
+                    .filter(|(j, _)| !self.waiting_at(*j, c).is_empty())
+                    .collect();
+                t.sort_by(|a, b| {
+                    let key = |s: f64| if e == 0 { s } else { len - s };
+                    key(a.1).total_cmp(&key(b.1))
+                });
+                t.first().map(|&&(j, s)| (j, s))
+            }
+            Entry::Through => None,
+        };
+        let mut sewn_through = Vec::new();
+        match (entry, leave) {
+            (Entry::End(e), Some((j, s))) => {
+                let h = self.square_half(c, j);
+                let (start, far) = if e == 0 { (0.0, len) } else { (len, 0.0) };
+                let toward = if e == 0 { -1.0 } else { 1.0 };
+                let near_edge = s + toward * h;
+                let far_edge = s - toward * h;
+                let a = self.piece(c, start, near_edge);
+                self.emit(a, false);
+                let b = self.piece(c, far, far_edge);
+                self.emit(b, false);
+                let sq = self.piece(c, near_edge, far_edge);
+                self.emit(sq, true);
+                sewn_through.push(j);
+                for k in self.waiting_at(j, c) {
+                    self.visit(k, self.entry_at(k, j));
+                }
+            }
+            (Entry::End(e), None) => {
+                let (a, b) = if e == 0 { (0.0, len) } else { (len, 0.0) };
+                let whole = self.piece(c, a, b);
+                self.emit(whole, false);
+            }
+            (Entry::Through, _) => {
+                // Sewn whole from its upper end, however near the junction is to the other
+                // (H's right stem, A's right leg from the apex: stroke-blocks-H, -A).
+                let s = &self.strokes[c];
+                let top_first = s.centre[0].y <= s.centre[s.centre.len() - 1].y;
+                let (a, b) = if top_first { (0.0, len) } else { (len, 0.0) };
+                let whole = self.piece(c, a, b);
+                self.emit(whole, false);
+            }
+        }
+        // Strokes still waiting at this column's other junctions, nearest the needle first.
+        let mut js: Vec<usize> = self.cols[c]
+            .through
+            .iter()
+            .copied()
+            .chain(self.strokes[c].ends.iter().filter_map(|e| match e {
+                StrokeEnd::Junction(j) => Some(*j),
+                _ => None,
+            }))
+            .filter(|j| !sewn_through.contains(j))
+            .collect();
+        let here = self.at;
+        js.sort_by(|a, b| {
+            let d = |j: usize| self.g.junctions[j].at.distance(here);
+            d(*a).total_cmp(&d(*b))
+        });
+        for j in js {
+            for k in self.waiting_at(j, c) {
+                self.visit(k, self.entry_at(k, j));
+            }
+        }
+    }
+
+    /// How column `k` is entered from junction `j`: at its end there, or through it.
+    fn entry_at(&self, k: usize, j: usize) -> Entry {
+        let s = &self.strokes[k];
+        if s.ends[0] == StrokeEnd::Junction(j) {
+            Entry::End(0)
+        } else if s.ends[1] == StrokeEnd::Junction(j) {
+            Entry::End(1)
+        } else {
+            Entry::Through
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1249,5 +1679,123 @@ mod tests {
         let g = strokes(&contours).expect("strokes");
         assert!(g.rungs(&contours, 0.0).iter().all(Vec::is_empty));
         assert!(g.rungs(&[], 30.0).iter().all(Vec::is_empty));
+    }
+
+    /// Each block's first and last rung midpoints in mm from the letter box's top-left.
+    fn ends_mm(bl: &Block, b: &Rect) -> ((f64, f64), (f64, f64)) {
+        let m = |r: &[Vec2; 2]| {
+            (
+                ((r[0].x + r[1].x) / 2.0 - b.min_x) / 10.0,
+                ((r[0].y + r[1].y) / 2.0 - b.min_y) / 10.0,
+            )
+        };
+        (m(&bl.rungs[0]), m(&bl.rungs[bl.rungs.len() - 1]))
+    }
+
+    fn near(a: (f64, f64), b: (f64, f64), tol: f64) -> bool {
+        (a.0 - b.0).abs() <= tol && (a.1 - b.1).abs() <= tol
+    }
+
+    #[test]
+    fn blocks_follow_pe_designs_order_for_h() {
+        // PE-DESIGN 11.50's Convert to Blocks of Lato Bold H at 20 mm (stroke-blocks-H, first
+        // and last direction lines' midpoints, mm from the left stem's left edge and the top):
+        // the left stem from the top down to the bar (1.9, 0 to 8.8), its bottom from the foot
+        // up (20.6 to 11.6), the junction square downwards (8.8 to 11.6), the bar left to
+        // right (3.8 to 13.6 at 10.2) and the right stem whole from the top (15.5, 0 to 20.6).
+        let spec = TextSpec::new("H", DEFAULT_FONT, 20.0);
+        let contours = layout(&spec, None).expect("layout").contours();
+        let b = Rect::enclosing(contours.iter().flat_map(Contour::outline_points)).expect("box");
+        let blocks = strokes(&contours).expect("strokes").blocks(&contours, 30.0);
+        let want = [
+            ((1.9, 0.0), (1.9, 8.8), false),
+            ((1.9, 20.6), (1.9, 11.6), false),
+            ((1.9, 8.8), (1.9, 11.6), true),
+            ((3.8, 10.2), (13.6, 10.2), false),
+            ((15.5, 0.0), (15.5, 20.6), false),
+        ];
+        assert_eq!(blocks.len(), want.len(), "{blocks:?}");
+        for (bl, (from, to, junction)) in blocks.iter().zip(want) {
+            let (f, t) = ends_mm(bl, &b);
+            assert!(
+                near(f, from, 0.5) && near(t, to, 0.5),
+                "{f:?} {t:?} want {from:?} {to:?}"
+            );
+            assert_eq!(bl.junction, junction);
+            assert!(bl.rungs.len() >= 2);
+        }
+    }
+
+    #[test]
+    fn blocks_follow_pe_designs_order_for_a_and_t() {
+        // stroke-blocks-A: the left leg from below the apex down to the bar, its foot upwards,
+        // the junction square downwards, the bar left to right, then the right leg whole from
+        // the apex to its foot. Positions from the left foot's line (PE: the upper part starts
+        // 7.4 mm right of it and 18.8 mm up, the bar 6.4 mm up from 4.6 mm).
+        let spec = TextSpec::new("A", DEFAULT_FONT, 20.0);
+        let contours = layout(&spec, None).expect("layout").contours();
+        let b = Rect::enclosing(contours.iter().flat_map(Contour::outline_points)).expect("box");
+        let blocks = strokes(&contours).expect("strokes").blocks(&contours, 30.0);
+        assert_eq!(blocks.len(), 5, "{blocks:?}");
+        let e: Vec<_> = blocks.iter().map(|bl| ends_mm(bl, &b)).collect();
+        let junctions: Vec<bool> = blocks.iter().map(|bl| bl.junction).collect();
+        assert_eq!(junctions, [false, false, true, false, false]);
+        let foot = e[1].0;
+        let from_foot = |p: (f64, f64)| (p.0 - foot.0, p.1 - foot.1);
+        // The upper part goes down and left; the foot part up; the bar left to right; the
+        // right leg down and right.
+        assert!(e[0].1.1 > e[0].0.1 && e[0].1.0 < e[0].0.0, "{:?}", e[0]);
+        assert!(e[1].1.1 < e[1].0.1, "{:?}", e[1]);
+        assert!(e[2].1.1 > e[2].0.1, "{:?}", e[2]);
+        assert!(
+            e[3].1.0 > e[3].0.0 && (e[3].0.1 - e[3].1.1).abs() < 0.5,
+            "{:?}",
+            e[3]
+        );
+        assert!(e[4].1.1 > e[4].0.1 && e[4].1.0 > e[4].0.0, "{:?}", e[4]);
+        assert!(
+            near(from_foot(e[0].0), (7.4, -18.8), 1.0),
+            "{:?}",
+            from_foot(e[0].0)
+        );
+        assert!(
+            (from_foot(e[3].0).1 + 6.4).abs() < 0.5,
+            "{:?}",
+            from_foot(e[3].0)
+        );
+        // The right leg's foot is the letter's bottom.
+        assert!((e[4].1.1 - b.height() / 10.0).abs() < 0.5, "{:?}", e[4]);
+        // T: the bar's left half, its right half from the right end, the square, the stem down.
+        let spec = TextSpec::new("T", DEFAULT_FONT, 20.0);
+        let contours = layout(&spec, None).expect("layout").contours();
+        let b = Rect::enclosing(contours.iter().flat_map(Contour::outline_points)).expect("box");
+        let blocks = strokes(&contours).expect("strokes").blocks(&contours, 30.0);
+        let e: Vec<_> = blocks.iter().map(|bl| ends_mm(bl, &b)).collect();
+        assert_eq!(blocks.len(), 4, "{blocks:?}");
+        assert!(blocks[2].junction);
+        assert!(e[0].0.0 < 0.5 && e[0].1.0 > e[0].0.0, "{:?}", e[0]);
+        assert!(
+            e[1].0.0 > b.width() / 10.0 - 0.5 && e[1].1.0 < e[1].0.0,
+            "{:?}",
+            e[1]
+        );
+        assert!(e[3].1.1 > b.height() / 10.0 - 0.5, "{:?}", e[3]);
+    }
+
+    #[test]
+    fn letters_without_junctions_are_one_block_per_stroke_and_blocks_are_deterministic() {
+        for (ch, n) in [("I", 1), ("L", 1), ("O", 1), ("i", 2), ("S", 1)] {
+            let spec = TextSpec::new(ch, DEFAULT_FONT, 20.0);
+            let contours = layout(&spec, None).expect("layout").contours();
+            let g = strokes(&contours).expect("strokes");
+            let blocks = g.blocks(&contours, 30.0);
+            assert_eq!(blocks.len(), n, "{ch}");
+            assert!(
+                blocks.iter().all(|bl| !bl.junction && bl.rungs.len() >= 2),
+                "{ch}"
+            );
+            assert_eq!(blocks, g.blocks(&contours, 30.0), "{ch}");
+        }
+        assert!(GlyphStrokes::default().blocks(&[], 30.0).is_empty());
     }
 }

@@ -443,8 +443,10 @@ Line references are relative to `crates/`.
   A, S, e, i), and the rungs from each stroke's side edges joined at equal fractions of their
   lengths, as PE-DESIGN's Convert to Blocks lines (H within 2°; A's legs within 10-25° until the
   apex ownership of step 4); PE-DESIGN's own cut imports from its Convert to Blocks files
-  (`import.pes`, 2026-10-31: H and A as its five blocks each); text is not sewn by stroke yet
-  (steps 2-5 of the research note).
+  (`import.pes`, 2026-10-31: H and A as its five blocks each), and the blocks are in
+  PE-DESIGN's order since 2026-10-31 (`GlyphStrokes::blocks`: H's five blocks within 0.5 mm of
+  stroke-blocks-H; A's five in its order and directions; the right leg's apex and X's chevrons
+  still differ); text is not sewn by stroke yet (steps 2-5 of the research note).
 - **Test:**
   - Inputs: `text.add {"text":"AVOW","size":30,"x":50,"y":50}` →
     `object.setRegion {"id":1,"type":"satin"}` → `design.generate`.
