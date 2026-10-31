@@ -518,6 +518,18 @@
       "notes": "ASCII pattern source, not a design."
     },
     {
+      "file": "pes/pes-0110-applique.pes",
+      "spec": "pes-0110-applique",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Made by the pe-refs-4 session (black-box GUI use only) for issue #120. Source: the spec's export with the group fix (one group of every object, else none; SHA-256 1d823009689789d6910bd3e4720f540014fca07d633502a57bfd678d8e830f4b). App menu > Open, then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, right after opening. Page 100 x 100 mm (default).",
+      "sha256": "d012b12a17f7bb9b6a6f0afdbf8b845289199a74372668df212339e3841c96fc",
+      "notes": "32312 bytes, header #PES0110. Opens with no warning (the export of 2026-10-30, whose one group held the four lines without the square, was refused with \"Unexpected file format\"; bisected 2026-10-31: only the partial group). 29,00 x 29,00 mm, 1549 stitches (a01-rect-applique: 32,60 x 32,80 mm, 1063 st: OpenStitch's appliqué outline is offset differently). Sewing Order: the material line (Running), the position line (Running), the tack-down shown as E Stitch 5,0 x 2,0 mm (the wizard's V: the field telling E from V is not mapped), then a group in 007 of the square and the covering zigzag; the Color pane names the lines APPLIQUE MATERIAL, APPLIQUE POSITION and APPLIQUE. Line attributes editable (Run pitch changed and took effect; the document was discarded). The re-save's object section equals the export but for the five pattern blocks (PE-DESIGN's own default pattern, 3010 bytes each); PEC regenerated."
+    },
+    {
       "file": "pes/pes-0110-curve-block.pes",
       "spec": "pes-0110-curve-block",
       "reference": "pe-design",
