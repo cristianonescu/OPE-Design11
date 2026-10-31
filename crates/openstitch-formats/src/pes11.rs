@@ -1254,7 +1254,7 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     let pec_start = w.len();
     let list = pec::write_section(&pattern, &mut w)?;
     patch_pec_header(&mut w.bytes[pec_start..], objects.hoop_page);
-    write_addendum(&mut w, &list, &pattern.threads);
+    write_addendum(&mut w, &list, &pattern.threads, objects.hoop_page);
     Ok(w.bytes)
 }
 
@@ -1963,32 +1963,137 @@ fn write_trailer(
 
 /// After the PEC section, per colour block: the PEC colour list padded to 128 bytes, a 48 × 24
 /// 1-bpp icon (PE-DESIGN draws the thread's number and name; OpenStitch leaves it blank), the
-/// RGB as u24, then a u16 count of preview images (0: PE-DESIGN's own Hoop-Size files have
-/// none) and a `0x0D` + u16 catalogue number per block.
-fn write_addendum(w: &mut ByteWriter, list: &[u8], threads: &[Thread]) {
+/// RGB as R, G, B (zero on a Custom Size page, as in all of PE-DESIGN's own files), then a u16
+/// count of preview images (0: PE-DESIGN's own Hoop-Size files have none) and a three-byte
+/// code per block ([`addendum_code`]).
+fn write_addendum(w: &mut ByteWriter, list: &[u8], threads: &[Thread], hoop_page: bool) {
     w.append(list);
     w.fill(0x20, 128_usize.saturating_sub(list.len()));
     for _ in threads {
         w.fill(0, 0x90);
     }
     for t in threads {
-        w.u24le(i64::from(t.rgb_value()));
+        if hoop_page {
+            w.append(&[t.red, t.green, t.blue]);
+        } else {
+            w.fill(0, 3);
+        }
     }
     w.u16le(0);
     for t in threads {
-        let catalog = t
-            .catalog_number
-            .as_deref()
-            .and_then(|c| c.trim().parse::<u16>().ok())
-            .unwrap_or(0);
-        w.u8(0x0D);
-        w.u16le(i64::from(catalog));
+        w.append(&addendum_code(t));
+    }
+}
+
+/// A colour block's code in the list after the PEC section, as PE-DESIGN 11.50 writes it:
+/// `0D` and the catalogue number as u16 (BROTHER EMBROIDERY's for a Brother chart colour,
+/// `0D 20 03` 800 RED), `FA`, `FB`, `FC` + `FF FF` for the Applique Wizard's material, position
+/// and appliqué colours (PEC 62–64), `FE FF FF` for a thread with no number.
+fn addendum_code(t: &Thread) -> [u8; 3] {
+    let applique = match (t.kind, t.catalog_number.as_deref()) {
+        (Some(APPLIQUE_KIND), Some(c)) => ["100", "101", "102"].iter().position(|&a| a == c),
+        (_, Some(c)) if t.brand.as_deref() == Some("Brother") => ["62", "63", "64"]
+            .iter()
+            .position(|&a| a == c)
+            .filter(|&k| {
+                PEC_CHART[62 + k]
+                    .as_ref()
+                    .is_some_and(|p| p.rgb_value() == t.rgb_value())
+            }),
+        _ => None,
+    };
+    if let Some(k) = applique {
+        return [0xFA + k as u8, 0xFF, 0xFF];
+    }
+    match as_pe_writes(t)
+        .catalog_number
+        .as_deref()
+        .and_then(|c| c.trim().parse::<u16>().ok())
+    {
+        Some(n) => {
+            let [lo, hi] = n.to_le_bytes();
+            [0x0D, lo, hi]
+        }
+        None => [0xFE, 0xFF, 0xFF],
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The colour list after the PEC section, from its RGB on, as PE-DESIGN 11.50 writes it in
+    /// its own `#PES0110` files (pe11 fixtures and compat/reference): for every block whose
+    /// code is a catalogue number or an appliqué colour, OpenStitch's list for the colours the
+    /// reader gives (the PEC chart entries) has PE's RGB and code; the RGB is zero on a Custom
+    /// Size page.
+    #[test]
+    fn colour_list_after_the_pec_is_written_as_pe_design_writes_it() {
+        fn walk(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+            for e in std::fs::read_dir(dir).expect("dir").flatten() {
+                let p = e.path();
+                if p.is_dir() {
+                    walk(&p, out);
+                } else if p.extension().is_some_and(|x| x.eq_ignore_ascii_case("pes")) {
+                    out.push(p);
+                }
+            }
+        }
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut files = Vec::new();
+        walk(&root.join("tests/fixtures/pe11"), &mut files);
+        walk(&root.join("../../compat/reference"), &mut files);
+        let (mut blocks_checked, mut pages) = (0, [0, 0]);
+        for path in &files {
+            let b = std::fs::read(path).expect("read");
+            if !b.starts_with(b"#PES0110") {
+                continue;
+            }
+            let (Ok(section), Ok(pattern)) = (crate::pes::read_objects(&b), crate::pes::read(&b))
+            else {
+                continue;
+            };
+            let pec = u32::from_le_bytes(b[8..12].try_into().expect("u32")) as usize;
+            if b[pec + 0x30] == 0xFF {
+                continue;
+            }
+            let n = usize::from(b[pec + 0x30]) + 1;
+            let codes_at = b.len() - 3 * n;
+            let rgb_at = codes_at - 2 - 3 * n;
+            if b[codes_at - 2..codes_at] != [0, 0] || pattern.threads.len() != n {
+                continue; // preview images follow: not mapped
+            }
+            let hoop_page = section.hoop_page;
+            let mut w = ByteWriter::default();
+            let list = &b[pec + 0x31..pec + 0x31 + n];
+            write_addendum(&mut w, list, &pattern.threads, hoop_page);
+            let ours = &w.bytes[w.bytes.len() - (6 * n + 2)..];
+            let pe = &b[rgb_at..];
+            pages[usize::from(hoop_page)] += 1;
+            for k in 0..n {
+                let code = &pe[3 * n + 2 + 3 * k..3 * n + 2 + 3 * k + 3];
+                if !(code[0] == 0x0D || (0xFA..=0xFC).contains(&code[0])) {
+                    continue; // FE: a thread with no number, F9: a cut
+                }
+                let name = path.display();
+                assert_eq!(
+                    &ours[3 * n + 2 + 3 * k..3 * n + 2 + 3 * k + 3],
+                    code,
+                    "{name} block {k} code"
+                );
+                assert_eq!(
+                    &ours[3 * k..3 * k + 3],
+                    &pe[3 * k..3 * k + 3],
+                    "{name} block {k} RGB"
+                );
+                blocks_checked += 1;
+            }
+        }
+        assert!(
+            blocks_checked > 400 && pages[0] > 300 && pages[1] > 60,
+            "{blocks_checked} {pages:?}"
+        );
+    }
 
     #[test]
     fn body_template_and_pattern_block_have_the_mapped_length() {

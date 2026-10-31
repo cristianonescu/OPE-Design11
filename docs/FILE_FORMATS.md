@@ -100,6 +100,8 @@ rgb(255, 128, 0) to 11 Deep Gold rather than 62 Orange (`thread-match-swatches.p
 the Applique Wizard's colours, with PE-DESIGN's RGB since 2026-10-31 (its colour list after the
 PEC section, below): 62 material (255, 200, 100), 63 position (255, 200, 150), 64 appliqué
 (255, 200, 200); pyembroidery had (255, 153, 0) and (255, 240, 141) for 62 and 63. PE writes
+(255, 200, 200); OpenStitch's Appliqué wizard uses them, and a thread that is a Brother chart
+entry (brand `Brother`, the entry's number, its RGB) keeps that entry in the PEC; pyembroidery had (255, 153, 0) and (255, 240, 141) for 62 and 63. PE writes
 65 for an appliqué cutting line, (220, 220, 220), outside the 65-slot chart. The same
 matcher picks the chart entry for JEF, SEW, HUS and PCS. `approximate_index` is the "approximate" palette matcher
 (city-block winner, squared-Euclidean fallback) for the built-in sew palette.
@@ -422,6 +424,12 @@ catalogue number (a name read from another file, an Option colour), `FA FF FF`, 
 cut's number as u16 for a cutting line (PEC 65, a02). OpenStitch's writers still write the RGB
 as u24 little-endian (B, G, R, as pyembroidery does for version 6) and `0D` with the number
 for every block.
+cut's number as u16 for a cutting line (PEC 65, a02). OpenStitch's `#PES0110` writer writes the list
+this way since 2026-10-31 (R, G, B on a Hoop Size page and zeros on a Custom Size page; `0D` and
+the BROTHER EMBROIDERY number for a Brother chart colour, `FA`–`FC` for PEC 62–64, `FE FF FF` for
+a thread with no number; `colour_list_after_the_pec_is_written_as_pe_design_writes_it` against
+every block of PE's files with a number); the icons stay blank. The version 6 writer keeps
+pyembroidery's u24 little-endian RGB (B, G, R) and has no codes.
 
 #### `CEmbNText` (text)
 

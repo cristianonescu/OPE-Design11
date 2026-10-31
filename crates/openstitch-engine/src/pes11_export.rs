@@ -203,11 +203,12 @@ fn stitch_group(
 /// brand: a01-rect-applique). PE-DESIGN sews its tack-down and covering lines in 102; the
 /// wizard's covering line keeps the design's colour.
 fn applique_thread(t: &Thread) -> Option<Thread> {
-    use crate::wizards::applique::{MATERIAL, POSITION, TACK_DOWN};
+    use crate::wizards::applique::{APPLIQUE, MATERIAL, POSITION, TACK_DOWN};
     let catalog = match t.name.as_deref()? {
         MATERIAL => "100",
         POSITION => "101",
-        TACK_DOWN => "102",
+        // TACK_DOWN: designs from before the tack-down took PE's Applique colour.
+        APPLIQUE | TACK_DOWN => "102",
         _ => return None,
     };
     let mut pe = Thread::rgb(0);

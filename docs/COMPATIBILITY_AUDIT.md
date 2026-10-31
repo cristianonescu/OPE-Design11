@@ -1805,6 +1805,20 @@ Line references are relative to `crates/`.
   1–61 where PE writes 62–64, and its writers put the RGB in that list as B, G, R with `0D` codes
   for every block (PE: `FA`/`FB`/`FC FF FF` for the appliqué colours, `F9` for a cut, `FE FF FF`
   for a thread with no number).
+  PE's cutting line is PEC 65 at (220, 220, 220), outside the 65-slot chart. The Appliqué wizard's
+  stages take PE's appliqué colours since the same day: material 62, position 63, and 64 for
+  the tack-down and, unless a colour is given, the covering stitch, so those two sew as one
+  block as in PE's files; the PEC keeps a Brother chart entry's own index, so the stages are
+  written as PEC 62, 63, 64, and OpenStitch's export of a01's design has PE's PEC colour list and
+  colour list after the PEC except for the order (the square sews last in OpenStitch, first in
+  PE: the `#PES0110` writer's sewing order). Before, every stage took the pattern's colour, the
+  PEC gave them the nearest of 1–61 and the cover was a fourth block. A cutting material line
+  stays on the cutwork needles; PE writes its cuts as PEC 65. The `#PES0110` writer writes that list as PE does since the same
+  day (R, G, B on a Hoop Size page, zeros on a Custom Size page; `0D` + the BROTHER EMBROIDERY
+  number, `FA`/`FB`/`FC FF FF` for the appliqué colours, `FE FF FF` for a thread with no number;
+  checked against every numbered block of PE's own files by
+  `colour_list_after_the_pec_is_written_as_pe_design_writes_it`); it wrote B, G, R and `0D`
+  codes for every block before. The version 6 writer keeps pyembroidery's B, G, R and no codes.
 - **Brother catalogue codes (2026-10-29, #119, #136):** pe-refs-4 read PE-DESIGN 11.50's BROTHER
   EMBROIDERY chart from Sewing Attributes ▸ Color: 61 rows, codes 001 WHITE to 900 BLACK, brand
   EMBROIDERY, no row for PEC 62–64 (so the 61-entry match set of #119 is PE's own chart).
