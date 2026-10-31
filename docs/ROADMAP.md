@@ -110,6 +110,8 @@ Done 2026-10-30: stitch generation is bit-identical on Windows, macOS and Linux 
 math through the `libm` crate instead of each platform's C library); the arched Text Transform
 spec, deferred at alpha.6 because Linux measured it 0.2 mm lower, has its PE-DESIGN reference
 back.
+Done 2026-10-31: image digitizing (`openstitch-digitize`) uses the same deterministic
+math, with its own source scan (B16.1, the first step of the image-similarity plan).
 Done 2026-10-31: imported stitch files land centred on the Design Page, as PE-DESIGN's Import
 Patterns ▸ from File places them (spec `stitches-import-centre`); left: a DST's colour on
 import (PE: 007 PRUSSIAN BLUE) and the joining stitch between two imports of one colour.

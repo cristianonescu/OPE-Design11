@@ -3,6 +3,7 @@
 //! `[x, x + 1) × [y, y + 1)`; samples sit at pixel centres.
 
 use crate::raster::Frame;
+use openstitch_design::fmath::Det;
 use openstitch_design::{Bezier, Contour, Vec2, v2};
 
 /// A closed loop in pixel coordinates (first point not repeated).
@@ -211,7 +212,7 @@ pub fn contour(
                 Some(v[i as usize])
             }
         };
-        let cos_corner = corner_degrees.to_radians().cos();
+        let cos_corner = corner_degrees.to_radians().dcos();
         // Unit tangent at vertex i, or None at corners and open ends.
         let tangent = |i: usize| -> Option<Vec2> {
             let (p, c, n) = (at(i as isize - 1)?, at(i as isize)?, at(i as isize + 1)?);

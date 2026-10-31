@@ -10,6 +10,7 @@
 
 use crate::raster::Frame;
 use crate::regions::{self, NONE, TraceOptions};
+use openstitch_design::fmath::Det;
 use openstitch_design::{Contour, Rect, Vec2, v2};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -95,7 +96,7 @@ pub fn trace(runs: &[Vec<Vec2>], o: &CoverageOptions) -> Vec<Area> {
     for (a, b) in &segments {
         let (ax, ay) = to_px(*a);
         let (bx, by) = to_px(*b);
-        let steps = ((bx - ax).hypot(by - ay) * 2.0).ceil().max(1.0) as usize;
+        let steps = ((bx - ax).dhypot(by - ay) * 2.0).ceil().max(1.0) as usize;
         for k in 0..=steps {
             let t = k as f64 / steps as f64;
             let (cx, cy) = (ax + (bx - ax) * t, ay + (by - ay) * t);
@@ -160,13 +161,13 @@ pub fn trace(runs: &[Vec<Vec2>], o: &CoverageOptions) -> Vec<Area> {
             if len <= 0.0 {
                 continue;
             }
-            let theta = d.y.atan2(d.x);
-            sc += len * (2.0 * theta).cos();
-            ss += len * (2.0 * theta).sin();
+            let theta = d.y.datan2(d.x);
+            sc += len * (2.0 * theta).dcos();
+            ss += len * (2.0 * theta).dsin();
             lengths.push(len);
         }
         lengths.sort_by(f64::total_cmp);
-        let mut angle = (0.5 * ss.atan2(sc)).to_degrees().round();
+        let mut angle = (0.5 * ss.datan2(sc)).to_degrees().round();
         if angle <= -90.0 {
             angle += 180.0;
         }

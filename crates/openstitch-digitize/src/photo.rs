@@ -23,6 +23,7 @@ use crate::palette::{self, Palette, Rgb, rgb_f};
 use crate::raster::{Frame, Raster};
 use crate::{DigitizeError, Mode};
 use openstitch_core::{Command, Stitch, Thread};
+use openstitch_design::fmath::Det;
 use openstitch_design::{DesignObject, StitchBlock};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -481,7 +482,7 @@ fn fill_layer(
                         if dx > reach_x {
                             continue;
                         }
-                        let dist = dx.hypot(dy);
+                        let dist = dx.dhypot(dy);
                         if best.is_none_or(|b| dist < b.0 - 1e-9) {
                             best = Some((dist, r, from_right));
                         }
@@ -509,7 +510,7 @@ fn fill_layer(
             out.push(Stitch::new(xs[0], run.y, Command::Jump));
         } else if last_len >= 2
             && let Some(prev) = out.len().checked_sub(2).map(|i| out[i])
-            && (prev.x - xs[0]).hypot(prev.y - run.y) <= TURN_CELLS * cw + 1e-6
+            && (prev.x - xs[0]).dhypot(prev.y - run.y) <= TURN_CELLS * cw + 1e-6
         {
             // A short hop to the next row: the previous run's last needle point is left out,
             // so the stitch turns from its second-to-last point straight into this run, as a
