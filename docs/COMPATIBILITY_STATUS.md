@@ -4,9 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 410 · pass 410 · fail 0 · error 0 · pending reference 0 · skipped 0.
-Specs: 426 · pass 426 · fail 0 · error 0 · pending reference 0 · skipped 0.
-Specs: 407 · pass 407 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 442 · pass 442 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
