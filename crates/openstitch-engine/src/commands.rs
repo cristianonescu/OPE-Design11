@@ -11,8 +11,8 @@ use openstitch_design::shapes::{self, ArcMode};
 use openstitch_design::text::{self, TextAlign, TextDirection, TextSpec};
 use openstitch_design::{
     Arrange, Bezier, ChainShape, Compiler, Contour, Design, DesignObject, DesignPage, Feather,
-    FeatherSide, Gradation, Layout, LineSewing, LineType, ObjectKind, Rect, RegionSewing,
-    RegionType, RunningStitchPath, StaggerKind, StartEnd, Transform, UnderlayDensity,
+    FeatherSide, FillStitchType, Gradation, Layout, LineSewing, LineType, ObjectKind, Rect,
+    RegionSewing, RegionType, RunningStitchPath, StaggerKind, StartEnd, Transform, UnderlayDensity,
     UnderlayParts, UnderlayStyle, Vec2, v2,
 };
 use serde_json::{Value, json};
@@ -1223,6 +1223,11 @@ fn attribute_commands() -> Vec<CommandSpec> {
                     "Fill: the row-to-row needle stagger, the regular Frequency brick (PE-DESIGN) or OpenStitch's seeded random stagger",
                 ),
                 opt(
+                    "stitchType",
+                    "1|2",
+                    "Fill: PE-DESIGN's Stitch Type, 1 flat rows (default), 2 sloped rows joined edge to edge",
+                ),
+                opt(
                     "staggerSeed",
                     "integer",
                     "Seed of the random stagger (0 to 2^53; the same seed always sews the same rows)",
@@ -1527,6 +1532,16 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         ],
                     )? {
                         r.stagger = k;
+                    }
+                    if p.has("stitchType") {
+                        let t = p.req("stitchType", 1.0, 2.0)?;
+                        r.stitch_type = if t == 1.0 {
+                            FillStitchType::One
+                        } else if t == 2.0 {
+                            FillStitchType::Two
+                        } else {
+                            return Err(p.invalid("stitchType", "must be 1 or 2"));
+                        };
                     }
                     if p.has("staggerSeed") {
                         let seed = p.req("staggerSeed", 0.0, 9_007_199_254_740_992.0)?;

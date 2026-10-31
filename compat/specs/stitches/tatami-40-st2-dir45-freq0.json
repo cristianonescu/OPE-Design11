@@ -1,0 +1,122 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "tatami-40-st2-dir45-freq0",
+  "area": "stitches",
+  "title": "A 40 mm tatami square, Stitch Type 2 at 45 degrees, Frequency 0 %",
+  "description": "A 40 x 40 mm Fill Stitch square at PE-DESIGN 11.50's defaults (density 4.5, step pitch 4.0 mm, pull 0, under sewing off) at direction 45 and Frequency 0 %, with Stitch Type button 2. Stitch Type 2 sews sloped rows: each pass runs from one row's edge to the next row's far edge, rising one row spacing (0.20-0.22 mm), so the passes join in one zigzag. Issue #123 follow-up (round-5 captures).",
+  "covers": {
+    "audit": [
+      15
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Fill (tatami: angle or auto direction"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/tatami-40-st2-dir45-freq0.pes (PE-DESIGN 11.50, 2026-10-30): 2056 stitches"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 40
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "angle": 45,
+        "density": 4.5,
+        "underlay": false,
+        "frequency": 0,
+        "stitchType": 2
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "fill.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/tatami-40-st2-dir45-freq0.pes",
+      "make": "Open round 4's tatami-40-stitch-type-1.pes, select the square, Sewing Attributes: Stitch Type button 2, Direction 45, Frequency 0 %. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "percent": 2
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    }
+  ]
+}
