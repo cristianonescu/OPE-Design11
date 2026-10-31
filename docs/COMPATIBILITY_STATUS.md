@@ -19,6 +19,7 @@ Specs: 387 · pass 387 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Files | Design Property… | reference | `pes-design-properties` |
 | Files | EXP read/write… | reference; reference pending | `machine-formats`, `machine-sample-basic` |
 | Files | HUS read and write (LZ77 + Huffman streams, HUS chart)… | reference; reference pending | `machine-formats`, `machine-sample-basic` |
+| Files | Import stitch files into the design… | reference | `stitches-import-centre` |
 | Files | JEF read/write (Janome chart, stops, hoop code)… | reference; reference pending | `machine-formats`, `machine-sample-basic` |
 | Files | Large designs split into several files on export when they exceed… | reference | `hoop-oversize-export` |
 | Files | PCS read/write (1/6 mm grid, hoop byte)… | reference; reference pending | `machine-formats`, `machine-sample-basic` |
@@ -198,6 +199,7 @@ Specs: 387 · pass 387 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/spiral-triangle` | pass | reference | — | — | pass | — |
 | `stitches/square-gradation-30-10` | pass | reference | pass | — | pass | — |
 | `stitches/square-gradation-default` | pass | reference | pass | — | pass | — |
+| `stitches/stitches-import-centre` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-density-2p5` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-density-4p5-h33` | pass | reference | pass | — | pass | — |
 | `stitches/sweep-fill-density-4p5` | pass | reference | pass | — | pass | — |

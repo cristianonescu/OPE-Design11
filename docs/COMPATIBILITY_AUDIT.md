@@ -1841,6 +1841,20 @@ Line references are relative to `crates/`.
   PES 0110 writer takes the codes of all 61 entries from core (its own table had 25) and picks
   the PEC index among 1–61. Hex colours given to commands (`fill: "#rrggbb"`) stay exact on
   purpose: PE-DESIGN has no free-RGB colour field to match, and exact RGB is what PES v6 keeps.
+- **Imported stitch files are centred on the page (2026-10-31, reference):** PE-DESIGN 11.50's
+  Import Patterns ▸ from File (the Import pane; no dialog or option) ignores where the file put
+  its stitches and centres the pattern on the Design Page: a 20 × 10 mm rectangle saved at
+  (10, 10) mm lands at 40–60 × 45–55 mm on a 100 × 100 page and at 90–110 × 70–80 mm on a
+  200 × 150 page, for a DST and a PES alike, and a second import lands exactly on the first
+  (round-7 captures `import-*.pes`). `stitches.import` placed the stitches at the file's own
+  coordinates (only the editor's File ▸ Import centred them, with `object.center`); it now
+  centres the needle points' box on the page itself. Spec `stitches-import-centre`, reference
+  tier for the 200 × 150 page's position and every size and count. On the 100 × 100 page PE's
+  file writes the PEC stitches from the design's own corner (PEC header 20,0 × 10,0 mm) where
+  its other files keep page coordinates, so those positions are pinned at PE's ruler values
+  (internal tier); a machine reads both framings the same way. Open, not compared: a DST gets
+  PE's 007 PRUSSIAN BLUE on import, and PE joins two imports of one colour with a stitch where
+  OpenStitch jumps (785 against 784 stitches).
 - **Skeleton satin and the Satin Skeleton tool:** OpenStitch extensions with no PE-DESIGN
   counterpart. Label them "Extension" in FEATURE_MATRIX.md.
 - **Text fill rows (for the next text session):** since fill took PE-DESIGN's row structure,
