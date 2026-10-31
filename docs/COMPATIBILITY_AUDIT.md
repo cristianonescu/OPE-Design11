@@ -76,7 +76,7 @@ dearest:
 | 2 | Default PES is truncated v1 with no object section (**fixed**, internal regression; open test pending) | PES | 5 | Documented, unverified | Black-box open test |
 | 3 | Trims and jumps inside one fill or satin region; no Running Stitch Path (**fixed**, internal regression) | Stitches | 5 | Documented difference | No |
 | 4 | Trims between underlay, top stitching and outline of one object | Stitches | 4 | Documented, unverified | Single-needle policy |
-| 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes shapes as `CEmbLine`, which PE-DESIGN 11.50 opens editable, and Lato Bold text as `CEmbNText`, which it opens editable and retypable (both reference); stitch patterns as `CEmbOne` stitch groups (reference pending, `pes-0110-stitches`)) | PES | 5 | Reference | Yes (the Hoop Size page check; Text Transform and text on an outline) |
+| 5 | Every design is written as one stitch group, nothing editable (**partly fixed**, 2026-10-29: `pesVersion` 11 writes shapes as `CEmbLine`, which PE-DESIGN 11.50 opens editable, and Lato Bold text as `CEmbNText`, which it opens editable and retypable (both reference); stitch patterns as `CEmbOne` stitch groups (reference, `pes-0110-stitches`)) | PES | 5 | Reference | Yes (the Hoop Size page check; Text Transform and text on an outline) |
 | 6 | One sewing direction per text instead of per stroke | Fonts | 5 | Documented difference | Angles |
 | 7 | Auto direction is one fixed angle (**fixed**, internal regression) | Stitches | 4 | Documented difference | No |
 | 8 | Underlay model differs (**partly fixed**: PE's two region types, Density Dense / Medium / Light, the Manual Punch column's edge / piping / zigzag); zigzag lines have no underlay | Stitches | 4 | Documented difference | Geometry |
@@ -352,15 +352,23 @@ Line references are relative to `crates/`.
   with the text still fitted to the circle and re-fits it when the circle is reshaped; its re-save
   rewrites only the circle's pattern block and the text's box, which it recomputes); Manual
   Punch columns as PE-DESIGN's Straight and Curve Block objects (specs `pes-0110-manual-punch`,
-  `pes-0110-curve-block`, reference pending; owner files m01–m11 read and rewritten byte for
+  `pes-0110-curve-block`, reference tier: PE-DESIGN 11.50 opens both as editable blocks and
+  re-saves them unchanged but for its own pattern block, 2026-10-31; owner files m01–m11 read and rewritten byte for
   byte outside the pattern block; Text > Convert to Blocks' output (stroke-blocks-H, -A) read as
   blocks and running pieces, its blocks' marks equal but for the floats' last bits, and imported
   as editable objects since 2026-10-31 (`import.pes`: shapes, Manual Punch blocks with their
   direction lines, groups; texts and stitch groups not yet). OpenStitch sews the imported H in 342 needle points with 5 trims and the A in 364 with 6, against PE-DESIGN's 285 and 293 with none: each block and running piece is sewn on its own, where PE-DESIGN sews the group as one run (step 4 of the lettering plan).
   a Curve Block written from a design has handles within one
   file unit of PE-DESIGN's, which way PE-DESIGN rounds them not mapped); the Appliqué wizard's stages as PE-DESIGN's appliqué lines and colours (spec
-  `pes-0110-applique`, reference pending; owner files a01–a05 read and rewritten byte for byte
-  outside the documented differences);
+  `pes-0110-applique`; owner files a01–a05 read and rewritten byte for byte outside the
+  documented differences; **open: PE-DESIGN 11.50 refuses the export of 2026-10-30 with
+  "Unexpected file format"** (2026-10-31): the colour addendum after the PEC block writes B, G,
+  R and `0D` for every block where PE-DESIGN writes R, G, B and `FA`/`FB`/`FC` with PEC 62–64
+  for the appliqué stages; the colour track's fix is in progress and the reference session
+  checks each candidate); a stitch pattern as a `CEmbOne` stitch group (spec
+  `pes-0110-stitches`, reference tier: PE-DESIGN opens it as one stitch object and re-saves the
+  PES section byte for byte; it re-sews the group without the zero-length stitch that
+  `stitches.import` restores on each run's first needle point, issue #135);
   Shapes-gallery shapes (`CEmbSpecialShape`, `CEmbLine` records under another class name)
   round-trip (o-gallery-heart, shape-start-points). Refused for
   now: right-aligned and vertical text, stretched fit, rotation, letter spacing, kerning,

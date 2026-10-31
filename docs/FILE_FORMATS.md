@@ -607,7 +607,13 @@ and sews the pair, the text and the circle with the stitch counts of its own tex
 circle's pattern block (its own default pattern, as for every shape) and the fitted text's
 bounds and extent, which it recomputes from its layout: 757..1242 × 573..757, the same as its
 own text-fit-default, where OpenStitch writes 805..1218 × 373..759 (an open difference, as for
-the arched text box). Version 6 stays the default export until the coordinator decides
+the arched text box). **Stitch group, Manual Punch and Curve Block (2026-10-31, `pes-0110-stitches`,
+`pes-0110-manual-punch`, `pes-0110-curve-block`, reference tier):** PE-DESIGN 11.50 opens the
+stitch group as one stitch object (its re-save's PES section is byte-identical to the export) and
+the two blocks as editable Manual Punch blocks (Edit Points moves the punch points, the satin
+follows; the Curve Block's sides stay curves), with m01's and m09's sizes and stitch counts; their
+re-saves change only the pattern block. **The appliqué export (`pes-0110-applique`) is refused**
+("Unexpected file format"): see the addendum above. Version 6 stays the default export until the coordinator decides
 otherwise.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)
