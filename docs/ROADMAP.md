@@ -272,7 +272,8 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
     2026-10-30 (mono +11 % stitches, was +39 %; trims 99 and 249, were 426 and 1158). Next:
     run-to-run travel in Cross Stitch; PE's contour-following meanders for Photo Stitch 1 and
     Photo Stitch 2's exact colour transitions within a Color Set and Auto Select's thread
-    choice (its line
+    choice (round 5: four Ver4 Option threads, a CMYK base with swaps; round 6's single-colour
+    swatches requested) (its line
     screen, #129, is built since 2026-10-30 after the owner's decision: −3.1 % stitches, angles,
     spacing and densities as PE's; named Color Sets, Direction, interval/density and Mono's
     tone ramp as PE's; harness `tools/screencmp.py`, design note

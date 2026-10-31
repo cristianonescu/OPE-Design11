@@ -1588,7 +1588,11 @@ Line references are relative to `crates/`.
       CMYK ramp's red, which PE splits evenly between yellow and magenta (−11 % stitches).
     - Auto Select's thread choice. PE always picks four threads; OpenStitch reduces to the
       image's colours, so where PE mixes green from blue and yellow, OpenStitch gives green its
-      own thread.
+      own thread. Round 5 (eight test images, 2026-10-31) shows the picks come from the 29
+      Ver4 Option colours. Seven of the eight are PE's CMYK set (70, 90, 89, 75) with navy or
+      purple swapped in. Neither a least-squares mixing optimum (PE's set ranks 62nd to
+      6530th) nor a nearest-colour mapping (13 of 32 picks) reproduces them; round 6's
+      single-colour swatches are requested (docs/research/photo-stitch-2-halftone.md).
 - **Sewing-machine stitch files (PMV, 2026-10-29, #130):** OpenStitch now reads the PMV layout
   it writes (pyembroidery's description: 8-byte magic, 36-byte banner, 56-byte preamble, needle
   count and its double, 6-bit relative x / 5-bit absolute y pairs in 0.25 mm, the length and

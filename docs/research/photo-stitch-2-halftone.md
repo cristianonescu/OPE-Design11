@@ -227,7 +227,48 @@ gives red half to yellow and half to magenta where least squares gives magenta t
 Still open:
 - the exact transitions between neighbouring set colours;
 - why CMYK collapses green and blue onto cyan alone;
-- Auto Select's choice of four threads.
+- Auto Select's choice of four threads: round 5 narrows it to a CMYK-like base with
+  substitutions (section above); round 6's swatches are requested.
+
+## Auto Select on the test images (round 5, 2026-10-31)
+
+Eight Higgsfield test images went through Photo Stitch 2 Auto Select at defaults, with
+PE-DESIGN's default chart, Ver4 Option Color. The threads were read from the PES files and
+named by Ver4 number:
+
+| Image | Auto Select picks |
+|---|---|
+| g09 rainbow gradient | 70 sky blue, 89 yellow2 (lime), 76 purple, 90 dark fuchsia (pink-red) |
+| g13 twelve-colour mosaic | 89, 90, 66 prussian blue (navy), 70 |
+| g14 orange circle on navy | 66, 90, 89, 75 dark brown (maroon) |
+| p01 portrait | 75, 66, 89, 90 |
+| p04 ginger cat | 70, 75, 90, 89 |
+| p06 sunset | 75, 66, 90, 89 |
+| p07 fruit bowl | 75, 70, 89, 90 |
+| p09 facade (blue sky, grey and white) | 77 cornflower, 69 moss green, 66, 85 magenta |
+
+What they show:
+- **The palette.** Auto Select always takes four threads from the 29 Ver4 Option colours.
+  OpenStitch reduces the image to N colours and matches each to the nearest PEC thread. Even
+  the two-colour poster g14 gets four threads.
+- **The base.** Seven of the eight are PE's own CMYK set (70, 90, 89, 75) with at most two
+  threads swapped:
+  - navy 66 for sky blue 70 (p01, p06, g14), or for maroon 75 (g13);
+  - purple 76 for maroon 75 on the gradient, which has no dark.
+
+  p04 and p07 are exactly CMYK. Only the facade, almost without warm colours, leaves the base.
+- **Not a mixing optimum.** For every 4-subset of the 29 colours, the best feasible mix of
+  each image colour (non-negative coverage shares over white fabric, least squares in RGB)
+  was computed and the subsets ranked. PE's set ranks 62nd to 6530th, and on the mosaic and
+  the facade it mixes worse than plain CMYK.
+- **Not a colour mapping either.** Mapping the image's 4–8 median-cut colours to the nearest
+  Ver4 colour, plainly or after full saturation, matches at best 13 of the 32 picks. "Always
+  CMYK with navy for sky blue" matches 24.
+
+So the rule is not settled. Round 6 sends 20 flat single-colour swatches and 3 two-colour
+pairs through Auto Select (the owner's notes folder, `round6/autoselect-input`, outside
+the repository). Single colours should show which threads each hue and lightness pulls in.
+OpenStitch's Auto Select is unchanged until then.
 
 ## Captures still needed (owner-made, at defaults unless named)
 
