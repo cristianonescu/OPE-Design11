@@ -195,6 +195,42 @@ target them.
   - A broader chart lifts the emblem from 90 to 96.
 - **Cross Stitch on photos:** 95 % is out of reach at any practical cell size. Pixel art approaches 90.
 
+## 4.1 Visual comparison
+
+The images in each row, left to right:
+- the source;
+- PE-DESIGN mode;
+- OpenStitch mode;
+- the best prototype, where one exists.
+
+Every result is the flat render at viewing scale, with its composite score. The prototypes are Python experiments (section 4), not product output:
+- **Photo rows:** rate-constrained rows at ≤ 2.1 needle points/mm² (T2–T5).
+- **Graphics rows:** every built-in brand chart, nearest thread, no dithering.
+
+**Photo Stitch 1, portrait** (prototype: 16 threads from all brands)
+![p01 portrait](../../images/research/image-similarity/p01-ps1.jpg)
+
+**Photo Stitch 1, cat** (prototype: 16 threads from all brands)
+![p04 cat](../../images/research/image-similarity/p04-ps1.jpg)
+
+**Photo Stitch 1, storybook** (prototype: whole Brother chart)
+![p03 storybook](../../images/research/image-similarity/p03-ps1.jpg)
+
+**Auto Punch, emblem**
+![g01 emblem](../../images/research/image-similarity/g01-ap.jpg)
+
+**Auto Punch, robot**
+![g05 robot](../../images/research/image-similarity/g05-ap.jpg)
+
+**Auto Punch, lettering**
+![g08 lettering](../../images/research/image-similarity/g08-ap.jpg)
+
+**Photo Stitch 2, poppies** (no prototype; its four-thread ceiling is 74–80)
+![p08 poppies](../../images/research/image-similarity/p08-ps2.jpg)
+
+**Cross Stitch, pixel strawberry** (no OpenStitch mode yet; the ceiling at 2.5 mm is 87.4)
+![g07 strawberry](../../images/research/image-similarity/g07-cs.jpg)
+
 ## 5. Root causes, ranked by measured impact
 
 | # | Cause | Where | Impact (points) | Evidence |
