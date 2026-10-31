@@ -600,7 +600,9 @@ fn corner_turn(a: &[Vec2], b: &[Vec2], ca: &[f64], cb: &[f64], pitch: f64) -> Ve
     let mut out = Vec::new();
     for j in 0..sa.len() - 1 {
         let (a0, a1, b0, b1) = (sa[j], sa[j + 1], sb[j], sb[j + 1]);
-        let m = (((a1 - a0).max(b1 - b0) / pitch).ceil() as usize).max(1);
+        // The side as sewn runs between the two rings' sides: split by its own length (PE-DESIGN
+        // 11.50's triangle spiral: stitches of 1.8–2.05 mm at a 2 mm pitch).
+        let m = ((((a1 - a0) + (b1 - b0)) / 2.0 / pitch).ceil() as usize).max(1);
         for k in 1..=m {
             let t = k as f64 / m as f64;
             let sbk = b0 + (b1 - b0) * t;

@@ -31,6 +31,8 @@ use crate::geometry::{Contour, Vec2, contains, v2};
 use crate::paths::{clip, order};
 use std::f64::consts::TAU;
 
+/// How far (0.1 mm) a cut circle may stray outside the outline and still be sewn whole.
+const CLIP_TOLERANCE: f64 = 1.0;
 /// Most circles per region.
 const MAX_RINGS: usize = 20_000;
 /// Most needle points per region (as for every other generator).
@@ -123,7 +125,10 @@ pub fn concentric(closed: &[Contour], holes: &[Contour], p: &ConcentricParams) -
         out.full.extend(ring);
     }
     out.full.dedup_by(|a, b| a.distance(*b) < 1e-9);
-    // Cut circles, innermost first, as the pieces inside the region.
+    // Cut circles, innermost first, as the pieces inside the region. A circle that only grazes
+    // the outline or a hole's edge (nowhere more than CLIP_TOLERANCE outside: a 40 mm circle's
+    // 20 mm circle on its flattened outline) stays one loop, as PE-DESIGN sews it, instead of
+    // breaking into fragments where it crosses the flattened outline.
     let mut pieces = Vec::new();
     for &r in &cut_radii {
         let ring = circle(c, r, seam, p.pitch);
@@ -131,7 +136,14 @@ pub fn concentric(closed: &[Contour], holes: &[Contour], p: &ConcentricParams) -
         if budget > MAX_POINTS {
             break;
         }
-        pieces.extend(clip(&ring, closed, holes));
+        let grazes = ring
+            .iter()
+            .all(|&q| inside(q) || distance_to_edges(q, &edges) <= CLIP_TOLERANCE);
+        if grazes {
+            pieces.push(ring);
+        } else {
+            pieces.extend(clip(&ring, closed, holes));
+        }
     }
     let start = out.full.last().copied().or_else(|| {
         cut_radii
@@ -169,6 +181,23 @@ fn circle(c: Vec2, r: f64, seam: f64, pitch: f64) -> Vec<Vec2> {
         })
         .collect();
     crate::generate::subdivide(&keys, pitch)
+}
+
+/// Distance from `q` to the nearest of `edges`.
+fn distance_to_edges(q: Vec2, edges: &[(Vec2, Vec2)]) -> f64 {
+    edges
+        .iter()
+        .map(|&(a, b)| {
+            let ab = b - a;
+            let len2 = ab.x * ab.x + ab.y * ab.y;
+            let t = if len2 > 0.0 {
+                (((q.x - a.x) * ab.x + (q.y - a.y) * ab.y) / len2).clamp(0.0, 1.0)
+            } else {
+                0.0
+            };
+            a.lerp(b, t).distance(q)
+        })
+        .fold(f64::INFINITY, f64::min)
 }
 
 /// Whether the circle of radius `r` about `c` crosses any of `edges`.
