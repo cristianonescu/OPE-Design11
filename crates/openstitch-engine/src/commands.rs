@@ -327,6 +327,33 @@ fn validate_property(p: &Params, key: &str, value: &str) -> Result<(), CommandEr
     Ok(())
 }
 
+/// Moves `block` so the box around its needle points is centred on `page`.
+fn centre_on_page(block: &mut openstitch_design::StitchBlock, page: &DesignPage) {
+    let needles = || {
+        block
+            .stitches
+            .iter()
+            .filter(|st| st.command == openstitch_core::Command::Stitch)
+    };
+    let (mut lo_x, mut lo_y, mut hi_x, mut hi_y) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+    for st in needles() {
+        (lo_x, lo_y) = (lo_x.min(st.x), lo_y.min(st.y));
+        (hi_x, hi_y) = (hi_x.max(st.x), hi_y.max(st.y));
+    }
+    if lo_x > hi_x {
+        return;
+    }
+    // Whole 0.1 mm steps, so the needle points stay on the file's grid.
+    let (dx, dy) = (
+        (page.width / 2.0 - (lo_x + hi_x) / 2.0).round(),
+        (page.height / 2.0 - (lo_y + hi_y) / 2.0).round(),
+    );
+    for st in &mut block.stitches {
+        st.x += dx;
+        st.y += dy;
+    }
+}
+
 fn design_commands() -> Vec<CommandSpec> {
     vec![
         spec(
@@ -2691,7 +2718,12 @@ fn codec_commands() -> Vec<CommandSpec> {
                 let found = openstitch_design::DesignProperties::from_metadata(&pattern.metadata);
                 let adopt = p.bool("adoptProperties", Some(s.design.properties.is_empty()))?
                     && !found.is_empty();
-                let mut object = DesignObject::stitches(StitchBlock::from(&pattern));
+                let mut block = StitchBlock::from(&pattern);
+                // PE-DESIGN 11.50 ignores where the file put its stitches and centres the
+                // imported pattern on the Design Page; a second import lands on the first
+                // (references import-dst-onto-100, -pes-onto-100, -dst-twice, -dst-onto-200x150).
+                centre_on_page(&mut block, &s.design.page);
+                let mut object = DesignObject::stitches(block);
                 object.name = path.file_name().map(|n| n.to_string_lossy().into_owned());
                 let id = s.design.add(object);
                 if adopt {

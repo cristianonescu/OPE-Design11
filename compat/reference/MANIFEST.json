@@ -4908,6 +4908,78 @@
       "settings": "Design Page 100 x 100 mm; Home > Import Patterns > from Vector Image... of an SVG with viewBox 0 0 100 100 (100 x 100 mm) holding one polygon (0,0) (30,0) (21.34,15) (17.01,12.5) (21.34,5) (0,5) mm (a 5 mm band bent through 120 degrees, second leg 17.32 mm, square end); the shape imports centred on the page as Fill Stitch, line Not Sewn, colour 800 RED. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch unticked, Pull compensation 0.0 mm, Feathered edge off. Save As PES (#PES0110). Status bar 30,00 x 15,00 mm, Stitches = 165.",
       "sha256": "19084d668da35d809bda6b3436d6a252b34fe486d3b584d6ab8dc286613f5d44",
       "notes": "The imported shape shows Half Stitch unticked; the plain file has it ticked, the -nohalf file unticked. Recorded in round 3 (pe-refs-3, owner's round3\\satin-bend\\log.txt), parked until the Auto satin outer-edge spacing landed."
+    },
+    {
+      "file": "stitches/import-rect20x10.dst",
+      "spec": "stitches-import-centre",
+      "reference": "import-source",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Not a PE-DESIGN file: the import source, made by OpenStitch for this capture: a 20 x 10 mm fill rectangle (region Fill, 800 RED, line none) at (10,10)-(30,20) mm on a 100 x 100 mm page, exported as DST.",
+      "sha256": "fb17f0251304646fedaaf74a3b3d87c665ef95b9d001c77eed2b462d46f87dec",
+      "notes": "Input of the stitches-import-centre spec; PE-DESIGN imported it for the four import-* references."
+    },
+    {
+      "file": "stitches/import-rect20x10.pes",
+      "spec": "stitches-import-centre",
+      "reference": "import-source",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Not a PE-DESIGN file: the import source, made by OpenStitch for this capture: a 20 x 10 mm fill rectangle (region Fill, 800 RED, line none) at (10,10)-(30,20) mm on a 100 x 100 mm page, exported as PES (version 6).",
+      "sha256": "41892f36bf831d7476cef8dede1fc2ffb60a0cb8d545b413168c12f6e85dcc71",
+      "notes": "Input of the stitches-import-centre spec; PE-DESIGN imported it for the four import-* references."
+    },
+    {
+      "file": "stitches/import-dst-onto-100.pes",
+      "spec": "stitches-import-centre",
+      "reference": "pe-design-dst-100",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (Hoop 100 x 100 mm); Home > Import Patterns > from File... (opens the Import pane: From Folder, File Type filter, thumbnails; no dialog or option at import), the source's thumbnail > Import for import-rect20x10.dst; Save As PES (default type, #PES0110).",
+      "sha256": "0952b3c71ffc00facf858c15f967cc9e729ec2461f8aaf8a7ea539f2af9e5eb7",
+      "notes": "pe-refs-4 round 7, round7/import/import-dst-onto-100.pes: lands centred on the page: 40-60 x 45-55 mm on the rulers, 20,00 x 10,00 mm, 392 st, colour 007 PRUSSIAN BLUE (a DST has no colours; PE's first default). Positions read from the canvas and rulers (PE-DESIGN has no numeric position readout)."
+    },
+    {
+      "file": "stitches/import-pes-onto-100.pes",
+      "spec": "stitches-import-centre",
+      "reference": "pe-design-pes-100",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (Hoop 100 x 100 mm); Home > Import Patterns > from File... (opens the Import pane: From Folder, File Type filter, thumbnails; no dialog or option at import), the source's thumbnail > Import for import-rect20x10.pes; Save As PES (default type, #PES0110).",
+      "sha256": "3b4bb742ae830c0ce7642f8735db5600d8bccd1f05a5986a7ef5cb20018116b8",
+      "notes": "pe-refs-4 round 7, round7/import/import-pes-onto-100.pes: also centred (40-60 x 45-55 mm), 392 st, keeps 800 RED; the file's own position (10-30 x 10-20 mm) is ignored. Positions read from the canvas and rulers (PE-DESIGN has no numeric position readout)."
+    },
+    {
+      "file": "stitches/import-dst-twice.pes",
+      "spec": "stitches-import-centre",
+      "reference": "pe-design-dst-twice",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New (Hoop 100 x 100 mm); Home > Import Patterns > from File... (opens the Import pane: From Folder, File Type filter, thumbnails; no dialog or option at import), the source's thumbnail > Import for import-rect20x10.dst, then the same Import again; Save As PES (default type, #PES0110).",
+      "sha256": "4faef434279e2ea83d69b14bf8a3a896ed9bbf309f260fed68e7989a269bb1a6",
+      "notes": "pe-refs-4 round 7, round7/import/import-dst-twice.pes: the second copy lands exactly on the first: Total 20,00 x 10,00 mm, 785 st, one colour block, one grouped item in Sewing Order. Positions read from the canvas and rulers (PE-DESIGN has no numeric position readout)."
+    },
+    {
+      "file": "stitches/import-dst-onto-200x150.pes",
+      "spec": "stitches-import-centre",
+      "reference": "pe-design-dst-200x150",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "App menu > New, Design Page Custom 200 x 150 mm; Home > Import Patterns > from File... (opens the Import pane: From Folder, File Type filter, thumbnails; no dialog or option at import), the source's thumbnail > Import for import-rect20x10.dst; Save As PES (default type, #PES0110).",
+      "sha256": "465c7574b42f7b693656fc4b4a8040268f2e93ba7f1a2236a03107789a3ca262",
+      "notes": "pe-refs-4 round 7, round7/import/import-dst-onto-200x150.pes: centred on the larger page: 90-110 x 70-80 mm, 392 st. Positions read from the canvas and rulers (PE-DESIGN has no numeric position readout)."
     }
   ]
 }
