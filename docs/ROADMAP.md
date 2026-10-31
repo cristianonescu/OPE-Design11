@@ -225,8 +225,9 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    204.7 mm split as PE-DESIGN's DST does since 2026-10-29 (#126); PE's own PEC does not encode
    such a move (its `long-jump-300` PES has a stand-in row instead), settled 2026-10-30. PE's
    oversize PES has an empty machine section, which the reader reports instead of misreading
-   (2026-10-30). Thread charts: OpenStitch's own CSV is documented and exported since 2026-10-29
-   (#136; PE-DESIGN keeps charts as binary `.btc2`, no CSV). Colour matching is equal-weight
+   (2026-10-30). Thread charts export as CSV in the layout
+   PE-DESIGN's Import Chart reads since 2026-10-31 (#136; bare `code,brand,description,R,G,B`
+   records; PE has no CSV export and keeps its charts as binary `.btc2`). Colour matching is equal-weight
    squared Euclidean with an "approximate" city-block matcher since 2026-10-29 (#119), checked
    against the owner's twelve-swatch capture; the 61 BROTHER EMBROIDERY catalogue codes are known
    since the round-4 chart reading, PEC 42 (307 LINEN) has PE-DESIGN's RGB and every coded thread
@@ -234,13 +235,10 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    since 2026-10-30 (`thread-match-swatches` compares the thread table). The 94-entry sew palette is
    listed since 2026-10-30 (PE's Ver4 Option Color chart as ids 66–94, `sewPalette`; the 0110 writer writes those
    threads with their ids as PE does); where
-   PE-DESIGN matches colours to it is not verified (no capture). PEC 62–64 have PE-DESIGN's appliqué RGB since
-   2026-10-31. Left: appliqué stages written as PEC 62–64 and the `#PES0110` colour list after
-   the PEC as PE writes it; whether PE-DESIGN's Import Chart reads a CSV (#136, capture
-   2026-10-31. The `#PES0110` colour list after the PEC is written as PE writes it
-   (2026-10-31). The Appliqué wizard's stages sew in PE's
-   appliqué colours as PEC 62–64 (2026-10-31). Left: whether PE-DESIGN's Import Chart reads a CSV (#136, capture
-   requested); the machine type and hoop in the `#PES0110` header (#125, capture requested).
+   PE-DESIGN matches colours to it is not verified (no capture). PEC 62–64 have PE-DESIGN's appliqué RGB, the `#PES0110` colour
+   list after the PEC is written as PE writes it, and the Appliqué wizard's stages sew in PE's
+   appliqué colours as PEC 62–64, since 2026-10-31. Left: the machine type and hoop in the
+   `#PES0110` header (#125, capture requested).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo
