@@ -13,7 +13,7 @@ use crate::params::{CommandError, CommandResult, Params};
 use crate::session::EngineState;
 use openstitch_core::{PEC_CHART, Thread};
 use openstitch_design::boolean;
-use openstitch_design::{ChainShape, DesignObject, LineSewing, LineType};
+use openstitch_design::{ChainShape, Contour, DesignObject, LineSewing, LineType};
 use serde_json::json;
 
 /// Thread names of the appliqué stages; each is its own colour block, so the machine stops
@@ -139,7 +139,14 @@ fn applique(s: &mut EngineState, p: &Params) -> CommandResult {
         thread(p, "color")?.unwrap_or_else(|| applique_colour(64, APPLIQUE)),
     )?;
 
-    let outline = if replace {
+    // Where PE-DESIGN 11.50's Applique Wizard puts each line (a01-a05, a 20 mm square; w the
+    // covering width): the covering stitch's centre on the outline (Replace) or w / 2 + 0.3 mm
+    // beyond the distance (Add: its inner edge 0.3 mm past it), the position line w / 2 - 1 mm
+    // outside the covering's centre, the material line and the tack-down 0.5 mm further out.
+    // (a04, w = 4: PE's position and material lines are 0.1 mm inside these.)
+    let w = cover.width;
+    let keep_holes = replace && holes;
+    let cover_line = if replace {
         closed_outlines(p, &s.design, &idx)?;
         let regions = outline_regions(&s.design, &idx);
         if holes {
@@ -148,18 +155,21 @@ fn applique(s: &mut EngineState, p: &Params) -> CommandResult {
             outer(&regions)
         }
     } else {
-        let around = footprint(&s.design, &idx);
-        if distance > 0.0 {
-            outer(&boolean::offset(&around, distance, true))
-        } else {
-            around
-        }
+        grow(
+            &footprint(&s.design, &idx),
+            distance / MM + w / 2.0 + 0.3,
+            false,
+        )
     };
-    if outline.is_empty() {
-        return Err(p.failed("the patterns have no outline to make an appliqué from"));
-    }
-    if outline.iter().map(|c| c.points.len()).sum::<usize>() > MAX_PIECES * 10 {
-        return Err(p.failed("the outline is too complex"));
+    let position_line = grow(&cover_line, w / 2.0 - 1.0, keep_holes);
+    let outside_line = grow(&position_line, 0.5, keep_holes);
+    for outline in [&cover_line, &position_line, &outside_line] {
+        if outline.is_empty() {
+            return Err(p.failed("the patterns have no outline to make an appliqué from"));
+        }
+        if outline.iter().map(|c| c.points.len()).sum::<usize>() > MAX_PIECES * 10 {
+            return Err(p.failed("the outline is too complex"));
+        }
     }
 
     let mut stages: Vec<DesignObject> = Vec::new();
@@ -174,23 +184,50 @@ fn applique(s: &mut EngineState, p: &Params) -> CommandResult {
         );
         // Cut lines keep short bridges (cut by hand afterwards), as PE-DESIGN does.
         line.leave_uncut = cut;
-        stages.push(stage(MATERIAL, outline.clone(), line));
+        stages.push(stage(MATERIAL, outside_line.clone(), line));
     }
     let position = LineSewing::new(LineType::Running, applique_colour(63, POSITION));
-    stages.push(stage(POSITION, outline.clone(), position));
+    stages.push(stage(POSITION, position_line, position));
     if let Some(t) = tack {
-        stages.push(stage(TACK_DOWN, outline.clone(), t));
+        stages.push(stage(TACK_DOWN, outside_line, t));
     }
-    stages.push(stage("Appliqué cover", outline, cover));
+    stages.push(stage("Appliqué cover", cover_line, cover));
 
-    let at = idx[0];
     let mut removed = Vec::new();
-    if replace {
+    let ids = if replace {
+        let at = idx[0];
         removed = idx.iter().map(|&i| s.design.objects[i].id).collect();
         crate::shape_ops::remove(&mut s.design, &idx);
-    }
-    let ids = insert_stages(&mut s.design, at, stages);
+        insert_stages(&mut s.design, at, stages)
+    } else {
+        // Add: the patterns sew first and form one group with their appliqué, as in
+        // PE-DESIGN's a01-a04 (Sewing Order: the square, then the appliqué; one group of all).
+        let ids = insert_stages(&mut s.design, idx[idx.len() - 1] + 1, stages);
+        let group = s
+            .design
+            .objects
+            .iter()
+            .find(|o| o.id == ids[0])
+            .and_then(|o| o.group);
+        for &i in &idx {
+            s.design.objects[i].group = group;
+        }
+        ids
+    };
     Ok(json!({ "ids": ids, "removed": removed }))
+}
+
+/// `contours` grown by `mm` (shrunk when negative) with round corners; holes kept when `holes`.
+fn grow(contours: &[Contour], mm: f64, holes: bool) -> Vec<Contour> {
+    if mm == 0.0 {
+        return contours.to_vec();
+    }
+    let regions = boolean::offset(contours, mm * MM, true);
+    if holes {
+        boolean::contours(&regions)
+    } else {
+        outer(&regions)
+    }
 }
 
 fn tack_down(p: &Params) -> Result<Option<LineSewing>, CommandError> {

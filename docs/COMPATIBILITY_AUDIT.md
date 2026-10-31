@@ -1815,7 +1815,15 @@ Line references are relative to `crates/`.
   for every block (PE: `FA`/`FB`/`FC FF FF` for the appliqué colours, `F9` for a cut, `FE FF FF`
   for a thread with no number).
   PE's cutting line is PEC 65 at (220, 220, 220), outside the 65-slot chart. The Appliqué wizard's
-  stages take PE's appliqué colours since the same day: material 62, position 63, and 64 for
+  stages take PE's appliqué colours since the same day, and since the same day the wizard puts
+  its lines where PE's a01–a05 have them (Add: the covering's centre d + w / 2 + 0.3 mm out,
+  the position line w / 2 − 1 mm beyond it, material and tack-down 0.5 mm further; Replace:
+  the covering on the outline) and, in Add, sews the pattern first in one group with its
+  appliqué, as PE does: OpenStitch's export of a01's design now has PE's object order, group
+  and line positions (32.6 mm across, PE 32.6 × 32.8; it was 29 mm with every line at the
+  distance, the pattern last and outside the group). Its stitch count still differs (1,735
+  against 1,063). The wizard's stages
+  take PE's appliqué colours: material 62, position 63, and 64 for
   the tack-down and, unless a colour is given, the covering stitch, so those two sew as one
   block as in PE's files; the PEC keeps a Brother chart entry's own index, so the stages are
   written as PEC 62, 63, 64, and OpenStitch's export of a01's design has PE's PEC colour list and
