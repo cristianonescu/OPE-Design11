@@ -120,8 +120,10 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    (Frequency and two Stitch Type buttons only) and a 0.1 lines/mm density floor. PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
    Frequency default); the programmable fill density; Stitch Type 2's row lattice at 30° and 45°
    (sloped rows sewn since 2026-10-30, `stitchType: 2`: identical to PE-DESIGN at 0°, 0.048 mm
-   at 90°; at 30°/45° PE's rows sit about half a spacing from ours, as Type 1's do) and its
-   inspector control; Half Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
+   at 90°; at 30°/45° PE's rows sit about half a spacing from ours, as Type 1's do. Round 6
+   (2026-10-31) pinned the rows to the shape at the exact 1/density spacing, counted from the
+   far side; left to model: the per-angle needle-grid constant and PE-DESIGN's dependence on
+   the page position, which ours lacks); Half Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
    rows follow PE-DESIGN's cumulative-density placement since 2026-10-28 (#95: every row of
    the U within 0.12 mm, overlap 0.83 → 0.89); left for the U: PE's section order for fills in
    several parts (right leg, left leg, then the top bar ending at the first vertex). Under
