@@ -71,6 +71,8 @@ pub struct ObjectSection {
     pub texts: Vec<crate::pes11::Text>,
     /// PE-DESIGN 11 groups: the member positions of each `CGroupObject`.
     pub groups: Vec<Vec<u16>>,
+    /// PE-DESIGN 11 hole sewing pairs, `[outer, inner]` list positions.
+    pub holes: Vec<[u16; 2]>,
     /// PE-DESIGN 11 Design Page size in mm, when the header had the mapped layout.
     pub page_mm: Option<(u16, u16)>,
     /// PE-DESIGN 11 Hoop Size page (header page mode 0) rather than a Custom Size page.
@@ -312,6 +314,7 @@ pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
             section.texts = objects.texts;
             section.stitch_groups = objects.stitch_groups;
             section.groups = objects.groups;
+            section.holes = objects.holes;
             section.page_mm = objects.page_mm;
             section.hoop_page = objects.hoop_page;
             section.header = objects.header;

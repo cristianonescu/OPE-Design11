@@ -23,6 +23,10 @@
     {
       "kind": "measured",
       "note": "docs/FILE_FORMATS.md, PES 0110 object list, CEmbOne: mapped from PE-DESIGN 11.50's re-saves of three version 6 files; the writer's rewrite of those files is byte-identical outside the documented differences (pes11.rs, written_object_sections_match_pe_designs_bytes_outside_the_documented_differences)"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 re-save of a.pes (MANIFEST pes-0110-stitches, 2026-10-31): opens with no warning as one stitch object (800 RED, 40 x 40 mm, 40 st); its PES section is byte-identical to the export"
     }
   ],
   "inputs": [
@@ -128,13 +132,14 @@
             "kind": false
           },
           "metadata": false,
-          "pesObjects": false
+          "pesObjects": false,
+          "dropRepeats": true
         }
       },
       "source": {
         "export": "a.pes"
       },
-      "evidence": "PE-DESIGN 11 reopens a.pes with the same stitches, jumps and trims",
+      "evidence": "PE-DESIGN 11 reopens a.pes with the same stitches, jumps and trims; it re-sews the stitch group without the zero-length stitch on each run's first needle point that stitches.import restores from PE-DESIGN's machine exports (issue #135), so zero-length stitches are dropped on both sides",
       "reference": {}
     }
   ]

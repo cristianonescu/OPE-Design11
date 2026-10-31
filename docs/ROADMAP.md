@@ -106,6 +106,9 @@ Done 2026-10-30: stitch generation is bit-identical on Windows, macOS and Linux 
 math through the `libm` crate instead of each platform's C library); the arched Text Transform
 spec, deferred at alpha.6 because Linux measured it 0.2 mm lower, has its PE-DESIGN reference
 back.
+Done 2026-10-31: imported stitch files land centred on the Design Page, as PE-DESIGN's Import
+Patterns ▸ from File places them (spec `stitches-import-centre`); left: a DST's colour on
+import (PE: 007 PRUSSIAN BLUE) and the joining stitch between two imports of one colour.
 Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tools do
 (pes-objects r01); saved designs keep their stored angle.
 
@@ -151,6 +154,11 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    captures are in, the stroke cut (step 1, `strokes::strokes`) and the rungs are done, and
    PE-DESIGN's Convert to Blocks files import as their blocks (`import.pes`, 2026-10-31); next, the
    stroke ownership and order, travel and trims, then sewing text by stroke) — the structural
+   captures are in, the stroke cut (step 1, `strokes::strokes`), the rungs and the block order
+   (`GlyphStrokes::blocks`, 2026-10-31) are done, and PE-DESIGN's Convert to Blocks files import
+   as their blocks (`import.pes`, 2026-10-31), and satin text is sewn by stroke since 2026-10-31
+   (`stroke-satin-*`, 9 % from PE-DESIGN's needle points on average); next, fill text by stroke,
+   under sewing per stroke, and the crossings round curves and fanned corners) — the structural
    gap behind text-fit-*, text-transform-* and text-sewing-order; the fitted circle's running
    stitch follows PE-DESIGN's Bézier halving since 2026-10-28 (text-fit-default mean needle
    distance 0.27 → 0.20 mm); Text Transform presets 13 and 14 (fan out / in) done 2026-10-28; round 4 (2026-10-29)
@@ -193,14 +201,15 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    Rotation" flags and a custom page's size since 2026-10-30 (opened in PE-DESIGN 11.50 as the
    hoop and page they describe). Round 4 added owner-drawn Programmable Stitch
    Creator sources (`.pas`, `.pmf`, `.plf`), imported since 2026-10-29 (#131); Font Creator fonts
-   wait for the owner (#134). Left: PE-DESIGN opening a written stitch group
-   (`pes-0110-stitches`), Straight and Curve Block (`pes-0110-manual-punch`,
-   `pes-0110-curve-block`) and appliqué (`pes-0110-applique`; the covering line's fields of unused
-   sew types not mapped); the fitted text's box as PE-DESIGN computes it (PE-DESIGN recomputes it
+   wait for the owner (#134). Left: PE-DESIGN opening a written appliqué
+   (`pes-0110-applique`: refused on 2026-10-31, "Unexpected file format"; the colour addendum is
+   being corrected) — the stitch group, Straight and Curve Block exports open in PE-DESIGN since
+   2026-10-31 (references); the fitted text's box as PE-DESIGN computes it (PE-DESIGN recomputes it
    on opening); PE-DESIGN's confirmation of the Hoop Size page (probe p3); the design's machine
    type and hoop in the header; turn the `#PES0110` shapes and texts the reader parses into
    editable OpenStitch objects; right-aligned and vertical text; the other region and line types,
-   hole-sewing pairs and several outlines per object; the hoop in v1 (the public
+   several hole sewing pairs in one file or with groups (one pair without groups is written since
+   2026-10-31) and several outlines per object; the hoop in v1 (the public
    description contradicts itself); PES v7–v10 (from the owner's own files only, as
    [LEGAL_AND_LICENSING.md](LEGAL_AND_LICENSING.md) allows).
 7. **Editing details:** skeletons that branch (a derived skeleton follows a shape's longest
@@ -228,6 +237,9 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    PE-DESIGN matches colours to it is not verified (no capture). PEC 62–64 have PE-DESIGN's appliqué RGB since
    2026-10-31. Left: appliqué stages written as PEC 62–64 and the `#PES0110` colour list after
    the PEC as PE writes it; whether PE-DESIGN's Import Chart reads a CSV (#136, capture
+   2026-10-31. The `#PES0110` colour list after the PEC is written as PE writes it
+   (2026-10-31). The Appliqué wizard's stages sew in PE's
+   appliqué colours as PEC 62–64 (2026-10-31). Left: whether PE-DESIGN's Import Chart reads a CSV (#136, capture
    requested); the machine type and hoop in the `#PES0110` header (#125, capture requested).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
@@ -316,6 +328,7 @@ before any code; the ranking and the proposed tracks are in
 | B13 | Density map, troubleshoot, thread conversion, auto hoop | E | [research/beyond/quality-tools.md](research/beyond/quality-tools.md) | Sketched; not started |
 | B14 | Stitch-file resize with density | E | [research/beyond/stitch-file-resize.md](research/beyond/stitch-file-resize.md) | Sketched; not started |
 | B15 | Lettering: baselines, kerning, team names, connections | E | [research/beyond/lettering-depth.md](research/beyond/lettering-depth.md) | Sketched; not started |
+| B16 | Image wizards' "OpenStitch" mode beside the PE-DESIGN default: perceptual colour reduction (CIELAB k-means, CIEDE2000 thread matching) and region cleanup for Auto Punch first | — | [research/beyond/image-digitizing.md](research/beyond/image-digitizing.md) | Auto Punch's OpenStitch mode done 2026-10-31 (`compatMode: openStitch`, image dialog Mode): measured on the test images (`tools/image_eval.py`), mean ΔE00 9.1 → 8.7, stitches −20 %, trims −52 %, no specks; next: thin line art, Photo Stitch 1's perceptual palette and error diffusion, SLIC |
 
 Deferred: linear colour-gradient and tartan fills, shape and vine fills, photo
 thread-painting, sequin/chenille/bead types (machine-specific), the TrueType turning-satin

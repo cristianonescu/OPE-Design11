@@ -10,7 +10,9 @@ long side 100 mm, the wizard at the settings named in GALLERY), opens the result
 Realistic view (`openstitch --show realistic --screenshot`, 1440x900 window), crops the design
 area and writes docs/images/readme/gallery/<id>.png (480 px wide, 128 colours). The README
 table between the `gallery:start` and `gallery:end` markers is rewritten with the source, the
-result and a caption (wizard, settings, stitches, colours). Needs Pillow.
+result and a caption (wizard, settings, stitches, trims, colours). The images in MODES are also
+converted by Auto Punch in both modes (`compatMode`) for the table between the
+`gallery-modes` markers. `--release` uses the release build. Needs Pillow.
 """
 
 import argparse
@@ -25,7 +27,7 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-BIN = ROOT / "target" / "debug"
+BIN = ROOT / "target" / ("release" if "--release" in sys.argv else "debug")
 IMAGES = ROOT / "examples" / "images"
 OUT = ROOT / "docs" / "images" / "readme" / "gallery"
 README = ROOT / "README.md"
@@ -66,6 +68,18 @@ GALLERY = {
     "g15": ("g15-folk-bird.png", "Cross Stitch, defaults",
             "digitize.crossStitch", {}),
 }
+
+# Auto Punch in PE-DESIGN mode next to OpenStitch mode (`compatMode`, B16,
+# docs/research/beyond/image-digitizing.md): id -> image, rendered as <id>-pe and <id>-os.
+MODES = {
+    "g05": "g05-robot-cartoon.png",
+    "g06": "g06-watercolour-lemons.jpg",
+    "p03": "p03-storybook.jpg",
+}
+for _key, _image in MODES.items():
+    GALLERY[f"{_key}-pe"] = (_image, "Auto Punch, PE-DESIGN mode", "digitize.autoPunch", {})
+    GALLERY[f"{_key}-os"] = (_image, "Auto Punch, OpenStitch mode", "digitize.autoPunch",
+                             {"compatMode": "openStitch"})
 
 
 def run(args, cwd):
@@ -123,21 +137,39 @@ def design_box(im):
             min(right, max(xs) + pad), min(BOTTOM, max(ys) + pad))
 
 
+def result(s):
+    if not s:
+        return ""
+    n = len(s["colors"])
+    return f"{s['stitches']:,} stitches, {s['trims']} trims, {n} colour{'' if n == 1 else 's'}"
+
+
 def table(stats):
     rows = ["| Image | OpenStitch (Realistic view) | Wizard and result |", "|---|---|---|"]
     for key, (image, wizard, _, _) in GALLERY.items():
-        s = stats.get(key)
-        n = len(s["colors"]) if s else 0
-        result = f"{s['stitches']:,} stitches, {n} colour{'' if n == 1 else 's'}" if s else ""
+        if key[-3:] in ("-pe", "-os"):
+            continue
         rows.append(f"| <img src=\"examples/images/{image}\" width=\"200\"> "
                     f"| <img src=\"docs/images/readme/gallery/{key}.png\" width=\"260\"> "
-                    f"| **{wizard}**<br>{result} |")
+                    f"| **{wizard}**<br>{result(stats.get(key))} |")
+    return "\n".join(rows)
+
+
+def modes_table(stats):
+    rows = ["| Image | PE-DESIGN mode | OpenStitch mode |", "|---|---|---|"]
+    for key, image in MODES.items():
+        rows.append(f"| <img src=\"examples/images/{image}\" width=\"200\"> "
+                    f"| <img src=\"docs/images/readme/gallery/{key}-pe.png\" width=\"260\"><br>"
+                    f"{result(stats.get(key + '-pe'))} "
+                    f"| <img src=\"docs/images/readme/gallery/{key}-os.png\" width=\"260\"><br>"
+                    f"{result(stats.get(key + '-os'))} |")
     return "\n".join(rows)
 
 
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--only", help="comma-separated ids")
+    p.add_argument("--release", action="store_true", help="use the release build (faster)")
     a = p.parse_args()
     keys = a.only.split(",") if a.only else list(GALLERY)
     cache = OUT / "stats.json"
@@ -152,11 +184,12 @@ def main():
             print(f"{key}: {s['stitches']} stitches, {len(s['colors'])} colours, {dst.stat().st_size // 1024} KB")
     cache.write_text(json.dumps(stats, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
     text = README.read_text(encoding="utf-8")
-    new, n = re.subn(r"(<!-- gallery:start -->\n).*?(<!-- gallery:end -->)",
-                     lambda m: m.group(1) + table(stats) + "\n" + m.group(2), text, flags=re.S)
-    if n != 1:
-        sys.exit("README.md has no gallery:start / gallery:end markers")
-    README.write_text(new, encoding="utf-8", newline="\n")
+    for marker, make in (("gallery", table), ("gallery-modes", modes_table)):
+        text, n = re.subn(rf"(<!-- {marker}:start -->\n).*?(<!-- {marker}:end -->)",
+                          lambda m: m.group(1) + make(stats) + "\n" + m.group(2), text, flags=re.S)
+        if n != 1:
+            sys.exit(f"README.md has no {marker}:start / {marker}:end markers")
+    README.write_text(text, encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":

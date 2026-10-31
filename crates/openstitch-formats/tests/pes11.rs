@@ -323,6 +323,30 @@ fn convert_to_blocks_reads_as_blocks_and_running_pieces() {
 }
 
 #[test]
+fn hole_sewing_pairs_read() {
+    // Modify Overlap > Set hole sewing on a 15 mm circle inside a 40 mm one: the inner circle
+    // Not Sewn, the pair [outer, inner] before the groups. A vector import pairs the pentagon
+    // with a Not Sewn copy of the star placed after it.
+    for (name, pair, inner_region) in [
+        ("concentric-ring40-hole15", [1, 0], 0),
+        ("spiral-ring40-hole15", [1, 0], 0),
+        ("hole-sewing-pentagon-star", [0, 1], 1),
+    ] {
+        let o = objects_of(&owner_file(name));
+        assert!(o.unparsed.is_none(), "{name}");
+        assert_eq!(o.holes, [pair], "{name}");
+        assert_eq!(
+            o.shapes[inner_region].region,
+            RegionSewType::NotSewn,
+            "{name}"
+        );
+    }
+    // The vector import's shapes keep the plain values in the unused sew types' fields.
+    let star = objects_of(&owner_file("hole-sewing-pentagon-star"));
+    assert!(star.shapes[0].plain_settings && !star.shapes[3].plain_settings);
+}
+
+#[test]
 fn unmapped_layouts_stop_reading_instead_of_misreading() {
     // Layouts not mapped yet must end the list as "unparsed", with the shapes read before them
     // intact and every vertex inside its bounds. The Manual Punch column of
@@ -491,6 +515,9 @@ fn round_3_object_files_read_their_stitches_and_stop_cleanly() {
 /// The owner files whose object list the reader parses completely (every object a `CEmbLine`
 /// or a `CEmbNText`, groups included): the writer's round-trip and byte-comparison set.
 const FULLY_PARSED: &[&str] = &[
+    "hole-sewing-pentagon-star",
+    "concentric-ring40-hole15",
+    "spiral-ring40-hole15",
     "a01-rect-applique",
     "a02-applique-cutting",
     "a03-applique-no-tackdown",
@@ -645,6 +672,7 @@ fn objects_of(bytes: &[u8]) -> Objects {
         texts: s.texts,
         stitch_groups: s.stitch_groups,
         groups: s.groups,
+        holes: s.holes,
         unparsed: s.unparsed,
     }
 }
@@ -658,7 +686,14 @@ fn owner_file(name: &str) -> Vec<u8> {
         );
         return std::fs::read(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
     }
-    if name == "shape-start-points" {
+    if [
+        "shape-start-points",
+        "hole-sewing-pentagon-star",
+        "concentric-ring40-hole15",
+        "spiral-ring40-hole15",
+    ]
+    .contains(&name)
+    {
         let path = format!(
             "{}/../../compat/reference/stitches/{name}.pes",
             env!("CARGO_MANIFEST_DIR")
@@ -816,12 +851,6 @@ fn with_pattern(fixture: &[u8], records: &[Body], placeholder: &[u8]) -> Vec<u8>
     out
 }
 
-/// The covering line's unmapped fields that differ from every other object's (a01-rect-applique:
-/// 0 where others have 1 at +58, +364; 50 / 50 / 100 where others have 123 / 123 / 50 or
-/// 117 / 117 at +70, +72, +82, +218, +220, +238, +240, +260, +334, +336, +346; its +178, 0, is
-/// read and written).
-const COVER_FIELDS: [usize; 13] = [58, 70, 72, 82, 218, 220, 238, 240, 260, 334, 336, 346, 364];
-
 /// Two geometry-header mark blocks (52 bytes: A x y, u32, f64 t, u16, B x y, u32, f64 t, C x y,
 /// u16) equal but for the floats' last bits: the integers equal, coordinates within 0.001 unit,
 /// parameters within 1e-4.
@@ -850,6 +879,11 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
         "shape-start-points",
         "r10-circle",
         "r11-line",
+        // A vector import's pentagon and star: outlines that are not rectangles.
+        "hole-sewing-pentagon-star",
+        // Two circles each (a hole sewing pair), placed like r10's.
+        "concentric-ring40-hole15",
+        "spiral-ring40-hole15",
         // Manual Punch > Running: an open running line, placed like r11's.
         "o-manual-running",
         // The Applique Wizard's lines follow a curved outline offset from the pattern.
@@ -883,11 +917,6 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
         // Every pattern block is OpenStitch's placeholder (4 + 3970 bytes); PE-DESIGN's is as
         // long as the programmable pattern it holds (53 polylines in most files, one in m01).
         let records = bodies(&fixture, objects.shapes.len());
-        // Records whose pattern block is empty (the Applique Wizard's covering line).
-        let empty: Vec<bool> = records
-            .iter()
-            .map(|r| r.pattern_end == r.start + 390)
-            .collect();
         let original_len = fixture.len();
         let fixture = match bodies(&written, objects.shapes.len()).first() {
             Some(w) => with_pattern(&fixture, &records, &written[w.start + 386..w.pattern_end]),
@@ -924,10 +953,6 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
                 let (b, gh) = (r.start, r.geometry);
                 // +162: PE-DESIGN's default-colour index, OpenStitch's line colour.
                 (b + 162 <= from && to <= b + 164)
-                    // The Applique Wizard's covering line (its pattern block empty, size 750)
-                    // stores its own values in fields of the sew types it doesn't use.
-                    || (empty.get(k) == Some(&true)
-                        && COVER_FIELDS.iter().any(|&o| b + o <= from && to <= b + o + 2))
                     || (extent_differs && b + 8 <= from && to <= b + 16)
                     // The two lists' positions on a shape (one entry each): their t values.
                     || (r.marks_end - r.geometry == 84
@@ -1048,6 +1073,7 @@ fn an_openstitch_shape_with_curves_round_trips() {
         texts: Vec::new(),
         stitch_groups: Vec::new(),
         groups: vec![vec![0], vec![1]],
+        holes: Vec::new(),
         unparsed: None,
     };
     let mut pattern = openstitch_core::StitchPattern::new();
@@ -1111,6 +1137,7 @@ fn texts_between_shapes_and_in_groups_round_trip() {
         texts: vec![text],
         stitch_groups: Vec::new(),
         groups: vec![vec![1, 2]],
+        holes: Vec::new(),
         unparsed: None,
     };
     let pattern = stitches_of(&owner_file("r01-rect"));
@@ -1165,6 +1192,7 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
         }],
         stitch_groups: Vec::new(),
         groups: Vec::new(),
+        holes: Vec::new(),
         unparsed: None,
     };
     let written = pes11::write(&objects, &stitches_of(&fixture)).expect("write");
@@ -1361,6 +1389,7 @@ fn a_stitch_group_built_from_stitches_round_trips() {
         texts: Vec::new(),
         stitch_groups: vec![g],
         groups: Vec::new(),
+        holes: Vec::new(),
         unparsed: None,
     };
     let written = pes11::write(&objects, &p).expect("write");

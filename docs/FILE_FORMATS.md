@@ -100,6 +100,8 @@ rgb(255, 128, 0) to 11 Deep Gold rather than 62 Orange (`thread-match-swatches.p
 the Applique Wizard's colours, with PE-DESIGN's RGB since 2026-10-31 (its colour list after the
 PEC section, below): 62 material (255, 200, 100), 63 position (255, 200, 150), 64 appliqué
 (255, 200, 200); pyembroidery had (255, 153, 0) and (255, 240, 141) for 62 and 63. PE writes
+(255, 200, 200); OpenStitch's Appliqué wizard uses them, and a thread that is a Brother chart
+entry (brand `Brother`, the entry's number, its RGB) keeps that entry in the PEC; pyembroidery had (255, 153, 0) and (255, 240, 141) for 62 and 63. PE writes
 65 for an appliqué cutting line, (220, 220, 220), outside the 65-slot chart. The same
 matcher picks the chart entry for JEF, SEW, HUS and PCS. `approximate_index` is the "approximate" palette matcher
 (city-block winner, squared-Euclidean fallback) for the built-in sew palette.
@@ -275,6 +277,7 @@ below is pinned by a test in `tests/pes11.rs`.
 | 170 | region colour, a thread-table index | shape-start-points (three shapes: 0, 2, 3 = 800, 007, 027), hole-sewing-pentagon-star |
 | 174 | Fill Frequency, % (default 30) | fill-frequency-0/25/50 |
 | 178 | 1 in PE-DESIGN's tool defaults, 0 in the owner's machine-* files and on Convert to Blocks' blocks (meaning not mapped) | stroke-blocks-H, -A |
+| 58, 70, 72, 82, 218, 220, 238, 240, 260, 334, 336, 346, 364 | fields of the sew types the object doesn't use (meaning of each not mapped): PE-DESIGN's tool values 1, 123, 123, 50, 123, 123, 117, 117, 50, 123, 123, 50, 1 on everything its Shape, Text and Manual Punch tools make; plain values 0, 50, 50, 100, 50, 50, 50, 50, 100, 50, 50, 100, 0 on the Applique Wizard's covering line and on vector-imported shapes (`Shape::plain_settings`) | r01, a01-rect-applique, hole-sewing-pentagon-star |
 | 180 | region under sewing 1 on, 0 off | r06 |
 | 182 | region under sewing type: 2 PE-DESIGN's default, 4, 0, 1, 3 the second to fifth types; 0 on Convert to Blocks' blocks | satin-col-us-type-2 … -5, stroke-blocks-H |
 | 186 | Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline | region-travel-u-* |
@@ -364,10 +367,9 @@ four lines, then the square; Replace drops the square):
   65 whatever its colour says (a02's line points at 800 RED).
 - A file with a sewn cutting line sets bit 0x80 of the signature code's first character
   (`B1 30`: a02, against `10` or `01` in all 854 other `#PES0110` files).
-- The covering line has an empty pattern block (size 750, no polylines) and its own values in
-  fields of the sew types it doesn't use (+58, +364: 0 where others have 1; +70, +72,
-  +82, +218, +220, +238, +240, +260, +334, +336, +346: 50 / 100 where others have 123, 117 or
-  50); not mapped.
+- The covering line has an empty pattern block (size 750, no polylines) and the plain values in
+  the fields of the sew types it doesn't use (`Shape::plain_settings`, as vector-imported
+  shapes).
 For closed shapes the coordinates sit at fixed fractions of the bounds: A a tenth of the width
 left of the left edge at 60 % of the height, B at the centre and 25 % of the height, C a tenth
 of the width right of the right edge at 60 % (r01, r02, r03, r16, o-rounded-rect, o-region-*);
@@ -384,7 +386,22 @@ A rectangle starts in the middle of its bottom edge and runs round the corners; 
 four smooth vertices whose handles lie 0.5523 × the radius along the tangent. The record ends
 after its last vertex.
 
-After the list: 10 zero bytes; the **group list**, a u16 count then per group its MFC tag
+Every owner file with a group has one group of all its objects (the Applique Wizard's output with
+the original shape, vector imports, Convert to Blocks, o-group-two-rects, the machine-* files),
+and PE-DESIGN 11.50 refused ("Unexpected file format") a file whose one group left an object out:
+OpenStitch's appliqué export of 2026-10-30 grouped its four lines without the square, while the
+same file with all five grouped, or with no group, opens (2026-10-31). The writer's export
+therefore writes a group only when one group holds every object; how PE-DESIGN stores a group of
+some of the objects, or several groups, is not mapped (captures requested).
+
+After the list: 10 zero bytes, or with a **hole sewing pair** 16 bytes, u16 0, 3, 3, the
+outer and inner objects' list positions and 6 zero bytes (Modify Overlap > Set hole sewing on a
+15 mm circle inside a 40 mm one, concentric- and spiral-ring40-hole15: positions 1, 0; a vector
+import's pair, hole-sewing-pentagon-star: 0, 1). The inner object is Not Sewn: Set hole sewing
+turns the user's own inner shape Not Sewn; the vector import adds a Not Sewn copy of the star
+after the pentagon and keeps the star sewn. All three files hold one pair and no groups, so
+where the group list goes after a pair, and how two pairs are listed, are not mapped (the
+writer refuses both). Then the **group list**, a u16 count then per group its MFC tag
 (`FFFF 0000 0C00 CGroupObject` the first time), a u16 with the `CGroupObject` class's archive
 number (the objects' count + 2: 1 is `CEmbLine`, 2.. the objects, then the class), the u16
 member count and the members' object indexes as u16 (o-group-two-rects, machine-rbr …
@@ -407,6 +424,12 @@ catalogue number (a name read from another file, an Option colour), `FA FF FF`, 
 cut's number as u16 for a cutting line (PEC 65, a02). OpenStitch's writers still write the RGB
 as u24 little-endian (B, G, R, as pyembroidery does for version 6) and `0D` with the number
 for every block.
+cut's number as u16 for a cutting line (PEC 65, a02). OpenStitch's `#PES0110` writer writes the list
+this way since 2026-10-31 (R, G, B on a Hoop Size page and zeros on a Custom Size page; `0D` and
+the BROTHER EMBROIDERY number for a Brother chart colour, `FA`–`FC` for PEC 62–64, `FE FF FF` for
+a thread with no number; `colour_list_after_the_pec_is_written_as_pe_design_writes_it` against
+every block of PE's files with a number); the icons stay blank. The version 6 writer keeps
+pyembroidery's u24 little-endian RGB (B, G, R) and has no codes.
 
 #### `CEmbNText` (text)
 
@@ -504,7 +527,8 @@ OpenStitch's Brother PEC chart gets the BROTHER EMBROIDERY catalogue number and 
 catalogue number, brand and chart), one `CEmbLine` per visible shape with every mapped field set,
 one `CEmbOne` per stitch pattern (its needle points in runs cut as version 6 cuts them, a jump
 run where the pattern jumps or trims, each colour block's thread added to the table), the
-groups, the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
+groups (a design's one group of every object; other grouping is left out, see the group list
+above), the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
 as `CEmbNText` (letters at the text's size, Satin or Fill, an optional running, triple or
 zigzag line at PE's defaults, line breaks, the line spacing %, left or centre alignment and the
 click point at the alignment point), and fitted to an outline as `CEmbAText` (the fit settings, the
@@ -514,14 +538,16 @@ the default level's strength and, for the arches, the circle measured on OpenSti
 layout; zeros where PE-DESIGN leaves stale numbers), and a Manual Punch column (`shape.column`) as a
 Straight or Curve Block object (its direction lines' ends as the outline and the lists, the
 Curve Block's handles, bounds and marks by the rules above; a Curve Block written from a design
-has handles within one unit of PE-DESIGN's, not byte-identical). What it
-cannot hold fails with the object named: several
-outlines in one object, programmable, motif and the other region types, motif, stem,
+has handles within one unit of PE-DESIGN's, not byte-identical), and a hole sewing pair as above:
+the inner shape paired itself when it is not sewn, else a Not Sewn copy of it after the outer
+object. What it
+cannot hold fails with the object named: a second hole sewing pair, a hole sewing pair in a
+design with groups, several outlines in one object, programmable, motif and the other region types, motif, stem,
 candlewicking, chain and cutting lines; text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character
-edits or under sewing. Checks: the 121 owner files whose list the reader parses completely (56
-with shapes, 11 of them Manual Punch objects, 2 of Convert to Blocks, 5 Applique Wizard outputs, 19 with plain text, 27 with a Text Transform, 14 with
+edits or under sewing. Checks: the 124 owner files whose list the reader parses completely (59
+with shapes, 3 with a hole sewing pair, 11 of them Manual Punch objects, 2 of Convert to Blocks, 5 Applique Wizard outputs, 19 with plain text, 27 with a Text Transform, 14 with
 text fitted to an outline, 3 with a stitch group; two of them with gallery shapes) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
 (`written_object_sections_match_pe_designs_bytes_outside_the_documented_differences`):
@@ -536,8 +562,7 @@ byte-identical to PE-DESIGN's outside these documented differences
   outlines among them).
 - **Extent:** bounds ± half the zigzag width, or ± the E/V width (the circle's 589..711 and the
   open line's one-axis growth are not reproduced).
-- **Applique Wizard's covering line:** written with the template's values in the fields of the
-  sew types it doesn't use (above) and OpenStitch's pattern-block placeholder.
+- **Applique Wizard's covering line:** written with OpenStitch's pattern-block placeholder.
 - **+162:** PE-DESIGN points this thread index at 800 RED whatever is sewn; OpenStitch points it
   at the line colour.
 - **Header:** a design on a 100 × 100 mm page is written on PE-DESIGN's default page, a Hoop
@@ -607,7 +632,13 @@ and sews the pair, the text and the circle with the stitch counts of its own tex
 circle's pattern block (its own default pattern, as for every shape) and the fitted text's
 bounds and extent, which it recomputes from its layout: 757..1242 × 573..757, the same as its
 own text-fit-default, where OpenStitch writes 805..1218 × 373..759 (an open difference, as for
-the arched text box). Version 6 stays the default export until the coordinator decides
+the arched text box). **Stitch group, Manual Punch and Curve Block (2026-10-31, `pes-0110-stitches`,
+`pes-0110-manual-punch`, `pes-0110-curve-block`, reference tier):** PE-DESIGN 11.50 opens the
+stitch group as one stitch object (its re-save's PES section is byte-identical to the export) and
+the two blocks as editable Manual Punch blocks (Edit Points moves the punch points, the satin
+follows; the Curve Block's sides stay curves), with m01's and m09's sizes and stitch counts; their
+re-saves change only the pattern block. **The appliqué export (`pes-0110-applique`) is refused**
+("Unexpected file format"): see the addendum above. Version 6 stays the default export until the coordinator decides
 otherwise.
 
 ## PE-DESIGN's record layout (DST, EXP, JEF, SEW, XXX, PCS, HUS, VIP)

@@ -369,7 +369,14 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
                 continue;
             }
             let mut layers = region::layers_with(&closed, region, holes, user);
-            if let Some(top) = layers.last_mut() {
+            // PE-DESIGN 11.50 sews a TrueType letter in Satin stroke by stroke, each stroke a
+            // column, in its Convert to Blocks order (docs/research/stroke-lettering.md).
+            let by_stroke = (text && region.kind == RegionType::Satin && region.stamps.is_empty())
+                .then(|| stroke_satin(&closed, region))
+                .flatten();
+            if let (Some(runs), Some(top)) = (by_stroke, layers.last_mut()) {
+                *top = runs;
+            } else if let Some(top) = layers.last_mut() {
                 let runs = stamp::apply(std::mem::take(top), &region.stamps);
                 // PE-DESIGN 11.50 sews Concentric Circle and Spiral in the order the Start
                 // Point button gives, jumping in and ending where the pattern ends (references
@@ -443,6 +450,47 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
         out.extend(line_elements(object, line, user));
     }
     out
+}
+
+/// Rungs of a letter's blocks this far apart (0.1 mm): the direction lines the satin follows.
+const STROKE_RUNGS: f64 = 30.0;
+/// Travel between a letter's blocks: running stitches along its outline at most 2 mm long.
+const STROKE_TRAVEL: f64 = 20.0;
+
+/// A letter's satin sewn stroke by stroke: each block a column satin along its rungs, joined by
+/// travel along the outline, a new run (a trim) where a piece is not joined to the one before.
+/// `None` where the letter has no strokes.
+fn stroke_satin(closed: &[Contour], region: &crate::model::RegionSewing) -> Option<Vec<Run>> {
+    let g = crate::strokes::strokes(closed)?;
+    let blocks = g.blocks(closed, STROKE_RUNGS);
+    let spacing = 10.0 / region.density.max(0.1);
+    let pull = region.pull_compensation * 10.0;
+    let mut runs: Vec<Run> = Vec::new();
+    let mut run: Run = Vec::new();
+    for b in &blocks {
+        if b.rungs.len() < 2 {
+            continue;
+        }
+        if b.new_run && run.len() >= 2 {
+            runs.push(std::mem::take(&mut run));
+        }
+        let column = crate::column::satin(&b.rungs, spacing, pull);
+        // PE-DESIGN walks the letter's outline between its blocks (stroke-blocks-H: running
+        // pieces between them).
+        if let (Some(&from), Some(&to)) = (run.last(), column.first()) {
+            run.extend(
+                route::travel(closed, from, to, STROKE_TRAVEL)
+                    .into_iter()
+                    .skip(1),
+            );
+            run.pop();
+        }
+        run.extend(column);
+    }
+    if run.len() >= 2 {
+        runs.push(run);
+    }
+    (!runs.is_empty()).then_some(runs)
 }
 
 fn line_elements(object: &DesignObject, line: &LineSewing, user: &[Pattern]) -> Vec<Element> {

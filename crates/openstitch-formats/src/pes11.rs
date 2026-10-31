@@ -67,6 +67,17 @@ pub const PAGE_ORIGIN: f32 = 500.0;
 /// chart index, brand or chart (a01-rect-applique … a05). PE-DESIGN's chart colours are 10.
 pub const APPLIQUE_KIND: u32 = 2;
 
+/// Body offsets of fields that belong to the sew types an object doesn't use: they hold either
+/// PE-DESIGN's tool values or plain ones ([`Shape::plain_settings`]); the meaning of each is not
+/// mapped.
+pub const SETTINGS_FIELDS: [usize; 13] =
+    [58, 70, 72, 82, 218, 220, 238, 240, 260, 334, 336, 346, 364];
+/// [`SETTINGS_FIELDS`] as the Shape, Text and Manual Punch tools write them (r01 and every
+/// tool-made owner file).
+pub const TOOL_SETTINGS: [u16; 13] = [1, 123, 123, 50, 123, 123, 117, 117, 50, 123, 123, 50, 1];
+/// [`SETTINGS_FIELDS`] on the Applique Wizard's covering line and vector-imported shapes.
+pub const PLAIN_SETTINGS: [u16; 13] = [0, 50, 50, 100, 50, 50, 50, 50, 100, 50, 50, 100, 0];
+
 /// Region sew type (`CEmbLine` body +134).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RegionSewType {
@@ -149,6 +160,12 @@ pub struct Objects {
     pub stitch_groups: Vec<StitchGroup>,
     /// Groups (`CGroupObject` after the list): each the positions of its member objects.
     pub groups: Vec<Vec<u16>>,
+    /// Hole sewing pairs, `[outer, inner]` list positions: the outer region is sewn around the
+    /// inner shape, which is Not Sewn (Modify Overlap > Set hole sewing: concentric- and
+    /// spiral-ring40-hole15, the 15 mm circle inside the 40 mm one; a vector import's pair:
+    /// hole-sewing-pentagon-star, a Not Sewn copy of the star after the pentagon). One pair per
+    /// file is mapped.
+    pub holes: Vec<[u16; 2]>,
     /// The first object class that was not read, if any.
     pub unparsed: Option<String>,
 }
@@ -195,6 +212,11 @@ pub struct Shape {
     /// Body +178: 1 in PE-DESIGN's tool defaults, 0 in the owner's machine-* files and on Convert
     /// to Blocks' blocks (meaning not mapped).
     pub flag_178: u16,
+    /// The fields of the sew types the object doesn't use hold their plain values
+    /// ([`PLAIN_SETTINGS`]) rather than PE-DESIGN's tool values ([`TOOL_SETTINGS`]): the
+    /// Applique Wizard's covering line (a01-rect-applique) and shapes from a vector import
+    /// (hole-sewing-pentagon-star) have them.
+    pub plain_settings: bool,
     /// From the Shapes gallery (`CEmbSpecialShape`): the same record, kept under that class.
     pub gallery: bool,
     /// A Manual Punch block (Straight or Curve Block, and PE-DESIGN's Convert to Blocks):
@@ -250,6 +272,7 @@ impl Shape {
             running_path: 0,
             under_sewing_type: 2,
             flag_178: 1,
+            plain_settings: false,
             gallery: false,
             punch: Vec::new(),
             punch_exit: 0,
@@ -564,6 +587,7 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             texts,
             stitch_groups,
             groups,
+            holes: Vec::new(),
             unparsed,
         })
     };
@@ -641,8 +665,10 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             }
         }
     }
-    let groups = read_groups(&mut r, &mut map).unwrap_or_default();
-    done(shapes, texts, stitch_groups, groups, None)
+    let (holes, groups) = read_groups(&mut r, &mut map).unwrap_or_default();
+    let mut objects: Objects = done(shapes, texts, stitch_groups, groups, None)?;
+    objects.holes = holes;
+    Ok(objects)
 }
 
 /// An MFC object tag: `Ok(class name)`, or `Err(tag)` for a tag that refers to no class.
@@ -671,16 +697,26 @@ fn read_tag(
 /// The group list after the objects: 10 zero bytes, a u16 count, then per group its MFC tag,
 /// a u16 (the `CGroupObject` class's archive number), the u16 member count and the members'
 /// object indexes as u16. Anything else ends the list quietly.
-fn read_groups(r: &mut ByteReader<'_>, map: &mut Vec<Option<String>>) -> Result<Vec<Vec<u16>>> {
-    if r.read(10)?.iter().any(|&b| b != 0) {
-        return Ok(Vec::new());
-    }
+/// Hole sewing pairs and groups, as read after the object list.
+type HolesAndGroups = (Vec<[u16; 2]>, Vec<Vec<u16>>);
+
+fn read_groups(r: &mut ByteReader<'_>, map: &mut Vec<Option<String>>) -> Result<HolesAndGroups> {
+    // Before the groups: ten zero bytes, or with a hole sewing pair sixteen bytes, u16 0, 3, 3,
+    // the outer and inner positions and six zero bytes (hole-sewing-pentagon-star: 0, 1; the
+    // rings: 1, 0; all three without groups).
+    let head = r.read(10)?;
+    let at = |k: usize| u16::from_le_bytes([head[2 * k], head[2 * k + 1]]);
+    let holes = match [at(0), at(1), at(2)] {
+        [0, 0, 0] if at(3) == 0 && at(4) == 0 => Vec::new(),
+        [0, 3, 3] if r.read(6)?.iter().all(|&b| b == 0) => vec![[at(3), at(4)]],
+        _ => return Ok((Vec::new(), Vec::new())),
+    };
     let count = r.u16le()?;
     let mut groups = Vec::new();
     for _ in 0..count {
         match read_tag(r, map)? {
             Ok(class) if class == GROUP_OBJECT => {}
-            _ => return Ok(groups),
+            _ => return Ok((holes, groups)),
         }
         map.push(None);
         r.u16le()?; // the class's archive number
@@ -691,7 +727,7 @@ fn read_groups(r: &mut ByteReader<'_>, map: &mut Vec<Option<String>>) -> Result<
         }
         groups.push(members);
     }
-    Ok(groups)
+    Ok((holes, groups))
 }
 
 /// One `CEmbOne` at the reader's offset: bounds, extent, transform, u16 1 0 0 width height,
@@ -981,6 +1017,10 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         running_path: u16_at(body, 186),
         under_sewing_type: u16_at(body, 182),
         flag_178: u16_at(body, 178),
+        plain_settings: SETTINGS_FIELDS
+            .iter()
+            .zip(PLAIN_SETTINGS)
+            .all(|(&at, v)| u16_at(body, at) == v),
         gallery: false,
         punch,
         punch_exit,
@@ -1032,6 +1072,29 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
         return Err(FormatError::ValueOutOfRange(format!(
             "PES 0110: {total} objects (1 to 16383)"
         )));
+    }
+    // Hole sewing pairs: one per file is mapped, in a file without groups (the owner's three
+    // hole files have none; where the group list goes after a pair is not known).
+    if objects.holes.len() > 1 {
+        return Err(FormatError::ValueOutOfRange(format!(
+            "PES 0110: {} hole sewing pairs (one per file is mapped)",
+            objects.holes.len()
+        )));
+    }
+    if !objects.holes.is_empty() && !objects.groups.is_empty() {
+        return Err(FormatError::ValueOutOfRange(
+            "PES 0110: a hole sewing pair together with groups (not mapped yet)".into(),
+        ));
+    }
+    if objects
+        .holes
+        .iter()
+        .flatten()
+        .any(|&p| usize::from(p) >= total)
+    {
+        return Err(FormatError::ValueOutOfRange(
+            "PES 0110: a hole sewing pair outside the object list".into(),
+        ));
     }
     let mut at_position: Vec<Option<&Text>> = vec![None; total];
     let mut group_at: Vec<Option<&StitchGroup>> = vec![None; total];
@@ -1191,7 +1254,7 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     let pec_start = w.len();
     let list = pec::write_section(&pattern, &mut w)?;
     patch_pec_header(&mut w.bytes[pec_start..], objects.hoop_page);
-    write_addendum(&mut w, &list, &pattern.threads);
+    write_addendum(&mut w, &list, &pattern.threads, objects.hoop_page);
     Ok(w.bytes)
 }
 
@@ -1559,6 +1622,14 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     put16(&mut head, 170, s.region_color);
     put16(&mut head, 174, s.frequency);
     put16(&mut head, 178, s.flag_178);
+    let settings = if s.plain_settings {
+        PLAIN_SETTINGS
+    } else {
+        TOOL_SETTINGS
+    };
+    for (&at, v) in SETTINGS_FIELDS.iter().zip(settings) {
+        put16(&mut head, at, v);
+    }
     put16(&mut head, 180, u16::from(s.under_sewing));
     put16(&mut head, 182, s.under_sewing_type);
     put16(&mut head, 186, s.running_path);
@@ -1843,7 +1914,15 @@ fn write_trailer(
     at_position: &[Option<&Text>],
     group_at: &[Option<&StitchGroup>],
 ) {
-    w.fill(0, 10);
+    match objects.holes.as_slice() {
+        [] => w.fill(0, 10),
+        [[outer, inner]] => {
+            for v in [0, 3, 3, *outer, *inner, 0, 0, 0] {
+                w.u16le(i64::from(v));
+            }
+        }
+        _ => unreachable!("write checks that there is at most one hole pair"),
+    }
     w.u16le(objects.groups.len() as i64);
     for members in &objects.groups {
         archive.tag(w, GROUP_OBJECT);
@@ -1884,32 +1963,137 @@ fn write_trailer(
 
 /// After the PEC section, per colour block: the PEC colour list padded to 128 bytes, a 48 × 24
 /// 1-bpp icon (PE-DESIGN draws the thread's number and name; OpenStitch leaves it blank), the
-/// RGB as u24, then a u16 count of preview images (0: PE-DESIGN's own Hoop-Size files have
-/// none) and a `0x0D` + u16 catalogue number per block.
-fn write_addendum(w: &mut ByteWriter, list: &[u8], threads: &[Thread]) {
+/// RGB as R, G, B (zero on a Custom Size page, as in all of PE-DESIGN's own files), then a u16
+/// count of preview images (0: PE-DESIGN's own Hoop-Size files have none) and a three-byte
+/// code per block ([`addendum_code`]).
+fn write_addendum(w: &mut ByteWriter, list: &[u8], threads: &[Thread], hoop_page: bool) {
     w.append(list);
     w.fill(0x20, 128_usize.saturating_sub(list.len()));
     for _ in threads {
         w.fill(0, 0x90);
     }
     for t in threads {
-        w.u24le(i64::from(t.rgb_value()));
+        if hoop_page {
+            w.append(&[t.red, t.green, t.blue]);
+        } else {
+            w.fill(0, 3);
+        }
     }
     w.u16le(0);
     for t in threads {
-        let catalog = t
-            .catalog_number
-            .as_deref()
-            .and_then(|c| c.trim().parse::<u16>().ok())
-            .unwrap_or(0);
-        w.u8(0x0D);
-        w.u16le(i64::from(catalog));
+        w.append(&addendum_code(t));
+    }
+}
+
+/// A colour block's code in the list after the PEC section, as PE-DESIGN 11.50 writes it:
+/// `0D` and the catalogue number as u16 (BROTHER EMBROIDERY's for a Brother chart colour,
+/// `0D 20 03` 800 RED), `FA`, `FB`, `FC` + `FF FF` for the Applique Wizard's material, position
+/// and appliqué colours (PEC 62–64), `FE FF FF` for a thread with no number.
+fn addendum_code(t: &Thread) -> [u8; 3] {
+    let applique = match (t.kind, t.catalog_number.as_deref()) {
+        (Some(APPLIQUE_KIND), Some(c)) => ["100", "101", "102"].iter().position(|&a| a == c),
+        (_, Some(c)) if t.brand.as_deref() == Some("Brother") => ["62", "63", "64"]
+            .iter()
+            .position(|&a| a == c)
+            .filter(|&k| {
+                PEC_CHART[62 + k]
+                    .as_ref()
+                    .is_some_and(|p| p.rgb_value() == t.rgb_value())
+            }),
+        _ => None,
+    };
+    if let Some(k) = applique {
+        return [0xFA + k as u8, 0xFF, 0xFF];
+    }
+    match as_pe_writes(t)
+        .catalog_number
+        .as_deref()
+        .and_then(|c| c.trim().parse::<u16>().ok())
+    {
+        Some(n) => {
+            let [lo, hi] = n.to_le_bytes();
+            [0x0D, lo, hi]
+        }
+        None => [0xFE, 0xFF, 0xFF],
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The colour list after the PEC section, from its RGB on, as PE-DESIGN 11.50 writes it in
+    /// its own `#PES0110` files (pe11 fixtures and compat/reference): for every block whose
+    /// code is a catalogue number or an appliqué colour, OpenStitch's list for the colours the
+    /// reader gives (the PEC chart entries) has PE's RGB and code; the RGB is zero on a Custom
+    /// Size page.
+    #[test]
+    fn colour_list_after_the_pec_is_written_as_pe_design_writes_it() {
+        fn walk(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+            for e in std::fs::read_dir(dir).expect("dir").flatten() {
+                let p = e.path();
+                if p.is_dir() {
+                    walk(&p, out);
+                } else if p.extension().is_some_and(|x| x.eq_ignore_ascii_case("pes")) {
+                    out.push(p);
+                }
+            }
+        }
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut files = Vec::new();
+        walk(&root.join("tests/fixtures/pe11"), &mut files);
+        walk(&root.join("../../compat/reference"), &mut files);
+        let (mut blocks_checked, mut pages) = (0, [0, 0]);
+        for path in &files {
+            let b = std::fs::read(path).expect("read");
+            if !b.starts_with(b"#PES0110") {
+                continue;
+            }
+            let (Ok(section), Ok(pattern)) = (crate::pes::read_objects(&b), crate::pes::read(&b))
+            else {
+                continue;
+            };
+            let pec = u32::from_le_bytes(b[8..12].try_into().expect("u32")) as usize;
+            if b[pec + 0x30] == 0xFF {
+                continue;
+            }
+            let n = usize::from(b[pec + 0x30]) + 1;
+            let codes_at = b.len() - 3 * n;
+            let rgb_at = codes_at - 2 - 3 * n;
+            if b[codes_at - 2..codes_at] != [0, 0] || pattern.threads.len() != n {
+                continue; // preview images follow: not mapped
+            }
+            let hoop_page = section.hoop_page;
+            let mut w = ByteWriter::default();
+            let list = &b[pec + 0x31..pec + 0x31 + n];
+            write_addendum(&mut w, list, &pattern.threads, hoop_page);
+            let ours = &w.bytes[w.bytes.len() - (6 * n + 2)..];
+            let pe = &b[rgb_at..];
+            pages[usize::from(hoop_page)] += 1;
+            for k in 0..n {
+                let code = &pe[3 * n + 2 + 3 * k..3 * n + 2 + 3 * k + 3];
+                if !(code[0] == 0x0D || (0xFA..=0xFC).contains(&code[0])) {
+                    continue; // FE: a thread with no number, F9: a cut
+                }
+                let name = path.display();
+                assert_eq!(
+                    &ours[3 * n + 2 + 3 * k..3 * n + 2 + 3 * k + 3],
+                    code,
+                    "{name} block {k} code"
+                );
+                assert_eq!(
+                    &ours[3 * k..3 * k + 3],
+                    &pe[3 * k..3 * k + 3],
+                    "{name} block {k} RGB"
+                );
+                blocks_checked += 1;
+            }
+        }
+        assert!(
+            blocks_checked > 400 && pages[0] > 300 && pages[1] > 60,
+            "{blocks_checked} {pages:?}"
+        );
+    }
 
     #[test]
     fn body_template_and_pattern_block_have_the_mapped_length() {

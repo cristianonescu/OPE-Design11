@@ -429,40 +429,46 @@ fn applique_stages_sew_in_order_with_stops_between() {
     assert!(d.objects.iter().all(|o| o.group == Some(group)));
     assert_eq!(d.objects.iter().map(|o| o.id).collect::<Vec<_>>(), new);
     let pattern = compile(&d);
+    // PE-DESIGN's appliqué colours (a01-a05: PEC 62, 63, 64): the tack-down and the cover
+    // share the Applique colour, so they sew as one block after two stops. (Before 2026-10-31
+    // every stage took the pattern's colour and the cover was a fourth block.)
     assert_eq!(
         block_names(&pattern),
-        [
-            "Appliqué material",
-            "Appliqué position",
-            "Appliqué tack-down",
-            "Red"
-        ]
+        ["Appliqué material", "Appliqué position", "Appliqué"]
     );
-    // Three stops: the colour changes between the four stages; every colour is the pattern's.
-    assert_eq!(pattern.count(Command::ColorChange), 3);
-    assert!(pattern.threads.iter().all(|t| t.hex() == "#ed171f"));
+    assert_eq!(pattern.count(Command::ColorChange), 2);
+    let hexes: Vec<String> = pattern.threads.iter().map(|t| t.hex()).collect();
+    assert_eq!(hexes, ["#ffc864", "#ffc896", "#ffc8c8"]);
+    assert_eq!(
+        openstitch_formats::pec::pec_color_indexes(&pattern.threads),
+        [62, 63, 64]
+    );
     // All stages follow the circle's outline (r = 10 mm).
     for o in &d.objects {
         for p in points_mm(&d, o.id) {
             assert!((p.distance(v2(50.0, 50.0)) - 10.0).abs() < 0.05, "{p:?}");
         }
     }
-    // Cover zigzag reaches 1.5 mm to each side; tack-down 1 mm.
+    // Cover zigzag reaches 1.5 mm to each side (the shared block); tack-down 1 mm (the design
+    // without its cover).
     let blocks = needle_blocks(&pattern);
+    let mut no_cover = d.clone();
+    no_cover.objects.pop();
+    let tack_blocks = needle_blocks(&compile(&no_cover));
     let reach = |b: &[Vec2]| {
         b.iter()
             .map(|p| (p.distance(v2(50.0, 50.0)) - 10.0).abs())
             .fold(0.0, f64::max)
     };
     assert!(
-        (reach(&blocks[3]) - 1.5).abs() < 0.1,
-        "{}",
-        reach(&blocks[3])
-    );
-    assert!(
-        (reach(&blocks[2]) - 1.0).abs() < 0.1,
+        (reach(&blocks[2]) - 1.5).abs() < 0.1,
         "{}",
         reach(&blocks[2])
+    );
+    assert!(
+        (reach(&tack_blocks[2]) - 1.0).abs() < 0.1,
+        "{}",
+        reach(&tack_blocks[2])
     );
     assert!(reach(&blocks[1]) < 0.05 && reach(&blocks[0]) < 0.05);
     assert_one_undo(&mut s, &before);
@@ -505,9 +511,9 @@ fn applique_add_keeps_the_pattern_and_offsets_the_outline() {
     let pattern = compile(&d);
     assert_eq!(
         block_names(&pattern),
-        ["Appliqué position", "Appliqué tack-down", "Red"]
+        ["Appliqué position", "Appliqué", "Red"]
     );
-    // Position → tack-down → cover are stops; the cover and the pattern share a colour block.
+    // Position → tack-down and cover (PE's Applique colour) → the pattern: two stops.
     assert_eq!(pattern.count(Command::ColorChange), 2);
     let kinds: Vec<_> = d.objects[..3]
         .iter()
@@ -541,7 +547,7 @@ fn applique_material_can_be_cut_by_cutwork_needles() {
             "Cutwork needle 1 (0°)",
             "Cutwork needle 3 (90°)",
             "Appliqué position",
-            "Appliqué tack-down",
+            "Appliqué",
             "Black"
         ]
     );

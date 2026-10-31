@@ -1,0 +1,584 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "stitches-import-centre",
+  "area": "stitches",
+  "title": "Import Patterns from File: the imported stitches land centred on the Design Page",
+  "description": "PE-DESIGN 11.50's Import Patterns > from File ignores where the file put its stitches and centres the pattern on the Design Page, for a DST and a PES alike, on a 100 x 100 and a 200 x 150 mm page; importing the same file twice puts the copies on top of each other. The source is an OpenStitch export of a 20 x 10 mm rectangle at (10,10) mm. One stitch more in PE's double import (785 against 784: PE joins the copies with a stitch where OpenStitch jumps) is inside the count tolerance; the DST's colour (PE: 007 PRUSSIAN BLUE) is not compared.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "Import stitch files into the design"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/import-*.pes (PE-DESIGN 11.50, 2026-10-31, pe-refs-4 round 7): every import centred on the page"
+    }
+  ],
+  "inputs": [
+    {
+      "from": "compat/reference/stitches/import-rect20x10.dst",
+      "name": "src.dst"
+    },
+    {
+      "from": "compat/reference/stitches/import-rect20x10.pes",
+      "name": "src.pes"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "stitches.import",
+      "params": {
+        "path": "src.dst"
+      }
+    },
+    {
+      "command": "design.export",
+      "params": {
+        "path": "a.pes"
+      }
+    },
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "stitches.import",
+      "params": {
+        "path": "src.pes"
+      }
+    },
+    {
+      "command": "design.export",
+      "params": {
+        "path": "b.pes"
+      }
+    },
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "stitches.import",
+      "params": {
+        "path": "src.dst"
+      }
+    },
+    {
+      "command": "stitches.import",
+      "params": {
+        "path": "src.dst"
+      }
+    },
+    {
+      "command": "design.export",
+      "params": {
+        "path": "c.pes"
+      }
+    },
+    {
+      "command": "design.new",
+      "params": {
+        "width": 200,
+        "height": 150
+      }
+    },
+    {
+      "command": "stitches.import",
+      "params": {
+        "path": "src.dst"
+      }
+    },
+    {
+      "command": "design.export",
+      "params": {
+        "path": "d.pes"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes",
+      "fromScript": true
+    },
+    {
+      "path": "b.pes",
+      "fromScript": true
+    },
+    {
+      "path": "c.pes",
+      "fromScript": true
+    },
+    {
+      "path": "d.pes",
+      "fromScript": true
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design-dst-100",
+      "file": "stitches/import-dst-onto-100.pes",
+      "make": "App menu > New (Hoop 100 x 100 mm); Home > Import Patterns > from File... (opens the Import pane: From Folder, File Type filter, thumbnails; no dialog or option at import), the source's thumbnail > Import for import-rect20x10.dst; Save As PES (default type, #PES0110)"
+    },
+    {
+      "id": "pe-design-pes-100",
+      "file": "stitches/import-pes-onto-100.pes",
+      "make": "App menu > New (Hoop 100 x 100 mm); Home > Import Patterns > from File... (opens the Import pane: From Folder, File Type filter, thumbnails; no dialog or option at import), the source's thumbnail > Import for import-rect20x10.pes; Save As PES (default type, #PES0110)"
+    },
+    {
+      "id": "pe-design-dst-twice",
+      "file": "stitches/import-dst-twice.pes",
+      "make": "App menu > New (Hoop 100 x 100 mm); Home > Import Patterns > from File... (opens the Import pane: From Folder, File Type filter, thumbnails; no dialog or option at import), the source's thumbnail > Import for import-rect20x10.dst, then the same Import again; Save As PES (default type, #PES0110)"
+    },
+    {
+      "id": "pe-design-dst-200x150",
+      "file": "stitches/import-dst-onto-200x150.pes",
+      "make": "App menu > New, Design Page Custom 200 x 150 mm; Home > Import Patterns > from File... (opens the Import pane: From Folder, File Type filter, thumbnails; no dialog or option at import), the source's thumbnail > Import for import-rect20x10.dst; Save As PES (default type, #PES0110)"
+    }
+  ],
+  "measurements": [
+    {
+      "id": "import-dst-onto-100-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: lands centred on the page: 40-60 x 45-55 mm on the rulers, 20,00 x 10,00 mm, 392 st, colour 007 PRUSSIAN BLUE (a DST has no colours; PE's first default)",
+      "reference": {
+        "id": "pe-design-dst-100",
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "import-dst-onto-100-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: lands centred on the page: 40-60 x 45-55 mm on the rulers, 20,00 x 10,00 mm, 392 st, colour 007 PRUSSIAN BLUE (a DST has no colours; PE's first default)",
+      "reference": {
+        "id": "pe-design-dst-100",
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "import-dst-onto-100-min-x",
+      "measure": {
+        "kind": "bounds",
+        "property": "minX"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 40.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 40 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-dst-onto-100-min-y",
+      "measure": {
+        "kind": "bounds",
+        "property": "minY"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 45.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 45 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-dst-onto-100-max-x",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxX"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 60.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 60 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-dst-onto-100-max-y",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxY"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": 55.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 55 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-dst-onto-100-stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: lands centred on the page: 40-60 x 45-55 mm on the rulers, 20,00 x 10,00 mm, 392 st, colour 007 PRUSSIAN BLUE (a DST has no colours; PE's first default)",
+      "reference": {
+        "id": "pe-design-dst-100",
+        "tolerance": {
+          "count": 1
+        }
+      }
+    },
+    {
+      "id": "import-pes-onto-100-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "b.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: also centred (40-60 x 45-55 mm), 392 st, keeps 800 RED; the file's own position (10-30 x 10-20 mm) is ignored",
+      "reference": {
+        "id": "pe-design-pes-100",
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "import-pes-onto-100-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "b.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: also centred (40-60 x 45-55 mm), 392 st, keeps 800 RED; the file's own position (10-30 x 10-20 mm) is ignored",
+      "reference": {
+        "id": "pe-design-pes-100",
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "import-pes-onto-100-min-x",
+      "measure": {
+        "kind": "bounds",
+        "property": "minX"
+      },
+      "source": {
+        "export": "b.pes"
+      },
+      "expected": 40.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 40 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-pes-onto-100-min-y",
+      "measure": {
+        "kind": "bounds",
+        "property": "minY"
+      },
+      "source": {
+        "export": "b.pes"
+      },
+      "expected": 45.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 45 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-pes-onto-100-max-x",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxX"
+      },
+      "source": {
+        "export": "b.pes"
+      },
+      "expected": 60.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 60 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-pes-onto-100-max-y",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxY"
+      },
+      "source": {
+        "export": "b.pes"
+      },
+      "expected": 55.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 55 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-pes-onto-100-stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "b.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: also centred (40-60 x 45-55 mm), 392 st, keeps 800 RED; the file's own position (10-30 x 10-20 mm) is ignored",
+      "reference": {
+        "id": "pe-design-pes-100",
+        "tolerance": {
+          "count": 1
+        }
+      }
+    },
+    {
+      "id": "import-dst-twice-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "c.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: the second copy lands exactly on the first: Total 20,00 x 10,00 mm, 785 st, one colour block, one grouped item in Sewing Order",
+      "reference": {
+        "id": "pe-design-dst-twice",
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "import-dst-twice-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "c.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: the second copy lands exactly on the first: Total 20,00 x 10,00 mm, 785 st, one colour block, one grouped item in Sewing Order",
+      "reference": {
+        "id": "pe-design-dst-twice",
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "import-dst-twice-min-x",
+      "measure": {
+        "kind": "bounds",
+        "property": "minX"
+      },
+      "source": {
+        "export": "c.pes"
+      },
+      "expected": 40.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 40 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-dst-twice-min-y",
+      "measure": {
+        "kind": "bounds",
+        "property": "minY"
+      },
+      "source": {
+        "export": "c.pes"
+      },
+      "expected": 45.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 45 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-dst-twice-max-x",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxX"
+      },
+      "source": {
+        "export": "c.pes"
+      },
+      "expected": 60.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 60 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-dst-twice-max-y",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxY"
+      },
+      "source": {
+        "export": "c.pes"
+      },
+      "expected": 55.0,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "PE-DESIGN 11.50's canvas and rulers put this import at 55 mm; its file cannot show it: on the 100 x 100 mm page PE-DESIGN writes these PEC stitches from the design's own top-left (PEC header 20,0 x 10,0 mm, needle points 0-20 x 0-10 mm), where its 200 x 150 mm file and its other 100 x 100 references (header 2900 x 1900) keep page coordinates. A machine reads both the same way. This check pins OpenStitch's page position at PE's ruler value."
+    },
+    {
+      "id": "import-dst-twice-stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "c.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: the second copy lands exactly on the first: Total 20,00 x 10,00 mm, 785 st, one colour block, one grouped item in Sewing Order",
+      "reference": {
+        "id": "pe-design-dst-twice",
+        "tolerance": {
+          "count": 1
+        }
+      }
+    },
+    {
+      "id": "import-dst-onto-200x150-min-x",
+      "measure": {
+        "kind": "bounds",
+        "property": "minX"
+      },
+      "source": {
+        "export": "d.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: centred on the larger page: 90-110 x 70-80 mm, 392 st",
+      "reference": {
+        "id": "pe-design-dst-200x150",
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "import-dst-onto-200x150-min-y",
+      "measure": {
+        "kind": "bounds",
+        "property": "minY"
+      },
+      "source": {
+        "export": "d.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: centred on the larger page: 90-110 x 70-80 mm, 392 st",
+      "reference": {
+        "id": "pe-design-dst-200x150",
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "import-dst-onto-200x150-max-x",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxX"
+      },
+      "source": {
+        "export": "d.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: centred on the larger page: 90-110 x 70-80 mm, 392 st",
+      "reference": {
+        "id": "pe-design-dst-200x150",
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "import-dst-onto-200x150-max-y",
+      "measure": {
+        "kind": "bounds",
+        "property": "maxY"
+      },
+      "source": {
+        "export": "d.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: centred on the larger page: 90-110 x 70-80 mm, 392 st",
+      "reference": {
+        "id": "pe-design-dst-200x150",
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "import-dst-onto-200x150-stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "d.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: centred on the larger page: 90-110 x 70-80 mm, 392 st",
+      "reference": {
+        "id": "pe-design-dst-200x150",
+        "tolerance": {
+          "count": 1
+        }
+      }
+    }
+  ]
+}

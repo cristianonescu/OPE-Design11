@@ -30,15 +30,41 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
         ..Objects::default()
     };
     let mut groups: Vec<(u64, Vec<u16>)> = Vec::new();
-    // List positions by object id, for the outlines texts are fitted to.
-    let positions: Vec<u64> = design
-        .objects
+    // The list: every visible object. A hole-sewing object is paired with the shape it is sewn
+    // around: that shape itself when it is not sewn (Modify Overlap > Set hole sewing: the
+    // rings), else a Not Sewn copy of it placed after the outer object (a vector import's pair:
+    // hole-sewing-pentagon-star, the pentagon, the star's copy, the star).
+    let not_sewn = |o: &DesignObject| o.region.is_none() && o.line.is_none();
+    let mut slots: Vec<(&DesignObject, Option<&DesignObject>)> = Vec::new();
+    let mut direct: Vec<(u64, u64)> = Vec::new();
+    for object in design.objects.iter().filter(|o| o.visible) {
+        slots.push((object, None));
+        if let Some(inner) = openstitch_design::holes::paired_inner(object, design) {
+            if not_sewn(inner) && inner.visible {
+                direct.push((object.id, inner.id));
+            } else {
+                slots.push((object, Some(inner)));
+            }
+        }
+    }
+    // List positions by object id, for the outlines texts are fitted to (a hole copy has none).
+    let positions: Vec<u64> = slots
         .iter()
-        .filter(|o| o.visible)
-        .map(|o| o.id)
+        .map(|(o, inner)| if inner.is_some() { u64::MAX } else { o.id })
         .collect();
-    for (position, object) in design.objects.iter().filter(|o| o.visible).enumerate() {
+    for (position, &(object, inner)) in slots.iter().enumerate() {
         let index = u16::try_from(position).map_err(|_| "too many objects".to_string())?;
+        if let Some(inner) = inner {
+            out.shapes.push(hole_copy(object, inner, &mut out.threads)?);
+            if !out.holes.is_empty() {
+                return Err(format!(
+                    "object {}: a second hole sewing pair (PES 0110 holds one per file so far)",
+                    object.id
+                ));
+            }
+            out.holes.push([index - 1, index]);
+            continue;
+        }
         if object.kind == ObjectKind::Text {
             out.texts
                 .push(text_object(object, index, &positions, &mut out.threads)?);
@@ -58,8 +84,63 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
     if out.shapes.is_empty() && out.texts.is_empty() && out.stitch_groups.is_empty() {
         return Err("the design has no visible objects".into());
     }
-    out.groups = groups.into_iter().map(|(_, m)| m).collect();
+    // PE-DESIGN 11.50 groups every object of each owner file in one group (the Applique Wizard,
+    // vector imports, Convert to Blocks, o-group-two-rects), and it refused a file whose one group
+    // left an object out ("Unexpected file format": the appliqué export of 2026-10-30 grouped its
+    // four lines without the square; the same file with all five grouped, or none, opens). So
+    // only that layout is written: one group of every object. How PE-DESIGN stores other
+    // grouping is not mapped, and such groups are left out of the file.
+    let total = out.shapes.len() + out.texts.len() + out.stitch_groups.len();
+    out.groups = match groups.as_slice() {
+        [(_, members)] if members.len() == total => vec![members.clone()],
+        _ => Vec::new(),
+    };
+    for (outer, inner) in direct {
+        let at = |id: u64| positions.iter().position(|&p| p == id).map(|p| p as u16);
+        if let (Some(o), Some(i)) = (at(outer), at(inner)) {
+            if !out.holes.is_empty() {
+                return Err(format!(
+                    "object {outer}: a second hole sewing pair (PES 0110 holds one per file so far)"
+                ));
+            }
+            out.holes.push([o, i]);
+        }
+    }
+    if !out.holes.is_empty() && !groups.is_empty() {
+        return Err(
+            "a hole sewing pair in a design with groups: PES 0110's layout for both is not mapped yet"
+                .into(),
+        );
+    }
     Ok(out)
+}
+
+/// The Not Sewn copy of `inner` that PE-DESIGN pairs with the hole-sewing `outer`: the inner
+/// shape's outline, region and line not sewn, in the outer region's colour
+/// (hole-sewing-pentagon-star's second object).
+fn hole_copy(
+    outer: &DesignObject,
+    inner: &DesignObject,
+    table: &mut Vec<Thread>,
+) -> Result<Shape, String> {
+    if inner.kind != ObjectKind::Shape {
+        return Err(format!(
+            "object {}: hole sewing around object {}, which is not a shape (not mapped in PES 0110)",
+            outer.id, inner.id
+        ));
+    }
+    let mut copy = inner.clone();
+    copy.region = None;
+    copy.line = None;
+    copy.hole_sewing = false;
+    copy.hole_inner = None;
+    let mut s = shape(&copy, table)?;
+    if let Some(r) = &outer.region {
+        let colour = thread_index(table, &r.thread);
+        s.region_color = colour;
+        s.line_color = colour;
+    }
+    Ok(s)
 }
 
 fn mm(units: f64) -> u16 {
@@ -122,11 +203,12 @@ fn stitch_group(
 /// brand: a01-rect-applique). PE-DESIGN sews its tack-down and covering lines in 102; the
 /// wizard's covering line keeps the design's colour.
 fn applique_thread(t: &Thread) -> Option<Thread> {
-    use crate::wizards::applique::{MATERIAL, POSITION, TACK_DOWN};
+    use crate::wizards::applique::{APPLIQUE, MATERIAL, POSITION, TACK_DOWN};
     let catalog = match t.name.as_deref()? {
         MATERIAL => "100",
         POSITION => "101",
-        TACK_DOWN => "102",
+        // TACK_DOWN: designs from before the tack-down took PE's Applique colour.
+        APPLIQUE | TACK_DOWN => "102",
         _ => return None,
     };
     let mut pe = Thread::rgb(0);
@@ -971,6 +1053,83 @@ mod tests {
         );
         // The V tack-down's width is the E/V width; the zigzag width stays PE's default.
         assert_eq!((o.shapes[2].ev_width, o.shapes[2].zigzag_width), (2.0, 2.0));
+    }
+
+    #[test]
+    fn only_a_group_of_every_object_is_written() {
+        let square = |x: f64| {
+            DesignObject::shape(
+                vec![Contour::rectangle(x, 100.0, 100.0, 100.0)],
+                Some(RegionSewing::new(RegionType::Fill, red())),
+                None,
+            )
+        };
+        let mut design = Design::new("t", openstitch_design::DesignPage::default());
+        let ids: Vec<u64> = [100.0, 300.0, 500.0]
+            .map(|x| design.add(square(x)))
+            .to_vec();
+        let group = |design: &mut Design, members: &[u64], g: u64| {
+            for o in &mut design.objects {
+                if members.contains(&o.id) {
+                    o.group = Some(g);
+                }
+            }
+        };
+        // Two of three grouped: PE-DESIGN refused such a file, so the group is left out.
+        let mut partial = design.clone();
+        group(&mut partial, &ids[..2], 1);
+        assert!(objects(&partial).expect("objects").groups.is_empty());
+        // Two groups: not mapped either.
+        let mut two = design.clone();
+        group(&mut two, &ids[..2], 1);
+        group(&mut two, &ids[2..], 2);
+        assert!(objects(&two).expect("objects").groups.is_empty());
+        // Every object in one group: written.
+        let mut all = design.clone();
+        group(&mut all, &ids, 1);
+        assert_eq!(objects(&all).expect("objects").groups, [vec![0, 1, 2]]);
+    }
+
+    #[test]
+    fn hole_sewing_writes_the_inner_copy_and_the_pair() {
+        // A 40 mm square sewn around a 15 mm square inside it, as PE-DESIGN's vector import
+        // writes a pair: the outer shape, a Not Sewn copy of the inner one, the inner one.
+        let mut design = Design::new("t", openstitch_design::DesignPage::default());
+        let outer = design.add(DesignObject::shape(
+            vec![Contour::rectangle(100.0, 100.0, 400.0, 400.0)],
+            Some(RegionSewing::new(RegionType::Fill, red())),
+            None,
+        ));
+        let blue = Thread::rgb(0x00_00_FF);
+        let inner = design.add(DesignObject::shape(
+            vec![Contour::rectangle(225.0, 225.0, 150.0, 150.0)],
+            Some(RegionSewing::new(RegionType::Fill, blue.clone())),
+            None,
+        ));
+        let i = design.index_of(outer).expect("outer");
+        design.objects[i].hole_sewing = true;
+        design.objects[i].hole_inner = Some(inner);
+        let o = objects(&design).expect("objects");
+        assert_eq!(o.holes, [[0, 1]]);
+        assert_eq!(o.shapes.len(), 3);
+        let copy = &o.shapes[1];
+        assert_eq!(copy.region, RegionSewType::NotSewn);
+        assert!(!copy.line_sewn);
+        assert_eq!(copy.vertices, o.shapes[2].vertices);
+        assert_eq!(copy.region_color, o.shapes[0].region_color);
+        assert_eq!(o.shapes[2].region, RegionSewType::Fill);
+        // An inner shape that is not sewn is paired itself, with no copy (the rings).
+        let mut direct = design.clone();
+        let j = direct.index_of(inner).expect("inner");
+        direct.objects[j].region = None;
+        let d = objects(&direct).expect("objects");
+        assert_eq!((d.holes.clone(), d.shapes.len()), (vec![[0, 1]], 2));
+        assert_eq!(d.shapes[1].region, RegionSewType::NotSewn);
+        // A design with a group as well is refused: the layout of both is not mapped.
+        let mut grouped = design.clone();
+        grouped.objects[i].group = Some(7);
+        let err = objects(&grouped).expect_err("hole pair and group");
+        assert!(err.contains("hole sewing"), "{err}");
     }
 
     #[test]

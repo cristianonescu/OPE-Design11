@@ -377,11 +377,32 @@ pub(crate) fn write_section(input: &StitchPattern, w: &mut ByteWriter) -> Result
 /// own file: its 29 Ver4 Option colours (`tests/fixtures/pe11/ver4-option-color-29.pes`) got
 /// PEC 32 five times, 7, 14, 25 and 37 twice each, every one the plain nearest entry. (An
 /// earlier rule gave each distinct colour a still-unused entry, which PE-DESIGN does not do.)
+/// A thread that is a Brother chart entry itself (brand `Brother`, the entry's number as its
+/// catalogue number, the entry's RGB) keeps that entry, so the Applique Wizard's colours stay
+/// 62–64 as PE-DESIGN writes them (a01-a05).
 pub fn pec_color_indexes(threads: &[Thread]) -> Vec<usize> {
     threads
         .iter()
-        .map(|t| nearest_index(t, pec_basic_chart()).unwrap_or(20))
+        .map(|t| {
+            pec_chart_entry(t)
+                .or_else(|| nearest_index(t, pec_basic_chart()))
+                .unwrap_or(20)
+        })
         .collect()
+}
+
+/// The PEC chart entry `t` is, when it is one (brand `Brother`, the entry's number as its
+/// catalogue number, the entry's RGB).
+fn pec_chart_entry(t: &Thread) -> Option<usize> {
+    if t.brand.as_deref() != Some("Brother") {
+        return None;
+    }
+    let i: usize = t.catalog_number.as_deref()?.trim().parse().ok()?;
+    PEC_CHART
+        .get(i)?
+        .as_ref()
+        .filter(|c| c.rgb_value() == t.rgb_value())
+        .map(|_| i)
 }
 
 fn encode_stitches(stitches: &[Stitch], w: &mut ByteWriter) {
