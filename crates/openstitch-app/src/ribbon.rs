@@ -989,7 +989,7 @@ pub fn set_text(app: &mut EditorApp, mut params: serde_json::Value) {
 
 pub fn image_density_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
     let Some(b) = app.session.design().background.clone() else {
-        ui.label("No background image");
+        crate::art::notice(ui, crate::art::Art::NoImage, 40.0, "No background image");
         return;
     };
     let label = if b.visible { "Hide" } else { "Show" };
@@ -1354,7 +1354,7 @@ fn application_menu(app: &mut EditorApp, ui: &mut egui::Ui) {
             ui.label(RichText::new("Recent Files").strong());
             let recent = app.ui.prefs.recent.clone();
             if recent.is_empty() {
-                ui.label(RichText::new("No files opened yet").weak());
+                crate::art::notice(ui, crate::art::Art::DbEmpty, 64.0, "No files opened yet");
             }
             for (k, p) in recent.iter().enumerate() {
                 let name = p.file_name().map_or_else(
