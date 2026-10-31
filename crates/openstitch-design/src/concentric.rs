@@ -63,8 +63,12 @@ pub struct ConcentricParams {
 pub struct Concentric {
     pub full: Vec<Vec2>,
     pub arcs: Vec<Vec<Vec2>>,
-    /// Whether the arcs are sewn first (the second Start Point button).
+    /// Whether the arcs are sewn first (the second Start Point button, or a start point beyond
+    /// the whole circles).
     pub arcs_first: bool,
+    /// Whether the arcs and the whole circles are joined by travel, without a trim (a start
+    /// point beyond the whole circles).
+    pub joined: bool,
 }
 
 /// Concentric circles of `p.center` inside `closed` minus `holes`.
@@ -73,6 +77,7 @@ pub fn concentric(closed: &[Contour], holes: &[Contour], p: &ConcentricParams) -
         full: Vec::new(),
         arcs: Vec::new(),
         arcs_first: p.start_inside,
+        joined: false,
     };
     if !(p.spacing > 0.0 && p.pitch > 0.0) {
         return out;
@@ -110,6 +115,17 @@ pub fn concentric(closed: &[Contour], holes: &[Contour], p: &ConcentricParams) -
             (e.y - c.y).datan2(e.x - c.x)
         }
     });
+    // A start point farther out than the whole circles (a portrait rectangle's or ellipse's
+    // bottom, a triangle's corner): PE-DESIGN 11.50 starts there on the cut circles, works
+    // inwards through them and then through the whole circles to the middle, without a trim
+    // (references concentric-rect30x40, concentric-ellipse30x40, concentric-triangle).
+    let outermost_full = full_radii.last().copied().unwrap_or(0.0);
+    if let Some(e) = p
+        .entry
+        .filter(|e| e.distance(c) > outermost_full + p.spacing + CLIP_TOLERANCE)
+    {
+        return outside_in(c, closed, holes, &edges, &full_radii, &cut_radii, e, p);
+    }
     let seam = cut_radii
         .first()
         .and_then(|&r| first_crossing(c, r, entry_angle, &inside))
@@ -155,6 +171,67 @@ pub fn concentric(closed: &[Contour], holes: &[Contour], p: &ConcentricParams) -
         out.full.reverse();
         out.arcs.reverse();
         out.arcs.iter_mut().for_each(|a| a.reverse());
+    }
+    out
+}
+
+/// The cut circles from the outermost in, ordered from the start point `entry`, then the
+/// whole circles from the largest in, starting where the arcs end: one sequence, joined by
+/// travel, ending in the middle.
+#[allow(clippy::too_many_arguments)]
+fn outside_in(
+    c: Vec2,
+    closed: &[Contour],
+    holes: &[Contour],
+    edges: &[(Vec2, Vec2)],
+    full_radii: &[f64],
+    cut_radii: &[f64],
+    entry: Vec2,
+    p: &ConcentricParams,
+) -> Concentric {
+    let inside = |q: Vec2| contains(q, closed) && !contains(q, holes);
+    let entry_angle = (entry.y - c.y).datan2(entry.x - c.x);
+    let mut pieces = Vec::new();
+    let mut budget = 0usize;
+    for &r in cut_radii.iter().rev() {
+        let ring = circle(c, r, entry_angle, p.pitch);
+        budget += ring.len();
+        if budget > MAX_POINTS {
+            break;
+        }
+        let grazes = ring
+            .iter()
+            .all(|&q| inside(q) || distance_to_edges(q, edges) <= CLIP_TOLERANCE);
+        if grazes {
+            pieces.push(ring);
+        } else {
+            pieces.extend(clip(&ring, closed, holes));
+        }
+    }
+    let arcs = order(pieces, Some(entry));
+    let end = arcs.last().and_then(|a| a.last().copied()).unwrap_or(entry);
+    let seam = (end.y - c.y).datan2(end.x - c.x);
+    let mut full = Vec::new();
+    for &r in full_radii.iter().rev() {
+        let ring = circle(c, r, seam, p.pitch);
+        budget += ring.len();
+        if budget > MAX_POINTS {
+            break;
+        }
+        full.extend(ring);
+    }
+    full.dedup_by(|a, b| a.distance(*b) < 1e-9);
+    let mut out = Concentric {
+        full,
+        arcs,
+        arcs_first: true,
+        joined: true,
+    };
+    if p.start_inside {
+        out.full.reverse();
+        out.arcs.reverse();
+        out.arcs.iter_mut().for_each(|a| a.reverse());
+        out.arcs_first = false;
     }
     out
 }

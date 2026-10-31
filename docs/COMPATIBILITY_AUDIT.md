@@ -1354,6 +1354,29 @@ Line references are relative to `crates/`.
     39.8 × 39.3 mm (PE 39.7 × 39.2) and its width is compared again. A cornered turn's sides are
     now split by their own length, between the two rings' sides (triangle 854 stitches against
     PE's 842, +1.4 %, was +3.4 %; mean stitch 1.88 mm against 1.90).
+  - Round 6 (2026-10-31, 12 references: concentric square, portrait rectangle and ellipse,
+    20 and 36 mm circles, triangle; spiral on the 40 mm circle at pitch 1.0, 2.5 and 4.0, on a
+    20 mm circle at pitch 3.0, and two triangles):
+    - Concentric order (fixed): when the start point lies farther out than the largest whole
+      circle (a portrait rectangle's or ellipse's bottom, a triangle's corner), PE starts there
+      on the cut circles, works inwards through them and then through the whole circles to the
+      middle, without a trim. OpenStitch does the same now (`concentric-rect30x40`,
+      `-ellipse30x40`, `-triangle`).
+    - Triangle spirals (fixed): a turn starts on a corner of the outer ring, so the inner ring's
+      corner sits just after the start and the sides did not pair; corners within two stitches
+      of a turn's ends are now left out of both rings, and each side is split as finely as keeps
+      its longest stitch within the pitch and 0.05 mm (PE's own reach 2.06–2.12 mm). Wide
+      triangle 960 against 941, default triangle 851 against 842.
+    - Still open, each pinned at the internal tier with PE's value in its evidence (no tolerance
+      widened): spiral needle counts per turn below the outer power-of-two turns (pitch 4.0:
+      859 against PE's 1024, PE keeping about 32 a turn down to r 9 mm; pitch 1.0: 3419 against
+      2997, PE falling from 128 to 121, 108 … earlier; 20 mm circle at pitch 3.0: 333 against
+      384; the inner tails at 2.5 and 4.0 mm are identical, so below some radius PE's count no
+      longer depends on the pitch); concentric counts on the 20 mm circle (490 against 533),
+      the square (2443 against 2362) and the triangle (1383 against 1283), where PE's circles
+      carry about 2·π·r / pitch + 20 needle points instead of 4·2ⁿ; the density-1.0 triangle
+      spiral (441 against 425: more corner stitches on the short inner sides); the 36 mm
+      circle's width (36.0 against 35.6) and the portrait ellipse's height (39.0 against 39.5).
   - Cut circles on the outline (fixed 2026-10-31): a circle that only grazes the outline or a
     hole's edge (nowhere more than 0.1 mm outside: the 40 mm circle's 20 mm circle, the ring's
     7.5 mm circle on its hole) is sewn as one loop, as PE-DESIGN does, instead of breaking into

@@ -1,0 +1,150 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "spiral-triangle-wide",
+  "area": "stitches",
+  "title": "Spiral Stitch: isosceles Triangle, round 6",
+  "description": "PE-DESIGN 11.50's Spiral Stitch, round 6: the outline offset a row (1 / density) inwards per turn; PE: starts at the bottom-left corner (-29.8,+14.8), ends at (+0.2,+2.4).",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Concentric circle"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/spiral-triangle-wide.pes (PE-DESIGN 11.50, 2026-10-31, pe-refs-4 round 6): 59,50 x 29,50 mm, 941 st"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.preset",
+      "params": {
+        "kind": "triangle",
+        "cx": 50,
+        "cy": 55,
+        "width": 60,
+        "height": 30
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "spiral",
+        "color": "Red"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "region.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/spiral-triangle-wide.pes",
+      "make": "Shapes > isosceles Triangle dragged (20,40)-(80,70) mm; region Spiral Stitch. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 59,50 x 29,50 mm, 941 st."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (59,50 x 29,50 mm, 941 st)",
+      "reference": {
+        "tolerance": {
+          "percent": 3
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (59,50 x 29,50 mm, 941 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (59,50 x 29,50 mm, 941 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "stitch-length-mean",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "mean",
+        "minLength": 0.3
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (59,50 x 29,50 mm, 941 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "stitch-length-max",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (59,50 x 29,50 mm, 941 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.1
+        }
+      }
+    }
+  ]
+}

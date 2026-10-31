@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 408 · pass 408 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 420 · pass 420 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -38,7 +38,7 @@ Specs: 408 · pass 408 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Line sew types | Zigzag: width, density… | reference | `line-zigzag-default`, `line-zigzag-density-max` |
 | Machine | Brother 64-colour PEC chart mapping… | reference | `thread-match-swatches` |
 | Programmable Stitch Creator | Import of the user's own… | reference | `deco-fill-1line-100mm`, `deco-fill-1line-offcentre`, `line-motif-zigzag-3pt`, `motif-fill-2pt`, `prog-fill-line-2pt`, `prog-fill-square-4pt` |
-| Region sew types | Concentric circle… | reference | `concentric-circle30`, `concentric-circle40-d1p0`, `concentric-circle40-d3p0`, `concentric-circle40-pitch3p0`, `concentric-circle40-start2`, `concentric-circle40`, `concentric-ellipse40x30`, `concentric-rect40x30`, `concentric-ring40-hole15`, `spiral-circle40-d1p0`, `spiral-circle40-d3p0`, `spiral-circle40-drag-reverse`, `spiral-circle40-pitch3p0`, `spiral-circle40-start2`, `spiral-circle40`, `spiral-ellipse40x30`, `spiral-rect30x40`, `spiral-rect40x30-drag-reverse`, `spiral-rect40x30`, `spiral-ring40-hole15`, `spiral-square40`, `spiral-triangle` |
+| Region sew types | Concentric circle… | reference | `concentric-circle20`, `concentric-circle30`, `concentric-circle36`, `concentric-circle40-d1p0`, `concentric-circle40-d3p0`, `concentric-circle40-pitch3p0`, `concentric-circle40-start2`, `concentric-circle40`, `concentric-ellipse30x40`, `concentric-ellipse40x30`, `concentric-rect30x40`, `concentric-rect40x30`, `concentric-ring40-hole15`, `concentric-square40`, `concentric-triangle`, `spiral-circle20-pitch3p0`, `spiral-circle40-d1p0`, `spiral-circle40-d3p0`, `spiral-circle40-drag-reverse`, `spiral-circle40-pitch1p0`, `spiral-circle40-pitch2p5`, `spiral-circle40-pitch3p0`, `spiral-circle40-pitch4p0`, `spiral-circle40-start2`, `spiral-circle40`, `spiral-ellipse40x30`, `spiral-rect30x40`, `spiral-rect40x30-drag-reverse`, `spiral-rect40x30`, `spiral-ring40-hole15`, `spiral-square40`, `spiral-triangle-d1p0`, `spiral-triangle-wide`, `spiral-triangle` |
 | Region sew types | Concentric circle and spiral… | reference | `deco-fill-1line-100mm`, `deco-fill-1line-offcentre` |
 | Region sew types | Fill (tatami: angle or auto direction… | internal-regression | `attribute-ranges`, `fill-frequency-0`, `fill-frequency-25`, `fill-frequency-50`, `fill-frequency-default`, `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `running-stitch-path-exclusions`, `square-gradation-30-10`, `square-gradation-default`, `sweep-fill-density-2p5`, `sweep-fill-density-4p5-h33`, `sweep-fill-density-4p5`, `sweep-fill-density-6p0`, `sweep-fill-density-max`, `sweep-fill-density-min`, `sweep-fill-dir-135`, `sweep-fill-dir-30`, `sweep-fill-dir-45`, `sweep-fill-dir-90`, `sweep-fill-freq-10`, `sweep-fill-freq-40`, `sweep-fill-pitch-2p0`, `sweep-fill-pitch-3p0`, `sweep-fill-pitch-6p0`, `sweep-fill-pitch-max`, `sweep-fill-pitch-min`, `sweep-fill-pull-0p2`, `sweep-fill-pull-0p5-us`, `sweep-fill-pull-0p5`, `sweep-fill-pull-1p0`, `sweep-fill-pull-max`, `sweep-fill-us-default`, `sweep-fill-us-density-dense`, `sweep-fill-us-density-light`, `sweep-fill-us-type-2`, `tatami-40-st1-dir0`, `tatami-40-st1-dir30`, `tatami-40-st1-dir90`, `tatami-40-st2-dir0`, `tatami-40-st2-dir30`, `tatami-40-st2-dir45-freq0`, `tatami-40-st2-dir90`, `tatami-40-stitch-type-1`, `tatami-40-stitch-type-2`, `u-gradation-50-50`, `u-gradation-80-20`, `u-gradation-95-50`, `u-gradation-blend-blue`, `u-gradation-dir-90`, `u-gradation-pattern-2`, `u-gradation-pattern-3`, `u-gradation-pattern-4`, `u-gradation-pattern-5`, `u-gradation-pattern-6`, `u-gradation-pattern-7`, `u-gradation-pattern-8` |
 | Region sew types | Programmable fill… | reference | `motif-fill-2pt`, `prog-fill-line-2pt`, `prog-fill-square-4pt`, `programmable-fill-45` |
@@ -101,15 +101,21 @@ Specs: 408 · pass 408 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `pes/thread-match-swatches` | pass | reference | — | — | pass | — |
 | `stitches/attribute-ranges` | pass | internal-regression | pass | — | — | — |
 | `stitches/auto-satin-bent-band` | pass | reference | pass | — | pass | — |
+| `stitches/concentric-circle20` | pass | reference | pass | — | pass | — |
 | `stitches/concentric-circle30` | pass | reference | — | — | pass | — |
+| `stitches/concentric-circle36` | pass | reference | pass | — | pass | — |
 | `stitches/concentric-circle40-d1p0` | pass | reference | — | — | pass | — |
 | `stitches/concentric-circle40-d3p0` | pass | reference | — | — | pass | — |
 | `stitches/concentric-circle40-pitch3p0` | pass | reference | — | — | pass | — |
 | `stitches/concentric-circle40-start2` | pass | reference | — | — | pass | — |
 | `stitches/concentric-circle40` | pass | reference | — | — | pass | — |
+| `stitches/concentric-ellipse30x40` | pass | reference | pass | — | pass | — |
 | `stitches/concentric-ellipse40x30` | pass | reference | — | — | pass | — |
+| `stitches/concentric-rect30x40` | pass | reference | — | — | pass | — |
 | `stitches/concentric-rect40x30` | pass | reference | — | — | pass | — |
 | `stitches/concentric-ring40-hole15` | pass | reference | — | — | pass | — |
+| `stitches/concentric-square40` | pass | reference | pass | — | pass | — |
+| `stitches/concentric-triangle` | pass | reference | pass | — | pass | — |
 | `stitches/deco-fill-1line-100mm` | pass | reference | pass | — | pass | — |
 | `stitches/deco-fill-1line-offcentre` | pass | reference | pass | — | pass | — |
 | `stitches/fill-frequency-0` | pass | reference | pass | — | pass | — |
@@ -180,10 +186,14 @@ Specs: 408 · pass 408 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/satin-zigzag-skeleton` | pass | internal-regression | pass | — | — | — |
 | `stitches/sew-order-six-objects` | pass | reference | — | — | pass | — |
 | `stitches/shape-start-points` | pass | reference | pass | — | pass | pending |
+| `stitches/spiral-circle20-pitch3p0` | pass | reference | pass | — | pass | — |
 | `stitches/spiral-circle40-d1p0` | pass | reference | — | — | pass | — |
 | `stitches/spiral-circle40-d3p0` | pass | reference | — | — | pass | — |
 | `stitches/spiral-circle40-drag-reverse` | pass | reference | — | — | pass | — |
+| `stitches/spiral-circle40-pitch1p0` | pass | reference | pass | — | pass | — |
+| `stitches/spiral-circle40-pitch2p5` | pass | reference | — | — | pass | — |
 | `stitches/spiral-circle40-pitch3p0` | pass | reference | pass | — | pass | — |
+| `stitches/spiral-circle40-pitch4p0` | pass | reference | pass | — | pass | — |
 | `stitches/spiral-circle40-start2` | pass | reference | — | — | pass | — |
 | `stitches/spiral-circle40` | pass | reference | — | — | pass | — |
 | `stitches/spiral-ellipse40x30` | pass | reference | — | — | pass | — |
@@ -192,6 +202,8 @@ Specs: 408 · pass 408 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `stitches/spiral-rect40x30` | pass | reference | — | — | pass | — |
 | `stitches/spiral-ring40-hole15` | pass | reference | — | — | pass | — |
 | `stitches/spiral-square40` | pass | reference | — | — | pass | — |
+| `stitches/spiral-triangle-d1p0` | pass | reference | pass | — | pass | — |
+| `stitches/spiral-triangle-wide` | pass | reference | — | — | pass | — |
 | `stitches/spiral-triangle` | pass | reference | — | — | pass | — |
 | `stitches/square-gradation-30-10` | pass | reference | pass | — | pass | — |
 | `stitches/square-gradation-default` | pass | reference | pass | — | pass | — |

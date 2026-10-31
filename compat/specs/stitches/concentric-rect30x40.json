@@ -1,0 +1,133 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "concentric-rect30x40",
+  "area": "stitches",
+  "title": "Concentric Circle Stitch: Rectangle, round 6",
+  "description": "PE-DESIGN 11.50's Concentric Circle Stitch, round 6: circles about the centre one row apart. With the start point on a whole circle the whole circles go first, outside in, then the cut ones after a trim; with the start point beyond the whole circles (portrait shapes, a triangle's corner) PE starts there on the cut circles and works inwards to the middle. PE: starts at the bottom middle (0,+20.0) running left and ends at the centre: the cut circles first, outside in. The seam is not compared.",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Concentric circle"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/concentric-rect30x40.pes (PE-DESIGN 11.50, 2026-10-31, pe-refs-4 round 6): 30,00 x 40,00 mm, 1854 st"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 35,
+        "y": 30,
+        "width": 30,
+        "height": 40
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "concentricCircle",
+        "color": "Red"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "region.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/concentric-rect30x40.pes",
+      "make": "Shapes > Rectangle dragged (35,30)-(65,70) mm (portrait); region Concentric Circle Stitch. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 30,00 x 40,00 mm, 1854 st."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (30,00 x 40,00 mm, 1854 st)",
+      "reference": {
+        "tolerance": {
+          "percent": 3
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (30,00 x 40,00 mm, 1854 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (30,00 x 40,00 mm, 1854 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "stitch-length-mean",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "mean",
+        "minLength": 0.3
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (30,00 x 40,00 mm, 1854 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    }
+  ]
+}

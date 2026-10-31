@@ -1,0 +1,149 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "spiral-circle20-pitch3p0",
+  "area": "stitches",
+  "title": "Spiral Stitch: Circle, round 6",
+  "description": "PE-DESIGN 11.50's Spiral Stitch, round 6: the outline offset a row (1 / density) inwards per turn; PE: Run pitch 3,0; 17 turns, needles per turn 36, 32, 32, 32, 30, 25 … 10. Open, pinned at the internal tier: stitches (PE 384, OpenStitch 333); stitch-length-mean (PE 1.602, OpenStitch 1.8766).",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Concentric circle"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/spiral-circle20-pitch3p0.pes (PE-DESIGN 11.50, 2026-10-31, pe-refs-4 round 6): 19,50 x 19,70 mm, 384 st"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 50,
+        "cy": 50,
+        "rx": 10
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "spiral",
+        "color": "Red",
+        "runPitch": 3.0
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "region.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/spiral-circle20-pitch3p0.pes",
+      "make": "Shapes > Circle dragged (40,40)-(60,60) mm; region Spiral Stitch. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 19,50 x 19,70 mm, 384 st."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "expected": 333,
+      "tolerance": {
+        "percent": 3
+      },
+      "tier": "internal-regression",
+      "evidence": "KNOWN DIFFERENCE (open): PE-DESIGN 11.50's file measures 384, OpenStitch 333; this check pins OpenStitch's value until the rule is found: PE-DESIGN's needle count per turn below the outer power-of-two turns is not known yet: at a 4 mm pitch it keeps about 32 down to r 9 mm, at 1 mm it falls from 128 to 121, 108 … earlier, and the inner tails at 2.5 and 4 mm are identical (COMPATIBILITY_AUDIT, Concentric Circle and Spiral)."
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (19,50 x 19,70 mm, 384 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (19,50 x 19,70 mm, 384 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "stitch-length-mean",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "mean",
+        "minLength": 0.3
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "expected": 1.8766,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "KNOWN DIFFERENCE (open): PE-DESIGN 11.50's file measures 1.602, OpenStitch 1.8766; this check pins OpenStitch's value until the rule is found: PE-DESIGN's needle count per turn below the outer power-of-two turns is not known yet: at a 4 mm pitch it keeps about 32 down to r 9 mm, at 1 mm it falls from 128 to 121, 108 … earlier, and the inner tails at 2.5 and 4 mm are identical (COMPATIBILITY_AUDIT, Concentric Circle and Spiral)."
+    },
+    {
+      "id": "stitch-length-max",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (19,50 x 19,70 mm, 384 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.1
+        }
+      }
+    }
+  ]
+}
