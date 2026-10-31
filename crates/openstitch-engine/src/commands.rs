@@ -256,6 +256,8 @@ pub fn all() -> Vec<CommandSpec> {
     v.extend(crate::digitize::commands());
     #[cfg(feature = "formats")]
     v.extend(crate::imports::commands());
+    #[cfg(feature = "formats")]
+    v.extend(crate::pes11_import::commands());
     #[cfg(feature = "library")]
     v.extend(crate::library::commands());
     #[cfg(feature = "formats")]

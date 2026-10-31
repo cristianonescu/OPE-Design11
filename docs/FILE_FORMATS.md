@@ -331,6 +331,17 @@ Convert to Blocks writes one group of blocks with running pieces between them (o
 line Running, region Not Sewn) whose two position lists are empty (stroke-blocks-H, -A); their
 marks follow the open-line placement the writer doesn't reproduce.
 
+**Import** (`import.pes`, `openstitch_engine::pes11_import`, 2026-10-31): each `CEmbLine` becomes a
+shape at its file position less `PAGE_ORIGIN` (500), its vertices a contour whose segment i is a
+Bézier curve when vertex i has `KIND_CURVE_AFTER` (vertex i's leaving handle, vertex i + 1's
+arriving one); Fill and Satin regions with density, direction, under sewing, Frequency and
+Running Stitch Path, Not Sewn as no region; running, zigzag, triple, E or V (read as E) and
+cutting lines with their width, density, pitch and under sewing; colours from the thread table.
+A block's `punch` pairs become its direction lines (vertex a to vertex b), curved when any
+vertex has a curve kind. The groups are kept. Texts and stitch groups are counted and not
+imported yet; region types other than Fill and Satin, and unmapped line codes, skip the shape
+with the reason. The under sewing type (+182) and +178 are not carried.
+
 PE-DESIGN numbers the lines across the whole object: one object for the eight clicks of m03.
 Manual Punch > Running is an open line with one entry per list, an ordinary shape
 (o-manual-running).
