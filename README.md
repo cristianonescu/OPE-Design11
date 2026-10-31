@@ -104,7 +104,9 @@ named; `python3 tools/gallery.py` regenerates them.
 Auto Punch and Photo Stitch 1 and 2 also have an **OpenStitch** mode (➕, the image dialog's
 Mode choice): colours are reduced, matched to threads and mixed by how they look, and Auto
 Punch merges specks under 3 mm². PE-DESIGN mode stays the default
-([research](docs/research/beyond/image-digitizing.md)).
+([research](docs/research/beyond/image-digitizing.md)). OpenStitch mode is better on average,
+not on every image: try both. For example, the test portrait sews truer in Photo Stitch 2's
+PE-DESIGN mode, whose three threads suit its skin and background.
 
 <!-- gallery-modes:start -->
 | Image | PE-DESIGN mode | OpenStitch mode |

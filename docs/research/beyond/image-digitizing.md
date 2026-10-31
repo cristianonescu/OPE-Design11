@@ -175,7 +175,8 @@ The last is OpenStitch mode:
 Mean ΔE falls 18 %, from 19.8 to 16.2, with stitches about the same. The portrait is worse:
 PE-DESIGN mode keeps three threads there, because the fourth matches the fabric and is left
 out, and those three suit the skin and the teal. The perceptual palette's four mix the
-portrait less well.
+portrait less well. The README says so: OpenStitch mode wins on average, not on every image,
+and users should try both.
 
 **Cross Stitch: no measurable gain, skipped.** On seven images (g07, g15, g02, g05, g12,
 p03, p04):
