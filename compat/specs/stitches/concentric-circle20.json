@@ -1,0 +1,132 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "concentric-circle20",
+  "area": "stitches",
+  "title": "Concentric Circle Stitch: Circle, round 6",
+  "description": "PE-DESIGN 11.50's Concentric Circle Stitch, round 6: circles about the centre one row apart. With the start point on a whole circle the whole circles go first, outside in, then the cut ones after a trim; with the start point beyond the whole circles (portrait shapes, a triangle's corner) PE starts there on the cut circles and works inwards to the middle. PE: starts at (-9.4,-1.9), ends at (-9.3,+3.9). The seam is not compared. Open, pinned at the internal tier: stitches (PE 533, OpenStitch 490).",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Concentric circle"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/concentric-circle20.pes (PE-DESIGN 11.50, 2026-10-31, pe-refs-4 round 6): 19,80 x 20,00 mm, 533 st"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 50,
+        "cy": 50,
+        "rx": 10
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "concentricCircle",
+        "color": "Red"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "region.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/concentric-circle20.pes",
+      "make": "Shapes > Circle dragged (40,40)-(60,60) mm; region Concentric Circle Stitch. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 19,80 x 20,00 mm, 533 st."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "expected": 490,
+      "tolerance": {
+        "percent": 3
+      },
+      "tier": "internal-regression",
+      "evidence": "KNOWN DIFFERENCE (open): PE-DESIGN 11.50's file measures 533, OpenStitch 490; this check pins OpenStitch's value until the rule is found: PE-DESIGN's per-circle needle counts grow about linearly with the radius (2·π·r / pitch plus about 20 extra split stitches) where OpenStitch uses 4·2^n points; the gap shows most on small circles and on squares (COMPATIBILITY_AUDIT, Concentric Circle and Spiral)."
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (19,80 x 20,00 mm, 533 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (19,80 x 20,00 mm, 533 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "stitch-length-mean",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "mean",
+        "minLength": 0.3
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (19,80 x 20,00 mm, 533 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    }
+  ]
+}

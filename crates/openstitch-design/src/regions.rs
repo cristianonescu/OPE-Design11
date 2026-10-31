@@ -191,6 +191,18 @@ pub fn generate(
                 entry: r.entry,
             };
             let cc = crate::concentric::concentric(closed, holes, &p);
+            if cc.joined {
+                // Outside in, one sequence joined by travel.
+                let mut pieces = cc.arcs;
+                if cc.full.len() >= 2 {
+                    if cc.arcs_first {
+                        pieces.push(cc.full);
+                    } else {
+                        pieces.insert(0, cc.full);
+                    }
+                }
+                return vec![region.sequence_raw(pieces)];
+            }
             let arcs = region.sequence_raw(cc.arcs);
             let full: Vec<Run> = if cc.full.len() >= 2 {
                 vec![cc.full]

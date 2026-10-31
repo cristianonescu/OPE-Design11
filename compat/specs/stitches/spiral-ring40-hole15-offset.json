@@ -1,0 +1,180 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "spiral-ring40-hole15-offset",
+  "area": "stitches",
+  "title": "Spiral Stitch round a hole: ring40-hole15-offset, round 7",
+  "description": "PE-DESIGN 11.50's Spiral Stitch round a hole, round 7: a spiral from the outline inwards and one round the hole. PE: almost no band: pieces of 1243, 6, 1, 6 and 345 needles; 8 trims; one jump crosses the hole. OpenStitch joins its two spirals with one travel and does not sew the band pieces. Open, pinned at the internal tier: stitches (PE 1601, OpenStitch 1340); stitch-length-mean (PE 1.4903, OpenStitch 1.7322); stitch-length-max (PE 2.0396, OpenStitch 2.1401).",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Concentric circle"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/spiral-ring40-hole15-offset.pes (PE-DESIGN 11.50, 2026-10-31, pe-refs-4 round 7): 39,30 x 39,70 mm, 1601 st"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 54.5,
+        "cy": 50,
+        "rx": 7.5
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 50,
+        "cy": 50,
+        "rx": 20
+      }
+    },
+    {
+      "command": "object.setHoleSewing",
+      "params": {
+        "ids": [
+          1,
+          2
+        ],
+        "enabled": true
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 2,
+        "type": "spiral",
+        "color": "Red"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 2,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "region.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/spiral-ring40-hole15-offset.pes",
+      "make": "a 40 mm Circle with a 15 mm Circle (47,42.5)-(62,57.5) as hole, its centre 4.5 mm right; region Spiral Stitch on the outer shape. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 39,30 x 39,70 mm, 1601 st."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "expected": 1340,
+      "tolerance": {
+        "percent": 3
+      },
+      "tier": "internal-regression",
+      "evidence": "KNOWN DIFFERENCE (open): PE-DESIGN 11.50's file measures 1601, OpenStitch 1340; this check pins OpenStitch's value until the rule is found: PE sews the band where its outline and hole spirals meet as separate trimmed sliver pieces, the gaps its own turn sampling leaves; OpenStitch joins the spirals with one travel because that sampling rule is not known yet (COMPATIBILITY_AUDIT, Concentric Circle and Spiral)."
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (39,30 x 39,70 mm, 1601 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (39,30 x 39,70 mm, 1601 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "stitch-length-mean",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "mean",
+        "minLength": 0.3
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "expected": 1.7322,
+      "tolerance": {
+        "mm": 0.15
+      },
+      "tier": "internal-regression",
+      "evidence": "KNOWN DIFFERENCE (open): PE-DESIGN 11.50's file measures 1.4903, OpenStitch 1.7322; this check pins OpenStitch's value until the rule is found: PE sews the band where its outline and hole spirals meet as separate trimmed sliver pieces, the gaps its own turn sampling leaves; OpenStitch joins the spirals with one travel because that sampling rule is not known yet (COMPATIBILITY_AUDIT, Concentric Circle and Spiral)."
+    },
+    {
+      "id": "stitch-length-max",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "expected": 2.1401,
+      "tolerance": {
+        "mm": 0.1
+      },
+      "tier": "internal-regression",
+      "evidence": "KNOWN DIFFERENCE (open): PE-DESIGN 11.50's file measures 2.0396, OpenStitch 2.1401; this check pins OpenStitch's value until the rule is found: PE sews the band where its outline and hole spirals meet as separate trimmed sliver pieces, the gaps its own turn sampling leaves; OpenStitch joins the spirals with one travel because that sampling rule is not known yet (COMPATIBILITY_AUDIT, Concentric Circle and Spiral)."
+    }
+  ]
+}

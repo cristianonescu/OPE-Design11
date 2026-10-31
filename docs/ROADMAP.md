@@ -39,7 +39,11 @@ for macOS, Windows and Linux. CI builds and tests all three.
     concentric circle and spiral calibrated to PE-DESIGN 11.50 (#138, 14 references;
     open: the spiral's inner-turn needle counts, the concentric chord splits and its seam on
     Bézier outlines; the spiral's winding and closing run settled with round 5; tie-in and lock
-    per run, grazing cut circles and the triangle spiral settled 2026-10-31).
+    per run, grazing cut circles and the triangle spiral settled 2026-10-31; round 6 added the
+    outside-in concentric order and 12 specs, the per-turn and per-circle needle counts still
+    open; round 7 documents the spiral-round-a-hole band, to be sewn by default once PE's turn
+    sampling is known, with an OpenStitch mode (`compatMode`) keeping the single travel, listed
+    under Beyond PE-DESIGN when it lands).
 - **Lettering:** text objects with Lato Bold and Pacifico (SIL OFL), text on a path, user
   TrueType/OpenType fonts (CJK through any font with the glyphs), shaping of right-to-left and
   complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits
