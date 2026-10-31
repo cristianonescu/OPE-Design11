@@ -312,6 +312,15 @@ impl Palette {
 
     /// Thread index of the box mean nearest to `c` (ties to the lower index).
     pub fn classify(&self, c: Rgb) -> usize {
+        self.thread_of
+            .get(self.nearest_mean(c))
+            .copied()
+            .unwrap_or(0)
+    }
+
+    /// Index of the box mean nearest to `c` (ties to the lower index): by CIEDE2000 in
+    /// OpenStitch mode, by RGB distance otherwise.
+    pub fn nearest_mean(&self, c: Rgb) -> usize {
         if self.perceptual {
             let l = perceptual::lab(c);
             let mut best = (f64::INFINITY, 0);
@@ -321,7 +330,7 @@ impl Palette {
                     best = (d, i);
                 }
             }
-            return self.thread_of.get(best.1).copied().unwrap_or(0);
+            return best.1;
         }
         let t = thread(c);
         let mut best = (i64::MAX, 0);
@@ -331,7 +340,7 @@ impl Palette {
                 best = (d, i);
             }
         }
-        self.thread_of.get(best.1).copied().unwrap_or(0)
+        best.1
     }
 }
 

@@ -281,8 +281,13 @@ Verified Compatible).
     from the ones already on a thread takes its next-nearest free thread;
   - pixels are classified against the centres by CIEDE2000
     (`Palette::from_census_perceptual`);
-  - the small-region default is 3 mm², with one majority pass. When that cleanup leaves
-    nothing (thin line art), PE-DESIGN's cleanup is used instead.
+  - only the background colour's own pixels are left out, not every colour that shares its
+    thread;
+  - the small-region default is 3 mm², with no majority pass. On line art (the left-out
+    background covers at least 75 % of the image), a small region at most 0.5 mm wide on
+    average and at least twice as long stays as a piece of a line
+    (`regions::merge_small_except`). When the cleanup leaves nothing, PE-DESIGN's cleanup is
+    used instead.
 
   PE-DESIGN mode is the default and is unchanged.
 - **Auto Punch.** Optional extra majority smoothing of the labels (3×3, default none),

@@ -111,11 +111,40 @@ fn open_stitch_mode_merges_specks() {
         &AutoPunch {
             mode: Mode::OpenStitch,
             min_area_mm2: 3.0,
-            smooth: 1,
             ..AutoPunch::default()
         },
     )
     .expect("openstitch");
     assert!(pe.objects.len() > 1, "PE mode keeps the specks");
     assert_eq!(os.objects.len(), 1, "OpenStitch mode sews the field alone");
+}
+
+/// Line art keeps its lines in OpenStitch mode (the round-5 mandala, g11): short, thin pieces
+/// of a dark line with light-grey edges, on white, are not merged as specks, and their light
+/// edges are not left out with the white background that shares their thread.
+#[test]
+fn open_stitch_mode_keeps_thin_lines() {
+    // 200 × 200 px at 0.25 mm/px: dashes 1 px (0.25 mm) wide and 12 px (3 mm) long, each with
+    // a light-grey shade on both sides, on white.
+    let img = flat(200, 200, |x, y| {
+        let dash = (x / 16) % 2 == 0 && x > 8 && x < 192;
+        match y % 40 {
+            20 if dash => [30, 30, 30],
+            19 | 21 if dash => [215, 215, 215],
+            _ => [255, 255, 255],
+        }
+    });
+    let frame = Frame::new(0.0, 0.0, 50.0, 200);
+    let os = autopunch::convert(
+        &img,
+        &frame,
+        &AutoPunch {
+            mode: Mode::OpenStitch,
+            min_area_mm2: 3.0,
+            ..AutoPunch::default()
+        },
+    )
+    .expect("the dashes are sewn");
+    // Five lines of six dashes each.
+    assert_eq!(os.objects.len(), 30, "every dash of every line stays");
 }

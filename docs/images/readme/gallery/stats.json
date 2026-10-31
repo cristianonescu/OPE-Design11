@@ -40,13 +40,14 @@
  },
  "g05-os": {
   "colors": [
+   "#f0f0f0",
    "#d15c00",
    "#008777",
    "#4f5556",
    "#000000"
   ],
-  "stitches": 8211,
-  "trims": 163
+  "stitches": 11176,
+  "trims": 204
  },
  "g05-pe": {
   "colors": [
@@ -70,8 +71,8 @@
    "#2f7e20",
    "#435607"
   ],
-  "stitches": 12987,
-  "trims": 109
+  "stitches": 13662,
+  "trims": 111
  },
  "g06-pe": {
   "colors": [
@@ -166,8 +167,8 @@
    "#7d6f00",
    "#2a1301"
   ],
-  "stitches": 30096,
-  "trims": 280
+  "stitches": 30627,
+  "trims": 284
  },
  "p03-pe": {
   "colors": [

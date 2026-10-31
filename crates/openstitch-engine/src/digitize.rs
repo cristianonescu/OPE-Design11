@@ -129,7 +129,7 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt(
                     "smooth",
                     "int 0-5",
-                    "Extra majority-filter passes on the labels after the 3×3 modal colour census (default 0; 1 in OpenStitch mode)",
+                    "Extra majority-filter passes on the labels after the 3×3 modal colour census (default 0)",
                 ),
                 opt(
                     "simplify",
@@ -165,17 +165,17 @@ pub fn commands() -> Vec<CommandSpec> {
             |s, p| {
                 let (image, frame) = load(s, p)?;
                 let mode = mode(p)?;
-                // OpenStitch mode also cleans up: regions under 3 mm² merge and the labels get
-                // one majority pass, unless the caller sets them.
-                let (min_area, smooth) = match mode {
-                    Mode::PeDesign => (1.0, 0),
-                    Mode::OpenStitch => (3.0, 1),
+                // OpenStitch mode also cleans up: specks under 3 mm² merge, unless the caller
+                // sets the area.
+                let min_area = match mode {
+                    Mode::PeDesign => 1.0,
+                    Mode::OpenStitch => 3.0,
                 };
                 let options = AutoPunch {
                     colors: count(p, "colors", AutoPunch::default().colors as i64, 0, 64)?,
                     resolution: count(p, "resolution", 400, 64, 2048)? as u32,
                     min_area_mm2: p.opt("minArea", min_area, 0.0, 1000.0)?,
-                    smooth: count(p, "smooth", smooth, 0, 5)? as u32,
+                    smooth: count(p, "smooth", 0, 0, 5)? as u32,
                     trace: trace_options(p, 0.7)?,
                     satin_max_mm: p.opt("satinMaxWidth", 6.5, 1.0, 12.0)?,
                     satin_min_mm: p.opt("satinMinWidth", 0.7, 0.0, 6.0)?,
