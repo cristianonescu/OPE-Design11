@@ -269,6 +269,22 @@ pub struct Vertex {
     pub kind: u32,
 }
 
+/// A Hoop Size page's machine type and hoop as PE-DESIGN 11.50 writes them (round-6 captures,
+/// `tests/fixtures/pe11/hoops`): the hoop's id in PE-DESIGN's own numbering (single-needle
+/// 100 × 100 mm 0, 130 × 180 1, 160 × 260 (Color LCD) 2, 200 × 300 6, 240 × 360 0x1C;
+/// multi-needle 100 × 100 15, an nv880e hoop 0xFF), the two characters after the signature's
+/// `01 00` (`01` single-needle, `02` for some single-needle hoops such as 200 × 300, `10`
+/// multi-needle), Rotate 90 Degrees, and a u16 that is 7 on a multi-needle machine and 0 on a
+/// single-needle one. The page size field keeps 100 × 100 on every Hoop Size page.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HoopPage {
+    pub hoop: u8,
+    pub code: [u8; 2],
+    pub multi_needle: bool,
+    /// The hoop is turned 90°: PE-DESIGN also turns the machine stitches 90° clockwise.
+    pub rotated: bool,
+}
+
 /// What [`read_objects`] found after the header strings, and what [`write`] takes.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Objects {
@@ -285,8 +301,11 @@ pub struct Objects {
     pub header: Option<Vec<u8>>,
     /// The two characters after the signature's `01 00`: `10` in the multi-needle files, `01`
     /// in the single-needle ones (o-machine-single-100x100, PE-DESIGN's re-saves of version 6
-    /// files); `None` writes `10`.
+    /// files); `None` writes [`HoopPage::code`], else `10`.
     pub code: Option<[u8; 2]>,
+    /// The machine type and hoop of a Hoop Size page ([`HoopPage`]); `None` writes PE-DESIGN's
+    /// default New page (multi-needle, hoop 15) on a Hoop Size page.
+    pub hoop: Option<HoopPage>,
     /// The thread table, in its file order (the shapes' colour indexes point into it).
     pub threads: Vec<Thread>,
     pub shapes: Vec<Shape>,
@@ -735,6 +754,7 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             hoop_page,
             header: header.clone(),
             code: data.get(14..16).map(|c| [c[0], c[1]]),
+            hoop: None,
             threads: threads.clone(),
             shapes,
             texts,
@@ -1372,7 +1392,10 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
             ));
         }
     }
-    let pattern = pec::prepare(pattern);
+    let pattern = match objects.hoop {
+        Some(h) if h.rotated => pec::prepare(&pec::turned_for_hoop(pattern)),
+        _ => pec::prepare(pattern),
+    };
     let mut w = ByteWriter::default();
     w.ascii("#PES0110");
     let pec_placeholder = w.len();
@@ -1385,9 +1408,13 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
         .shapes
         .iter()
         .any(|s| s.line_sewn && s.line_type == Shape::LINE_CUTTING);
-    let code = objects
-        .code
-        .unwrap_or(if cutting { [b'1' | 0x80, b'0'] } else { *b"10" });
+    let code = objects.code.unwrap_or_else(|| {
+        let mut code = objects.hoop.map_or(*b"10", |h| h.code);
+        if cutting {
+            code[0] |= 0x80;
+        }
+        code
+    });
     w.append(&code);
     for key in crate::pes::METADATA_KEYS {
         crate::pes::write_string8(&mut w, pattern.metadata.get(key).map(String::as_str));
@@ -1395,13 +1422,13 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     let page = objects.page_mm.unwrap_or((100, 100));
     if let Some(h) = &objects.header {
         w.append(h);
-    } else if objects.hoop_page && page != (100, 100) {
+    } else if objects.hoop_page && objects.hoop.is_none() && page != (100, 100) {
         return Err(FormatError::ValueOutOfRange(format!(
             "PES 0110: a Hoop Size page of {} x {} mm (only PE-DESIGN's 100 x 100 mm hoop page is mapped)",
             page.0, page.1
         )));
     } else {
-        write_header(&mut w, page, objects.hoop_page);
+        write_header(&mut w, page, objects.hoop_page, objects.hoop);
         // The templates end with the three empty pattern lists; a design's patterns replace them.
         if !objects.fill_patterns.is_empty() || !objects.motif_patterns.is_empty() {
             w.bytes.truncate(w.bytes.len() - 6);
@@ -1445,8 +1472,9 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     w.patch32le(pec_placeholder, w.len() as i64);
     let pec_start = w.len();
     let list = pec::write_section(&pattern, &mut w)?;
-    patch_pec_header(&mut w.bytes[pec_start..], objects.hoop_page);
-    write_addendum(&mut w, &list, &pattern.threads, objects.hoop_page);
+    let hoop_page = objects.hoop_page || objects.hoop.is_some();
+    patch_pec_header(&mut w.bytes[pec_start..], hoop_page);
+    write_addendum(&mut w, &list, &pattern.threads, hoop_page);
     Ok(w.bytes)
 }
 
@@ -1617,9 +1645,16 @@ fn write_text(w: &mut ByteWriter, archive: &mut Archive, t: &Text) -> Result<()>
 /// The header fields after the metadata strings up to the thread count: the hoop (150 × 150 mm,
 /// `nv880e-M`, multi-needle), the page size in mm, and fields not mapped yet, as the baseline
 /// file has them.
-fn write_header(w: &mut ByteWriter, page_mm: (u16, u16), hoop_page: bool) {
-    if hoop_page {
-        w.append(&template::HEADER_HOOP_100);
+fn write_header(w: &mut ByteWriter, page_mm: (u16, u16), hoop_page: bool, hoop: Option<HoopPage>) {
+    if hoop_page || hoop.is_some() {
+        let mut h = template::HEADER_HOOP_100;
+        // u16 0, u16 page mode 0, u16 hoop id; u16 rotation at 31; u16 7 or 0 at 37 (round 6).
+        if let Some(hp) = hoop {
+            h[4] = hp.hoop;
+            h[31] = u8::from(hp.rotated);
+            h[37] = if hp.multi_needle { 7 } else { 0 };
+        }
+        w.append(&h);
         return;
     }
     let mut h = template::HEADER;
@@ -2355,7 +2390,7 @@ mod tests {
     #[test]
     fn page_size_is_patched_into_the_header() {
         let mut w = ByteWriter::default();
-        write_header(&mut w, (130, 180), false);
+        write_header(&mut w, (130, 180), false, None);
         let s = String::from_utf8_lossy(&w.bytes[15..23]).into_owned();
         assert_eq!(s, "nv880e-M");
         assert_eq!(&w.bytes[33..37], &[130, 0, 180, 0]);

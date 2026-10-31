@@ -610,7 +610,12 @@ pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u
         w.u16le(0);
     }
     w.patch32le(pec_placeholder, w.len() as i64);
-    let list = pec::write_section(&pattern, &mut w)?;
+    // A hoop turned 90°: the machine stitches turned too, as PE-DESIGN writes them.
+    let list = if options.hoop_rotated {
+        pec::write_section(&pec::turned_for_hoop(&pattern), &mut w)?
+    } else {
+        pec::write_section(&pattern, &mut w)?
+    };
     if options.version == Version::V6 {
         if options.truncated {
             write_addendum(&mut w, &[0xFF], &[]);

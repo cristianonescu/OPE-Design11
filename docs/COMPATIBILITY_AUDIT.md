@@ -693,6 +693,22 @@ Line references are relative to `crates/`.
   characters after the header's u16 are "10" in PE's own 0110 files and "01" in files it
   re-saved from OpenStitch exports, all on 100 × 100 mm pages, so they are not the
   "01"/"02"/"10" size code the issue describes; OpenStitch keeps pyembroidery's "02".
+- **`#PES0110` machine type and hoop (2026-10-31, #125):** sixteen round-6 captures (one design
+  saved on each hoop and machine type, each reopening with the settings it was saved with) map
+  them. The header's u16 after the page mode is PE-DESIGN's id of the hoop (single-needle
+  100 × 100 0, 130 × 180 1, 160 × 260 2, 180 × 300 4, 200 × 300 6, 150 × 150 Quilt 0x1A,
+  240 × 360 0x1C, 100 × 180 0x28; multi-needle 100 × 100 15, ø100 Round 0x16, 180 × 100 Border
+  0x21, nv880e 0xFF), a u16 is 1 for Rotate 90 Degrees, another 7 on a multi-needle machine
+  and 0 on a single-needle one, and the code after the signature is "01" single-needle ("02"
+  for the 150 × 150 Quilt, 180 × 300 and 200 × 300 hoops) and "10" multi-needle: the issue's
+  "01"/"02"/"10" codes are the machine type and hoop, not the design size. With Rotate 90 PE
+  also turns the PEC's stitches 90° clockwise. The 0110 export now writes a Hoop Size page with
+  PE's fields for single-needle 100 × 100, 130 × 180, 160 × 260, 200 × 300, 240 × 360 and
+  multi-needle 100 × 100 (each header equal to PE's file,
+  `hoop_size_pages_are_written_as_pe_design_writes_each_hoop`; the turned PEC stitch for stitch,
+  `a_turned_hoop_turns_the_machine_stitches_as_pe_design_does`), and both PES writers turn the
+  PEC for a turned hoop. Left: the other hoops' ids (a Custom Size page of their size until
+  then), the 100 × 180 hoop (PE saves it only as `#PES0113`), and the v1 hoop field.
 
 - **Impact:** severity 4. Every v6 file claims a 100×100 hoop and a fixed page, whatever hoop
   the user chose. Every v1 file claims 130×180. Imported files never set the hoop.
