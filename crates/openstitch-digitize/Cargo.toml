@@ -12,5 +12,9 @@ image = { version = "0.25.10", default-features = false, features = ["png", "jpe
 openstitch-core.workspace = true
 openstitch-design = { path = "../openstitch-design" }
 
+[dev-dependencies]
+# Golden hashes of OpenStitch-mode output (tests/golden.rs).
+serde_json.workspace = true
+
 [lints]
 workspace = true

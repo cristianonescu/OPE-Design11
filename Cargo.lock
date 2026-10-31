@@ -2569,6 +2569,7 @@ dependencies = [
  "image",
  "openstitch-core",
  "openstitch-design",
+ "serde_json",
 ]
 
 [[package]]
