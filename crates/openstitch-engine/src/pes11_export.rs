@@ -15,7 +15,7 @@ use openstitch_design::{
     RegionType, RunningStitchPath, Transform,
 };
 use openstitch_formats::pes11::{
-    Envelope, Fit, KIND_CURVE_AFTER, KIND_CURVE_BEFORE, Letter, Objects, PAGE_ORIGIN,
+    Envelope, Fit, HoopPage, KIND_CURVE_AFTER, KIND_CURVE_BEFORE, Letter, Objects, PAGE_ORIGIN,
     RegionSewType, Shape, StitchGroup, Text, Vertex,
 };
 
@@ -24,9 +24,11 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
     let page = (mm(design.page.width).max(1), mm(design.page.height).max(1));
     // A 100 x 100 mm page is written as PE-DESIGN's own default, a Hoop Size page; other sizes
     // as a Custom Size page, which PE-DESIGN shows with a Hoop Settings tab and sections.
+    let hoop = hoop_page(design);
     let mut out = Objects {
         page_mm: Some(page),
-        hoop_page: page == (100, 100),
+        hoop_page: hoop.is_some() || page == (100, 100),
+        hoop,
         ..Objects::default()
     };
     let mut groups: Vec<(u64, Vec<u16>)> = Vec::new();
@@ -141,6 +143,29 @@ fn hole_copy(
         s.line_color = colour;
     }
     Ok(s)
+}
+
+/// The design's machine type and hoop as PE-DESIGN 11.50 writes a Hoop Size page for them
+/// (round-6 captures, `openstitch-formats` fixtures `pe11/hoops`), for the hoops whose PE id is
+/// known; any other hoop is written as a Custom Size page of its size, as before.
+fn hoop_page(design: &Design) -> Option<HoopPage> {
+    let multi_needle = design.machine.machine == openstitch_design::MachineType::MultiNeedle;
+    let (hoop, code) = match (multi_needle, design.machine.hoop.as_deref()?) {
+        (false, "100x100") => (0x00, *b"01"),
+        (false, "130x180") => (0x01, *b"01"),
+        (false, "160x260") => (0x02, *b"01"),
+        (false, "200x300") => (0x06, *b"02"),
+        (false, "240x360") => (0x1C, *b"01"),
+        // PE-DESIGN's default New page on a multi-needle machine (r27).
+        (true, "100x100") => (0x0F, *b"10"),
+        _ => return None,
+    };
+    Some(HoopPage {
+        hoop,
+        code,
+        multi_needle,
+        rotated: design.machine.rotate90,
+    })
 }
 
 fn mm(units: f64) -> u16 {

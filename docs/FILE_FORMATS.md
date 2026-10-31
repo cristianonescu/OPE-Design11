@@ -205,16 +205,25 @@ below is pinned by a test in `tests/pes11.rs`.
   header strings; the hoop, page and thread-table fields in between are not all mapped.
 - **Header** (after the five metadata strings; `o-page-200x200`, `o-hoop-*`, `o-machine-single-100x100`,
   r27 against r01): u16 0; u16 **page mode**: 1 Custom Size page, 0 Hoop Size page (r27,
-  o-hoop-*; PE-DESIGN's default page for a new design); u16 hoop: 255, 15 (100 × 100 mm
+  o-hoop-*; PE-DESIGN's default page for a new design); u16 hoop, PE-DESIGN's id of the hoop
+  (round 6, `pe11/hoops`: single-needle 100 × 100 0, 130 × 180 1, 160 × 260 Color LCD 2,
+  180 × 300 4, 200 × 300 6, 150 × 150 Quilt 0x1A, 240 × 360 0x1C, 100 × 180 0x28 (saved only as
+  `#PES0113`); multi-needle 100 × 100 15, ø100 Round 0x16, 180 × 100 Border 0x21, an nv880e
+  hoop 255): 255, 15 (100 × 100 mm
   `nv880e-S` in r27), 1 single-needle; the hoop
   width and height in mm (150, 150) and in 0.1 inch (59, 59; 100 mm gives 39); a u8-length
   hoop/machine string (`nv880e-M` for the 150 × 150 multi-needle hoop, `nv880e-S` for 100 × 100);
   u16 0; two optional u16 values, each a u16 presence flag then the value when the flag is 1
   (1800 once in the 200 × 200 page file, 1300 twice in the single-needle 100 × 100 file; meaning
-  unknown); u32 0; the **Design Page width and height in mm**; then u16 7 (0 single-needle), 100, 7,
+  unknown); u16 0; u16 **Rotate 90 Degrees** (1 turned; PE-DESIGN then also turns the PEC's
+  stitches 90° clockwise, `s-130x180-rot90`); the **Design Page width and height in mm** (100 ×
+  100 on every Hoop Size page, whatever the hoop); then u16 7 (0 single-needle), 100, 7,
   19, 1, 0, 1, 10, 1, 0, 0, 0, 1, 10, a u8-length image file name (empty), u32 0, the identity
   transform (6 × f32), 16 bytes whose fifth u16 is 4, and the thread count. The two-character code
-  after `01 00` is `10` in the multi-needle files and `01` in the single-needle ones.
+  after `01 00` is `10` in the multi-needle files and `01` in the single-needle ones (`02` for
+  the single-needle 150 × 150 Quilt, 180 × 300 and 200 × 300 hoops). On a Custom Size page or an
+  nv880e hoop the hoop size and name fields hold the last nv880e hoop chosen (100, 100, 39, 39
+  `nv880e-S`; 150, 150, 59, 59 `nv880e-M`; 260, 160, 102, 62 `nv880e-L`).
 - **Thread table** (right before the object list): u16 count, then per thread the catalogue
   number, RGB and a pad byte, a u32 colour type (10), the PEC chart index as a string ("16" for
   005 SILVER, "5" for 800 RED, matching the PEC colour blocks), the brand ("EMBROIDERY") and the
@@ -570,8 +579,14 @@ byte-identical to PE-DESIGN's outside these documented differences
   custom pages have 10); any other page as a Custom Size page with r01's hoop fields (150 × 150
   mm, `nv880e-M`, multi-needle) and the page size. PE-DESIGN shows a Custom Size page with a
   Hoop Settings tab, 290 × 190 mm section outlines and no stitch count in the status bar until
-  something is selected; its own Hoop Size page file (r27) shows none of them. The machine type
-  and hoop of the design's machine settings are not mapped yet.
+  something is selected; its own Hoop Size page file (r27) shows none of them. Since
+  2026-10-31 the design's machine type and hoop are written as PE-DESIGN writes a Hoop Size
+  page for them (`pes11::HoopPage`: the hoop id, the code, the machine-type field and Rotate 90
+  Degrees, with the PEC's stitches turned 90° clockwise for a turned hoop), for the hoops whose
+  PE id is known: single-needle 100 × 100, 130 × 180, 160 × 260, 200 × 300, 240 × 360 and
+  multi-needle 100 × 100 (`hoop_size_pages_are_written_as_pe_design_writes_each_hoop` against
+  PE's file for each). Other hoops are still a Custom Size page of their size, with r01's
+  multi-needle fields.
 - **Header strings:** the metadata strings are written in Windows-1252 with CR LF, as
   PE-DESIGN shows them; pes-design-properties holds OpenStitch's former UTF-8 bytes, which
   PE-DESIGN kept when it re-saved the file, so its strings (and the offsets after them) differ.

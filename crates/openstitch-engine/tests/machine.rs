@@ -414,3 +414,63 @@ fn user_hoop_tables_import_the_mm_pair() {
         );
     }
 }
+
+/// `pesVersion` 11 writes the Design Settings' machine type and hoop as PE-DESIGN 11.50 writes a
+/// Hoop Size page (round-6 captures): the hoop's PE id, Rotate 90 Degrees, the machine-type
+/// field and code; a hoop whose PE id is not known yet is a Custom Size page of its size.
+#[test]
+fn pes_0110_export_writes_the_machine_type_and_hoop() {
+    let dir = fresh_dir("pes11-hoop");
+    let mut s = session_with_square();
+    // (settings, Hoop Size page, hoop id, rotation, machine-type field, code)
+    for (settings, hoop_page, id, rotated, machine, code) in [
+        (
+            json!({"machine": "single", "hoop": "130x180", "rotate90": true}),
+            true,
+            1,
+            1,
+            0,
+            *b"01",
+        ),
+        (
+            json!({"machine": "single", "hoop": "200x300", "rotate90": false}),
+            true,
+            6,
+            0,
+            0,
+            *b"02",
+        ),
+        (
+            json!({"machine": "multi", "hoop": "100x100"}),
+            true,
+            0x0F,
+            0,
+            7,
+            *b"10",
+        ),
+        (
+            json!({"machine": "single", "hoop": "254x254"}),
+            false,
+            0xFF,
+            0,
+            7,
+            *b"10",
+        ),
+    ] {
+        run(&mut s, "machine.set", settings.clone());
+        let path = dir.join("hoop.pes");
+        run(
+            &mut s,
+            "design.export",
+            json!({"path": path.display().to_string(), "pesVersion": "11"}),
+        );
+        let b = std::fs::read(&path).expect("read");
+        let objects = openstitch_formats::pes::read_objects(&b).expect("objects");
+        let h = objects.header.expect("header");
+        assert_eq!(objects.hoop_page, hoop_page, "{settings}");
+        assert_eq!([b[14], b[15]], code, "{settings}");
+        if hoop_page {
+            assert_eq!((h[4], h[31], h[37]), (id, rotated, machine), "{settings}");
+        }
+    }
+}

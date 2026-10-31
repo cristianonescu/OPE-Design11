@@ -193,3 +193,23 @@ empty code, RGB on a 0/85/170/255 grid, type 0x0B, id string 66-94 (row n = 65 +
 | File | SHA-256 | Made as |
 |---|---|---|
 | `ver4-option-color-29.pes` | `ef52278a045822f4a7e97d1e687e55cf98bd76fc49464657cd3ce4160b3b79ff` | as above |
+
+**Machine type and hoop (#125, round 6):** made by the owner's PE-DESIGN 11.50 (Layout &
+Editing), Windows 11 Pro 10.0.26300, 2026-10-31 11:42-12:08, black-box GUI use only (reference
+session; owner's notes round6/hoops/log.txt). One design for every file: New, Rectangle
+(40,40)-(60,60) mm, line Not Sewn, Fill Stitch at defaults, 800 EMBROIDERY RED, 20,00 x 20,00
+mm, 707 st; only Design Settings changed (Page Size = Hoop Size, the machine type and hoop
+below), then Save As "Layout & Editing Ver.11.0 File" (#PES0110). Every file reopens with the
+settings it was saved with. Nine more captures of that session (100 x 180, which PE-DESIGN
+saves only as #PES0113; 180 x 300; 150 x 150 Quilt; nv880e-M and -L; 180 x 100 Border; ø100
+Round; two Custom Size 300 x 200 pages) stay in the owner's notes.
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `hoops/s-100x100.pes` | `bfab06be36d1e03ede2a92d4b0e34c414a891df0b044e3c8548e9420b244e8ca` | single-needle, Hoop Size 100 x 100 mm |
+| `hoops/s-130x180.pes` | `f7d65d78021031a9e245700364f69595999f8f065df3168d67f34c64cffea3c0` | single-needle, Hoop Size 130 x 180 mm |
+| `hoops/s-130x180-rot90.pes` | `f2d0865f8ed706ef735f684883c73ebc5df8ac4a41f15cc6861725001090850c` | single-needle, Hoop Size 130 x 180 mm, Rotate 90 Degrees |
+| `hoops/s-160x260-color.pes` | `80db94f6a17ad7d566adc3c071ee873e46585e57e918cdf33875bc071f7d19a6` | single-needle, Hoop Size 160 x 260 mm (Color LCD) |
+| `hoops/s-200x300.pes` | `d5246e7e8a76ff1a7e4427d114eefaf5368d92f03c1a9b4fceaf828f617fed70` | single-needle, Hoop Size 200 x 300 mm |
+| `hoops/s-240x360.pes` | `87fcfc688322ebf30786846d50b269e90baf1193310e36b7b33d7e7eec0d985f` | single-needle, Hoop Size 240 x 360 mm |
+| `hoops/m-100x100-S.pes` | `dc16a00322a7f93d63f2aa0a05ed3bd9d353a42a05b59e38bbec52399ee2167b` | multi-needle, Hoop Size 100 x 100 mm nv880e-S |

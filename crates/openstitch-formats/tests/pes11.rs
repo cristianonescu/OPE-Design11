@@ -667,6 +667,7 @@ fn objects_of(bytes: &[u8]) -> Objects {
         hoop_page: s.hoop_page,
         header: s.header,
         code: s.code,
+        hoop: None,
         threads: s.threads,
         shapes: s.shapes,
         texts: s.texts,
@@ -1068,6 +1069,7 @@ fn an_openstitch_shape_with_curves_round_trips() {
         hoop_page: false,
         header: None,
         code: None,
+        hoop: None,
         threads: vec![openstitch_core::Thread::rgb(0x12_34_56)],
         shapes: vec![shape, second],
         texts: Vec::new(),
@@ -1132,6 +1134,7 @@ fn texts_between_shapes_and_in_groups_round_trip() {
         hoop_page: false,
         header: None,
         code: None,
+        hoop: None,
         threads: r01.threads.clone(),
         shapes: vec![r01.shapes[0].clone(), second],
         texts: vec![text],
@@ -1171,6 +1174,7 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
         hoop_page: false,
         header: None,
         code: None,
+        hoop: None,
         threads: read.threads.clone(),
         shapes: Vec::new(),
         texts: vec![Text {
@@ -1384,6 +1388,7 @@ fn a_stitch_group_built_from_stitches_round_trips() {
         hoop_page: true,
         header: None,
         code: None,
+        hoop: None,
         threads: p.threads.clone(),
         shapes: Vec::new(),
         texts: Vec::new(),
@@ -1601,4 +1606,76 @@ fn pe_design_applique_colours_match_pec_chart_62_to_64() {
         }
     }
     assert!([1, 62, 63, 64].iter().all(|i| seen.contains(i)), "{seen:?}");
+}
+
+/// The header after the five u8-length metadata strings, and the two-character code.
+fn hoop_header(b: &[u8]) -> (&[u8], [u8; 2]) {
+    let mut i = 16;
+    for _ in 0..5 {
+        i += 1 + usize::from(b[i]);
+    }
+    (&b[i..i + 110], [b[14], b[15]])
+}
+
+/// PE-DESIGN 11.50's Hoop Size page for each machine type and hoop (round 6, one design saved
+/// with each): OpenStitch writes the same header and code from a [`pes11::HoopPage`].
+#[test]
+fn hoop_size_pages_are_written_as_pe_design_writes_each_hoop() {
+    use pes11::HoopPage;
+    for (name, hoop, code, multi_needle, rotated) in [
+        ("s-100x100", 0x00, *b"01", false, false),
+        ("s-130x180", 0x01, *b"01", false, false),
+        ("s-130x180-rot90", 0x01, *b"01", false, true),
+        ("s-160x260-color", 0x02, *b"01", false, false),
+        ("s-200x300", 0x06, *b"02", false, false),
+        ("s-240x360", 0x1C, *b"01", false, false),
+        ("m-100x100-S", 0xFF, *b"10", true, false),
+    ] {
+        let pe = data(&format!("pe11/hoops/{name}.pes"));
+        let mut objects = objects_of(&pe);
+        objects.header = None;
+        objects.code = None;
+        objects.hoop = Some(HoopPage {
+            hoop,
+            code,
+            multi_needle,
+            rotated,
+        });
+        let ours = pes11::write(&objects, &pes::read(&pe).expect("read")).expect("write");
+        assert_eq!(hoop_header(&ours), hoop_header(&pe), "{name}");
+    }
+}
+
+/// With Rotate 90 Degrees PE-DESIGN turns the machine stitches 90° clockwise: the same design's
+/// PEC with the hoop turned is OpenStitch's turned PEC, stitch for stitch (round 6).
+#[test]
+fn a_turned_hoop_turns_the_machine_stitches_as_pe_design_does() {
+    let moves = |p: &openstitch_core::StitchPattern| -> Vec<(i32, i32, openstitch_core::Command)> {
+        p.stitches
+            .windows(2)
+            .map(|w| {
+                (
+                    (w[1].x - w[0].x).round() as i32,
+                    (w[1].y - w[0].y).round() as i32,
+                    w[1].command,
+                )
+            })
+            .collect()
+    };
+    let flat = pes::read(&data("pe11/hoops/s-130x180.pes")).expect("read");
+    let turned = pes::read(&data("pe11/hoops/s-130x180-rot90.pes")).expect("read");
+    let ours = openstitch_formats::pec::turned_for_hoop(&flat);
+    assert_eq!(moves(&ours), moves(&turned));
+    assert_ne!(moves(&flat), moves(&turned));
+    // Written through the 0110 writer with the hoop turned, the file reads back turned.
+    let mut objects = objects_of(&data("pe11/hoops/s-130x180.pes"));
+    objects.header = None;
+    objects.hoop = Some(pes11::HoopPage {
+        hoop: 1,
+        code: *b"01",
+        multi_needle: false,
+        rotated: true,
+    });
+    let back = pes::read(&pes11::write(&objects, &flat).expect("write")).expect("read");
+    assert_eq!(moves(&back), moves(&turned));
 }
