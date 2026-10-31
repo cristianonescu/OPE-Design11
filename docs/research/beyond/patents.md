@@ -80,6 +80,10 @@ Everything else on the list is shown as expired or ceased.
       jumped otherwise.
   - Any later change that adds an image-derived direction or such a connector test needs the
     same question put to the owner again. Not legal advice.
+- B16, the image wizards' OpenStitch mode ([image-digitizing.md](image-digitizing.md),
+  2026-10-31), changes colour reduction and region cleanup only. It computes no direction
+  from the image, so it does not come near the claim. Its section 3.5 leaves out stitch
+  direction from image structure for this patent.
 - Design-around for F16 (facts to check): the claim combines (1) per-pixel angle features
   from an image, (2) segments from them, (3) the three-test connector decision. The Sfumato
   family of F16 uses density-modulated meanders per shade with no angle field and no

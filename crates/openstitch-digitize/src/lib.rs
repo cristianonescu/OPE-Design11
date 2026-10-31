@@ -11,6 +11,7 @@ pub mod center;
 pub mod coverage;
 pub mod cross;
 pub mod palette;
+pub mod perceptual;
 pub mod photo;
 pub mod raster;
 pub mod regions;
@@ -18,6 +19,15 @@ pub mod screen;
 pub mod trace;
 
 pub use raster::{Frame, Raster};
+
+/// How a wizard converts: as PE-DESIGN 11.50 does (the default), or OpenStitch's improved
+/// method (docs/research/beyond/image-digitizing.md).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Mode {
+    #[default]
+    PeDesign,
+    OpenStitch,
+}
 
 /// Why a conversion failed. Messages are user-facing.
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -8,10 +8,10 @@
 //! the modal census, the `max(4, round(param · 100 / mmPerPx²))` small-region floor at
 //! 4-connectivity and a centerline-thinness satin test); the algorithm is this project's own.
 
-use crate::DigitizeError;
 use crate::palette::{self, Census, Palette};
 use crate::raster::{Frame, Raster};
 use crate::regions::{self, NONE, TraceOptions};
+use crate::{DigitizeError, Mode};
 use openstitch_core::Thread;
 use openstitch_design::{DesignObject, RegionSewing, RegionType};
 
@@ -40,6 +40,9 @@ pub struct AutoPunch {
     pub satin_min_mm: f64,
     /// Leave out the colour covering most of the image border (the background).
     pub skip_background: bool,
+    /// PE-DESIGN's colour reduction, or OpenStitch's perceptual one
+    /// ([`Palette::from_census_perceptual`]).
+    pub mode: Mode,
 }
 
 impl Default for AutoPunch {
@@ -53,6 +56,7 @@ impl Default for AutoPunch {
             satin_max_mm: 6.5,
             satin_min_mm: 0.7,
             skip_background: true,
+            mode: Mode::PeDesign,
         }
     }
 }
@@ -176,7 +180,10 @@ pub fn convert(image: &Raster, frame: &Frame, p: &AutoPunch) -> Result<Converted
         0 => census.auto_colors(),
         n => n.min(64),
     };
-    let palette = Palette::from_census(&census, colors);
+    let palette = match p.mode {
+        Mode::PeDesign => Palette::from_census(&census, colors),
+        Mode::OpenStitch => Palette::from_census_perceptual(&census, colors),
+    };
     let mut labels = label(&census, &palette);
     let background = if p.skip_background {
         border_majority(&labels, w, h)
@@ -190,11 +197,20 @@ pub fn convert(image: &Raster, frame: &Frame, p: &AutoPunch) -> Result<Converted
             }
         }
     }
+    let unsmoothed = labels.clone();
     regions::majority(&mut labels, w, h, p.smooth.min(5));
     // The frame scales x and y alike, so the working pixel's mm/px is both ratios.
     let floor = small_region_floor(p.min_area_mm2, frame.mm_per_px());
     regions::merge_small(&mut labels, w, h, floor + 1);
-    let (id, comps) = regions::components(&labels, w, h);
+    let (mut id, mut comps) = regions::components(&labels, w, h);
+    if comps.is_empty() && p.mode == Mode::OpenStitch {
+        // OpenStitch mode's cleanup can merge away a drawing made only of thin lines (the
+        // round-5 mandala); keep PE-DESIGN's cleanup for it rather than sew nothing.
+        labels = unsmoothed;
+        let floor = small_region_floor(AutoPunch::default().min_area_mm2, frame.mm_per_px());
+        regions::merge_small(&mut labels, w, h, floor + 1);
+        (id, comps) = regions::components(&labels, w, h);
+    }
     if comps.is_empty() {
         return Err(DigitizeError::Empty(
             "no regions left after removing the background".into(),
