@@ -146,17 +146,23 @@ pub fn image_wizard_window(app: &mut EditorApp, ctx: &egui::Context) {
                     ui.checkbox(&mut w.skip_background, "Leave out the background colour");
                     ui.end_row();
                 }
-                if w.method == Method::AutoPunch {
+                if w.method == Method::AutoPunch || (w.method == Method::PhotoFill && !w.mono) {
+                    let improved = if w.method == Method::AutoPunch {
+                        "Picks colours and threads by how they look (CIELAB, CIEDE2000) and merges \
+                         specks under 3 mm², for fewer trims; line art keeps its lines."
+                    } else {
+                        "Picks threads and mixes them by how they look (CIELAB, CIEDE2000), for \
+                         truer colour; a few more trims."
+                    };
                     ui.label("Mode");
                     ui.horizontal(|ui| {
                         let before = w.open_stitch;
                         ui.radio_value(&mut w.open_stitch, false, "PE-DESIGN")
-                            .on_hover_text("Converts as PE-DESIGN 11.50 does: RGB colour reduction and thread matching.");
-                        ui.radio_value(&mut w.open_stitch, true, "OpenStitch").on_hover_text(
-                            "Picks colours and threads by how they look (CIELAB, CIEDE2000) and merges                              regions under 3 mm², for fewer trims and specks.",
-                        );
-                        // The small-region default follows the mode unless it was changed.
-                        if before != w.open_stitch {
+                            .on_hover_text("Converts as PE-DESIGN 11.50 does (RGB colour reduction and thread matching).");
+                        ui.radio_value(&mut w.open_stitch, true, "OpenStitch")
+                            .on_hover_text(improved);
+                        // Auto Punch's small-region default follows the mode unless it was changed.
+                        if before != w.open_stitch && w.method == Method::AutoPunch {
                             let (from, to) = if w.open_stitch { (1.0, 3.0) } else { (3.0, 1.0) };
                             if w.min_area == from {
                                 w.min_area = to;

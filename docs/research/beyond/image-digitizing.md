@@ -114,6 +114,39 @@ The nine other images, against the first version:
 The ten specks are the lettering's edge slivers (its cream background is over 75 %). The
 added stitches come from dropping the majority pass.
 
+## 2.3 Photo Stitch 1 (2026-10-31)
+
+OpenStitch mode reaches Photo Stitch 1 in colour (method 3.6):
+- the threads are the perceptual palette of 3.1 (CIELAB k-means, CIEDE2000 thread matching);
+- the cells are error-diffused in CIELAB, so both the nearest thread and the carried error
+  are measured by appearance (`palette::dither_perceptual`).
+
+Mono and Photo Stitch 2's line screen stay as PE-DESIGN's.
+
+Nine photos and soft images at defaults:
+
+| Image | ΔE | Stitches | Trims |
+|---|---|---|---|
+| p01 portrait | 10.7 → 8.6 | 12,512 → 12,983 | 385 → 451 |
+| p03 storybook | 11.0 → 8.7 | 16,018 → 16,911 | 789 → 1,003 |
+| p04 cat | 8.9 → 6.6 | 21,077 → 21,280 | 839 → 843 |
+| p05 dog | 10.9 → 8.8 | 17,910 → 17,852 | 733 → 843 |
+| p06 sunset | 10.4 → 7.0 | 11,038 → 11,352 | 370 → 474 |
+| p07 fruit | 9.6 → 9.1 | 22,162 → 21,349 | 1,332 → 1,266 |
+| p10 night street | 9.9 → 7.6 | 11,343 → 11,687 | 464 → 688 |
+| p11 high key | 5.2 → 4.0 | 18,985 → 19,460 | 489 → 567 |
+| g09 gradient | 13.3 → 13.1 | 9,105 → 8,686 | 103 → 63 |
+
+Each cell reads PE-DESIGN mode → OpenStitch mode.
+
+Across the nine images:
+- **Colour:** the mean ΔE falls 18 %, from 10.0 to 8.2.
+- **Stitches:** about the same (+1 %).
+- **Trims:** 13 % more. Dithering by appearance alternates threads more finely in mid-tones.
+
+The test `perceptual_dither_mixes_by_lightness` pins the difference: a grey of lightness 50
+between black and white threads mixes 50 % white in OpenStitch mode, against 47 % by RGB.
+
 ## 3. Methods
 
 For each method: what it would improve, its cost, the Rust crates, the licence, and the
@@ -218,7 +251,8 @@ one.
   - the background left out by colour rather than by thread (2.2).
 
   Settings the user changes still win.
-- **Other wizards:** Cross Stitch and the Photo Stitches stay PE-only until a method beats
+- **Photo Stitch 1 in colour** gets the perceptual palette and CIELAB dithering (2.3).
+- **Other wizards:** Cross Stitch, Mono and Photo Stitch 2 stay PE-only until a method beats
   PE-DESIGN mode on their test images.
 
 ## 5. Next steps
@@ -226,7 +260,7 @@ one.
 1. **Auto Punch's OpenStitch mode**, as measured here. Then the gallery shows both modes side
    by side (`tools/gallery.py`).
 2. **Keep line art's lines:** done 2026-10-31 (2.2).
-3. **Photo Stitch 1's perceptual palette and error diffusion (3.6)**, measured on the photos
-   (p01, p04, p07) with the same harness.
+3. **Photo Stitch 1's perceptual palette and error diffusion (3.6):** done 2026-10-31 (2.3).
+   Next for it: fewer trims, by joining runs of one thread through the dither.
 4. **SLIC before Auto Punch on photos (3.3)**, if 1 and 3 leave the painted images ragged.
 5. **Other brands' thread charts** for the colour floor (with B13).

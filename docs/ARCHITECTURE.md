@@ -313,7 +313,9 @@ Verified Compatible).
   centre → bottom-left, then "/" whole to the top-right; coming back, top-right → centre →
   bottom-right, then "\" whole to the top-left (Triple sews each whole diagonal three times).
 - **Photo Stitch.** *Fill* (after Photo Stitch 1): a grid of row spacing × stitch length is
-  error-diffused onto the threads plus the fabric colour; fabric cells stay unsewn, so tone
+  error-diffused onto the threads plus the fabric colour (in OpenStitch mode, `compatMode:
+  openStitch`, the threads are the perceptual palette and the diffusion runs in CIELAB:
+  `Palette::build_perceptual`, `palette::dither_perceptual`, B16); fabric cells stay unsewn, so tone
   becomes coverage, unless Sew Page Color (on by default in Color mode, as in PE-DESIGN; Mono has
   none) makes the fabric colour a thread of its own that sews first; defaults Run Pitch 3.0 mm, 0.25 mm rows, 10
   colours; rows are staggered by thirds. A thread's runs are sewn nearest first: from the

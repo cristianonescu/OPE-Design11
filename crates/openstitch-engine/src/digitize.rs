@@ -69,7 +69,7 @@ fn hexes(threads: &[Thread]) -> Vec<String> {
 
 /// The `compatMode` parameter, shared with the region attribute of the same name: PE-DESIGN's
 /// method (`peDesign`, the default) or OpenStitch's improved one (`openStitch`).
-fn mode(p: &Params) -> Result<Mode, CommandError> {
+fn compat_mode(p: &Params) -> Result<Mode, CommandError> {
     Ok(
         match choice(p, "compatMode", "peDesign", &["peDesign", "openStitch"])? {
             "openStitch" => Mode::OpenStitch,
@@ -164,7 +164,7 @@ pub fn commands() -> Vec<CommandSpec> {
             ]),
             |s, p| {
                 let (image, frame) = load(s, p)?;
-                let mode = mode(p)?;
+                let mode = compat_mode(p)?;
                 // OpenStitch mode also cleans up: specks under 3 mm² merge, unless the caller
                 // sets the area.
                 let min_area = match mode {
@@ -294,6 +294,11 @@ pub fn commands() -> Vec<CommandSpec> {
                     "Lines, colour mode: the Color Set; a named set is four fixed threads in its order (default auto)",
                 ),
                 opt(
+                    "compatMode",
+                    "peDesign|openStitch",
+                    "Fill, colour mode: peDesign as PE-DESIGN 11.50 (default); openStitch picks the threads and dithers in CIELAB (k-means, CIEDE2000)",
+                ),
+                opt(
                     "direction",
                     "degrees",
                     "Lines: Direction, turns every thread's screen angle (0/45/90/135), -180-180 (default 0)",
@@ -340,6 +345,7 @@ pub fn commands() -> Vec<CommandSpec> {
                     "bmyk" => ColorSet::Bmyk,
                     _ => ColorSet::Auto,
                 };
+                options.compat = compat_mode(p)?;
                 let out = photo::convert(&image, &frame, &options).map_err(|e| failed(p, e))?;
                 Ok(json!({
                     "colors": hexes(&out.threads),

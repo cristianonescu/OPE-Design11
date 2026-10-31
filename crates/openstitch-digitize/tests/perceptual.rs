@@ -148,3 +148,26 @@ fn open_stitch_mode_keeps_thin_lines() {
     // Five lines of six dashes each.
     assert_eq!(os.objects.len(), 30, "every dash of every line stays");
 }
+
+/// Photo Stitch 1's OpenStitch mode dithers in CIELAB: a grey of lightness 50 between black and
+/// white threads mixes half and half by lightness, where RGB dithering mixes by RGB value
+/// (119 / 255 = 47 % white).
+#[test]
+fn perceptual_dither_mixes_by_lightness() {
+    let grey = [119.0, 119.0, 119.0];
+    assert!((lab([119, 119, 119])[0] - 50.0).abs() < 0.5);
+    let cells = vec![Some(grey); 60 * 60];
+    let targets = [[0.0; 3], [255.0; 3]];
+    let white =
+        |d: Vec<Option<usize>>| d.iter().filter(|t| **t == Some(1)).count() as f64 / d.len() as f64;
+    let rgb = white(palette::dither(&cells, 60, 60, &targets));
+    let perceptual = white(palette::dither_perceptual(&cells, 60, 60, &targets));
+    assert!(
+        (rgb - 119.0 / 255.0).abs() < 0.02,
+        "RGB dithering mixes {rgb}"
+    );
+    assert!(
+        (perceptual - 0.5).abs() < 0.02,
+        "CIELAB dithering mixes {perceptual}"
+    );
+}
