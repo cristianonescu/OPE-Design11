@@ -48,7 +48,7 @@ through its normal interface are committed under `compat/reference/`. The compat
 | | |
 |---|---|
 | Feature matrix rows | 170: 144 implemented (3 of them partially compatible), 2 documented only, 10 blocked, 14 planned beyond PE-DESIGN |
-| Compatibility specs | 393: 393 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
+| Compatibility specs | 407: 407 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
 | Matrix rows covered by specs | 32: 25 at the reference tier, 5 at the internal-regression tier, 2 at the oracle tier |
 | Open audit differences | 11 ([audit](docs/COMPATIBILITY_AUDIT.md#summary)) |
 | Open GitHub issues | 5 ([list](https://github.com/cristianonescu/OpenStitch/issues)) |

@@ -1,0 +1,121 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "tatami-40x20-st1-dir45",
+  "area": "stitches",
+  "title": "A 40 x 20 mm tatami at top-left (10, 10) mm, Stitch Type 1 at 45 degrees",
+  "description": "Round-6 row-anchor capture: a 40 x 20 mm Fill Stitch at PE-DESIGN 11.50's defaults (density 4.5, step pitch 4.0 mm, Frequency 30 %, pull 0, under sewing off) placed with its top-left at (10, 10) mm on the page, direction 45, Stitch Type button 1. PE-DESIGN's rows keep the 1/density spacing and sit at the same place relative to the shape at every position, while its stitch count moves with the page position (the 40 mm square at 45 degrees: 2065 to 2068); COMPATIBILITY_AUDIT item 15.",
+  "covers": {
+    "audit": [
+      15
+    ],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Fill (tatami: angle or auto direction"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/tatami-40x20-st1-dir45.pes (PE-DESIGN 11.50, 2026-10-31): 1099 stitches"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 10,
+        "y": 10,
+        "width": 40,
+        "height": 20
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "fill",
+        "angle": 45,
+        "density": 4.5,
+        "underlay": false,
+        "stitchType": 1
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "fill.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/tatami-40x20-st1-dir45.pes",
+      "make": "Open round 4's tatami-40-stitch-type-1.pes; Home > Size height 20 mm (aspect off); Arrange > Move to Center, then arrow nudges to top-left (10, 10) mm; Sewing Attributes: Direction 45, Stitch Type button 1. Save As PES (default type)."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "percent": 2
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "fill.pes"
+      },
+      "evidence": "PE-DESIGN reference",
+      "reference": {
+        "tolerance": {
+          "mm": 0.3
+        }
+      }
+    }
+  ]
+}

@@ -886,9 +886,30 @@ Line references are relative to `crates/`.
       improves both types at both angles: the needle score jumps whenever the tiny corner row
       appears or disappears, because the first row sets the needle-grid anchor, and Type 1 and
       Type 2 move in opposite directions (offset 0.6: Type 1 at 30° 0.189 → 0.301 mm, Type 2
-      0.344 → 0.213). The row lattice and the grid anchor have to be fitted together; a
-      capture with no sharp corner at the first row (the same square at two page positions and
-      a 40 × 20 mm rectangle at 30° and 45°) would separate them.
+      0.344 → 0.213). The row lattice and the grid anchor have to be fitted together.
+    - Round 6 (2026-10-31, 14 captures, specs `tatami-40-pos0-*`, `tatami-40-pos2-*`,
+      `tatami-40x20-*`, `tatami-40-pos-center-*`, `tatami-40-pos-right10-*`: the square at
+      top-left (0, 0), (13.5, 7.5), (30, 30) and (35, 30) mm and a 40 × 20 mm rectangle at
+      (10, 10), Stitch Types 1 and 2 at 30° and 45°; page positions read from the PES header):
+      - **Rows sit on the shape, not the page.** Measured from the shape's lowest corner the row
+        lattice is the same at every position and for the rectangle (0.89–0.90 rows at 30°);
+        measured from the page origin it moves (0.37–0.90). The offset matches rows counted from
+        the far side at the exact 1/density spacing (30° square: frac(54.64 / 0.2222) = 0.885;
+        rectangle 0.95). At 45° the measure is unreliable (a 45° line through the file's
+        0.1 mm grid aliases; fit 0.53–0.57).
+      - **PE-DESIGN's stitch count moves with the page position; ours does not.** 40 mm
+        square, Type 1 at 30°: 2042 at (0, 0), 2039 at (13.5, 7.5), 2032 at (10.2, 10.0); at
+        45°: 2065, 2067, 2068, 2068, 2068. OpenStitch sews 2048 and 2059 everywhere. The
+        needle-grid phase along the rows (Type 1, u − k · 1.2 mm mod 4, from the top-left
+        corner) is 0.90 mm at 0°, 2.81–2.98 at 30°, 1.05–1.28 at 45° and 1.20 at 90°;
+        OpenStitch uses 1.2 at every angle (exact at 90°; the 0.269 mm at 0° is this 0.3 mm).
+      - **Candidate rules scored** over all 22 captures (rounds 4–6) at PE's page positions,
+        mean over the 16 angled cases (|Δ count|, needle, IoU): today 9.4, 0.298 mm, 0.949;
+        exact spacing with rows from the far side 11.8, 0.303, 0.961; that plus the grid
+        anchored on the first sewn row 14.2, 0.307, 0.956. Neither lands: both lift coverage
+        but move the 45° Type 2 counts away (2078 → 2084 against 2054). The per-angle grid
+        constant and PE-DESIGN's position dependence (likely its page-coordinate rounding of
+        the anchor) are what remain to model.
 - **Test:**
   - `object.setRegion {type:"fill",frequency:60}` and `object.setLine {type:"eStitch",runTimes:6}`
     are refused.
