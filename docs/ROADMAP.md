@@ -154,6 +154,11 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    captures are in, the stroke cut (step 1, `strokes::strokes`) and the rungs are done, and
    PE-DESIGN's Convert to Blocks files import as their blocks (`import.pes`, 2026-10-31); next, the
    stroke ownership and order, travel and trims, then sewing text by stroke) — the structural
+   captures are in, the stroke cut (step 1, `strokes::strokes`), the rungs and the block order
+   (`GlyphStrokes::blocks`, 2026-10-31) are done, and PE-DESIGN's Convert to Blocks files import
+   as their blocks (`import.pes`, 2026-10-31), and satin text is sewn by stroke since 2026-10-31
+   (`stroke-satin-*`, 9 % from PE-DESIGN's needle points on average); next, fill text by stroke,
+   under sewing per stroke, and the crossings round curves and fanned corners) — the structural
    gap behind text-fit-*, text-transform-* and text-sewing-order; the fitted circle's running
    stitch follows PE-DESIGN's Bézier halving since 2026-10-28 (text-fit-default mean needle
    distance 0.27 → 0.20 mm); Text Transform presets 13 and 14 (fan out / in) done 2026-10-28; round 4 (2026-10-29)

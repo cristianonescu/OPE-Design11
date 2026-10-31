@@ -466,6 +466,15 @@ Line references are relative to `crates/`.
   apex ownership of step 4); PE-DESIGN's own cut imports from its Convert to Blocks files
   (`import.pes`, 2026-10-31: H and A as its five blocks each); text is not sewn by stroke yet
   (steps 2-5 of the research note).
+  (`import.pes`, 2026-10-31: H and A as its five blocks each), and the blocks are in
+  PE-DESIGN's order since 2026-10-31 (`GlyphStrokes::blocks`: H's five blocks within 0.5 mm of
+  stroke-blocks-H; A's five in its order and directions, the right leg with the apex; X two chevrons). Since then
+  satin text is sewn by stroke (block by block, travel along
+  the outline, chevrons at a crossing, the corner tip to the column sewn last): the 13 round-5
+  satin captures (`stroke-satin-*`) and `text-defaults-h` are within 25 % of PE-DESIGN's needle
+  points, 9 % on average against 26 % by region (H 291 against 285, A 283 against 290). Fill
+  text, under sewing per stroke and the curve and corner-fan crossing counts (S, 8, O, L) are
+  still open (steps 3 and 5 of the research note).
 - **Test:**
   - Inputs: `text.add {"text":"AVOW","size":30,"x":50,"y":50}` →
     `object.setRegion {"id":1,"type":"satin"}` → `design.generate`.

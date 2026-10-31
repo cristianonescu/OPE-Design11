@@ -225,11 +225,62 @@ not before, so every reference in the repository has a spec that reads it.
    right leg and sews it whole through its junction (step 4 settles the ownership). Spec: `text-defaults-h` checks 4 strokes in PE-DESIGN's order
    and the crossings' directions (a per-run direction-cluster measure), with the count within the
    satin family's tolerance.
+   **Satin text sewn by stroke 2026-10-31** (`compile::stroke_satin`): a TrueType letter whose
+   region is Satin is sewn block by block in `GlyphStrokes::blocks`' order, each block a column
+   satin (`column::satin`) along its rungs, the blocks joined by running stitches at most 2 mm
+   along the letter's outline, a new run where a piece is not joined to the one before (X's
+   second chevron, an i's dot). Two more rules from the captures: a crossing of four arms is two
+   chevrons, the arms on each side one column (stroke-satin-X: two runs, one trim), and a sharp
+   corner belongs to the column sewn last there, whose satin runs on into the tip (A's right leg
+   with the apex, V's second arm into the foot). Fill text keeps its region rows (step 3). The
+   round-5 satin captures land with this as specs `stroke-satin-*` (needle points within the
+   text family's 25 %, box within 0.3 mm):
+
+   | Letter (Lato Bold) | PE-DESIGN | by region (before) | by stroke |
+   |---|---|---|---|
+   | H 20 mm (`text-defaults-h`) | 285 | 243 (−15 %) | 291 (+2 %) |
+   | H 10 / 40 mm | 149 / 556 | 129 / 477 | 145 / 579 |
+   | I | 112 | 125 | 106 |
+   | L | 152 | 125 | 176 |
+   | T | 186 | 124 | 208 |
+   | O | 358 | 204 | 310 |
+   | V | 228 | 219 | 206 |
+   | X | 277 | 230 | 310 |
+   | A | 290 | 221 | 283 |
+   | S | 278 | 157 | 215 |
+   | e | 267 | 130 | 247 |
+   | i | 128 | 100 | 121 |
+   | 8 | 373 | 211 | 317 |
+
+   Mean difference 26 % by region, 9 % by stroke. Open: L fans its corner in PE-DESIGN (fewer
+   crossings than OpenStitch's column round it, +16 %), S and 8 and O sew fewer crossings round
+   their curves than PE-DESIGN (−13 to −23 %: the equal-fraction rungs on curves), T's bar halves
+   (+12 %); the i's dot is joined to its stem without a trim (PE-DESIGN trims twice); under
+   sewing per stroke (step 5).
 3. **Fill per stroke.** Rows across the stroke, turning along curved strokes (the "column fill"
    PE-DESIGN's B shows). Specs: `text-defaults-fill`, `text-size-hg`, `text-sewing-order`.
 4. **Order, travel and trims inside a letter.** Order the strokes, travel along stroke edges at
    2 mm, and trim between a letter's separate runs (x, g, i). Specs: trim counts on
    `text-size-hg` (4) and the "OpenStitch" transforms (11).
+   **Order done 2026-10-31** (`GlyphStrokes::blocks`), from PE-DESIGN's own blocks
+   (stroke-blocks-H, -A: the direction lines' order gives the sewing direction):
+   - strokes through a junction that continue each other within 40° are one column (H's stems,
+     A's legs, T's bar);
+   - sewing starts at the column end nearest the letter's top-left; of two ends within 1 mm (A's
+     legs at the apex), the left column's;
+   - a column another stroke leaves from is sewn to that junction, then from its far end back to
+     it, then the junction square in the first part's direction, and the leaving stroke follows;
+   - a column entered through a junction is sewn whole from its upper end (H's right stem, A's
+     right leg from the apex, though its foot is nearer).
+
+   H gives PE-DESIGN's five blocks within 0.5 mm (top 0-8.8, foot 20.6 up to 11.6, square
+   8.8-11.6, bar 3.8-13.6, right stem 0-20.6); A gives its five in PE's order and directions, the
+   left leg and bar within 1 mm from the left foot. T is its bar's two halves, the square and the
+   stem. A's right leg started 3.4 mm below the apex, where PE-DESIGN's takes the apex in: since
+   2026-10-31 a sharp corner belongs to the column sewn last there (step 2's switch). Lato's A is 20.2 mm wide here, against
+   16.7 mm between PE-DESIGN's foot lines. X gave two diagonals through a square where
+   PE-DESIGN sews two chevrons with a trim; since 2026-10-31 a four-arm crossing is two chevrons. Travel between the blocks and trims are not
+   generated yet: blocks are not sewn (step 2's switch).
 5. **Under sewing per stroke:** the outline type, a run round each stroke before its satin
    (`stroke-us-*`: +68 to +69 needle points on H and A). **Convert to Blocks** emits one Manual
    Punch block per stroke (`stroke-blocks-*`), **Convert to Outline** keeps today's single region
