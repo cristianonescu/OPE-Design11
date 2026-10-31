@@ -1204,3 +1204,27 @@ fn region_option_controls_are_accepted_by_the_engine() {
         }
     }
 }
+
+#[test]
+fn fill_offers_stitch_type_with_the_region_s_value() {
+    use super::inspector::{Control, region_controls};
+    use openstitch_design::{FillStitchType, RegionSewing};
+    let value = |r: &RegionSewing| {
+        region_controls(r).into_iter().find_map(|c| match c {
+            Control::Choice {
+                param: "stitchType",
+                value,
+                options,
+                ..
+            } => Some((value, options.len())),
+            _ => None,
+        })
+    };
+    let mut r = RegionSewing::new(RegionType::Fill, Thread::rgb(0));
+    assert_eq!(value(&r), Some(("1".to_string(), 2)));
+    r.stitch_type = FillStitchType::Two;
+    assert_eq!(value(&r), Some(("2".to_string(), 2)));
+    // Only the Fill sew type has PE-DESIGN's Stitch Type buttons.
+    let satin = RegionSewing::new(RegionType::Satin, Thread::rgb(0));
+    assert_eq!(value(&satin), None);
+}

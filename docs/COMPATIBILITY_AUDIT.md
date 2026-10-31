@@ -876,8 +876,8 @@ Line references are relative to `crates/`.
       sit about half a spacing from ours (row lattice offset 0.9 against 0.4 rows at 30°, 0.9
       against 0.3 at 45°), the angled-fill anchor difference Type 1 has too (Type 1 at 30°:
       0.205 mm, 0.967); in Type 2 it also moves each pass's grid. Specs: the seven round-5
-      files and `tatami-40-stitch-type-2`, which now sews Type 2. No inspector control yet
-      (command only).
+      files and `tatami-40-stitch-type-2`, which now sews Type 2. The inspector's Fill panel
+      offers it as "Stitch type" (1: flat rows, 2: sloped rows; 2026-10-31).
     - Anchor probe (2026-10-31, not landed): OpenStitch stretches angled rows to fill the
       rotated height corner to corner (245 gaps of 0.2230 mm at 30°); PE-DESIGN keeps the
       1/density spacing. Without the stretch the 45° counts match: Type 1 2067 / 2068 and

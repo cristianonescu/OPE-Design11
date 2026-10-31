@@ -1225,7 +1225,7 @@ fn attribute_commands() -> Vec<CommandSpec> {
                 opt(
                     "stitchType",
                     "1|2",
-                    "Fill: PE-DESIGN's Stitch Type, 1 flat rows (default), 2 sloped rows joined edge to edge",
+                    "Fill: PE-DESIGN's Stitch Type, 1 flat rows (default), 2 sloped rows joined edge to edge; a number or the string \"1\" / \"2\" (the inspector's choice)",
                 ),
                 opt(
                     "staggerSeed",
@@ -1534,7 +1534,11 @@ fn attribute_commands() -> Vec<CommandSpec> {
                         r.stagger = k;
                     }
                     if p.has("stitchType") {
-                        let t = p.req("stitchType", 1.0, 2.0)?;
+                        // The inspector's choice sends the button as a string.
+                        let t = match p.get("stitchType").and_then(Value::as_str) {
+                            Some(s) => s.parse().unwrap_or(0.0),
+                            None => p.req("stitchType", 1.0, 2.0)?,
+                        };
                         r.stitch_type = if t == 1.0 {
                             FillStitchType::One
                         } else if t == 2.0 {
