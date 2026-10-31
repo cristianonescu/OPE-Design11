@@ -1,0 +1,121 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-0110-decorative-fill",
+  "area": "pes",
+  "title": "PES 0110 writes a decorative fill with its pattern in the object's pattern block",
+  "description": "design.export with pesVersion 11 writes a decorative fill region as region type 13 and its pattern into the object's pattern block, as PE-DESIGN 11.50 does for the owner's one-line pattern (compat/reference/stitches/deco-fill-1line-100mm.pes; pattern crates/openstitch-design/tests/fixtures/patterns/psc-deco-1line.plf, `@TILELINE 0 2 128 128 896 896`): u16 size in 0.01 mm (10000 for 100 mm), then the lines in a 1024-unit cell. The design is that spec's (deco-fill-1line-100mm): the 40 mm square at (30,30) mm filled with the pattern at 100 x 100 mm.",
+  "covers": {
+    "audit": [
+      5
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES 0110 (PE-DESIGN 11) editable shapes write"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 5"
+    },
+    {
+      "kind": "measured",
+      "note": "docs/FILE_FORMATS.md, PES 0110 pattern block: deco-fill-1line-100mm's block is its .plf (pes11.rs, region_types_and_the_decorative_pattern_read); its rewrite is byte-identical outside the documented differences"
+    }
+  ],
+  "inputs": [
+    {
+      "from": "crates/openstitch-design/tests/fixtures/patterns/psc-deco-1line.plf",
+      "name": "psc-deco-1line.plf"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "pattern.import",
+      "params": {
+        "path": "psc-deco-1line.plf",
+        "id": "owner-deco"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 30,
+        "y": 30,
+        "width": 40,
+        "height": 40,
+        "fill": "Blue"
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "decorativeFill",
+        "pattern": "owner-deco",
+        "patternWidth": 100,
+        "patternHeight": 100,
+        "angle": 0,
+        "runPitch": 2,
+        "randomShift": 0
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes",
+      "pesVersion": "11"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "pes/pes-0110-decorative-fill.pes",
+      "make": "Run `stitchtool compat --only pes-0110-decorative-fill` and open target/compat/work/pes-0110-decorative-fill/a.pes in PE-DESIGN 11 (App menu > Open). Expected: a 40 mm square at (30,30) mm with region Decorative Fill Stitch using the one-line pattern (a single diagonal, as psc-deco-1line), 100 x 100 mm, as compat/reference/stitches/deco-fill-1line-100mm.pes. Record in the MANIFEST notes: whether the file opens and with what warning, which pattern the region shows (the one line, or another), its size, and the status-bar size and stitch count against that file's. Then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md). If PE-DESIGN refuses the file or opens it blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": "0110",
+      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature",
+      "reference": {}
+    },
+    {
+      "id": "classes",
+      "measure": {
+        "kind": "pesClasses"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": [
+        "CEmbLine"
+      ],
+      "evidence": "deco-fill-1line-100mm.pes: one CEmbLine; the reader parses the whole list",
+      "reference": {}
+    }
+  ]
+}

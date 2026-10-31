@@ -366,6 +366,72 @@ fn a_group_of_some_objects_reads_and_two_groups_are_not_mapped() {
 }
 
 #[test]
+fn programmable_fill_and_motif_patterns_read_from_the_header() {
+    // The owner's V, drawn in Programmable Stitch Creator (compat/reference/pes/owner-v.pas:
+    // `@TILELINE 0 3 0 0 512 768 1024 0`, Default Size 7.5 mm) and as a motif (owner-v.pmf:
+    // `@LINE 3 0 512 512 768 1024 512`, 5 mm), listed in the header before the thread table.
+    let fill = objects_of(&data("pe11/obj-progfill-owner-v.pes"));
+    assert_eq!(
+        fill.fill_patterns,
+        [pes11::PesPattern {
+            size: 750,
+            polylines: vec![vec![(0, 0), (512, 768), (1024, 0)]],
+        }]
+    );
+    assert!(fill.motif_patterns.is_empty());
+    assert_eq!(fill.shapes[0].region, RegionSewType::ProgrammableFill);
+    let motif = objects_of(&data("pe11/obj-motif-line-owner-v.pes"));
+    assert_eq!(
+        motif.motif_patterns,
+        [pes11::PesPattern {
+            size: 500,
+            polylines: vec![vec![(0, 512), (512, 768), (1024, 512)]],
+        }]
+    );
+    // Files without patterns list none.
+    assert!(
+        objects_of(&data("pe11/r01-rect.pes"))
+            .fill_patterns
+            .is_empty()
+    );
+}
+
+#[test]
+fn region_types_and_the_decorative_pattern_read() {
+    // Each Round 3 region file at PE-DESIGN's defaults differs from a fill only in its code.
+    for (name, region) in [
+        ("o-region-cross", RegionSewType::Cross),
+        ("o-region-concentric", RegionSewType::Concentric),
+        ("o-region-radial", RegionSewType::Radial),
+        ("o-region-spiral", RegionSewType::Spiral),
+        ("o-region-piping", RegionSewType::Piping),
+        ("o-region-stippling", RegionSewType::Stippling),
+        ("o-region-net-fill", RegionSewType::NetFill),
+        ("o-region-zigzag-net", RegionSewType::ZigzagNet),
+        ("o-region-flexible-spiral", RegionSewType::FlexibleSpiral),
+        ("obj-motif-fill-owner-v", RegionSewType::Motif),
+    ] {
+        assert_eq!(
+            objects_of(&data(&format!("pe11/{name}.pes"))).shapes[0].region,
+            region,
+            "{name}"
+        );
+    }
+    // A Decorative Fill keeps its pattern in the object's pattern block: the owner's one-line
+    // pattern (psc-deco-1line.plf, `@TILELINE 0 2 128 128 896 896`) at 100 mm.
+    let deco = objects_of(&owner_file("deco-fill-1line-100mm"));
+    let s = &deco.shapes[0];
+    assert_eq!(s.region, RegionSewType::Decorative);
+    assert_eq!(
+        s.decorative,
+        Some(pes11::PesPattern {
+            size: 10000,
+            polylines: vec![vec![(128, 128), (896, 896)]],
+        })
+    );
+}
+
+#[test]
 fn unmapped_layouts_stop_reading_instead_of_misreading() {
     // Layouts not mapped yet must end the list as "unparsed", with the shapes read before them
     // intact and every vertex inside its bounds. The Manual Punch column of
@@ -538,6 +604,8 @@ const FULLY_PARSED: &[&str] = &[
     "concentric-ring40-hole15",
     "spiral-ring40-hole15",
     "group-partial",
+    "deco-fill-1line-100mm",
+    "deco-fill-1line-offcentre",
     "a01-rect-applique",
     "a02-applique-cutting",
     "a03-applique-no-tackdown",
@@ -693,6 +761,8 @@ fn objects_of(bytes: &[u8]) -> Objects {
         stitch_groups: s.stitch_groups,
         groups: s.groups,
         holes: s.holes,
+        fill_patterns: s.fill_patterns,
+        motif_patterns: s.motif_patterns,
         unparsed: s.unparsed,
     }
 }
@@ -711,6 +781,8 @@ fn owner_file(name: &str) -> Vec<u8> {
         "hole-sewing-pentagon-star",
         "concentric-ring40-hole15",
         "spiral-ring40-hole15",
+        "deco-fill-1line-100mm",
+        "deco-fill-1line-offcentre",
     ]
     .contains(&name)
     {
@@ -900,6 +972,9 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
         // Three rectangles whose second position's segment differs from r01's (the documented
         // geometry-header difference).
         "group-partial",
+        // A rectangle whose position fields differ from r01's (the segment of its second
+        // position: the documented geometry-header difference).
+        "deco-fill-1line-offcentre",
         "r10-circle",
         "r11-line",
         // A vector import's pentagon and star: outlines that are not rectangles.
@@ -1097,6 +1172,8 @@ fn an_openstitch_shape_with_curves_round_trips() {
         stitch_groups: Vec::new(),
         groups: vec![vec![0], vec![1]],
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let mut pattern = openstitch_core::StitchPattern::new();
@@ -1161,6 +1238,8 @@ fn texts_between_shapes_and_in_groups_round_trip() {
         stitch_groups: Vec::new(),
         groups: vec![vec![1, 2]],
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let pattern = stitches_of(&owner_file("r01-rect"));
@@ -1216,6 +1295,8 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
         stitch_groups: Vec::new(),
         groups: Vec::new(),
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let written = pes11::write(&objects, &stitches_of(&fixture)).expect("write");
@@ -1413,6 +1494,8 @@ fn a_stitch_group_built_from_stitches_round_trips() {
         stitch_groups: vec![g],
         groups: Vec::new(),
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let written = pes11::write(&objects, &p).expect("write");

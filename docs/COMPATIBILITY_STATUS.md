@@ -4,7 +4,7 @@
 
 The tier each [FEATURE_MATRIX.md](FEATURE_MATRIX.md) row and [audit](COMPATIBILITY_AUDIT.md) item has reached in the compatibility harness ([COMPATIBILITY_TESTS.md](COMPATIBILITY_TESTS.md)). A row is only as far as the weakest spec covering it. Tiers, weakest first: internal-regression (our own earlier output or the guide's description), oracle (an independent implementation), reference (PE-DESIGN 11 output supplied by the owner), machine (a sew-out record). "Reference pending" means a spec is ready for a PE-DESIGN file that does not exist yet.
 
-Specs: 408 · pass 408 · fail 0 · error 0 · pending reference 0 · skipped 0.
+Specs: 410 · pass 410 · fail 0 · error 0 · pending reference 0 · skipped 0.
 
 ## By FEATURE_MATRIX row
 
@@ -22,7 +22,7 @@ Specs: 408 · pass 408 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | Files | JEF read/write (Janome chart, stops, hoop code)… | reference; reference pending | `machine-formats`, `machine-sample-basic` |
 | Files | Large designs split into several files on export when they exceed… | reference | `hoop-oversize-export` |
 | Files | PCS read/write (1/6 mm grid, hoop byte)… | reference; reference pending | `machine-formats`, `machine-sample-basic` |
-| Files | PES 0110 (PE-DESIGN 11) editable shapes write… | internal-regression; reference pending | `pes-0110-applique`, `pes-0110-curve-block`, `pes-0110-editable-shapes`, `pes-0110-editable-text-fit`, `pes-0110-editable-text-transform`, `pes-0110-editable-text`, `pes-0110-hole-sewing`, `pes-0110-manual-punch`, `pes-0110-stitches` |
+| Files | PES 0110 (PE-DESIGN 11) editable shapes write… | internal-regression; reference pending | `pes-0110-applique`, `pes-0110-curve-block`, `pes-0110-decorative-fill`, `pes-0110-editable-shapes`, `pes-0110-editable-text-fit`, `pes-0110-editable-text-transform`, `pes-0110-editable-text`, `pes-0110-hole-sewing`, `pes-0110-manual-punch`, `pes-0110-programmable-fill`, `pes-0110-stitches` |
 | Files | PES v6 thread table… | oracle | `pes-thread-chart-roundtrip` |
 | Files | PES write v1 and v6… | oracle; reference pending | `machine-jumps`, `machine-rbgb`, `machine-rbr-far`, `machine-rbr`, `machine-trim-bound`, `machine-trim-fine`, `pes-csewseg-trims`, `pes-default-v6`, `pes-library-convert-v6`, `pes-objects-owner-patterns`, `pes-objects-psc-patterns` |
 | Files | SEW read/write (Janome SEW chart)… | reference; reference pending | `machine-formats`, `machine-sample-basic` |
@@ -52,7 +52,7 @@ Specs: 408 · pass 408 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | 2 | oracle; reference pending | `pes-default-v6`, `pes-library-convert-v6` |
 | 3 | internal-regression | `region-travel-u-along-outline`, `region-travel-u-fill`, `region-travel-u-gradation`, `region-travel-u-on-outline`, `region-travel-u-satin`, `running-stitch-path-exclusions`, `satin-sections-h`, `u-gradation-50-50`, `u-gradation-80-20`, `u-gradation-95-50`, `u-gradation-blend-blue`, `u-gradation-dir-90`, `u-gradation-pattern-2`, `u-gradation-pattern-3`, `u-gradation-pattern-4`, `u-gradation-pattern-5`, `u-gradation-pattern-6`, `u-gradation-pattern-7`, `u-gradation-pattern-8` |
 | 4 | reference | `machine-jumps`, `machine-trim-bound`, `machine-trim-fine` |
-| 5 | internal-regression; reference pending | `pes-0110-applique`, `pes-0110-curve-block`, `pes-0110-editable-shapes`, `pes-0110-editable-text-fit`, `pes-0110-editable-text-transform`, `pes-0110-editable-text`, `pes-0110-hole-sewing`, `pes-0110-manual-punch`, `pes-0110-stitches` |
+| 5 | internal-regression; reference pending | `pes-0110-applique`, `pes-0110-curve-block`, `pes-0110-decorative-fill`, `pes-0110-editable-shapes`, `pes-0110-editable-text-fit`, `pes-0110-editable-text-transform`, `pes-0110-editable-text`, `pes-0110-hole-sewing`, `pes-0110-manual-punch`, `pes-0110-programmable-fill`, `pes-0110-stitches` |
 | 6 | reference | `stroke-satin-8`, `stroke-satin-a`, `stroke-satin-h-10`, `stroke-satin-h-40`, `stroke-satin-i`, `stroke-satin-l`, `stroke-satin-lower-e`, `stroke-satin-lower-i`, `stroke-satin-o`, `stroke-satin-s`, `stroke-satin-t`, `stroke-satin-v`, `stroke-satin-x` |
 | 7 | reference | `auto-satin-bent-band`, `satin-auto-bend-120-nohalf`, `satin-auto-bend-120`, `satin-auto-bend-30-nohalf`, `satin-auto-bend-30`, `satin-auto-bend-45-nohalf`, `satin-auto-bend-45`, `satin-auto-bend-60`, `satin-auto-bend-75-nohalf`, `satin-auto-bend-75`, `satin-auto-bend-90-nohalf`, `satin-auto-bend-90` |
 | 14 | reference | `programmable-fill-45` |
@@ -84,12 +84,14 @@ Specs: 408 · pass 408 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `machine/machine-trim-fine` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-applique` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-curve-block` | pass | reference | pass | — | pass | — |
+| `pes/pes-0110-decorative-fill` | pass | internal-regression | pass | — | pending | — |
 | `pes/pes-0110-editable-shapes` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text-fit` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text-transform` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-hole-sewing` | pass | internal-regression | pass | — | pending | — |
 | `pes/pes-0110-manual-punch` | pass | reference | pass | — | pass | — |
+| `pes/pes-0110-programmable-fill` | pass | internal-regression | pass | — | pending | — |
 | `pes/pes-0110-stitches` | pass | reference | pass | — | pass | — |
 | `pes/pes-csewseg-trims` | pass | reference | pass | — | pass | — |
 | `pes/pes-default-v6` | pass | reference | pass | — | pass | pending |
