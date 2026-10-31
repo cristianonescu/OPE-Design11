@@ -38,7 +38,7 @@ Not affiliated with Brother Industries. No Brother code or assets are included; 
 
 ## Status at a glance
 
-Current release: **v0.1.0-alpha.7** ([notes](docs/releases/v0.1.0-alpha.7.md)).
+Current release: **v0.1.0-alpha.8** ([notes](docs/releases/v0.1.0-alpha.8.md)).
 
 OpenStitch is checked against PE-DESIGN 11.50 itself. Simple test designs made in a licensed copy
 through its normal interface are committed under `compat/reference/`. The compatibility harness
@@ -148,7 +148,8 @@ PE-DESIGN-compatible output stays the default.
 
 PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
 
-- **Regions:** fill (tatami with Frequency, under sewing, gradation and feathered edge), satin
+- **Regions:** fill (tatami with Frequency, PE-DESIGN's two Stitch Types (flat or sloped rows),
+  under sewing, gradation and feathered edge), satin
   (PE-DESIGN's sawtooth and Auto satin), programmable fill, motif fill, concentric circle,
   radial and spiral.
 - **➕ Contour fill:** rows that follow the outline (rings, single or double spiral, echo
@@ -163,7 +164,8 @@ PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
 ### Lettering
 
 - **Text:** multi-line TrueType/OpenType text with PE-DESIGN's text size, character and line
-  spacing, alignment and Satin or Fill sewing. Bundled open-licence fonts (Lato Bold, Pacifico)
+  spacing, alignment and Satin or Fill sewing. Satin letters are sewn stroke by stroke, in
+  PE-DESIGN's block order. Bundled open-licence fonts (Lato Bold, Pacifico)
   or your own fonts, embedded in the design. Complex scripts (Arabic, Indic, right-to-left) are
   shaped.
 - **Fit Text to Outline** and all 26 **Text Transform** presets, checked against PE-DESIGN.
@@ -178,16 +180,18 @@ PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
   regions, cross stitches or photo-style lines. These are independent approximations of
   PE-DESIGN's wizards, compared with its output.
 - **Design Center** pipeline (image → outline → figure → sew settings) and the Stitch Wizard.
-- ➕ **OpenStitch mode for Auto Punch and Photo Stitch 1**: colours reduced, matched to threads
-  and (in Photo Stitch 1) mixed by how they look; Auto Punch also merges specks. PE-DESIGN mode
-  stays the default.
+- ➕ **OpenStitch mode for Auto Punch, Photo Stitch 1 and Photo Stitch 2**: colours reduced,
+  matched to threads and mixed by how they look (CIELAB, CIEDE2000, a linear-light mix in Photo
+  Stitch 2); Auto Punch also merges specks and keeps line art's lines. PE-DESIGN mode stays the
+  default; for some photos it still sews truer, so try both.
 - **Background images** (PNG, JPEG, BMP or the clipboard): place, crop, rotate, adjust and trace
   over.
 
 ### Wizards and tools
 
 - **Appliqué, embroidered patch, cutwork and background fill** wizards (approximations of
-  PE-DESIGN's).
+  PE-DESIGN's). The Applique Wizard's lines sit at PE-DESIGN's distances, in its appliqué
+  colours.
 - **Split designs** for large designs, **multi-position hoops** and the **jumbo frame**.
 - **Design Database:** browse folders as thumbnails, search, organise, convert formats in batch
   and print catalogues.
@@ -202,7 +206,10 @@ PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
 - **Read only:** SHV, PHC (read only in PE-DESIGN too) and CSD.
 - **PE-DESIGN 11 PES (`#PES0110`):** OpenStitch reads the metadata, thread table and shapes. Saved
   as "PE-DESIGN 11", its shapes and Lato Bold text open **editable** in PE-DESIGN 11.50 (text
-  retypable), including Fit Text to Outline and Text Transform. Details in
+  retypable), including Fit Text to Outline and Text Transform, Manual Punch blocks, stitch
+  groups, grouped appliqué, hole sewing, programmable and decorative fill, the other region types
+  and stem, candlewick and chain lines, with the Design Settings' hoop and machine type.
+  `import.pes` opens PE-DESIGN's shapes and blocks as editable objects. Details in
   [docs/FILE_FORMATS.md](docs/FILE_FORMATS.md).
 - **PES versions 1, 6 and 11** on export, with Design Property (category, author, keywords,
   comments). Version 6 with its stitch group is the default.
@@ -210,7 +217,8 @@ PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
 - **Editable `.osd` projects**, and large designs split into several files when a format's limits
   are exceeded.
 - **Thread charts:** Brother's 64-colour PEC chart with its catalogue numbers, PE-DESIGN's
-  colour matching, and your own charts as CSV.
+  colour matching, and your own charts as CSV, exported in the layout PE-DESIGN's Import Chart
+  reads.
 
 ### Machine transfer
 
@@ -246,15 +254,15 @@ PE-DESIGN 11 features OpenStitch does not have yet, from the feature matrix:
 
 Also missing, from the [roadmap](docs/ROADMAP.md#still-to-do):
 
-- **Stroke-wise lettering:** PE-DESIGN splits every letter into strokes, each sewn as a column;
-  OpenStitch sews a whole letter in one direction.
+- **Stroke-wise fill lettering:** satin text is sewn stroke by stroke, as PE-DESIGN does;
+  fill text still sews a whole letter in one direction.
 - **Text details:** per-character colour, multi-character selection, Connection Points, minimum
   font sizes and small-text fonts, kerning that reflows the line.
-- **Satin and fill details:** Half Stitch for Auto satin, Miter limit, Stitch Type (turning
-  ends), gradation per-step editing and Blend.
-- **PES:** opening PE-DESIGN's editable shapes and texts as editable OpenStitch objects (they come
-  in as stitches); the other region and line types, right-aligned and vertical text in the
-  editable PES 11 writer; PES versions 4, 5 and 7–10; CSD and SHV export.
+- **Satin and fill details:** Half Stitch for Auto satin, Miter limit, gradation per-step
+  editing and Blend.
+- **PES:** opening PE-DESIGN's texts and stitch groups as editable OpenStitch objects; motif
+  fill, motif lines, several groups, right-aligned and vertical text in the editable PES 11
+  writer; PES versions 4, 5 and 7–10; CSD and SHV export.
 
 **Not planned, by design:**
 
@@ -324,12 +332,13 @@ _None._
 
 Next, from [docs/ROADMAP.md](docs/ROADMAP.md):
 
-- **Lettering:** stroke-wise sewing of TrueType text, as PE-DESIGN does it.
-- **PES:** PE-DESIGN's shapes and text opened as editable objects; more object types in the PES 11
-  writer; the hoop and Design Page fields.
+- **Lettering:** stroke-wise sewing of fill text, as PE-DESIGN does it.
+- **PES:** PE-DESIGN's text opened as editable objects; motif fill and lines, several groups and
+  the remaining hoops in the PES 11 writer.
 - **Stitches:** the remaining fill, satin and line details listed above, and branching skeletons.
 - **Machine tier:** a first recorded sew-out on a Brother machine.
-- **Image digitizing:** run-to-run travel in Cross Stitch and closer Photo Stitch output.
+- **Image digitizing:** run-to-run travel in Cross Stitch, fewer trims in Photo Stitch 1's
+  OpenStitch mode, and closer Photo Stitch output.
 - **Distribution:** code signing and a Flathub listing.
 
 Open enhancement issues:
