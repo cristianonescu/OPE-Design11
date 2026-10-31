@@ -25,6 +25,8 @@ pub mod params;
 mod pattern_cmds;
 #[cfg(feature = "formats")]
 pub mod pes11_export;
+#[cfg(feature = "formats")]
+pub mod pes11_import;
 pub mod print;
 pub mod project;
 mod punch;

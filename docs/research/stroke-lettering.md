@@ -180,6 +180,10 @@ not before, so every reference in the repository has a spec that reads it.
 0. **Read Manual Punch blocks** in the PES 0110 reader (owner files with 1, 2 and 3 blocks exist:
    o-manual-straight, o-manual-curve, and now `stroke-blocks-H/-A`). This gives PE-DESIGN's own
    cut of H and A, a ground truth for step 1, and imports converted text as editable blocks.
+   **Done 2026-10-31:** the reader maps the blocks (#205, `Shape::punch`) and `import.pes` turns
+   a PES 0110 file's shapes into design objects, each block a column sewn along its direction
+   lines, the running pieces open running lines, the group kept: H gives PE-DESIGN's five blocks
+   (3, 4, 2, 4 and 7 lines), A its five. OpenStitch sews the imported H in 342 needle points with 5 trims and the A in 364 with 6, against PE-DESIGN's 285 and 293 with none: each block and running piece is sewn on its own, where PE-DESIGN sews the group as one run (step 4).
 1. **Stroke decomposition of a glyph.** Use the glyph outline's skeleton (`skeleton.rs`), cut it
    at junctions (T: the bar in two at the stem; H: the stem at the bar, the junction square its own
    short column) and at crossings (X: two chevrons), keep turning corners as one column with a fan

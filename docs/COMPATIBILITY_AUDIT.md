@@ -354,7 +354,10 @@ Line references are relative to `crates/`.
   Punch columns as PE-DESIGN's Straight and Curve Block objects (specs `pes-0110-manual-punch`,
   `pes-0110-curve-block`, reference pending; owner files m01–m11 read and rewritten byte for
   byte outside the pattern block; Text > Convert to Blocks' output (stroke-blocks-H, -A) read as
-  blocks and running pieces, its blocks' marks equal but for the floats' last bits; a Curve Block written from a design has handles within one
+  blocks and running pieces, its blocks' marks equal but for the floats' last bits, and imported
+  as editable objects since 2026-10-31 (`import.pes`: shapes, Manual Punch blocks with their
+  direction lines, groups; texts and stitch groups not yet). OpenStitch sews the imported H in 342 needle points with 5 trims and the A in 364 with 6, against PE-DESIGN's 285 and 293 with none: each block and running piece is sewn on its own, where PE-DESIGN sews the group as one run (step 4 of the lettering plan).
+  a Curve Block written from a design has handles within one
   file unit of PE-DESIGN's, which way PE-DESIGN rounds them not mapped); the Appliqué wizard's stages as PE-DESIGN's appliqué lines and colours (spec
   `pes-0110-applique`, reference pending; owner files a01–a05 read and rewritten byte for byte
   outside the documented differences);
@@ -439,7 +442,9 @@ Line references are relative to `crates/`.
   a glyph's strokes, junctions and loops with PE-DESIGN's structure on Lato's I, L, T, H, X, V, O,
   A, S, e, i), and the rungs from each stroke's side edges joined at equal fractions of their
   lengths, as PE-DESIGN's Convert to Blocks lines (H within 2°; A's legs within 10-25° until the
-  apex ownership of step 4); text is not sewn by stroke yet (steps 2-5 of the research note).
+  apex ownership of step 4); PE-DESIGN's own cut imports from its Convert to Blocks files
+  (`import.pes`, 2026-10-31: H and A as its five blocks each); text is not sewn by stroke yet
+  (steps 2-5 of the research note).
 - **Test:**
   - Inputs: `text.add {"text":"AVOW","size":30,"x":50,"y":50}` →
     `object.setRegion {"id":1,"type":"satin"}` → `design.generate`.
