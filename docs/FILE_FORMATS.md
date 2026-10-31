@@ -1355,18 +1355,23 @@ OpenStitch's own embroidery font format, written by `fonts.save` and read by `fo
 - `.osd` files carry the same font objects under `design.fonts`, next to TrueType fonts, which
   are stored as `{"trueType": {"face": 0, "bytes": "<base64>"}}`.
 
-## Thread chart CSV (OpenStitch)
+## Thread chart CSV
 
-OpenStitch's own format for user thread charts (`threads.importCsv`, `threads.exportCsv`;
-editor: Edit ▸ User Thread Charts… ▸ Import CSV… / Export CSV…). PE-DESIGN 11.50 has no
-thread-chart CSV: its user charts are binary `.btc2` files in its program folder (`MyChart\`),
-made and imported only through Options ▸ Edit User Thread Chart, so charts cannot be exchanged
-with PE-DESIGN through files (round-4 check, issue #136). The `.btc2` format is not decoded.
+User thread charts as CSV (`threads.importCsv`, `threads.exportCsv`; editor: Edit ▸ User Thread
+Charts… ▸ Import CSV… / Export CSV…), in the layout PE-DESIGN 11.50's Import Chart reads
+(Option ▸ Options… ▸ Edit User Thread Chart ▸ Import Chart…, file type "CSV File(*.csv)";
+round-6 checks, 2026-10-31, owner's notes `round6/charts`, issue #136): PE-DESIGN imports such
+a file as a user chart named after the file, without hyphens (`v2-bare-3.csv` became "v2bare3").
+OpenStitch's own exports of the Brother chart (64 rows), the sew palette (90 rows) and a user
+chart all imported ("Importing of the chart is completed."), codes and colours as written. PE-DESIGN has no CSV export; it keeps its charts as binary
+`.btc2` files, which OpenStitch does not read.
 
 - UTF-8; a leading BOM is ignored. Lines end in CR LF when written; LF is read too.
-- Lines starting with `#` are comments. The writer puts `# OpenStitch thread chart: <name>` first.
-- An optional column row `code,brand,description,R,G,B` (any case) is skipped; the writer
-  always writes it.
+- The writer writes one record per colour and nothing else. PE-DESIGN refuses a file with a
+  `#` line ("Failed to import the CSV file. CSV must be in the order of the Code, Brand,
+  Description, R, G, B.") and imports a column row as a black colour named "description".
+  OpenStitch's reader still skips `#` comment lines and a column row
+  `code,brand,description,R,G,B` (any case), as earlier OpenStitch versions wrote them.
 - One colour per line, six fields in this order:
 
 | Field | Content |
@@ -1376,20 +1381,25 @@ with PE-DESIGN through files (round-4 check, issue #136). The `.btc2` format is 
 | `description` | colour name, may be empty; at most 100 characters kept |
 | `R`, `G`, `B` | 0–255 |
 
-- A field in double quotes may hold commas; `""` in it is one quote (RFC 4180). The writer
-  quotes a field only when it holds a comma, a quote or leading or trailing spaces. A record
-  stays on one line: control characters are dropped. Spaces around fields are ignored.
-- At most 2,000 colours per chart and 100 charts; files over 4 MiB are refused.
-
-Earlier OpenStitch versions read the same six columns without quoting or a column row, so
-their files still import. The built-in charts (`threads.builtinCharts`: `brother` = the
+- PE-DESIGN splits a record at every comma and reads no quoting (`"Brand, Inc"` came in as
+  brand `"Brand`, description `Inc"`), so the writer writes a comma in a field as `;` and a
+  double quote as `'`. The reader still takes a field in double quotes holding commas, with
+  `""` as one quote (RFC 4180), from files of earlier OpenStitch versions. A record stays on
+  one line: control characters are dropped. Spaces around fields are ignored.
+- PE-DESIGN shows a code with a letter (`A12`) as `000` and an empty code as `0`; OpenStitch's
+  codes are digits only. It drops punctuation from the brand and description (`Acme; Inc.`
+  came in as `Acme Inc`, `Say 'hi'` as `Say hi`).
+- At most 2,000 colours per chart and 100 charts; files over 4 MiB are refused. PE-DESIGN
+  imported all 1,500 rows of a 1,500-row file (with the message "Importing the CSV file was
+  stopped at line 1500."), so the issue's 1,499-colour cap is not PE's; its own limit is not
+  known. The built-in charts (`threads.builtinCharts`: `brother` = the
 64-entry PEC chart, entries 1–61 marked `basic` as the ones PE-DESIGN matches to;
 `sewPalette` = the 94-entry sew palette below; `janomeJef`, `janomeSew`, `husqvarnaHus`,
 `husqvarnaShv`) export in the same schema
 (`threads.exportCsv {builtin}`), so any of them can be copied into a user chart and edited.
-Not adopted from #136, for want of any PE-DESIGN reference: the `#userchart` header with a
-chart code, the `id,R,G,B,attr,code,description` column order, the 6-character code and the
-1,499-colour cap.
+Not adopted from #136, against PE-DESIGN's Import Chart: the `#userchart` header with a chart
+code and the `id,R,G,B,attr,code,description` column order (PE refused that file), the
+1,499-colour cap (PE took 1,500 rows) and a 6-character code field (not seen in PE).
 
 The sew palette (`openstitch_core::sew_palette`, #136): 94 ids, 1-based. Ids 1–61 are the
 BROTHER EMBROIDERY chart (PEC entries 1–61, with their codes), 62–65 reserved (PE-DESIGN shows

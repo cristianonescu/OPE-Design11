@@ -277,9 +277,9 @@ fn bad_user_settings_inputs_fail_cleanly() {
     }
 }
 
-/// OpenStitch's thread-chart CSV (issue #136; PE-DESIGN 11.50 has no CSV for its charts, so
-/// the schema is OpenStitch's own): the built-in charts are listed, any chart exports as
-/// `code,brand,description,R,G,B` with a header row and quoting, and an export imports back.
+/// The thread-chart CSV (issue #136): the built-in charts are listed, any chart exports as bare
+/// `code,brand,description,R,G,B` records, the layout PE-DESIGN 11.50's Import Chart reads
+/// (round 6), and an export imports back.
 #[test]
 fn thread_chart_csv_exports_and_imports_back() {
     let dir = temp_dir();
@@ -326,7 +326,8 @@ fn thread_chart_csv_exports_and_imports_back() {
     );
     assert_eq!(r["colors"], json!(64));
     let text = std::fs::read_to_string(dir.join("brother.csv")).expect("csv");
-    assert!(text.starts_with("# OpenStitch thread chart: Brother (PEC / PES chart)\r\ncode,brand,description,R,G,B\r\n007,EMBROIDERY,Prussian Blue,14,31,124\r\n"));
+    assert!(text.starts_with("007,EMBROIDERY,Prussian Blue,14,31,124\r\n"));
+    assert!(!text.contains('#') && !text.contains("code,brand"));
     // Brother entries 1–61 carry PE-DESIGN's BROTHER EMBROIDERY codes; 62–64 keep their number.
     assert_eq!(brother[4]["code"], json!("800"));
     assert_eq!(brother[4]["brand"], json!("EMBROIDERY"));
@@ -351,7 +352,8 @@ fn thread_chart_csv_exports_and_imports_back() {
         }
     }
 
-    // A user chart with commas and quotes in its strings round-trips.
+    // A user chart with commas and quotes in its strings: PE-DESIGN's Import Chart splits at
+    // every comma and has no quoting (round 6), so they are written as `;` and `'`.
     run(&mut s, "threads.createChart", json!({"name": "Odd"}));
     run(
         &mut s,
@@ -370,7 +372,21 @@ fn thread_chart_csv_exports_and_imports_back() {
         json!({"chart": "Odd2", "path": "odd.csv"}),
     );
     let charts = run(&mut s, "threads.charts", json!({}));
-    assert_eq!(charts[1]["threads"], charts[2]["threads"]);
+    let back = &charts[2]["threads"][0];
+    assert_eq!(
+        (
+            &back["brand"],
+            &back["description"],
+            &back["code"],
+            &back["color"]
+        ),
+        (
+            &json!("Acme; Inc."),
+            &json!("Say 'hi'"),
+            &json!("7"),
+            &json!("#123456")
+        )
+    );
 
     for bad in [
         json!({"path": "x.csv"}),

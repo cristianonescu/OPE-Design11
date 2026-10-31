@@ -1760,6 +1760,19 @@ Line references are relative to `crates/`.
   (`each_block_gets_its_nearest_chart_entry_as_pe_design_writes`). No spec changed. The same
   file showed the `#PES0110` thread-table reader taking a false, shorter table that starts in
   the middle of the real one (11 records of 30); it now keeps the longest table that parses.
+- **Thread-chart CSV that PE-DESIGN imports (2026-10-31, #136):** PE-DESIGN 11.50's Import Chart
+  (Option ▸ Options… ▸ Edit User Thread Chart) does read a CSV, "in the order of the Code,
+  Brand, Description, R, G, B", OpenStitch's own column order (round-6 check by the reference
+  session, files in the owner's `round6/charts`). It refused OpenStitch's export for its `#`
+  comment line, imported a column row as a black colour, split quoted fields at their commas,
+  showed a lettered code as 000, imported all 1,500 rows of a 1,500-row file, and refused the
+  issue's `#userchart` layout. `threads.exportCsv` now writes bare records only, with a comma
+  in a field as `;` and a quote as `'`, and PE imports OpenStitch's own exports (the Brother
+  chart, the sew palette and a user chart, checked the same day; PE stores an empty code as 0
+  and drops punctuation such as `;`, `.` and `'` from the text fields); the
+  reader still takes the earlier comment line, column row and quoting. The earlier finding
+  below, that charts cannot be exchanged with PE-DESIGN through files, holds for PE-DESIGN's
+  own `.btc2` charts only (there is still no export from PE).
 - **Thread-chart CSV and the built-in palette (2026-10-29, #136):** PE-DESIGN 11.50 has no
   thread-chart CSV (round-4 check: Options ▸ Edit User Thread Chart only imports; user charts
   are binary `.btc2` files, 89 bytes of high-entropy data for one colour, in the program
