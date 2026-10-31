@@ -873,6 +873,17 @@ Line references are relative to `crates/`.
       0.205 mm, 0.967); in Type 2 it also moves each pass's grid. Specs: the seven round-5
       files and `tatami-40-stitch-type-2`, which now sews Type 2. No inspector control yet
       (command only).
+    - Anchor probe (2026-10-31, not landed): OpenStitch stretches angled rows to fill the
+      rotated height corner to corner (245 gaps of 0.2230 mm at 30°); PE-DESIGN keeps the
+      1/density spacing. Without the stretch the 45° counts match: Type 1 2067 / 2068 and
+      Type 2 2053 / 2054 (stretched: 2059, 2078); Type 2 at 30° goes 0.318 → 0.264 mm, IoU
+      0.849 → 0.887. But no single row offset (0 to 0.95 rows, with or without the stretch)
+      improves both types at both angles: the needle score jumps whenever the tiny corner row
+      appears or disappears, because the first row sets the needle-grid anchor, and Type 1 and
+      Type 2 move in opposite directions (offset 0.6: Type 1 at 30° 0.189 → 0.301 mm, Type 2
+      0.344 → 0.213). The row lattice and the grid anchor have to be fitted together; a
+      capture with no sharp corner at the first row (the same square at two page positions and
+      a 40 × 20 mm rectangle at 30° and 45°) would separate them.
 - **Test:**
   - `object.setRegion {type:"fill",frequency:60}` and `object.setLine {type:"eStitch",runTimes:6}`
     are refused.
