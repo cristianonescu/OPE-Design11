@@ -18,7 +18,7 @@ It is research only. Nothing here is implemented. It builds on [image-digitizing
   - 20 % perceptual, DISTS.
 
   It is computed on a thread render seen at actual size from 40 cm (S-CIELAB eye model).
-- **Today, flat-thread render, PE-DESIGN mode → OpenStitch mode:**
+- **Today, flat-thread render, PE-DESIGN-compatible mode → OpenStitch mode:** PE-DESIGN-compatible mode is OpenStitch's reimplementation of PE-DESIGN 11's method, not PE-DESIGN's own output.
 
   | Tool | Score |
   |---|---|
@@ -76,7 +76,7 @@ Agreed with the owner, 2026-10-31 (interview questions 1, 2 and 8, research ques
 ## 3. Baselines
 
 All 34 cases of `tools/image_eval.py` (Higgsfield test images, `examples/images`), defaults,
-commit 79acdfe (alpha.8). Flat render. Each cell reads PE-DESIGN mode → OpenStitch mode.
+commit 79acdfe (alpha.8). Flat render. Each cell reads PE-DESIGN-compatible mode → OpenStitch mode.
 
 | Case | Score | ΔE | MS-SSIM | DISTS |
 |---|---|---|---|---|
@@ -116,7 +116,7 @@ commit 79acdfe (alpha.8). Flat render. Each cell reads PE-DESIGN mode → OpenSt
 
 Per tool, mean score:
 
-| Tool | PE mode, flat | OpenStitch mode, flat | PE mode, realistic | OpenStitch mode, realistic |
+| Tool | PE-DESIGN-compatible mode, flat | OpenStitch mode, flat | PE-DESIGN-compatible mode, realistic | OpenStitch mode, realistic |
 |---|---|---|---|---|
 | Auto Punch (10) | 78.9 | 78.4 | 76.5 | 76.5 |
 | Photo Stitch 1 (9) | 58.7 | 55.8 | 57.2 | 55.2 |
@@ -199,9 +199,11 @@ target them.
 
 The images in each row, left to right:
 - the source;
-- PE-DESIGN mode;
+- OpenStitch in PE-DESIGN-compatible mode;
 - OpenStitch mode;
 - the best prototype, where one exists.
+
+No picture shows PE-DESIGN's own output: every image after the source is an OpenStitch render.
 
 Every result is the flat render at viewing scale, with its composite score. The prototypes are Python experiments (section 4), not product output:
 - **Photo rows:** rate-constrained rows at ≤ 2.1 needle points/mm² (T2–T5).
@@ -239,7 +241,7 @@ Every result is the flat render at viewing scale, with its composite score. The 
 | R2 | Realistic-view shading: edge 0.55×, highlight lifted 45 %, so black renders as 74 and white as 238 | `workspace.rs::thread_shades` | −9 ΔE on the realistic render | exact portrait 95.1 flat against 82.6 shaded; needs a sew-out to know the truth |
 | R3 | Palette: k-means centres snapped to the nearest thread; centres collapse onto the same thread (10 asked, 7 distinct on p01) | `palette.rs`, `perceptual.rs` | −3 to −10 | whole chart 84.6 against 10 as today 81.0 (p01); g07 70.8 against 83.5 |
 | R4 | One brand's 64 colours | `openstitch-core::charts` PEC only | −4 to −8 | all brands: emblem 90.3 → 95.6, cat 86.2 → 93.4 |
-| R5 | Dithering everywhere, including flat areas, adds noise that MS-SSIM and DISTS punish | `palette::dither_perceptual` | −2 to −14 on graphics; −3 on PS1 (OpenStitch against PE mode) | g13 nearest 87.4 against dithered 73.7; p11 PE 75.5 against OpenStitch 62.0 |
+| R5 | Dithering everywhere, including flat areas, adds noise that MS-SSIM and DISTS punish | `palette::dither_perceptual` | −2 to −14 on graphics; −3 on PS1 (OpenStitch against PE-DESIGN-compatible mode) | g13 nearest 87.4 against dithered 73.7; p11 PE-DESIGN-compatible 75.5 against OpenStitch 62.0 |
 | R6 | Auto Punch leaves out the border colour even when it is not the fabric colour | `autopunch.rs` `skip_background` | up to −16 per image | g02 76 against a 92 ceiling: the blue sky is not sewn |
 | R7 | No density/coverage model: no penetration budget, and travel and trims are not optimised against likeness | `photo.rs::fill_layer` | indirect: OpenStitch PS1 has 13 % more trims | B16 2.3 |
 | R8 | Photo Stitch 2: four threads, a line screen with fabric between lines, shares from one reduced colour per thread | `screen.rs` (#129) | ceiling 74–80 against 39–51 today | prune4 ceiling, baselines |
@@ -291,7 +293,7 @@ measured before they are accepted.
 
 Order agreed with the owner: improvements that help every tool first, then Photo Stitch 2,
 Photo Stitch 1, Auto Punch, Cross Stitch, Design Center. All work lives in the OpenStitch mode
-(`compatMode: openStitch`). **PE-DESIGN mode stays exactly as it is.** Its compat specs and
+(`compatMode: openStitch`). **PE-DESIGN-compatible mode stays exactly as it is.** Its compat specs and
 captures must not change.
 
 ### Phase 0 — measurement (first, small)
@@ -310,7 +312,7 @@ captures must not change.
 |---|---|---|---|---|
 | T4 thread selection by backward elimination | `openstitch-digitize::palette`, `perceptual` | +2 to +12 | low | every tool's score ≥ before; the colour count is the user's |
 | T5 multi-chart and My Threads source | `openstitch-core::charts`, B13, app dialog | +4 to +8 on graphics | medium (UI, thread-brand data) | emblem ≥ 95 with all brands |
-| T6 tonal/flat map: dither only tonal regions | `openstitch-digitize::palette` | +5 to +14 on graphics; no PS1 regression | low | p11 ≥ PE mode; g13 ≥ 85 |
+| T6 tonal/flat map: dither only tonal regions | `openstitch-digitize::palette` | +5 to +14 on graphics; no PS1 regression | low | p11 ≥ PE-DESIGN-compatible mode; g13 ≥ 85 |
 | Fidelity setting (Standard / High) in the image dialog; High raises the colour count (up to 24) and enables the costlier passes, never the density cap | `openstitch-app`, `stitchtool` params | – | low | dialog spec; parameter round-trips |
 
 ### Phase 2 — Photo Stitch 2 (largest gap)
@@ -339,7 +341,7 @@ target silently.
 | Task | Crates | Expected gain | Risk | Validation |
 |---|---|---|---|---|
 | T7 sew a coloured background | `autopunch.rs` | g02 +10 to +15 | low | g02 ≥ 88 |
-| T11 SLIC regions at 800 px, line-art keep | `regions.rs`, `autopunch.rs` | +2 to +7 | medium: specks and trims | specks 0, trims ≤ PE mode |
+| T11 SLIC regions at 800 px, line-art keep | `regions.rs`, `autopunch.rs` | +2 to +7 | medium: specks and trims | specks 0, trims ≤ PE-DESIGN-compatible mode |
 | T12 skeleton satin for outlines | `autopunch.rs`, `center.rs` | +1 to +3 | medium | clip-art cases ≥ 95 with T5 |
 | T8 per-region fill angle from the orientation field | `autopunch.rs` | +1 to +3 on painted images | low | p03 and g06 gain |
 
@@ -365,7 +367,7 @@ plus any added ones.
 | Cross Stitch | photos | High | ≥ 75 % | 31–34 | 75 (2.5 mm) – 84 (1.5 mm) |
 | Cross Stitch | pixel art, clip art | High | ≥ 90 % | 48–67 | 87–91 |
 | Design Center | line art (g03, g04) | High | ≥ 95 % | not measured | not measured |
-| All | all | Standard | ≥ PE-DESIGN mode's score on every image | – | – |
+| All | all | Standard | ≥ PE-DESIGN-compatible mode's score on every image | – | – |
 
 **Every result also passes the sewability gate.** No sewing error of any kind is permitted (owner, interview question 9). The gate:
 - needle points ≤ 2.1 per mm² over any 10 × 10 mm window, at both levels (owner);
