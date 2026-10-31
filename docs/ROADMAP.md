@@ -95,9 +95,9 @@ harness. The details per item are in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDI
 ## Still to do
 
 Assets (owner's rule of 2026-10-30, [research/asset-audit.md](research/asset-audit.md)): the
-audit is done in two rounds (93 command icons for commands that showed another command's icon,
-including the suite windows' own commands, and seven empty-state and dialog illustrations, all
-generated with Higgsfield, 265 credits). New windows and commands get their icon the same way
+audit is done in three rounds (102 command icons for commands that showed another command's
+icon, including the suite windows' own commands, and ten empty-state and dialog illustrations,
+all generated with Higgsfield, 295 credits). New windows and commands get their icon the same way
 when they are added.
 
 Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDIT.md):

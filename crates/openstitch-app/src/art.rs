@@ -31,11 +31,14 @@ pub enum Art {
     UpdateAvailable,
     UpdateCurrent,
     UpdateFailed,
+    UpdateDownloading,
+    UpdateRestarting,
+    UpdateUnavailable,
 }
 
 impl Art {
     #[cfg(test)]
-    const ALL: [Art; 20] = [
+    const ALL: [Art; 23] = [
         Art::EmptyCanvas,
         Art::DbChoose,
         Art::DbEmpty,
@@ -56,6 +59,9 @@ impl Art {
         Art::UpdateAvailable,
         Art::UpdateCurrent,
         Art::UpdateFailed,
+        Art::UpdateDownloading,
+        Art::UpdateRestarting,
+        Art::UpdateUnavailable,
     ];
 
     fn svg(self) -> (&'static str, &'static str) {
@@ -88,6 +94,9 @@ impl Art {
             Art::UpdateAvailable => svg!("update_available"),
             Art::UpdateCurrent => svg!("update_current"),
             Art::UpdateFailed => svg!("update_failed"),
+            Art::UpdateDownloading => svg!("update_downloading"),
+            Art::UpdateRestarting => svg!("update_restarting"),
+            Art::UpdateUnavailable => svg!("update_unavailable"),
         }
     }
 }

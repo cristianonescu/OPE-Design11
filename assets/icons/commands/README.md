@@ -11,8 +11,8 @@ background), one request per icon, with the colours listed in `prompts.tsv` and 
 (The six icons of the approved style sample, folder, disk, scissors, needle, hoop and zoom_in,
 used the same words in a slightly different order.)
 
-The 93 icons from `connect` on in `prompts.tsv` were added on 2026-10-30 in two rounds for
-commands that showed another command's icon (docs/research/asset-audit.md), with the white
+The 102 icons from `connect` on in `prompts.tsv` were added on 2026-10-30 and 2026-10-31 in
+three rounds for commands that showed another command's icon (docs/research/asset-audit.md), with the white
 background passed as `background_color` and the colours as `colors`; their Higgsfield job ids
 are in `higgsfield-jobs.tsv`. `stitch_factory`, `view_solid` and `import_svg` are second
 attempts. In 16 of them (`csv`, `fabric`, `measure`, `new_folder`, `thread_chart`,
