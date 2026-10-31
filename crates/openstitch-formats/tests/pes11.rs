@@ -1532,3 +1532,44 @@ fn option_colours_are_written_with_their_sew_palette_ids() {
         nearest.map(|i| i.to_string().into())
     );
 }
+
+/// PE-DESIGN 11.50's colour list after the PEC section of a Hoop Size page file (the RGB of
+/// each colour block as R, G, B; then a u16 0 and three bytes per block) gives PEC 62–64 the
+/// Applique Wizard's colours, and OpenStitch's chart has them: (255, 200, 100) material,
+/// (255, 200, 150) position, (255, 200, 200) appliqué; 1 PRUSSIAN BLUE as a check.
+#[test]
+fn pe_design_applique_colours_match_pec_chart_62_to_64() {
+    use openstitch_core::PEC_CHART;
+    let mut seen = std::collections::BTreeSet::new();
+    for name in [
+        "a01-rect-applique",
+        "a02-applique-cutting",
+        "a03-applique-no-tackdown",
+        "a04-applique-cover-4mm",
+        "a05-applique-replace",
+    ] {
+        let b = data(&format!("pe11/{name}.pes"));
+        let pec = u32::from_le_bytes(b[8..12].try_into().expect("u32")) as usize;
+        let blocks = usize::from(b[pec + 0x30]) + 1;
+        let list = &b[pec + 0x31..pec + 0x31 + blocks];
+        let rgb_at = b.len() - 3 * blocks - 2 - 3 * blocks;
+        assert_eq!(
+            b[rgb_at + 3 * blocks..rgb_at + 3 * blocks + 2],
+            [0, 0],
+            "{name}"
+        );
+        for (k, &index) in list.iter().enumerate() {
+            let rgb = &b[rgb_at + 3 * k..rgb_at + 3 * k + 3];
+            let Some(chart) = PEC_CHART.get(usize::from(index)).and_then(Option::as_ref) else {
+                continue; // 65, the cutting line: not in the chart
+            };
+            assert_eq!(
+                rgb,
+                [chart.red, chart.green, chart.blue],
+                "{name} block {k} PEC {index}"
+            );
+            seen.insert(index);
+        }
+    }
+    assert!([1, 62, 63, 64].iter().all(|i| seen.contains(i)), "{seen:?}");
+}

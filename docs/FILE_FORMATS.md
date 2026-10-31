@@ -96,7 +96,11 @@ RGB distance, later chart entry on ties; `openstitch_core::nearest_index` over
 as in PE-DESIGN 11.50's own file: its 29 Ver4 Option colours got 32 five times
 (`tests/fixtures/pe11/ver4-option-color-29.pes`; an earlier rule gave each distinct colour a
 still-unused entry, which PE-DESIGN does not do). Entries 62–64 are read but never chosen: PE-DESIGN 11.50 sent
-rgb(255, 128, 0) to 11 Deep Gold rather than 62 Orange (`thread-match-swatches.pes`). The same
+rgb(255, 128, 0) to 11 Deep Gold rather than 62 Orange (`thread-match-swatches.pes`). They are
+the Applique Wizard's colours, with PE-DESIGN's RGB since 2026-10-31 (its colour list after the
+PEC section, below): 62 material (255, 200, 100), 63 position (255, 200, 150), 64 appliqué
+(255, 200, 200); pyembroidery had (255, 153, 0) and (255, 240, 141) for 62 and 63. PE writes
+65 for an appliqué cutting line, (220, 220, 220), outside the 65-slot chart. The same
 matcher picks the chart entry for JEF, SEW, HUS and PCS. `approximate_index` is the "approximate" palette matcher
 (city-block winner, squared-Euclidean fallback) for the built-in sew palette.
 
@@ -331,6 +335,17 @@ Convert to Blocks writes one group of blocks with running pieces between them (o
 line Running, region Not Sewn) whose two position lists are empty (stroke-blocks-H, -A); their
 marks follow the open-line placement the writer doesn't reproduce.
 
+**Import** (`import.pes`, `openstitch_engine::pes11_import`, 2026-10-31): each `CEmbLine` becomes a
+shape at its file position less `PAGE_ORIGIN` (500), its vertices a contour whose segment i is a
+Bézier curve when vertex i has `KIND_CURVE_AFTER` (vertex i's leaving handle, vertex i + 1's
+arriving one); Fill and Satin regions with density, direction, under sewing, Frequency and
+Running Stitch Path, Not Sewn as no region; running, zigzag, triple, E or V (read as E) and
+cutting lines with their width, density, pitch and under sewing; colours from the thread table.
+A block's `punch` pairs become its direction lines (vertex a to vertex b), curved when any
+vertex has a curve kind. The groups are kept. Texts and stitch groups are counted and not
+imported yet; region types other than Fill and Satin, and unmapped line codes, skip the shape
+with the reason. The under sewing type (+182) and +178 are not carried.
+
 PE-DESIGN numbers the lines across the whole object: one object for the eight clicks of m03.
 Manual Punch > Running is an open line with one entry per list, an ordinary shape
 (o-manual-running).
@@ -381,9 +396,17 @@ the unsewn lines after every region).
 
 After the PEC section, per colour block: the PEC colour list padded to 128 bytes with spaces
 (as v6), a 144-byte 48 × 24 1-bpp icon with the thread's catalogue number and name drawn in it,
-the RGB as u24, then a u16 count of preview images (one per block, 8–15 KB each, not mapped; 0 in
+the RGB, then a u16 count of preview images (one per block, 8–15 KB each, not mapped; 0 in
 `o-hoop-100x100-s`, so a file without them is one PE-DESIGN writes itself) and, per block, `0D`
-and the catalogue number as u16 (`0D 05 00` 005 SILVER, `0D 20 03` 800 RED).
+and the catalogue number as u16 (`0D 05 00` 005 SILVER, `0D 20 03` 800 RED). In the 459
+`#PES0110` files of PE-DESIGN with colours (fixtures and compat/reference, 2026-10-31): the RGB
+is three bytes R, G, B (`0E 1F 7C` for 1 PRUSSIAN BLUE) on a Hoop Size page and in its re-saves of version 6 files (73 files) and
+all zero on a Custom Size page (385). Other per-block codes: `FE FF FF` a thread with no
+catalogue number (a name read from another file, an Option colour), `FA FF FF`, `FB FF FF`,
+`FC FF FF` the Applique Wizard's material, position and appliqué (PEC 62–64), `F9` and the
+cut's number as u16 for a cutting line (PEC 65, a02). OpenStitch's writers still write the RGB
+as u24 little-endian (B, G, R, as pyembroidery does for version 6) and `0D` with the number
+for every block.
 
 #### `CEmbNText` (text)
 

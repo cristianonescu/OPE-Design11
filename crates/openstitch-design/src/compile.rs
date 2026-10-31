@@ -417,6 +417,18 @@ fn elements(object: &DesignObject, holes: &[Contour], user: &[Pattern]) -> Vec<E
                     | RegionType::DecorativeFill
             ) {
                 region::tie_and_lock(&mut layers);
+            } else if matches!(
+                region.kind,
+                RegionType::ConcentricCircle | RegionType::Spiral
+            ) {
+                // PE-DESIGN 11.50 ties in and locks every run it separates with a trim: the
+                // whole circles and the cut ones of Concentric Circle, a spiral and its closing
+                // run (references concentric-*, spiral-*).
+                for run in layers.iter_mut().flatten() {
+                    let mut one = vec![vec![std::mem::take(run)]];
+                    region::tie_and_lock(&mut one);
+                    *run = one.pop().and_then(|mut l| l.pop()).unwrap_or_default();
+                }
             }
             for runs in layers {
                 out.push(Element {

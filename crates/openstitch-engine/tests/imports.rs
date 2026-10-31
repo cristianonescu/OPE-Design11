@@ -300,3 +300,42 @@ fn svg_colours_snap_to_the_brother_chart_unless_exact() {
     assert_eq!(Some(thread(false)), openstitch_core::PEC_CHART[11].clone());
     assert_eq!(thread(true).hex(), "#ff8000");
 }
+
+#[test]
+fn pe_designs_convert_to_blocks_imports_as_grouped_blocks_in_one_undo_step() {
+    // PE-DESIGN 11.50's Convert to Blocks of Lato Bold H (owner file stroke-blocks-H): five
+    // Manual Punch blocks and three running pieces, one group.
+    let dir = temp_dir();
+    let fixture = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../openstitch-formats/tests/fixtures/pe11/stroke-blocks-H.pes"
+    );
+    std::fs::copy(fixture, dir.join("h.pes")).expect("fixture");
+    let mut s = Session::new(&dir);
+    let out = run(&mut s, "import.pes", json!({"path": "h.pes"}));
+    assert_eq!(out["ids"].as_array().map(Vec::len), Some(8));
+    assert_eq!(out["textsNotImported"], 0);
+    let d = s.design();
+    let lines: Vec<usize> = d
+        .objects
+        .iter()
+        .filter_map(|o| o.region.as_ref())
+        .map(|r| r.direction_lines.len())
+        .collect();
+    assert_eq!(lines, [3, 4, 2, 4, 7]);
+    let group = d.objects[0].group.expect("grouped");
+    assert!(d.objects.iter().all(|o| o.group == Some(group)));
+    run(&mut s, "history.undo", json!({}));
+    assert!(s.design().objects.is_empty());
+    // A PES without PE-DESIGN 11's objects is refused with the command to use instead.
+    run(
+        &mut s,
+        "shape.rectangle",
+        json!({"x": 10, "y": 10, "width": 20, "height": 20}),
+    );
+    run(&mut s, "design.export", json!({"path": "v6.pes"}));
+    let e = s
+        .execute("import.pes", Some(&json!({"path": "v6.pes"})))
+        .expect_err("v6 has no editable objects");
+    assert!(e.to_string().contains("stitches.import"), "{e}");
+}

@@ -86,7 +86,7 @@ dearest:
 | 12 | No minimum font sizes or small-text fonts | Fonts | 4 | Documented difference | No |
 | 13 | No per-character colour or multi-character selection | Fonts | 4 | Documented difference | Colour grouping |
 | 14 | Programmable fill and fill default to 0° instead of 45° (**fixed**: programmable fill internal regression, fill 2026-10-30 from pes-objects r01; type change rule pending) | Stitches | 3 | Documented difference | No |
-| 15 | Missing fill, satin and zigzag attributes; wrong ranges (**partly fixed**: Frequency and ranges; Stitch Type 1 = OpenStitch's fill, Stitch Type 2, Half Stitch, Miter limit pending) | Stitches | 3 | Documented difference | Geometry |
+| 15 | Missing fill, satin and zigzag attributes; wrong ranges (**partly fixed**: Frequency and ranges; Stitch Type 1 and 2 (2 partly: exact at 0°, 30°/45° rows offset); Half Stitch, Miter limit pending) | Stitches | 3 | Documented difference | Geometry |
 | 16 | Optimize Sewing Order does not move entry and exit points (**fixed**, reference) | Stitches | 3 | Documented difference | No |
 | 17 | Hole sewing not validated or paired (**fixed**, internal regression) | Stitches | 3 | Documented difference | No |
 | 18 | PES thread table drops chart names and colour type (**fixed**: round trip; chart strings pending) | PES | 3 | Documented difference | Chart strings |
@@ -354,7 +354,10 @@ Line references are relative to `crates/`.
   Punch columns as PE-DESIGN's Straight and Curve Block objects (specs `pes-0110-manual-punch`,
   `pes-0110-curve-block`, reference pending; owner files m01–m11 read and rewritten byte for
   byte outside the pattern block; Text > Convert to Blocks' output (stroke-blocks-H, -A) read as
-  blocks and running pieces, its blocks' marks equal but for the floats' last bits; a Curve Block written from a design has handles within one
+  blocks and running pieces, its blocks' marks equal but for the floats' last bits, and imported
+  as editable objects since 2026-10-31 (`import.pes`: shapes, Manual Punch blocks with their
+  direction lines, groups; texts and stitch groups not yet). OpenStitch sews the imported H in 342 needle points with 5 trims and the A in 364 with 6, against PE-DESIGN's 285 and 293 with none: each block and running piece is sewn on its own, where PE-DESIGN sews the group as one run (step 4 of the lettering plan).
+  a Curve Block written from a design has handles within one
   file unit of PE-DESIGN's, which way PE-DESIGN rounds them not mapped); the Appliqué wizard's stages as PE-DESIGN's appliqué lines and colours (spec
   `pes-0110-applique`, reference pending; owner files a01–a05 read and rewritten byte for byte
   outside the documented differences);
@@ -439,7 +442,9 @@ Line references are relative to `crates/`.
   a glyph's strokes, junctions and loops with PE-DESIGN's structure on Lato's I, L, T, H, X, V, O,
   A, S, e, i), and the rungs from each stroke's side edges joined at equal fractions of their
   lengths, as PE-DESIGN's Convert to Blocks lines (H within 2°; A's legs within 10-25° until the
-  apex ownership of step 4); text is not sewn by stroke yet (steps 2-5 of the research note).
+  apex ownership of step 4); PE-DESIGN's own cut imports from its Convert to Blocks files
+  (`import.pes`, 2026-10-31: H and A as its five blocks each); text is not sewn by stroke yet
+  (steps 2-5 of the research note).
 - **Test:**
   - Inputs: `text.add {"text":"AVOW","size":30,"x":50,"y":50}` →
     `object.setRegion {"id":1,"type":"satin"}` → `design.generate`.
@@ -856,11 +861,34 @@ Line references are relative to `crates/`.
       0.22 at 30°, against 0 for Type 1's flat rows), so consecutive passes meet at the edges in
       one continuous zigzag, with no step at the row ends. The needle grid along each pass follows
       the same Frequency rule as Type 1 (at 0°: 1.2 + 4k, then 2.4 + 4k, then 3.6 + 4k mm from the
-      left edge). Stitches: 2001 (0°), 2041 (30°), 2054 (45°), 1989 (90°), 2056 (45°,
+      left edge), taken from the row the pass ends on: k · 30 % · 4 mm for row k in both halves,
+      so the half sewn downward starts two steps back from what its first row would give
+      (tatami-40-st2-dir90). Stitches: 2001 (0°), 2041 (30°), 2054 (45°), 1989 (90°), 2056 (45°,
       Frequency 0).
-    - Not implemented: Type 2 needs sloped rows in the fill generator (each row's line tilted by
-      one spacing across the region, joined at the edges), planned after alpha.7 with these
-      seven files as its specs. Fill keeps sewing Type 1.
+    - Implemented (2026-10-30, `stitchType: 2` on `object.setRegion`, saved only when 2): the
+      fill sews each half's passes from row i's edge to row i + 1's far edge, the grid of the
+      row it ends on. Against PE-DESIGN's Type 2 (pescmp, ours / PE stitches, needle-to-nearest
+      mean, coverage IoU): 0° 1999 / 2001, 0.001 mm, 1.000 (identical up to the file's 0.1 mm
+      rounding); 90° 1986 / 1989, 0.048 mm, 0.969; 45° 2078 / 2054, 0.305 mm, 0.976; 30°
+      2042 / 2041, 0.318 mm, 0.849; 45° Frequency 0 2071 / 2056, 0.104 mm, 0.952. The pass
+      slopes match at every angle (median rise 0.200 / 0.226 / 0.212 / 0.200 mm at
+      0° / 30° / 45° / 90°, PE 0.200 / 0.223 / 0.212 / 0.200). Left: at 30° and 45° PE's rows
+      sit about half a spacing from ours (row lattice offset 0.9 against 0.4 rows at 30°, 0.9
+      against 0.3 at 45°), the angled-fill anchor difference Type 1 has too (Type 1 at 30°:
+      0.205 mm, 0.967); in Type 2 it also moves each pass's grid. Specs: the seven round-5
+      files and `tatami-40-stitch-type-2`, which now sews Type 2. No inspector control yet
+      (command only).
+    - Anchor probe (2026-10-31, not landed): OpenStitch stretches angled rows to fill the
+      rotated height corner to corner (245 gaps of 0.2230 mm at 30°); PE-DESIGN keeps the
+      1/density spacing. Without the stretch the 45° counts match: Type 1 2067 / 2068 and
+      Type 2 2053 / 2054 (stretched: 2059, 2078); Type 2 at 30° goes 0.318 → 0.264 mm, IoU
+      0.849 → 0.887. But no single row offset (0 to 0.95 rows, with or without the stretch)
+      improves both types at both angles: the needle score jumps whenever the tiny corner row
+      appears or disappears, because the first row sets the needle-grid anchor, and Type 1 and
+      Type 2 move in opposite directions (offset 0.6: Type 1 at 30° 0.189 → 0.301 mm, Type 2
+      0.344 → 0.213). The row lattice and the grid anchor have to be fitted together; a
+      capture with no sharp corner at the first row (the same square at two page positions and
+      a 40 × 20 mm rectangle at 30° and 45°) would separate them.
 - **Test:**
   - `object.setRegion {type:"fill",frequency:60}` and `object.setLine {type:"eStitch",runTimes:6}`
     are refused.
@@ -1287,8 +1315,20 @@ Line references are relative to `crates/`.
     that corner and runs back along the edge to the start point, ending where it began. OpenStitch
     sews both cases that way now (`crate::spiral`, closing run as its own run); all six specs pass
     within 3 %. PE-DESIGN shows no R1/R2 markers for Spiral or Concentric Circle regions, so a
-    moved start point cannot be captured. Open: the triangle's first turn reaches further into
-    the base corners in PE (39.7 mm wide against 39.0 mm; width not compared).
+    moved start point cannot be captured.
+  - Tie-in, lock and the triangle (fixed 2026-10-31): PE-DESIGN ties in at the start and locks
+    at the end of every Concentric Circle and Spiral run it separates with a trim (the whole and
+    the cut circles; a spiral and its closing run). OpenStitch did neither, so a spiral's start
+    point was only a jump target: the triangle's start corner went unsewn (39.0 mm wide against
+    PE's 39.7). Each run now gets the tie-in and lock fill and satin use; the triangle measures
+    39.8 × 39.3 mm (PE 39.7 × 39.2) and its width is compared again. A cornered turn's sides are
+    now split by their own length, between the two rings' sides (triangle 854 stitches against
+    PE's 842, +1.4 %, was +3.4 %; mean stitch 1.88 mm against 1.90).
+  - Cut circles on the outline (fixed 2026-10-31): a circle that only grazes the outline or a
+    hole's edge (nowhere more than 0.1 mm outside: the 40 mm circle's 20 mm circle, the ring's
+    7.5 mm circle on its hole) is sewn as one loop, as PE-DESIGN does, instead of breaking into
+    fragments joined by travel where it crosses the flattened outline (ring with a hole: 1541
+    stitches against PE's 1581, was 1634 with the tie-ins; 30 mm circle 1140 against 1121).
   - The concentric seam on a Bézier circle stays open. Round 5 adds a 30 mm circle (seam at the
     left edge just above the middle, like the 40 mm one) and a 40 × 30 mm ellipse (seam at the
     top just right of the middle); no single walking rule fits those and the rectangle's 75.4°.
@@ -1731,6 +1771,19 @@ Line references are relative to `crates/`.
     there is no landing stitch to keep, and nothing changes). What is left in every format is
     the two repeats inside the S.
   The "trim before the colour change" the round-4 notes saw does not occur in this sample.
+- **PEC 62–64 at PE-DESIGN's RGB (2026-10-31, #136):** PE-DESIGN's own `#PES0110` files
+  carry each colour block's RGB in the colour list after the PEC section, as R, G, B, on a
+  Hoop Size page and in re-saves of version 6 files (73 files; a Custom Size page leaves it
+  zero, 385 files). The five
+  Applique Wizard files (a01–a05, round 4) give PEC 62 (material) (255, 200, 100), 63 (position)
+  (255, 200, 150) and 64 (appliqué) (255, 200, 200), where pyembroidery's table had (255, 153,
+  0) and (255, 240, 141) for 62 and 63; the chart now has PE's values
+  (`pe_design_applique_colours_match_pec_chart_62_to_64`). Matching still never picks 62–64.
+  PE's cutting line is PEC 65 at (220, 220, 220), outside the 65-slot chart. Not yet as PE does
+  it: OpenStitch's appliqué stages keep the design colour, so its PEC gives them the nearest of
+  1–61 where PE writes 62–64, and its writers put the RGB in that list as B, G, R with `0D` codes
+  for every block (PE: `FA`/`FB`/`FC FF FF` for the appliqué colours, `F9` for a cut, `FE FF FF`
+  for a thread with no number).
 - **Brother catalogue codes (2026-10-29, #119, #136):** pe-refs-4 read PE-DESIGN 11.50's BROTHER
   EMBROIDERY chart from Sewing Attributes ▸ Color: 61 rows, codes 001 WHITE to 900 BLACK, brand
   EMBROIDERY, no row for PEC 62–64 (so the 61-entry match set of #119 is PE's own chart).

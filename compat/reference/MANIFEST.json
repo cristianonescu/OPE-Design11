@@ -4908,6 +4908,90 @@
       "settings": "Design Page 100 x 100 mm; Home > Import Patterns > from Vector Image... of an SVG with viewBox 0 0 100 100 (100 x 100 mm) holding one polygon (0,0) (30,0) (21.34,15) (17.01,12.5) (21.34,5) (0,5) mm (a 5 mm band bent through 120 degrees, second leg 17.32 mm, square end); the shape imports centred on the page as Fill Stitch, line Not Sewn, colour 800 RED. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch unticked, Pull compensation 0.0 mm, Feathered edge off. Save As PES (#PES0110). Status bar 30,00 x 15,00 mm, Stitches = 165.",
       "sha256": "19084d668da35d809bda6b3436d6a252b34fe486d3b584d6ab8dc286613f5d44",
       "notes": "The imported shape shows Half Stitch unticked; the plain file has it ticked, the -nohalf file unticked. Recorded in round 3 (pe-refs-3, owner's round3\\satin-bend\\log.txt), parked until the Auto satin outer-edge spacing landed."
+    },
+    {
+      "file": "stitches/tatami-40-st1-dir0.pes",
+      "spec": "tatami-40-st1-dir0",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 5 (PE-DESIGN 11.50 Layout & Editing, Windows 11, 2026-10-30, black-box UI). Base: round 4's tatami-40-stitch-type-1.pes reopened (Rectangle 40.00 x 40.00 mm, line Not Sewn, region Fill Stitch, 007 PRUSSIAN BLUE, Under sewing off, Density 4.5, Direction Manual straight line, Running Stitch Path first button, Step pitch 4.0, Frequency 30 %, Pull compensation 0.0; page 180 x 130 hoop). Only Stitch Type, Direction (and Frequency for the freq0 file) changed in the Sewing Attributes pane, then Save As PES default type. Stitch counts = status bar = PEC records; 40.0 x 40.0 mm, one colour block. This file: Stitch Type 1, Direction 0, Frequency 30 %. Stitches = 2006.",
+      "sha256": "ddb6f36aa60ff86142a6f3be130fad5c58911573533f8e251648d974e18c57c6",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/tatami-40-st1-dir30.pes",
+      "spec": "tatami-40-st1-dir30",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 5 (PE-DESIGN 11.50 Layout & Editing, Windows 11, 2026-10-30, black-box UI). Base: round 4's tatami-40-stitch-type-1.pes reopened (Rectangle 40.00 x 40.00 mm, line Not Sewn, region Fill Stitch, 007 PRUSSIAN BLUE, Under sewing off, Density 4.5, Direction Manual straight line, Running Stitch Path first button, Step pitch 4.0, Frequency 30 %, Pull compensation 0.0; page 180 x 130 hoop). Only Stitch Type, Direction (and Frequency for the freq0 file) changed in the Sewing Attributes pane, then Save As PES default type. Stitch counts = status bar = PEC records; 40.0 x 40.0 mm, one colour block. This file: Stitch Type 1, Direction 30, Frequency 30 %. Stitches = 2032.",
+      "sha256": "ea95d2387909655ed5b5ad867dd68ad2498317bbaf6b5632596c61231a75b55b",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/tatami-40-st1-dir90.pes",
+      "spec": "tatami-40-st1-dir90",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 5 (PE-DESIGN 11.50 Layout & Editing, Windows 11, 2026-10-30, black-box UI). Base: round 4's tatami-40-stitch-type-1.pes reopened (Rectangle 40.00 x 40.00 mm, line Not Sewn, region Fill Stitch, 007 PRUSSIAN BLUE, Under sewing off, Density 4.5, Direction Manual straight line, Running Stitch Path first button, Step pitch 4.0, Frequency 30 %, Pull compensation 0.0; page 180 x 130 hoop). Only Stitch Type, Direction (and Frequency for the freq0 file) changed in the Sewing Attributes pane, then Save As PES default type. Stitch counts = status bar = PEC records; 40.0 x 40.0 mm, one colour block. This file: Stitch Type 1, Direction 90, Frequency 30 %. Stitches = 2036.",
+      "sha256": "487d9f5c9192d4c8034e9e6269169fb71f48e7e394670c25bfab626610dec53a",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/tatami-40-st2-dir0.pes",
+      "spec": "tatami-40-st2-dir0",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 5 (PE-DESIGN 11.50 Layout & Editing, Windows 11, 2026-10-30, black-box UI). Base: round 4's tatami-40-stitch-type-1.pes reopened (Rectangle 40.00 x 40.00 mm, line Not Sewn, region Fill Stitch, 007 PRUSSIAN BLUE, Under sewing off, Density 4.5, Direction Manual straight line, Running Stitch Path first button, Step pitch 4.0, Frequency 30 %, Pull compensation 0.0; page 180 x 130 hoop). Only Stitch Type, Direction (and Frequency for the freq0 file) changed in the Sewing Attributes pane, then Save As PES default type. Stitch counts = status bar = PEC records; 40.0 x 40.0 mm, one colour block. This file: Stitch Type 2, Direction 0, Frequency 30 %. Stitches = 2001.",
+      "sha256": "b356a6950ea85b4c166633daad80128c274b391f2b3c7cc26d1ab2daad801eba",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/tatami-40-st2-dir30.pes",
+      "spec": "tatami-40-st2-dir30",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 5 (PE-DESIGN 11.50 Layout & Editing, Windows 11, 2026-10-30, black-box UI). Base: round 4's tatami-40-stitch-type-1.pes reopened (Rectangle 40.00 x 40.00 mm, line Not Sewn, region Fill Stitch, 007 PRUSSIAN BLUE, Under sewing off, Density 4.5, Direction Manual straight line, Running Stitch Path first button, Step pitch 4.0, Frequency 30 %, Pull compensation 0.0; page 180 x 130 hoop). Only Stitch Type, Direction (and Frequency for the freq0 file) changed in the Sewing Attributes pane, then Save As PES default type. Stitch counts = status bar = PEC records; 40.0 x 40.0 mm, one colour block. This file: Stitch Type 2, Direction 30, Frequency 30 %. Stitches = 2041.",
+      "sha256": "0a1700e21c4140035433cde1a716f1d7be0282d2b434185a99d5a970e6dfc51a",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/tatami-40-st2-dir90.pes",
+      "spec": "tatami-40-st2-dir90",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 5 (PE-DESIGN 11.50 Layout & Editing, Windows 11, 2026-10-30, black-box UI). Base: round 4's tatami-40-stitch-type-1.pes reopened (Rectangle 40.00 x 40.00 mm, line Not Sewn, region Fill Stitch, 007 PRUSSIAN BLUE, Under sewing off, Density 4.5, Direction Manual straight line, Running Stitch Path first button, Step pitch 4.0, Frequency 30 %, Pull compensation 0.0; page 180 x 130 hoop). Only Stitch Type, Direction (and Frequency for the freq0 file) changed in the Sewing Attributes pane, then Save As PES default type. Stitch counts = status bar = PEC records; 40.0 x 40.0 mm, one colour block. This file: Stitch Type 2, Direction 90, Frequency 30 %. Stitches = 1989.",
+      "sha256": "bd61b862d1ea1ad45f310dd15ebf57d4078dc3cb0a623a3eeec571cf20669e05",
+      "notes": "Header #PES0110."
+    },
+    {
+      "file": "stitches/tatami-40-st2-dir45-freq0.pes",
+      "spec": "tatami-40-st2-dir45-freq0",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Round 5 (PE-DESIGN 11.50 Layout & Editing, Windows 11, 2026-10-30, black-box UI). Base: round 4's tatami-40-stitch-type-1.pes reopened (Rectangle 40.00 x 40.00 mm, line Not Sewn, region Fill Stitch, 007 PRUSSIAN BLUE, Under sewing off, Density 4.5, Direction Manual straight line, Running Stitch Path first button, Step pitch 4.0, Frequency 30 %, Pull compensation 0.0; page 180 x 130 hoop). Only Stitch Type, Direction (and Frequency for the freq0 file) changed in the Sewing Attributes pane, then Save As PES default type. Stitch counts = status bar = PEC records; 40.0 x 40.0 mm, one colour block. This file: Stitch Type 2, Direction 45, Frequency 0 %. Stitches = 2056.",
+      "sha256": "dea86cdac4eeb184d5957224101d477f66a7eb1ca3ad85ec1fdc5b33a9802237",
+      "notes": "Header #PES0110."
     }
   ]
 }

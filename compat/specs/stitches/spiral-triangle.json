@@ -3,7 +3,7 @@
   "id": "spiral-triangle",
   "area": "stitches",
   "title": "Spiral Stitch: isosceles Triangle, round 5",
-  "description": "PE-DESIGN 11.50's Spiral Stitch: the outline offset a row (1 / density) inwards per turn. Round 5 settles the winding and the end: from a start point on an outline vertex (circle, ellipse, triangle corner) the spiral turns counter-clockwise and ends in the middle; from a start point inside an edge (a rectangle's bottom middle) it runs clockwise to the next corner, spirals from there and, after a trim, returns to that corner and runs back to the start. PE: starts at the bottom-left corner (-19.9,+19.6) and ends at (0,+7.2) near the centroid; runs right. Width not compared (open): PE's first turn reaches further into the base corners, 39.7 mm wide against OpenStitch's 39.0 mm.",
+  "description": "PE-DESIGN 11.50's Spiral Stitch: the outline offset a row (1 / density) inwards per turn. Round 5 settles the winding and the end: from a start point on an outline vertex (circle, ellipse, triangle corner) the spiral turns counter-clockwise and ends in the middle; from a start point inside an edge (a rectangle's bottom middle) it runs clockwise to the next corner, spirals from there and, after a trim, returns to that corner and runs back to the start. PE: starts at the bottom-left corner (-19.9,+19.6) and ends at (0,+7.2) near the centroid; runs right. The width matches since 2026-10-31: the spiral starts with a tie-in at the start corner, as PE-DESIGN's does (the corner had been only a jump target, 39.0 mm wide against PE's 39.7).",
   "covers": {
     "audit": [],
     "featureMatrix": [
@@ -87,6 +87,22 @@
       "reference": {
         "tolerance": {
           "percent": 3
+        }
+      }
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file: 39.7 mm",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
         }
       }
     },

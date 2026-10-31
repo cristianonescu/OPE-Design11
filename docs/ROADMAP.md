@@ -38,7 +38,8 @@ for macOS, Windows and Linux. CI builds and tests all three.
     radial, spiral, flexible spiral, stippling, net fill, zigzag net fill, decorative fill;
     concentric circle and spiral calibrated to PE-DESIGN 11.50 (#138, 14 references;
     open: the spiral's inner-turn needle counts, the concentric chord splits and its seam on
-    Bézier outlines; the spiral's winding and closing run settled with round 5).
+    Bézier outlines; the spiral's winding and closing run settled with round 5; tie-in and lock
+    per run, grazing cut circles and the triangle spiral settled 2026-10-31).
 - **Lettering:** text objects with Lato Bold and Pacifico (SIL OFL), text on a path, user
   TrueType/OpenType fonts (CJK through any font with the glyphs), shaping of right-to-left and
   complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits
@@ -110,10 +111,10 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
 
 1. **Fill:** Round 4 (2026-10-29) confirmed PE-DESIGN has no random tatami stagger
    (Frequency and two Stitch Type buttons only) and a 0.1 lines/mm density floor. PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
-   Frequency default); the programmable fill density; Stitch Type 2 (measured 2026-10-30:
-   sloped rows, each pass rising one row spacing from edge to edge so the passes join in one
-   continuous zigzag; Type 1 is OpenStitch's fill already) after alpha.7, with the round-5
-   captures as specs; Half Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
+   Frequency default); the programmable fill density; Stitch Type 2's row lattice at 30° and 45°
+   (sloped rows sewn since 2026-10-30, `stitchType: 2`: identical to PE-DESIGN at 0°, 0.048 mm
+   at 90°; at 30°/45° PE's rows sit about half a spacing from ours, as Type 1's do) and its
+   inspector control; Half Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
    rows follow PE-DESIGN's cumulative-density placement since 2026-10-28 (#95: every row of
    the U within 0.12 mm, overlap 0.83 → 0.89); left for the U: PE's section order for fills in
    several parts (right leg, left leg, then the top bar ending at the first vertex). Under
@@ -147,8 +148,9 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    split into strokes, each sewn as a column with its rows across the stroke, for Fill and Satin
    text alike; the 'H' references match only because an H's stems are vertical; measured and
    planned in [research/stroke-lettering.md](research/stroke-lettering.md), 2026-10-30; the
-   captures are in and the stroke cut (step 1, `strokes::strokes`) is done; next, satin and fill
-   per stroke, then the order, travel and trims) — the structural
+   captures are in, the stroke cut (step 1, `strokes::strokes`) and the rungs are done, and
+   PE-DESIGN's Convert to Blocks files import as their blocks (`import.pes`, 2026-10-31); next, the
+   stroke ownership and order, travel and trims, then sewing text by stroke) — the structural
    gap behind text-fit-*, text-transform-* and text-sewing-order; the fitted circle's running
    stitch follows PE-DESIGN's Bézier halving since 2026-10-28 (text-fit-default mean needle
    distance 0.27 → 0.20 mm); Text Transform presets 13 and 14 (fan out / in) done 2026-10-28; round 4 (2026-10-29)
@@ -223,8 +225,10 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    since 2026-10-30 (`thread-match-swatches` compares the thread table). The 94-entry sew palette is
    listed since 2026-10-30 (PE's Ver4 Option Color chart as ids 66–94, `sewPalette`; the 0110 writer writes those
    threads with their ids as PE does); where
-   PE-DESIGN matches colours to it is not verified (no capture). Left: the user-chart CSV schema
-   (#136), per-machine export limits and hoop codes (#125).
+   PE-DESIGN matches colours to it is not verified (no capture). PEC 62–64 have PE-DESIGN's appliqué RGB since
+   2026-10-31. Left: appliqué stages written as PEC 62–64 and the `#PES0110` colour list after
+   the PEC as PE writes it; whether PE-DESIGN's Import Chart reads a CSV (#136, capture
+   requested); the machine type and hoop in the `#PES0110` header (#125, capture requested).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo

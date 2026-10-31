@@ -8,8 +8,8 @@ use crate::fmath::Det;
 use crate::generate::{self, RegionParams, RowSpan, Run, Stagger, subdivide};
 use crate::geometry::{Contour, Rect, Span, Vec2, contains, subtract, v2};
 use crate::model::{
-    Feather, FeatherSide, Gradation, RegionSewing, RegionType, RunningStitchPath, UnderlayParts,
-    UnderlayStyle,
+    Feather, FeatherSide, FillStitchType, Gradation, RegionSewing, RegionType, RunningStitchPath,
+    UnderlayParts, UnderlayStyle,
 };
 use crate::paths::{OutlineTravel, Rng, TravelGraph, join};
 use crate::patterns::Pattern;
@@ -360,9 +360,14 @@ fn layers_inner(
         return out;
     }
     let mut runs = match r.kind {
-        RegionType::Fill if !shaped => {
-            generate::fill_edge_to_edge(closed, &params, holes, r.fill_stagger(), r.entry)
-        }
+        RegionType::Fill if !shaped => generate::fill_edge_to_edge(
+            closed,
+            &params,
+            holes,
+            r.fill_stagger(),
+            r.entry,
+            r.stitch_type == FillStitchType::Two,
+        ),
         // A feathered edge alone keeps the sawtooth (PE-DESIGN 11.50, satin-feather); so does
         // a pattern gradation on a satin split at its start point (satin-gradation).
         RegionType::Satin
