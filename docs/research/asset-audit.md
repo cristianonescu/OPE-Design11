@@ -127,3 +127,14 @@ would otherwise be unused. Every command in the four windows now has its own ico
 P3 families above. To add more, generate with the prompts in `assets/icons/commands/README.md`
 and `assets/illustrations/README.md`, list the file in `own!` in `icons.rs` and map it in
 `glyph` (editor commands) or `suite_glyph` (suite commands, by key).
+
+## Round 3 (2026-10-31)
+
+Approved by the owner: the P3 icons that were still generic plus the update dialog's last
+text-only states, 12 images, 30 credits. Icons: `auto_punch` (shared the Wizard wand),
+`edit_text` (shared the Text tool), `font_filter_settings` (shared Font Filter),
+`triple_stitch` (Factory, borrowed Running), and the Design Database's `db_search`, `about`,
+`manual`, `app_color`, `system_unit`. Illustrations: `update_downloading`,
+`update_restarting`, `update_unavailable`. The Recent Files list and the Background Image
+Density menu reuse `db_empty` and `no_image` (#222). What still shares an icon: the zoom tools,
+and suite commands that mean the same as an editor command (Open, Save, Cut, Copy and so on).

@@ -19,3 +19,6 @@ objects_empty	2B2F36 FFFFFF A0A6AE 2A7AD8 E0A21B	an empty white tray with a dash
 update_available	2B2F36 FFFFFF 2E9D58 2A7AD8	a white gift box with a blue ribbon and a bold green arrow pointing down into it
 update_current	2B2F36 FFFFFF 2E9D58	a big round green badge with a bold white check mark in its middle
 update_failed	2B2F36 FFFFFF E0A21B D8433A	a golden warning triangle with a bold red exclamation bar and dot inside it and a broken grey down arrow beside it
+update_downloading	2B2F36 FFFFFF A0A6AE 2A7AD8	a white cloud with a bold blue arrow pointing down out of it into a grey tray
+update_restarting	2B2F36 FFFFFF 2E9D58 2A7AD8	a round green circular arrow going all the way around a small white window with a blue title bar, like an application restarting
+update_unavailable	2B2F36 FFFFFF A0A6AE E0A21B	a closed grey padlock in front of a white gift box with a golden ribbon
