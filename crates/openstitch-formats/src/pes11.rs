@@ -217,6 +217,9 @@ pub struct Shape {
     /// Applique Wizard's covering line (a01-rect-applique) and shapes from a vector import
     /// (hole-sewing-pentagon-star) have them.
     pub plain_settings: bool,
+    /// Body +176: 1 in PE-DESIGN's files but group-partial's rectangles, 0 there (meaning not
+    /// mapped).
+    pub flag_176: u16,
     /// From the Shapes gallery (`CEmbSpecialShape`): the same record, kept under that class.
     pub gallery: bool,
     /// A Manual Punch block (Straight or Curve Block, and PE-DESIGN's Convert to Blocks):
@@ -273,6 +276,7 @@ impl Shape {
             under_sewing_type: 2,
             flag_178: 1,
             plain_settings: false,
+            flag_176: 1,
             gallery: false,
             punch: Vec::new(),
             punch_exit: 0,
@@ -665,7 +669,7 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             }
         }
     }
-    let (holes, groups) = read_groups(&mut r, &mut map).unwrap_or_default();
+    let (holes, groups) = read_groups(&mut r, &mut map, &numbers).unwrap_or_default();
     let mut objects: Objects = done(shapes, texts, stitch_groups, groups, None)?;
     objects.holes = holes;
     Ok(objects)
@@ -694,13 +698,17 @@ fn read_tag(
     Ok(Err(tag))
 }
 
-/// The group list after the objects: 10 zero bytes, a u16 count, then per group its MFC tag,
-/// a u16 (the `CGroupObject` class's archive number), the u16 member count and the members'
-/// object indexes as u16. Anything else ends the list quietly.
 /// Hole sewing pairs and groups, as read after the object list.
 type HolesAndGroups = (Vec<[u16; 2]>, Vec<Vec<u16>>);
 
-fn read_groups(r: &mut ByteReader<'_>, map: &mut Vec<Option<String>>) -> Result<HolesAndGroups> {
+/// The group list after the objects: 10 zero bytes (16 with a hole sewing pair), a u16 count,
+/// then per group its MFC tag, a u16 one more than its last member's archive number, the u16
+/// member count and the members' object indexes as u16. Anything else ends the list quietly.
+fn read_groups(
+    r: &mut ByteReader<'_>,
+    map: &mut Vec<Option<String>>,
+    numbers: &[(u16, u16)],
+) -> Result<HolesAndGroups> {
     // Before the groups: ten zero bytes, or with a hole sewing pair sixteen bytes, u16 0, 3, 3,
     // the outer and inner positions and six zero bytes (hole-sewing-pentagon-star: 0, 1; the
     // rings: 1, 0; all three without groups).
@@ -719,11 +727,23 @@ fn read_groups(r: &mut ByteReader<'_>, map: &mut Vec<Option<String>>) -> Result<
             _ => return Ok((holes, groups)),
         }
         map.push(None);
-        r.u16le()?; // the class's archive number
+        // One more than the archive number of the group's last-archived member.
+        let field = r.u16le()? as u16;
         let n = r.u16le()? as usize;
         let mut members = Vec::with_capacity(n);
         for _ in 0..n {
             members.push(r.u16le()? as u16);
+        }
+        // A member outside the list, or a number that isn't one past the last member's: a group
+        // layout not mapped yet (group-two, PE-DESIGN's two groups of two), so nothing is read
+        // rather than nonsense.
+        let last = members
+            .iter()
+            .map(|&m| numbers.iter().find(|&&(_, p)| p == m).map(|&(n, _)| n))
+            .collect::<Option<Vec<u16>>>()
+            .and_then(|n| n.into_iter().max());
+        if last.map(|l| l + 1) != Some(field) {
+            return Ok((holes, Vec::new()));
         }
         groups.push(members);
     }
@@ -1021,6 +1041,7 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
             .iter()
             .zip(PLAIN_SETTINGS)
             .all(|(&at, v)| u16_at(body, at) == v),
+        flag_176: u16_at(body, 176),
         gallery: false,
         punch,
         punch_exit,
@@ -1341,13 +1362,6 @@ impl Archive {
         }
         self.next += 1;
     }
-
-    fn number(&self, class: &str) -> u16 {
-        self.classes
-            .iter()
-            .find(|(c, _)| *c == class)
-            .map_or(0, |&(_, n)| n)
-    }
 }
 
 /// One `CEmbNText`: bounds, the same as its extent, the identity transform, the letters, the
@@ -1621,6 +1635,7 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     put16(&mut head, 168, s.direction);
     put16(&mut head, 170, s.region_color);
     put16(&mut head, 174, s.frequency);
+    put16(&mut head, 176, s.flag_176);
     put16(&mut head, 178, s.flag_178);
     let settings = if s.plain_settings {
         PLAIN_SETTINGS
@@ -1900,7 +1915,7 @@ pub fn outline_extent(vertices: &[Vertex]) -> [f64; 4] {
 }
 
 /// After the object list: 10 zero bytes, the group list (u16 count; per group its MFC tag,
-/// the `CGroupObject` class's archive number, the u16 member count and the members' object
+/// one more than its last member's archive number, the u16 member count and the members' object
 /// positions), 12 zero bytes, then the sewing-order list: u32 1 and (position, part, 1)
 /// triples. A shape lists the connection from the previous object (part 0, every object but
 /// the first), its region (2) and its line (1); a text of n letters lists the connections into
@@ -1926,7 +1941,17 @@ fn write_trailer(
     w.u16le(objects.groups.len() as i64);
     for members in &objects.groups {
         archive.tag(w, GROUP_OBJECT);
-        w.u16le(i64::from(archive.number(GROUP_OBJECT)));
+        // One more than the archive number of the group's last-archived member: a01's group of
+        // all five objects 7, o-group-two-rects' of both 4, group-partial's of the first two of
+        // three 4 (not the class's own number, 5, which OpenStitch wrote until 2026-10-31 and
+        // which PE-DESIGN refused for a group that left the last object out).
+        let last = members
+            .iter()
+            .filter_map(|&m| archive.objects.get(usize::from(m)))
+            .max()
+            .copied()
+            .unwrap_or(0);
+        w.u16le(i64::from(last) + 1);
         w.u16le(members.len() as i64);
         for &m in members {
             w.u16le(i64::from(m));

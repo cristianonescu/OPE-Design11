@@ -103,9 +103,10 @@
         "CEmbLine",
         "CEmbLine",
         "CEmbLine",
-        "CEmbLine"
+        "CEmbLine",
+        "CGroupObject"
       ],
-      "evidence": "the square and the four appliqué lines as five CEmbLine objects; OpenStitch's wizard groups the four lines without the square, a partial group PE-DESIGN refuses (2026-10-31), so the export writes no group (a01-rect-applique groups all five)",
+      "evidence": "the square and the four appliqué lines as five CEmbLine objects, then the wizard's group of the four lines, numbered one past its last member (6), as PE-DESIGN numbers a group (group-partial)",
       "reference": {}
     }
   ]

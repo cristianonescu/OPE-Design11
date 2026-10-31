@@ -84,15 +84,11 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
     if out.shapes.is_empty() && out.texts.is_empty() && out.stitch_groups.is_empty() {
         return Err("the design has no visible objects".into());
     }
-    // PE-DESIGN 11.50 groups every object of each owner file in one group (the Applique Wizard,
-    // vector imports, Convert to Blocks, o-group-two-rects), and it refused a file whose one group
-    // left an object out ("Unexpected file format": the appliqué export of 2026-10-30 grouped its
-    // four lines without the square; the same file with all five grouped, or none, opens). So
-    // only that layout is written: one group of every object. How PE-DESIGN stores other
-    // grouping is not mapped, and such groups are left out of the file.
-    let total = out.shapes.len() + out.texts.len() + out.stitch_groups.len();
+    // One group is written (any of the objects: group-partial groups two of three); PE-DESIGN
+    // writes several groups in a layout not mapped yet (group-two), so a design with more than one
+    // group keeps none in the file.
     out.groups = match groups.as_slice() {
-        [(_, members)] if members.len() == total => vec![members.clone()],
+        [(_, members)] => vec![members.clone()],
         _ => Vec::new(),
     };
     for (outer, inner) in direct {
@@ -1056,7 +1052,7 @@ mod tests {
     }
 
     #[test]
-    fn only_a_group_of_every_object_is_written() {
+    fn one_group_is_written_and_several_are_left_out() {
         let square = |x: f64| {
             DesignObject::shape(
                 vec![Contour::rectangle(x, 100.0, 100.0, 100.0)],
@@ -1075,10 +1071,10 @@ mod tests {
                 }
             }
         };
-        // Two of three grouped: PE-DESIGN refused such a file, so the group is left out.
+        // Two of three grouped: written (group-partial).
         let mut partial = design.clone();
         group(&mut partial, &ids[..2], 1);
-        assert!(objects(&partial).expect("objects").groups.is_empty());
+        assert_eq!(objects(&partial).expect("objects").groups, [vec![0, 1]]);
         // Two groups: not mapped either.
         let mut two = design.clone();
         group(&mut two, &ids[..2], 1);
