@@ -358,9 +358,15 @@ no tack-down, a 4 mm cover, Replace) writes ordinary `CEmbLine` objects in one g
 four lines, then the square; Replace drops the square):
 
 - The material line (Running, or Cutting: line type 7), the position line (Running) and the
-  tack-down (V, width 2.0 mm in the E/V field +90) on the pattern's outline offset by the
-  distance (a curved outline of 53–56 vertices), then the covering zigzag (width 3.0 mm) on the
-  pattern's own outline or that offset.
+  tack-down (V, width 2.0 mm in the E/V field +90), each an outline of 53–56 vertices with
+  rounded corners, then the covering zigzag (width 3.0 mm, smooth curve points). Where each
+  sits, outward from the pattern's outline, with w the covering width and d the distance: the
+  covering's centre line on the outline (Replace, a05) or d + w / 2 + 0.3 mm out (Add: 4.8 mm
+  at d 3, w 3 in a01–a03; 5.3 mm at w 4 in a04); the position line w / 2 − 1 mm outside the
+  covering's centre (0.5 mm; a04 0.9 mm); the material line and the tack-down 0.5 mm further.
+  In Add the square sews first and the group holds all five objects; OpenStitch's wizard
+  places its lines and groups them so since 2026-10-31 (a04's position and material lines are
+  0.1 mm inside its rule).
 - The stage colours are thread-table entries of colour type 2: catalogue number `100` (Applique
   Material, PEC 62), `101` (Applique Position, 63) and `102` (Applique, 64), RGB 0, and no chart
   index, brand or chart. The tack-down and the cover share 102. A cutting line is sewn in PEC
