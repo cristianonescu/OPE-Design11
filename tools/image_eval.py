@@ -53,6 +53,11 @@ CASES = {
     "d01-ap": ("d01-fruit-artefacts.jpg", "digitize.autoPunch", {}),
     "g07-cs": ("g07-pixel-strawberry.png", "digitize.crossStitch", {}),
     "g15-cs": ("g15-folk-bird.png", "digitize.crossStitch", {}),
+    "g02-cs": ("g02-balloon.png", "digitize.crossStitch", {}),
+    "g05-cs": ("g05-robot-cartoon.png", "digitize.crossStitch", {}),
+    "g12-cs": ("g12-deer-stencil.png", "digitize.crossStitch", {}),
+    "p03-cs": ("p03-storybook.jpg", "digitize.crossStitch", {}),
+    "p04-cs": ("p04-cat-fur.jpg", "digitize.crossStitch", {}),
     "p01-ps1": ("p01-portrait.jpg", "digitize.photoStitch", {"style": "fill"}),
     "p04-ps1": ("p04-cat-fur.jpg", "digitize.photoStitch", {"style": "fill"}),
     "p07-ps1": ("p07-fruit.jpg", "digitize.photoStitch", {"style": "fill"}),
@@ -64,6 +69,11 @@ CASES = {
     "g09-ps1": ("g09-gradient.jpg", "digitize.photoStitch", {"style": "fill"}),
     "p08-ps2": ("p08-poppies.jpg", "digitize.photoStitch", {"style": "lines"}),
     "g09-ps2": ("g09-gradient.jpg", "digitize.photoStitch", {"style": "lines"}),
+    "p01-ps2": ("p01-portrait.jpg", "digitize.photoStitch", {"style": "lines"}),
+    "p04-ps2": ("p04-cat-fur.jpg", "digitize.photoStitch", {"style": "lines"}),
+    "p06-ps2": ("p06-sunset.jpg", "digitize.photoStitch", {"style": "lines"}),
+    "p07-ps2": ("p07-fruit.jpg", "digitize.photoStitch", {"style": "lines"}),
+    "p08-cmyk": ("p08-poppies.jpg", "digitize.photoStitch", {"style": "lines", "colorSet": "cmyk"}),
 }
 
 

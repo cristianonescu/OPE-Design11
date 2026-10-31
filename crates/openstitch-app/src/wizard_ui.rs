@@ -146,10 +146,15 @@ pub fn image_wizard_window(app: &mut EditorApp, ctx: &egui::Context) {
                     ui.checkbox(&mut w.skip_background, "Leave out the background colour");
                     ui.end_row();
                 }
-                if w.method == Method::AutoPunch || (w.method == Method::PhotoFill && !w.mono) {
+                if w.method == Method::AutoPunch
+                    || (matches!(w.method, Method::PhotoFill | Method::PhotoLines) && !w.mono)
+                {
                     let improved = if w.method == Method::AutoPunch {
                         "Picks colours and threads by how they look (CIELAB, CIEDE2000) and merges \
                          specks under 3 mm², for fewer trims; line art keeps its lines."
+                    } else if w.method == Method::PhotoLines {
+                        "Picks Auto Select's threads by how they look (CIELAB, CIEDE2000) and \
+                         mixes the lines in linear light, for truer colour."
                     } else {
                         "Picks threads and mixes them by how they look (CIELAB, CIEDE2000), for \
                          truer colour; a few more trims."
