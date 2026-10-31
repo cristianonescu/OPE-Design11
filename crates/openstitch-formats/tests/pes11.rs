@@ -347,6 +347,91 @@ fn hole_sewing_pairs_read() {
 }
 
 #[test]
+fn a_group_of_some_objects_reads_and_two_groups_are_not_mapped() {
+    // Home > Group on the first two of three rectangles: one group, its number one more than
+    // its last member's archive number (4, where the CGroupObject class is 5).
+    let partial = objects_of(&data("pe11/group-partial.pes"));
+    assert_eq!(partial.groups, [vec![0, 1]]);
+    let bytes = data("pe11/group-partial.pes");
+    let at = bytes
+        .windows(12)
+        .position(|w| w == b"CGroupObject")
+        .expect("group")
+        + 12;
+    assert_eq!(bytes[at..at + 2], [4, 0]);
+    // Two groups of two (built on group-partial): a layout not mapped yet, so no group is read.
+    let two = objects_of(&data("pe11/group-two.pes"));
+    assert_eq!(two.shapes.len(), 4);
+    assert!(two.groups.is_empty());
+}
+
+#[test]
+fn programmable_fill_and_motif_patterns_read_from_the_header() {
+    // The owner's V, drawn in Programmable Stitch Creator (compat/reference/pes/owner-v.pas:
+    // `@TILELINE 0 3 0 0 512 768 1024 0`, Default Size 7.5 mm) and as a motif (owner-v.pmf:
+    // `@LINE 3 0 512 512 768 1024 512`, 5 mm), listed in the header before the thread table.
+    let fill = objects_of(&data("pe11/obj-progfill-owner-v.pes"));
+    assert_eq!(
+        fill.fill_patterns,
+        [pes11::PesPattern {
+            size: 750,
+            polylines: vec![vec![(0, 0), (512, 768), (1024, 0)]],
+        }]
+    );
+    assert!(fill.motif_patterns.is_empty());
+    assert_eq!(fill.shapes[0].region, RegionSewType::ProgrammableFill);
+    let motif = objects_of(&data("pe11/obj-motif-line-owner-v.pes"));
+    assert_eq!(
+        motif.motif_patterns,
+        [pes11::PesPattern {
+            size: 500,
+            polylines: vec![vec![(0, 512), (512, 768), (1024, 512)]],
+        }]
+    );
+    // Files without patterns list none.
+    assert!(
+        objects_of(&data("pe11/r01-rect.pes"))
+            .fill_patterns
+            .is_empty()
+    );
+}
+
+#[test]
+fn region_types_and_the_decorative_pattern_read() {
+    // Each Round 3 region file at PE-DESIGN's defaults differs from a fill only in its code.
+    for (name, region) in [
+        ("o-region-cross", RegionSewType::Cross),
+        ("o-region-concentric", RegionSewType::Concentric),
+        ("o-region-radial", RegionSewType::Radial),
+        ("o-region-spiral", RegionSewType::Spiral),
+        ("o-region-piping", RegionSewType::Piping),
+        ("o-region-stippling", RegionSewType::Stippling),
+        ("o-region-net-fill", RegionSewType::NetFill),
+        ("o-region-zigzag-net", RegionSewType::ZigzagNet),
+        ("o-region-flexible-spiral", RegionSewType::FlexibleSpiral),
+        ("obj-motif-fill-owner-v", RegionSewType::Motif),
+    ] {
+        assert_eq!(
+            objects_of(&data(&format!("pe11/{name}.pes"))).shapes[0].region,
+            region,
+            "{name}"
+        );
+    }
+    // A Decorative Fill keeps its pattern in the object's pattern block: the owner's one-line
+    // pattern (psc-deco-1line.plf, `@TILELINE 0 2 128 128 896 896`) at 100 mm.
+    let deco = objects_of(&owner_file("deco-fill-1line-100mm"));
+    let s = &deco.shapes[0];
+    assert_eq!(s.region, RegionSewType::Decorative);
+    assert_eq!(
+        s.decorative,
+        Some(pes11::PesPattern {
+            size: 10000,
+            polylines: vec![vec![(128, 128), (896, 896)]],
+        })
+    );
+}
+
+#[test]
 fn unmapped_layouts_stop_reading_instead_of_misreading() {
     // Layouts not mapped yet must end the list as "unparsed", with the shapes read before them
     // intact and every vertex inside its bounds. The Manual Punch column of
@@ -518,6 +603,9 @@ const FULLY_PARSED: &[&str] = &[
     "hole-sewing-pentagon-star",
     "concentric-ring40-hole15",
     "spiral-ring40-hole15",
+    "group-partial",
+    "deco-fill-1line-100mm",
+    "deco-fill-1line-offcentre",
     "a01-rect-applique",
     "a02-applique-cutting",
     "a03-applique-no-tackdown",
@@ -667,12 +755,15 @@ fn objects_of(bytes: &[u8]) -> Objects {
         hoop_page: s.hoop_page,
         header: s.header,
         code: s.code,
+        hoop: None,
         threads: s.threads,
         shapes: s.shapes,
         texts: s.texts,
         stitch_groups: s.stitch_groups,
         groups: s.groups,
         holes: s.holes,
+        fill_patterns: s.fill_patterns,
+        motif_patterns: s.motif_patterns,
         unparsed: s.unparsed,
     }
 }
@@ -691,6 +782,8 @@ fn owner_file(name: &str) -> Vec<u8> {
         "hole-sewing-pentagon-star",
         "concentric-ring40-hole15",
         "spiral-ring40-hole15",
+        "deco-fill-1line-100mm",
+        "deco-fill-1line-offcentre",
     ]
     .contains(&name)
     {
@@ -877,6 +970,12 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
     let marks_differ = [
         "o-gallery-heart",
         "shape-start-points",
+        // Three rectangles whose second position's segment differs from r01's (the documented
+        // geometry-header difference).
+        "group-partial",
+        // A rectangle whose position fields differ from r01's (the segment of its second
+        // position: the documented geometry-header difference).
+        "deco-fill-1line-offcentre",
         "r10-circle",
         "r11-line",
         // A vector import's pentagon and star: outlines that are not rectangles.
@@ -1068,12 +1167,15 @@ fn an_openstitch_shape_with_curves_round_trips() {
         hoop_page: false,
         header: None,
         code: None,
+        hoop: None,
         threads: vec![openstitch_core::Thread::rgb(0x12_34_56)],
         shapes: vec![shape, second],
         texts: Vec::new(),
         stitch_groups: Vec::new(),
         groups: vec![vec![0], vec![1]],
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let mut pattern = openstitch_core::StitchPattern::new();
@@ -1132,12 +1234,15 @@ fn texts_between_shapes_and_in_groups_round_trip() {
         hoop_page: false,
         header: None,
         code: None,
+        hoop: None,
         threads: r01.threads.clone(),
         shapes: vec![r01.shapes[0].clone(), second],
         texts: vec![text],
         stitch_groups: Vec::new(),
         groups: vec![vec![1, 2]],
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let pattern = stitches_of(&owner_file("r01-rect"));
@@ -1171,6 +1276,7 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
         hoop_page: false,
         header: None,
         code: None,
+        hoop: None,
         threads: read.threads.clone(),
         shapes: Vec::new(),
         texts: vec![Text {
@@ -1193,6 +1299,8 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
         stitch_groups: Vec::new(),
         groups: Vec::new(),
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let written = pes11::write(&objects, &stitches_of(&fixture)).expect("write");
@@ -1384,12 +1492,15 @@ fn a_stitch_group_built_from_stitches_round_trips() {
         hoop_page: true,
         header: None,
         code: None,
+        hoop: None,
         threads: p.threads.clone(),
         shapes: Vec::new(),
         texts: Vec::new(),
         stitch_groups: vec![g],
         groups: Vec::new(),
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let written = pes11::write(&objects, &p).expect("write");
@@ -1601,4 +1712,76 @@ fn pe_design_applique_colours_match_pec_chart_62_to_64() {
         }
     }
     assert!([1, 62, 63, 64].iter().all(|i| seen.contains(i)), "{seen:?}");
+}
+
+/// The header after the five u8-length metadata strings, and the two-character code.
+fn hoop_header(b: &[u8]) -> (&[u8], [u8; 2]) {
+    let mut i = 16;
+    for _ in 0..5 {
+        i += 1 + usize::from(b[i]);
+    }
+    (&b[i..i + 110], [b[14], b[15]])
+}
+
+/// PE-DESIGN 11.50's Hoop Size page for each machine type and hoop (round 6, one design saved
+/// with each): OpenStitch writes the same header and code from a [`pes11::HoopPage`].
+#[test]
+fn hoop_size_pages_are_written_as_pe_design_writes_each_hoop() {
+    use pes11::HoopPage;
+    for (name, hoop, code, multi_needle, rotated) in [
+        ("s-100x100", 0x00, *b"01", false, false),
+        ("s-130x180", 0x01, *b"01", false, false),
+        ("s-130x180-rot90", 0x01, *b"01", false, true),
+        ("s-160x260-color", 0x02, *b"01", false, false),
+        ("s-200x300", 0x06, *b"02", false, false),
+        ("s-240x360", 0x1C, *b"01", false, false),
+        ("m-100x100-S", 0xFF, *b"10", true, false),
+    ] {
+        let pe = data(&format!("pe11/hoops/{name}.pes"));
+        let mut objects = objects_of(&pe);
+        objects.header = None;
+        objects.code = None;
+        objects.hoop = Some(HoopPage {
+            hoop,
+            code,
+            multi_needle,
+            rotated,
+        });
+        let ours = pes11::write(&objects, &pes::read(&pe).expect("read")).expect("write");
+        assert_eq!(hoop_header(&ours), hoop_header(&pe), "{name}");
+    }
+}
+
+/// With Rotate 90 Degrees PE-DESIGN turns the machine stitches 90° clockwise: the same design's
+/// PEC with the hoop turned is OpenStitch's turned PEC, stitch for stitch (round 6).
+#[test]
+fn a_turned_hoop_turns_the_machine_stitches_as_pe_design_does() {
+    let moves = |p: &openstitch_core::StitchPattern| -> Vec<(i32, i32, openstitch_core::Command)> {
+        p.stitches
+            .windows(2)
+            .map(|w| {
+                (
+                    (w[1].x - w[0].x).round() as i32,
+                    (w[1].y - w[0].y).round() as i32,
+                    w[1].command,
+                )
+            })
+            .collect()
+    };
+    let flat = pes::read(&data("pe11/hoops/s-130x180.pes")).expect("read");
+    let turned = pes::read(&data("pe11/hoops/s-130x180-rot90.pes")).expect("read");
+    let ours = openstitch_formats::pec::turned_for_hoop(&flat);
+    assert_eq!(moves(&ours), moves(&turned));
+    assert_ne!(moves(&flat), moves(&turned));
+    // Written through the 0110 writer with the hoop turned, the file reads back turned.
+    let mut objects = objects_of(&data("pe11/hoops/s-130x180.pes"));
+    objects.header = None;
+    objects.hoop = Some(pes11::HoopPage {
+        hoop: 1,
+        code: *b"01",
+        multi_needle: false,
+        rotated: true,
+    });
+    let back = pes::read(&pes11::write(&objects, &flat).expect("write")).expect("read");
+    assert_eq!(moves(&back), moves(&turned));
 }

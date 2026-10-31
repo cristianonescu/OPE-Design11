@@ -558,7 +558,16 @@ fn chain_path(order: &[&Ring], full: &[bool], pos: Vec2, pitch: f64) -> Vec<Vec2
             continue;
         }
         let b = rotate(&Walker::new(&closed), nearest_arc(&closed, a[0]));
-        let (ca, cb) = (corners(&a), corners(&b));
+        // A turn starts where the last ended, on a corner of `a`; `b`'s own corner then sits a
+        // little after its start. Corners within two stitches of either end are left out of
+        // both, so the rings pair side by side.
+        let inner = |c: Vec<f64>, len: f64| -> Vec<f64> {
+            c.into_iter()
+                .filter(|&s| s > 2.0 * pitch && s < len - 2.0 * pitch)
+                .collect()
+        };
+        let ca = inner(corners(&a), Walker::new(&a).length());
+        let cb = inner(corners(&b), Walker::new(&b).length());
         if !ca.is_empty() && ca.len() == cb.len() {
             path.extend(corner_turn(&a, &b, &ca, &cb, pitch));
         } else {
@@ -600,9 +609,9 @@ fn corner_turn(a: &[Vec2], b: &[Vec2], ca: &[f64], cb: &[f64], pitch: f64) -> Ve
     let mut out = Vec::new();
     for j in 0..sa.len() - 1 {
         let (a0, a1, b0, b1) = (sa[j], sa[j + 1], sb[j], sb[j + 1]);
-        // The side as sewn runs between the two rings' sides: split by its own length (PE-DESIGN
-        // 11.50's triangle spiral: stitches of 1.8–2.05 mm at a 2 mm pitch).
-        let m = ((((a1 - a0) + (b1 - b0)) / 2.0 / pitch).ceil() as usize).max(1);
+        // As few stitches as keep the longest, at the outer ring's end of the side, within the
+        // pitch and its slack (PE-DESIGN 11.50's triangle spirals: 1.8–2.1 mm at a 2 mm pitch).
+        let m = (((a1 - a0).max(b1 - b0) / (pitch + SPLIT_SLACK)).ceil() as usize).max(1);
         for k in 1..=m {
             let t = k as f64 / m as f64;
             let sbk = b0 + (b1 - b0) * t;

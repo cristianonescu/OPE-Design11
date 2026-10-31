@@ -39,7 +39,11 @@ for macOS, Windows and Linux. CI builds and tests all three.
     concentric circle and spiral calibrated to PE-DESIGN 11.50 (#138, 14 references;
     open: the spiral's inner-turn needle counts, the concentric chord splits and its seam on
     Bézier outlines; the spiral's winding and closing run settled with round 5; tie-in and lock
-    per run, grazing cut circles and the triangle spiral settled 2026-10-31).
+    per run, grazing cut circles and the triangle spiral settled 2026-10-31; round 6 added the
+    outside-in concentric order and 12 specs, the per-turn and per-circle needle counts still
+    open; round 7 documents the spiral-round-a-hole band, to be sewn by default once PE's turn
+    sampling is known, with an OpenStitch mode (`compatMode`) keeping the single travel, listed
+    under Beyond PE-DESIGN when it lands).
 - **Lettering:** text objects with Lato Bold and Pacifico (SIL OFL), text on a path, user
   TrueType/OpenType fonts (CJK through any font with the glyphs), shaping of right-to-left and
   complex scripts (`rustybuzz`, `unicode-bidi`), kerning, vertical text, per-character edits
@@ -95,9 +99,9 @@ harness. The details per item are in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDI
 ## Still to do
 
 Assets (owner's rule of 2026-10-30, [research/asset-audit.md](research/asset-audit.md)): the
-audit is done in two rounds (93 command icons for commands that showed another command's icon,
-including the suite windows' own commands, and seven empty-state and dialog illustrations, all
-generated with Higgsfield, 265 credits). New windows and commands get their icon the same way
+audit is done in three rounds (102 command icons for commands that showed another command's
+icon, including the suite windows' own commands, and ten empty-state and dialog illustrations,
+all generated with Higgsfield, 295 credits). New windows and commands get their icon the same way
 when they are added.
 
 Compatibility, from the open items in [COMPATIBILITY_AUDIT.md](COMPATIBILITY_AUDIT.md):
@@ -116,8 +120,10 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    (Frequency and two Stitch Type buttons only) and a 0.1 lines/mm density floor. PE-DESIGN's row structure (halves from the start point, brick row ends, 30 %
    Frequency default); the programmable fill density; Stitch Type 2's row lattice at 30° and 45°
    (sloped rows sewn since 2026-10-30, `stitchType: 2`: identical to PE-DESIGN at 0°, 0.048 mm
-   at 90°; at 30°/45° PE's rows sit about half a spacing from ours, as Type 1's do) and its
-   inspector control; Half Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
+   at 90°; at 30°/45° PE's rows sit about half a spacing from ours, as Type 1's do. Round 6
+   (2026-10-31) pinned the rows to the shape at the exact 1/density spacing, counted from the
+   far side; left to model: the per-angle needle-grid constant and PE-DESIGN's dependence on
+   the page position, which ours lacks); Half Stitch; feathered-edge patterns; gradation presets, per-step editing and Blend. Gradation
    rows follow PE-DESIGN's cumulative-density placement since 2026-10-28 (#95: every row of
    the U within 0.12 mm, overlap 0.83 → 0.89); left for the U: PE's section order for fills in
    several parts (right leg, left leg, then the top bar ending at the first vertex). Under
@@ -207,7 +213,7 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    2026-10-31 (references); the fitted text's box as PE-DESIGN computes it (PE-DESIGN recomputes it
    on opening); PE-DESIGN's confirmation of the Hoop Size page (probe p3); the design's machine
    type and hoop in the header; turn the `#PES0110` shapes and texts the reader parses into
-   editable OpenStitch objects; right-aligned and vertical text; the other region and line types,
+   editable OpenStitch objects; right-aligned and vertical text; several programmable fill patterns in one design (one is written since 2026-10-31), motif fill and the attribute fields of the other region types (written by their codes at PE-DESIGN's defaults since 2026-10-31), the other line types,
    several hole sewing pairs in one file or with groups (one pair without groups is written since
    2026-10-31) and several outlines per object; the hoop in v1 (the public
    description contradicts itself); PES v7–v10 (from the owner's own files only, as
@@ -225,8 +231,9 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    204.7 mm split as PE-DESIGN's DST does since 2026-10-29 (#126); PE's own PEC does not encode
    such a move (its `long-jump-300` PES has a stand-in row instead), settled 2026-10-30. PE's
    oversize PES has an empty machine section, which the reader reports instead of misreading
-   (2026-10-30). Thread charts: OpenStitch's own CSV is documented and exported since 2026-10-29
-   (#136; PE-DESIGN keeps charts as binary `.btc2`, no CSV). Colour matching is equal-weight
+   (2026-10-30). Thread charts export as CSV in the layout
+   PE-DESIGN's Import Chart reads since 2026-10-31 (#136; bare `code,brand,description,R,G,B`
+   records; PE has no CSV export and keeps its charts as binary `.btc2`). Colour matching is equal-weight
    squared Euclidean with an "approximate" city-block matcher since 2026-10-29 (#119), checked
    against the owner's twelve-swatch capture; the 61 BROTHER EMBROIDERY catalogue codes are known
    since the round-4 chart reading, PEC 42 (307 LINEN) has PE-DESIGN's RGB and every coded thread
@@ -234,13 +241,15 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    since 2026-10-30 (`thread-match-swatches` compares the thread table). The 94-entry sew palette is
    listed since 2026-10-30 (PE's Ver4 Option Color chart as ids 66–94, `sewPalette`; the 0110 writer writes those
    threads with their ids as PE does); where
-   PE-DESIGN matches colours to it is not verified (no capture). PEC 62–64 have PE-DESIGN's appliqué RGB since
-   2026-10-31. Left: appliqué stages written as PEC 62–64 and the `#PES0110` colour list after
-   the PEC as PE writes it; whether PE-DESIGN's Import Chart reads a CSV (#136, capture
-   2026-10-31. The `#PES0110` colour list after the PEC is written as PE writes it
-   (2026-10-31). The Appliqué wizard's stages sew in PE's
-   appliqué colours as PEC 62–64 (2026-10-31). Left: whether PE-DESIGN's Import Chart reads a CSV (#136, capture
-   requested); the machine type and hoop in the `#PES0110` header (#125, capture requested).
+   PE-DESIGN matches colours to it is not verified (no capture). PEC 62–64 have PE-DESIGN's appliqué
+   RGB, the `#PES0110` colour list after the PEC is written as PE writes it, and the Appliqué
+   wizard's stages sew in PE's appliqué colours as PEC 62–64, since 2026-10-31. The `#PES0110`
+   header carries the machine type and hoop as PE writes them for six hoops since 2026-10-31
+   (#125). Left: the other hoops' PE ids (#125); the user-chart CSV PE-DESIGN imports (#136).
+   PE-DESIGN matches colours to it is not verified (no capture). PEC 62–64 have PE-DESIGN's appliqué RGB, the `#PES0110` colour
+   list after the PEC is written as PE writes it, and the Appliqué wizard's stages sew in PE's
+   appliqué colours as PEC 62–64, since 2026-10-31. Left: the machine type and hoop in the
+   `#PES0110` header (#125, capture requested).
 9. **Machine tier:** a first sew-out of an OpenStitch-written file on a Brother machine, recorded
    in `compat/machine/`. No spec has reached this tier.
 10. **Distribution:** code signing (owner's certificates); Flathub submission (offline cargo
@@ -272,7 +281,8 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
     2026-10-30 (mono +11 % stitches, was +39 %; trims 99 and 249, were 426 and 1158). Next:
     run-to-run travel in Cross Stitch; PE's contour-following meanders for Photo Stitch 1 and
     Photo Stitch 2's exact colour transitions within a Color Set and Auto Select's thread
-    choice (its line
+    choice (rounds 5 and 6: four Ver4 Option threads, the image's nearest colours plus fillers
+    from a short list; the best simple rule matches 68 of 124 picks) (its line
     screen, #129, is built since 2026-10-30 after the owner's decision: −3.1 % stitches, angles,
     spacing and densities as PE's; named Color Sets, Direction, interval/density and Mono's
     tone ramp as PE's; harness `tools/screencmp.py`, design note
@@ -328,7 +338,7 @@ before any code; the ranking and the proposed tracks are in
 | B13 | Density map, troubleshoot, thread conversion, auto hoop | E | [research/beyond/quality-tools.md](research/beyond/quality-tools.md) | Sketched; not started |
 | B14 | Stitch-file resize with density | E | [research/beyond/stitch-file-resize.md](research/beyond/stitch-file-resize.md) | Sketched; not started |
 | B15 | Lettering: baselines, kerning, team names, connections | E | [research/beyond/lettering-depth.md](research/beyond/lettering-depth.md) | Sketched; not started |
-| B16 | Image wizards' "OpenStitch" mode beside the PE-DESIGN default: perceptual colour reduction (CIELAB k-means, CIEDE2000 thread matching) and region cleanup for Auto Punch first | — | [research/beyond/image-digitizing.md](research/beyond/image-digitizing.md) | Auto Punch's OpenStitch mode done 2026-10-31 (`compatMode: openStitch`, image dialog Mode): measured on the test images (`tools/image_eval.py`), mean ΔE00 9.1 → 8.7, stitches −20 %, trims −52 %, no specks; next: thin line art, Photo Stitch 1's perceptual palette and error diffusion, SLIC |
+| B16 | Image wizards' "OpenStitch" mode beside the PE-DESIGN default: perceptual colour reduction (CIELAB k-means, CIEDE2000 thread matching) and region cleanup for Auto Punch first | — | [research/beyond/image-digitizing.md](research/beyond/image-digitizing.md) | Auto Punch's OpenStitch mode done 2026-10-31 (`compatMode: openStitch`, image dialog Mode): measured on the test images (`tools/image_eval.py`), mean ΔE00 9.1 → 8.6, stitches −14 %, trims −48 %, specks 220 → 10; line art keeps its lines since 2026-10-31 (mandala 2,195 stitches, PE mode 2,590); Photo Stitch 1 in colour since 2026-10-31 (perceptual palette, CIELAB dithering: mean ΔE00 10.0 → 8.2 on nine photos, trims +13 %); next: Photo Stitch 1's trims, SLIC |
 
 Deferred: linear colour-gradient and tartan fills, shape and vine fills, photo
 thread-painting, sequin/chenille/bead types (machine-specific), the TrueType turning-satin

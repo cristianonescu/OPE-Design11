@@ -166,6 +166,14 @@ pub fn border_majority(labels: &[u16], w: usize, h: usize) -> Option<u16> {
         .next()
 }
 
+/// OpenStitch mode: a region under the minimum area is kept as a piece of a line when its mean
+/// width (area over its longest side) is at most this, mm, and it is at least twice as long.
+pub const LINE_WIDTH_MM: f64 = 0.5;
+
+/// OpenStitch mode treats an image as line art when the background it leaves out covers at
+/// least this share of the opaque pixels (the mandala about 0.9; photos and paintings far less).
+pub const LINE_ART_SHARE: f64 = 0.75;
+
 pub fn convert(image: &Raster, frame: &Frame, p: &AutoPunch) -> Result<Converted, DigitizeError> {
     let work = image.fit_mode(p.resolution.clamp(16, 2048));
     let frame = frame.rescaled(image.width(), work.width());
@@ -185,23 +193,63 @@ pub fn convert(image: &Raster, frame: &Frame, p: &AutoPunch) -> Result<Converted
         Mode::OpenStitch => Palette::from_census_perceptual(&census, colors),
     };
     let mut labels = label(&census, &palette);
-    let background = if p.skip_background {
-        border_majority(&labels, w, h)
-    } else {
-        None
-    };
-    if let Some(bg) = background {
-        for l in &mut labels {
-            if *l == bg {
-                *l = NONE;
+    let background = match (p.skip_background, p.mode) {
+        (false, _) => None,
+        (true, Mode::PeDesign) => {
+            let bg = border_majority(&labels, w, h);
+            if let Some(bg) = bg {
+                for l in &mut labels {
+                    if *l == bg {
+                        *l = NONE;
+                    }
+                }
             }
+            bg
         }
-    }
+        (true, Mode::OpenStitch) => {
+            // Only the background colour's own pixels are left out, not every colour that
+            // shares its thread: a thin line's light-grey edge shades sew in the white thread
+            // rather than vanish with the white background (round-5 mandala, g11).
+            let means: Vec<u16> = census
+                .modal
+                .iter()
+                .map(|m| m.map_or(NONE, |c| palette.nearest_mean(c) as u16))
+                .collect();
+            let bg = border_majority(&means, w, h);
+            if let Some(bg) = bg {
+                for (l, m) in labels.iter_mut().zip(&means) {
+                    if *m == bg {
+                        *l = NONE;
+                    }
+                }
+            }
+            bg.map(|m| palette.thread_of[m as usize] as u16)
+        }
+    };
     let unsmoothed = labels.clone();
     regions::majority(&mut labels, w, h, p.smooth.min(5));
     // The frame scales x and y alike, so the working pixel's mm/px is both ratios.
     let floor = small_region_floor(p.min_area_mm2, frame.mm_per_px());
-    regions::merge_small(&mut labels, w, h, floor + 1);
+    match p.mode {
+        Mode::PeDesign => regions::merge_small(&mut labels, w, h, floor + 1),
+        Mode::OpenStitch => {
+            // On line art (the left-out background covers at least [`LINE_ART_SHARE`] of the
+            // image) only compact specks merge: a small region whose mean width (area over its
+            // longest side) is at most [`LINE_WIDTH_MM`] is a piece of a line, and stays. On
+            // photos and paintings such slivers are edge shades, and merge.
+            let opaque = census.modal.iter().filter(|m| m.is_some()).count().max(1);
+            let left_out = labels.iter().filter(|&&l| l == NONE).count()
+                - census.modal.iter().filter(|m| m.is_none()).count();
+            let line_art = left_out as f64 >= LINE_ART_SHARE * opaque as f64;
+            let mm = frame.mm_per_px();
+            regions::merge_small_except(&mut labels, w, h, floor + 1, |k| {
+                let long = (k.x1 - k.x0).max(k.y1 - k.y0) as f64 * mm;
+                line_art
+                    && long >= 2.0 * LINE_WIDTH_MM
+                    && k.area as f64 * mm * mm / long <= LINE_WIDTH_MM
+            });
+        }
+    }
     let (mut id, mut comps) = regions::components(&labels, w, h);
     if comps.is_empty() && p.mode == Mode::OpenStitch {
         // OpenStitch mode's cleanup can merge away a drawing made only of thin lines (the

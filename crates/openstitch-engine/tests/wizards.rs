@@ -443,10 +443,11 @@ fn applique_stages_sew_in_order_with_stops_between() {
         openstitch_formats::pec::pec_color_indexes(&pattern.threads),
         [62, 63, 64]
     );
-    // All stages follow the circle's outline (r = 10 mm).
-    for o in &d.objects {
+    // Replace: the cover on the circle's outline (r = 10 mm), the position line w / 2 - 1 =
+    // 0.5 mm outside it, the material and tack-down 0.5 mm further, as PE-DESIGN's a05.
+    for (o, r) in d.objects.iter().zip([11.0, 10.5, 11.0, 10.0]) {
         for p in points_mm(&d, o.id) {
-            assert!((p.distance(v2(50.0, 50.0)) - 10.0).abs() < 0.05, "{p:?}");
+            assert!((p.distance(v2(50.0, 50.0)) - r).abs() < 0.05, "{r}: {p:?}");
         }
     }
     // Cover zigzag reaches 1.5 mm to each side (the shared block); tack-down 1 mm (the design
@@ -455,22 +456,29 @@ fn applique_stages_sew_in_order_with_stops_between() {
     let mut no_cover = d.clone();
     no_cover.objects.pop();
     let tack_blocks = needle_blocks(&compile(&no_cover));
-    let reach = |b: &[Vec2]| {
+    let reach = |b: &[Vec2], r: f64| {
         b.iter()
-            .map(|p| (p.distance(v2(50.0, 50.0)) - 10.0).abs())
+            .map(|p| (p.distance(v2(50.0, 50.0)) - r).abs())
             .fold(0.0, f64::max)
     };
+    // The shared block's outermost stitches are the tack-down's (11 mm + 1 mm); the cover alone
+    // reaches 1.5 mm about 10 mm.
+    let mut cover_only = d.clone();
+    cover_only
+        .objects
+        .retain(|o| o.name.as_deref() == Some("Appliqué cover"));
+    let cover_blocks = needle_blocks(&compile(&cover_only));
     assert!(
-        (reach(&blocks[2]) - 1.5).abs() < 0.1,
+        (reach(&cover_blocks[0], 10.0) - 1.5).abs() < 0.1,
         "{}",
-        reach(&blocks[2])
+        reach(&cover_blocks[0], 10.0)
     );
     assert!(
-        (reach(&tack_blocks[2]) - 1.0).abs() < 0.1,
+        (reach(&tack_blocks[2], 11.0) - 1.0).abs() < 0.1,
         "{}",
-        reach(&tack_blocks[2])
+        reach(&tack_blocks[2], 11.0)
     );
-    assert!(reach(&blocks[1]) < 0.05 && reach(&blocks[0]) < 0.05);
+    assert!(reach(&blocks[1], 10.5) < 0.05 && reach(&blocks[0], 11.0) < 0.05);
     assert_one_undo(&mut s, &before);
 }
 
@@ -501,21 +509,26 @@ fn applique_add_keeps_the_pattern_and_offsets_the_outline() {
     let new = ids(&r);
     assert_eq!(new.len(), 3);
     let d = s.design().clone();
-    // The appliqué goes under the pattern, which stays and is sewn last.
-    assert_eq!(d.objects.last().map(|o| o.id), Some(1));
-    for &id in &new {
+    // The pattern stays, sews first and is grouped with its appliqué, as in PE-DESIGN's
+    // a01-a04 (before 2026-10-31 it sewed last, outside the group).
+    assert_eq!(d.objects.first().map(|o| o.id), Some(1));
+    assert!(d.objects[0].group.is_some());
+    assert!(d.objects.iter().all(|o| o.group == d.objects[0].group));
+    // Add at 4 mm with the 3 mm covering (r = 10 mm): the cover's centre 4 + 1.5 + 0.3 mm out,
+    // the position line 0.5 mm beyond it, the tack-down 0.5 mm further, as PE-DESIGN's a01.
+    for (&id, r) in new.iter().zip([16.3, 16.8, 15.8]) {
         for p in points_mm(&d, id) {
-            assert!((p.distance(v2(50.0, 50.0)) - 14.0).abs() < 0.05, "{p:?}");
+            assert!((p.distance(v2(50.0, 50.0)) - r).abs() < 0.05, "{r}: {p:?}");
         }
     }
     let pattern = compile(&d);
     assert_eq!(
         block_names(&pattern),
-        ["Appliqué position", "Appliqué", "Red"]
+        ["Red", "Appliqué position", "Appliqué"]
     );
-    // Position → tack-down and cover (PE's Applique colour) → the pattern: two stops.
+    // The pattern → position → tack-down and cover (PE's Applique colour): two stops.
     assert_eq!(pattern.count(Command::ColorChange), 2);
-    let kinds: Vec<_> = d.objects[..3]
+    let kinds: Vec<_> = d.objects[1..4]
         .iter()
         .map(|o| o.line.as_ref().expect("line").kind.id())
         .collect();
@@ -540,12 +553,15 @@ fn applique_material_can_be_cut_by_cutwork_needles() {
     assert_eq!(material.kind.id(), "cutting");
     assert!(material.leave_uncut, "bridges are left for hand cutting");
     let names = block_names(&compile(d));
-    // Horizontal and vertical cut lines use the 0° and 90° needles.
+    // The material line runs 1 mm outside the rectangle with rounded corners (PE-DESIGN's a05
+    // offsets), so all four cutwork needles cut, as in PE's a02 (four cutting blocks).
     assert_eq!(
         names,
         [
             "Cutwork needle 1 (0°)",
+            "Cutwork needle 2 (45°)",
             "Cutwork needle 3 (90°)",
+            "Cutwork needle 4 (135°)",
             "Appliqué position",
             "Appliqué",
             "Black"

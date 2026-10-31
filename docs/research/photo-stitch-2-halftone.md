@@ -227,7 +227,85 @@ gives red half to yellow and half to magenta where least squares gives magenta t
 Still open:
 - the exact transitions between neighbouring set colours;
 - why CMYK collapses green and blue onto cyan alone;
-- Auto Select's choice of four threads.
+- Auto Select's choice of four threads: round 5 narrows it to a CMYK-like base with
+  substitutions (section above); round 6's swatches are requested.
+
+## Auto Select on the test images (round 5, 2026-10-31)
+
+Eight Higgsfield test images went through Photo Stitch 2 Auto Select at defaults, with
+PE-DESIGN's default chart, Ver4 Option Color. The threads were read from the PES files and
+named by Ver4 number:
+
+| Image | Auto Select picks |
+|---|---|
+| g09 rainbow gradient | 70 sky blue, 89 yellow2 (lime), 76 purple, 90 dark fuchsia (pink-red) |
+| g13 twelve-colour mosaic | 89, 90, 66 prussian blue (navy), 70 |
+| g14 orange circle on navy | 66, 90, 89, 75 dark brown (maroon) |
+| p01 portrait | 75, 66, 89, 90 |
+| p04 ginger cat | 70, 75, 90, 89 |
+| p06 sunset | 75, 66, 90, 89 |
+| p07 fruit bowl | 75, 70, 89, 90 |
+| p09 facade (blue sky, grey and white) | 77 cornflower, 69 moss green, 66, 85 magenta |
+
+What they show:
+- **The palette.** Auto Select always takes four threads from the 29 Ver4 Option colours.
+  OpenStitch reduces the image to N colours and matches each to the nearest PEC thread. Even
+  the two-colour poster g14 gets four threads.
+- **The base.** Seven of the eight are PE's own CMYK set (70, 90, 89, 75) with at most two
+  threads swapped:
+  - navy 66 for sky blue 70 (p01, p06, g14), or for maroon 75 (g13);
+  - purple 76 for maroon 75 on the gradient, which has no dark.
+
+  p04 and p07 are exactly CMYK. Only the facade, almost without warm colours, leaves the base.
+- **Not a mixing optimum.** For every 4-subset of the 29 colours, the best feasible mix of
+  each image colour (non-negative coverage shares over white fabric, least squares in RGB)
+  was computed and the subsets ranked. PE's set ranks 62nd to 6530th, and on the mosaic and
+  the facade it mixes worse than plain CMYK.
+- **Not a colour mapping either.** Mapping the image's 4–8 median-cut colours to the nearest
+  Ver4 colour, plainly or after full saturation, matches at best 13 of the 32 picks. "Always
+  CMYK with navy for sky blue" matches 24.
+
+### Round 6: single colours (2026-10-31)
+
+The reference session ran 20 flat swatches and 3 two-colour pairs through Auto Select at
+defaults:
+- 12 hues every 30°;
+- navy, maroon, brown, tan, grey, black, teal and olive;
+- the pairs red + blue, yellow + magenta, and tan + navy.
+
+Each swatch was placed at 50 mm on white; the threads were read from the dialog (Ver4
+numbers, in its order).
+
+| Image | Picks | Image | Picks |
+|---|---|---|---|
+| hue 0° (255,0,0) | 84 90 81 83 | navy | 66 75 69 86 |
+| hue 30° | 89 90 84 83 | maroon | 75 81 83 91 |
+| hue 60° (yellow) | 89 84 83 91 | brown | 75 84 80 67 |
+| hue 90° | 80 83 84 92 | tan | 89 78 90 85 |
+| hue 120° (green) | 71 84 83 91 | grey 128 | 84 81 83 91 |
+| hue 150° | 73 85 84 89 | black | 75 69 85 83 |
+| hue 180° (cyan) | 74 84 81 91 | teal | 66 72 68 87 |
+| hue 210° | 68 82 84 91 | olive | 89 84 75 87 |
+| hue 240° (blue) | 67 82 84 91 | red + blue | 67 90 84 82 |
+| hue 270° | 76 92 84 82 | yellow + magenta | 89 92 84 83 |
+| hue 300° (magenta) | 92 84 83 81 | tan + navy | 66 89 75 90 |
+| hue 330° | 90 84 83 81 | | |
+
+What they show:
+- **The image's own colour.** In 14 of 20 swatches, the Ver4 colour nearest the swatch by
+  RGB is in the set, usually in the first slot. The exceptions sit between two grid colours
+  (hue 90°, 210°, 270°, 330°, teal) or are neutral (grey).
+- **Fillers.** A flat colour still gets four threads. The rest come from a short list:
+  - red 84 (13 of 20), light blue 83 (10), deep rose 91 (7), leaf green 81 (6);
+  - a filler close to the image's colour is replaced by a neighbour: 82 for 83 next to blue,
+    92 for 91 next to violet, 81 for 91 next to rose.
+- **Pairs.** Each colour of a pair gets its own nearest thread, and fillers complete the four.
+
+Still not a rule. "Nearest colours of the image's main clusters, then fillers from 84, 83,
+81, 91 skipping any close to a chosen colour" reproduces 68 of the 124 picks over rounds 5
+and 6. Floyd–Steinberg dithering onto the 29 colours, keeping the four most used, reproduces
+51. OpenStitch's Auto Select stays as it is. The captures and their notes are in the owner's
+folder (`round6/autoselect`).
 
 ## Captures still needed (owner-made, at defaults unless named)
 

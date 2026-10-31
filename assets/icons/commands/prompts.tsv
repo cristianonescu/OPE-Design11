@@ -167,3 +167,12 @@ preview	2B2F36 FFFFFF 2A7AD8 E0A21B	a small white window with a blue title bar s
 open_template	2B2F36 FFFFFF E0A21B A0A6AE	a golden file folder with a white sheet sticking out showing a grey dashed shape outline
 template_modify	2B2F36 FFFFFF A0A6AE D8433A	a white sheet with a grey dashed shape outline and a red pencil laid across its lower right corner
 stitch_simulator	2B2F36 2E9D58 2A7AD8	a sewing needle above a blue running stitch line with a green play triangle beside it
+auto_punch	2B2F36 FFFFFF 2A7AD8 E0A21B	a small landscape photo with a blue sky and a golden magic sparkle star over its lower right corner
+edit_text	2B2F36 FFFFFF 2A7AD8 D8433A	a white text box rectangle with three short grey lines inside and a red pencil laid diagonally across its lower right corner (prompt also says: no letters)
+font_filter_settings	2B2F36 E0A21B 2A7AD8	a golden funnel with a small blue gear wheel at its lower right
+triple_stitch	2B2F36 D8433A	three parallel short red dashed stitch lines stacked closely on top of each other in a gentle curve, like a triple running stitch
+db_search	2B2F36 E0A21B 2A7AD8	a golden file folder with a blue magnifying glass over its lower right corner
+about	2B2F36 FFFFFF 2A7AD8 E0A21B	a small white application window with a blue title bar and a golden star badge in its centre (prompt also says: no letters)
+manual	2B2F36 2A7AD8 FFFFFF	an open blue book with white pages (prompt also says: no letters)
+app_color	2B2F36 FFFFFF 2A7AD8 D8433A E0A21B	a small white application window whose title bar is split into three colour bands, blue, red and golden
+system_unit	2B2F36 E0A21B 2A7AD8	a golden ruler laid horizontally with tick marks, and a blue double headed arrow curving over it as if switching between two scales (prompt also says: no numbers)

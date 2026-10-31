@@ -1,0 +1,149 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "spiral-circle40-pitch1p0",
+  "area": "stitches",
+  "title": "Spiral Stitch: Circle, round 6",
+  "description": "PE-DESIGN 11.50's Spiral Stitch, round 6: the outline offset a row (1 / density) inwards per turn; PE: Run pitch 1,0; 38 turns, needles per turn 134, 128 x6, 127, 121, 108 … 12. Open, pinned at the internal tier: stitches (PE 2997, OpenStitch 3419).",
+  "covers": {
+    "audit": [],
+    "featureMatrix": [
+      {
+        "area": "Region sew types",
+        "feature": "Concentric circle"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "measured",
+      "note": "compat/reference/stitches/spiral-circle40-pitch1p0.pes (PE-DESIGN 11.50, 2026-10-31, pe-refs-4 round 6): 39,30 x 39,70 mm, 2997 st"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "shape.ellipse",
+      "params": {
+        "cx": 50,
+        "cy": 50,
+        "rx": 20
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "spiral",
+        "color": "Red",
+        "runPitch": 1.0
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "id": 1,
+        "type": "none"
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "region.pes"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "stitches/spiral-circle40-pitch1p0.pes",
+      "make": "Shapes > Circle dragged (30,30)-(70,70) mm; region Spiral Stitch. Hoop 100 x 100 mm page; line Not Sewn (Line); colour 800 EMBROIDERY RED; region attributes at their defaults (Density 2,0 line/mm, Run pitch 2,0 mm, Start Point first button) unless stated; nothing else in the design. Save As PES (default type, #PES0110). Status bar 39,30 x 39,70 mm, 2997 st."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "stitches",
+      "measure": {
+        "kind": "stitchCount"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "expected": 3419,
+      "tolerance": {
+        "percent": 3
+      },
+      "tier": "internal-regression",
+      "evidence": "KNOWN DIFFERENCE (open): PE-DESIGN 11.50's file measures 2997, OpenStitch 3419; this check pins OpenStitch's value until the rule is found: PE-DESIGN's needle count per turn below the outer power-of-two turns is not known yet: at a 4 mm pitch it keeps about 32 down to r 9 mm, at 1 mm it falls from 128 to 121, 108 … earlier, and the inner tails at 2.5 and 4 mm are identical (COMPATIBILITY_AUDIT, Concentric Circle and Spiral)."
+    },
+    {
+      "id": "bounds-width",
+      "measure": {
+        "kind": "bounds",
+        "property": "width"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (39,30 x 39,70 mm, 2997 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "bounds-height",
+      "measure": {
+        "kind": "bounds",
+        "property": "height"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (39,30 x 39,70 mm, 2997 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.35
+        }
+      }
+    },
+    {
+      "id": "stitch-length-mean",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "mean",
+        "minLength": 0.3
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (39,30 x 39,70 mm, 2997 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.15
+        }
+      }
+    },
+    {
+      "id": "stitch-length-max",
+      "measure": {
+        "kind": "stitchLength",
+        "stat": "max"
+      },
+      "source": {
+        "export": "region.pes"
+      },
+      "evidence": "PE-DESIGN 11.50's file (39,30 x 39,70 mm, 2997 st)",
+      "reference": {
+        "tolerance": {
+          "mm": 0.1
+        }
+      }
+    }
+  ]
+}

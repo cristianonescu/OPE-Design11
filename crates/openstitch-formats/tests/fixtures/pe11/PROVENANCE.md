@@ -193,3 +193,35 @@ empty code, RGB on a 0/85/170/255 grid, type 0x0B, id string 66-94 (row n = 65 +
 | File | SHA-256 | Made as |
 |---|---|---|
 | `ver4-option-color-29.pes` | `ef52278a045822f4a7e97d1e687e55cf98bd76fc49464657cd3ce4160b3b79ff` | as above |
+
+## Round 6 (2026-10-31): groups
+
+Made by the owner's PE-DESIGN 11.50 (Layout & Editing) on Windows 11 Pro 10.0.26300,
+2026-10-31, by black-box GUI use only (session pe-refs-4). App menu > New (Hoop Size 100 x 100
+mm); Rectangle tool at its default (line Zigzag Stitch, region Fill Stitch, red); 10 mm squares,
+each 12 x 12 mm with its zigzag; a pair selected with a drag box, Home > Group > Group; Save As
+"Layout & Editing Ver.11.0 File" (#PES0110).
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `group-partial.pes` | `f19726f9bfdd56a3b9a8685b490f4d23ab3150750541255fef8dd02f2265b4b6` | Squares at (10,10), (30,10), (50,10) mm; the first two grouped. 52 x 12 mm, 1257 st (the group 32 x 12 mm, 838 st). |
+| `group-two.pes` | `ff88f4d44d6f9cdc62fbbd6ebb6f2706c3dfa52c7b2cd0637d4858fb7c69a654` | group-partial with a fourth square at (70,10) mm; the last two grouped as well. 72 x 12 mm, 1676 st. |
+**Machine type and hoop (#125, round 6):** made by the owner's PE-DESIGN 11.50 (Layout &
+Editing), Windows 11 Pro 10.0.26300, 2026-10-31 11:42-12:08, black-box GUI use only (reference
+session; owner's notes round6/hoops/log.txt). One design for every file: New, Rectangle
+(40,40)-(60,60) mm, line Not Sewn, Fill Stitch at defaults, 800 EMBROIDERY RED, 20,00 x 20,00
+mm, 707 st; only Design Settings changed (Page Size = Hoop Size, the machine type and hoop
+below), then Save As "Layout & Editing Ver.11.0 File" (#PES0110). Every file reopens with the
+settings it was saved with. Nine more captures of that session (100 x 180, which PE-DESIGN
+saves only as #PES0113; 180 x 300; 150 x 150 Quilt; nv880e-M and -L; 180 x 100 Border; ø100
+Round; two Custom Size 300 x 200 pages) stay in the owner's notes.
+
+| File | SHA-256 | Made as |
+|---|---|---|
+| `hoops/s-100x100.pes` | `bfab06be36d1e03ede2a92d4b0e34c414a891df0b044e3c8548e9420b244e8ca` | single-needle, Hoop Size 100 x 100 mm |
+| `hoops/s-130x180.pes` | `f7d65d78021031a9e245700364f69595999f8f065df3168d67f34c64cffea3c0` | single-needle, Hoop Size 130 x 180 mm |
+| `hoops/s-130x180-rot90.pes` | `f2d0865f8ed706ef735f684883c73ebc5df8ac4a41f15cc6861725001090850c` | single-needle, Hoop Size 130 x 180 mm, Rotate 90 Degrees |
+| `hoops/s-160x260-color.pes` | `80db94f6a17ad7d566adc3c071ee873e46585e57e918cdf33875bc071f7d19a6` | single-needle, Hoop Size 160 x 260 mm (Color LCD) |
+| `hoops/s-200x300.pes` | `d5246e7e8a76ff1a7e4427d114eefaf5368d92f03c1a9b4fceaf828f617fed70` | single-needle, Hoop Size 200 x 300 mm |
+| `hoops/s-240x360.pes` | `87fcfc688322ebf30786846d50b269e90baf1193310e36b7b33d7e7eec0d985f` | single-needle, Hoop Size 240 x 360 mm |
+| `hoops/m-100x100-S.pes` | `dc16a00322a7f93d63f2aa0a05ed3bd9d353a42a05b59e38bbec52399ee2167b` | multi-needle, Hoop Size 100 x 100 mm nv880e-S |

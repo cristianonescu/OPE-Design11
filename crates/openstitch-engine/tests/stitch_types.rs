@@ -466,6 +466,14 @@ fn fill_stitch_type_is_set_sewn_saved_and_undone() {
         json!({"id": 1, "stitchType": 1}),
     );
     assert_eq!(Compiler::default().compile(s.design()), flat);
+    // The inspector's choice sends the button as a string.
+    run(
+        &mut s,
+        "object.setRegion",
+        json!({"id": 1, "stitchType": "2"}),
+    );
+    assert_eq!(Compiler::default().compile(s.design()), sloped);
+    run(&mut s, "history.undo", json!({}));
     run(&mut s, "history.undo", json!({}));
     run(&mut s, "history.undo", json!({}));
     assert_eq!(Compiler::default().compile(s.design()), flat);
@@ -494,6 +502,10 @@ fn bad_region_options_fail_cleanly() {
         json!({"id": 1, "stitchType": 0}),
         json!({"id": 1, "stitchType": 1.5}),
         json!({"id": 1, "stitchType": 3}),
+        json!({"id": 1, "stitchType": "3"}),
+        json!({"id": 1, "stitchType": "two"}),
+        json!({"id": 1, "stitchType": "3"}),
+        json!({"id": 1, "stitchType": "two"}),
     ] {
         assert!(
             s.execute("object.setRegion", Some(&params)).is_err(),

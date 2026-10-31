@@ -373,17 +373,24 @@ Line references are relative to `crates/`.
   PES section byte for byte; it re-sews the group without the zero-length stitch that
   `stitches.import` restores on each run's first needle point, issue #135);
   `pes-0110-applique`, reference tier: PE-DESIGN 11.50 opens the export with no group of a
-  partial set of objects, its lines editable in PE-DESIGN's appliqué colours, and re-saves it
+  group of its four lines (number corrected), its lines editable in PE-DESIGN's appliqué colours, and re-saves it
   unchanged but for its pattern blocks, 2026-10-31; owner files a01–a05 read and rewritten byte
   for byte outside the documented differences; **open:** the wizard's V tack-down shows as an E
   stitch (the field telling E from V is not mapped), and the appliqué sews 29 x 29 mm where
   PE-DESIGN's wizard sews the same square 32,6 x 32,8 mm, OpenStitch's outline offset);
   Shapes-gallery shapes (`CEmbSpecialShape`, `CEmbLine` records under another class name)
-  round-trip (o-gallery-heart, shape-start-points). Groups: PE-DESIGN 11.50 refuses a file whose
-  one group leaves an object out ("Unexpected file format", the appliqué export of 2026-10-30,
-  2026-10-31); the export writes only a group of every object, the one layout in the owner's
-  files, and leaves other grouping out (open until owner captures show partial and several
-  groups). Refused for
+  round-trip (o-gallery-heart, shape-start-points). Groups: the group's number is one more than its last
+  member's archive number (a01, o-group-two-rects, group-partial); OpenStitch wrote the class's
+  number, which PE-DESIGN 11.50 refused ("Unexpected file format") for the appliqué export's
+  group of four lines without the square (2026-10-31), fixed; several groups (PE-DESIGN's
+  group-two) are not mapped and are left out of the file (open). Refused for
+  round-trip (o-gallery-heart, shape-start-points); programmable fill written with its pattern
+  in the header's pattern list (spec `pes-0110-programmable-fill`, reference pending; the list
+  byte-identical to obj-progfill-owner-v's for the owner's V; one pattern per design); decorative
+  fill with its pattern in the object's pattern block (spec `pes-0110-decorative-fill`,
+  reference pending; the block byte-identical to deco-fill-1line-100mm's); the other Round 3
+  region types by their codes at PE-DESIGN's default attributes (their own fields not mapped).
+  Refused for
   now: right-aligned and vertical text, stretched fit, rotation, letter spacing, kerning,
   per-character edits, other fonts.
   **PE-DESIGN's check (reference tier, `pes-0110-editable-text`):** it opens the file as
@@ -682,6 +689,22 @@ Line references are relative to `crates/`.
   characters after the header's u16 are "10" in PE's own 0110 files and "01" in files it
   re-saved from OpenStitch exports, all on 100 × 100 mm pages, so they are not the
   "01"/"02"/"10" size code the issue describes; OpenStitch keeps pyembroidery's "02".
+- **`#PES0110` machine type and hoop (2026-10-31, #125):** sixteen round-6 captures (one design
+  saved on each hoop and machine type, each reopening with the settings it was saved with) map
+  them. The header's u16 after the page mode is PE-DESIGN's id of the hoop (single-needle
+  100 × 100 0, 130 × 180 1, 160 × 260 2, 180 × 300 4, 200 × 300 6, 150 × 150 Quilt 0x1A,
+  240 × 360 0x1C, 100 × 180 0x28; multi-needle 100 × 100 15, ø100 Round 0x16, 180 × 100 Border
+  0x21, nv880e 0xFF), a u16 is 1 for Rotate 90 Degrees, another 7 on a multi-needle machine
+  and 0 on a single-needle one, and the code after the signature is "01" single-needle ("02"
+  for the 150 × 150 Quilt, 180 × 300 and 200 × 300 hoops) and "10" multi-needle: the issue's
+  "01"/"02"/"10" codes are the machine type and hoop, not the design size. With Rotate 90 PE
+  also turns the PEC's stitches 90° clockwise. The 0110 export now writes a Hoop Size page with
+  PE's fields for single-needle 100 × 100, 130 × 180, 160 × 260, 200 × 300, 240 × 360 and
+  multi-needle 100 × 100 (each header equal to PE's file,
+  `hoop_size_pages_are_written_as_pe_design_writes_each_hoop`; the turned PEC stitch for stitch,
+  `a_turned_hoop_turns_the_machine_stitches_as_pe_design_does`), and both PES writers turn the
+  PEC for a turned hoop. Left: the other hoops' ids (a Custom Size page of their size until
+  then), the 100 × 180 hoop (PE saves it only as `#PES0113`), and the v1 hoop field.
 
 - **Impact:** severity 4. Every v6 file claims a 100×100 hoop and a fixed page, whatever hoop
   the user chose. Every v1 file claims 130×180. Imported files never set the hoop.
@@ -906,8 +929,8 @@ Line references are relative to `crates/`.
       sit about half a spacing from ours (row lattice offset 0.9 against 0.4 rows at 30°, 0.9
       against 0.3 at 45°), the angled-fill anchor difference Type 1 has too (Type 1 at 30°:
       0.205 mm, 0.967); in Type 2 it also moves each pass's grid. Specs: the seven round-5
-      files and `tatami-40-stitch-type-2`, which now sews Type 2. No inspector control yet
-      (command only).
+      files and `tatami-40-stitch-type-2`, which now sews Type 2. The inspector's Fill panel
+      offers it as "Stitch type" (1: flat rows, 2: sloped rows; 2026-10-31).
     - Anchor probe (2026-10-31, not landed): OpenStitch stretches angled rows to fill the
       rotated height corner to corner (245 gaps of 0.2230 mm at 30°); PE-DESIGN keeps the
       1/density spacing. Without the stretch the 45° counts match: Type 1 2067 / 2068 and
@@ -916,9 +939,30 @@ Line references are relative to `crates/`.
       improves both types at both angles: the needle score jumps whenever the tiny corner row
       appears or disappears, because the first row sets the needle-grid anchor, and Type 1 and
       Type 2 move in opposite directions (offset 0.6: Type 1 at 30° 0.189 → 0.301 mm, Type 2
-      0.344 → 0.213). The row lattice and the grid anchor have to be fitted together; a
-      capture with no sharp corner at the first row (the same square at two page positions and
-      a 40 × 20 mm rectangle at 30° and 45°) would separate them.
+      0.344 → 0.213). The row lattice and the grid anchor have to be fitted together.
+    - Round 6 (2026-10-31, 14 captures, specs `tatami-40-pos0-*`, `tatami-40-pos2-*`,
+      `tatami-40x20-*`, `tatami-40-pos-center-*`, `tatami-40-pos-right10-*`: the square at
+      top-left (0, 0), (13.5, 7.5), (30, 30) and (35, 30) mm and a 40 × 20 mm rectangle at
+      (10, 10), Stitch Types 1 and 2 at 30° and 45°; page positions read from the PES header):
+      - **Rows sit on the shape, not the page.** Measured from the shape's lowest corner the row
+        lattice is the same at every position and for the rectangle (0.89–0.90 rows at 30°);
+        measured from the page origin it moves (0.37–0.90). The offset matches rows counted from
+        the far side at the exact 1/density spacing (30° square: frac(54.64 / 0.2222) = 0.885;
+        rectangle 0.95). At 45° the measure is unreliable (a 45° line through the file's
+        0.1 mm grid aliases; fit 0.53–0.57).
+      - **PE-DESIGN's stitch count moves with the page position; ours does not.** 40 mm
+        square, Type 1 at 30°: 2042 at (0, 0), 2039 at (13.5, 7.5), 2032 at (10.2, 10.0); at
+        45°: 2065, 2067, 2068, 2068, 2068. OpenStitch sews 2048 and 2059 everywhere. The
+        needle-grid phase along the rows (Type 1, u − k · 1.2 mm mod 4, from the top-left
+        corner) is 0.90 mm at 0°, 2.81–2.98 at 30°, 1.05–1.28 at 45° and 1.20 at 90°;
+        OpenStitch uses 1.2 at every angle (exact at 90°; the 0.269 mm at 0° is this 0.3 mm).
+      - **Candidate rules scored** over all 22 captures (rounds 4–6) at PE's page positions,
+        mean over the 16 angled cases (|Δ count|, needle, IoU): today 9.4, 0.298 mm, 0.949;
+        exact spacing with rows from the far side 11.8, 0.303, 0.961; that plus the grid
+        anchored on the first sewn row 14.2, 0.307, 0.956. Neither lands: both lift coverage
+        but move the 45° Type 2 counts away (2078 → 2084 against 2054). The per-angle grid
+        constant and PE-DESIGN's position dependence (likely its page-coordinate rounding of
+        the anchor) are what remain to model.
 - **Test:**
   - `object.setRegion {type:"fill",frequency:60}` and `object.setLine {type:"eStitch",runTimes:6}`
     are refused.
@@ -1354,6 +1398,44 @@ Line references are relative to `crates/`.
     39.8 × 39.3 mm (PE 39.7 × 39.2) and its width is compared again. A cornered turn's sides are
     now split by their own length, between the two rings' sides (triangle 854 stitches against
     PE's 842, +1.4 %, was +3.4 %; mean stitch 1.88 mm against 1.90).
+  - Round 6 (2026-10-31, 12 references: concentric square, portrait rectangle and ellipse,
+    20 and 36 mm circles, triangle; spiral on the 40 mm circle at pitch 1.0, 2.5 and 4.0, on a
+    20 mm circle at pitch 3.0, and two triangles):
+    - Concentric order (fixed): when the start point lies farther out than the largest whole
+      circle (a portrait rectangle's or ellipse's bottom, a triangle's corner), PE starts there
+      on the cut circles, works inwards through them and then through the whole circles to the
+      middle, without a trim. OpenStitch does the same now (`concentric-rect30x40`,
+      `-ellipse30x40`, `-triangle`).
+    - Triangle spirals (fixed): a turn starts on a corner of the outer ring, so the inner ring's
+      corner sits just after the start and the sides did not pair; corners within two stitches
+      of a turn's ends are now left out of both rings, and each side is split as finely as keeps
+      its longest stitch within the pitch and 0.05 mm (PE's own reach 2.06–2.12 mm). Wide
+      triangle 960 against 941, default triangle 851 against 842.
+    - Still open, each pinned at the internal tier with PE's value in its evidence (no tolerance
+      widened): spiral needle counts per turn below the outer power-of-two turns (pitch 4.0:
+      859 against PE's 1024, PE keeping about 32 a turn down to r 9 mm; pitch 1.0: 3419 against
+      2997, PE falling from 128 to 121, 108 … earlier; 20 mm circle at pitch 3.0: 333 against
+      384; the inner tails at 2.5 and 4.0 mm are identical, so below some radius PE's count no
+      longer depends on the pitch); concentric counts on the 20 mm circle (490 against 533),
+      the square (2443 against 2362) and the triangle (1383 against 1283), where PE's circles
+      carry about 2·π·r / pitch + 20 needle points instead of 4·2ⁿ; the density-1.0 triangle
+      spiral (441 against 425: more corner stitches on the short inner sides); the 36 mm
+      circle's width (36.0 against 35.6) and the portrait ellipse's height (39.0 against 39.5).
+  - Spiral round a hole, round 7 (2026-10-31, 6 references: 40 mm rings with 10, 15 and 20 mm
+    holes, the 15 mm ring at density 1.0 and pitch 3.0, an offset hole, a square with a square
+    hole). Decision (coordinator, 2026-10-31): the default is to sew PE-DESIGN's band, with an
+    OpenStitch mode (`compatMode: "openStitch"`, the vocabulary shared with the image wizards)
+    keeping today's single travel. What the files show: PE sews the outline's spiral in to the
+    middle of the band, then the band as separate trimmed pieces, then the hole's spiral. On
+    concentric rings the pieces are about 5.5° wide every 11.25° (31 pieces, 64 trims; every
+    22.5° with a 10 mm hole); their needle counts repeat with quarter-circle symmetry (6, 12,
+    18, 25, 34, 42); the bigger ones zigzag inside a sliver. An offset hole leaves almost no
+    band (3 tiny pieces); a square with a square hole gives three side segments. The pieces are
+    the gaps PE's own turn sampling leaves between its last outer and last hole turns, so they
+    cannot be reproduced before that sampling rule is known (the same open item as the spiral
+    needles per turn). Not implemented yet; the counts of the four concentric-ring files (and
+    the offset hole's stitch lengths) are pinned at the internal tier with PE's values in their
+    evidence, everything else, and the whole square-with-hole file, at the reference tier.
   - Cut circles on the outline (fixed 2026-10-31): a circle that only grazes the outline or a
     hole's edge (nowhere more than 0.1 mm outside: the 40 mm circle's 20 mm circle, the ring's
     7.5 mm circle on its hole) is sewn as one loop, as PE-DESIGN does, instead of breaking into
@@ -1588,7 +1670,14 @@ Line references are relative to `crates/`.
       CMYK ramp's red, which PE splits evenly between yellow and magenta (−11 % stitches).
     - Auto Select's thread choice. PE always picks four threads; OpenStitch reduces to the
       image's colours, so where PE mixes green from blue and yellow, OpenStitch gives green its
-      own thread.
+      own thread. Round 5 (eight test images, 2026-10-31) shows the picks come from the 29
+      Ver4 Option colours. Seven of the eight are PE's CMYK set (70, 90, 89, 75) with navy or
+      purple swapped in. Neither a least-squares mixing optimum (PE's set ranks 62nd to
+      6530th) nor a nearest-colour mapping (13 of 32 picks) reproduces them. Round 6's 23
+      single-colour swatches show the image's nearest Ver4 colour in the set (14 of 20) and
+      fillers from a short list (84, 83, 91, 81). The best simple rule still matches only 68
+      of 124 picks, so OpenStitch's Auto Select is unchanged
+      (docs/research/photo-stitch-2-halftone.md).
 - **Sewing-machine stitch files (PMV, 2026-10-29, #130):** OpenStitch now reads the PMV layout
   it writes (pyembroidery's description: 8-byte magic, 36-byte banner, 56-byte preamble, needle
   count and its double, 6-bit relative x / 5-bit absolute y pairs in 0.25 mm, the length and
@@ -1733,6 +1822,19 @@ Line references are relative to `crates/`.
   (`each_block_gets_its_nearest_chart_entry_as_pe_design_writes`). No spec changed. The same
   file showed the `#PES0110` thread-table reader taking a false, shorter table that starts in
   the middle of the real one (11 records of 30); it now keeps the longest table that parses.
+- **Thread-chart CSV that PE-DESIGN imports (2026-10-31, #136):** PE-DESIGN 11.50's Import Chart
+  (Option ▸ Options… ▸ Edit User Thread Chart) does read a CSV, "in the order of the Code,
+  Brand, Description, R, G, B", OpenStitch's own column order (round-6 check by the reference
+  session, files in the owner's `round6/charts`). It refused OpenStitch's export for its `#`
+  comment line, imported a column row as a black colour, split quoted fields at their commas,
+  showed a lettered code as 000, imported all 1,500 rows of a 1,500-row file, and refused the
+  issue's `#userchart` layout. `threads.exportCsv` now writes bare records only, with a comma
+  in a field as `;` and a quote as `'`, and PE imports OpenStitch's own exports (the Brother
+  chart, the sew palette and a user chart, checked the same day; PE stores an empty code as 0
+  and drops punctuation such as `;`, `.` and `'` from the text fields); the
+  reader still takes the earlier comment line, column row and quoting. The earlier finding
+  below, that charts cannot be exchanged with PE-DESIGN through files, holds for PE-DESIGN's
+  own `.btc2` charts only (there is still no export from PE).
 - **Thread-chart CSV and the built-in palette (2026-10-29, #136):** PE-DESIGN 11.50 has no
   thread-chart CSV (round-4 check: Options ▸ Edit User Thread Chart only imports; user charts
   are binary `.btc2` files, 89 bytes of high-entropy data for one colour, in the program
@@ -1815,7 +1917,15 @@ Line references are relative to `crates/`.
   for every block (PE: `FA`/`FB`/`FC FF FF` for the appliqué colours, `F9` for a cut, `FE FF FF`
   for a thread with no number).
   PE's cutting line is PEC 65 at (220, 220, 220), outside the 65-slot chart. The Appliqué wizard's
-  stages take PE's appliqué colours since the same day: material 62, position 63, and 64 for
+  stages take PE's appliqué colours since the same day, and since the same day the wizard puts
+  its lines where PE's a01–a05 have them (Add: the covering's centre d + w / 2 + 0.3 mm out,
+  the position line w / 2 − 1 mm beyond it, material and tack-down 0.5 mm further; Replace:
+  the covering on the outline) and, in Add, sews the pattern first in one group with its
+  appliqué, as PE does: OpenStitch's export of a01's design now has PE's object order, group
+  and line positions (32.6 mm across, PE 32.6 × 32.8; it was 29 mm with every line at the
+  distance, the pattern last and outside the group). Its stitch count still differs (1,735
+  against 1,063). The wizard's stages
+  take PE's appliqué colours: material 62, position 63, and 64 for
   the tack-down and, unless a colour is given, the covering stitch, so those two sew as one
   block as in PE's files; the PEC keeps a Brother chart entry's own index, so the stages are
   written as PEC 62, 63, 64, and OpenStitch's export of a01's design has PE's PEC colour list and

@@ -250,7 +250,17 @@ impl Palette {
     pub fn from_census_perceptual(census: &Census, n: usize) -> Palette {
         let mut hist = census.colors.clone();
         hist.sort_by_key(|c| pack(c.0));
-        let seeds: Vec<Lab> = median_cut_histogram(&hist, n.max(1))
+        Self::from_histogram_perceptual(&hist, n)
+    }
+
+    /// OpenStitch mode's palette of a pixel list (Photo Stitch 1): as
+    /// [`Palette::from_census_perceptual`] over the pixels' histogram.
+    pub fn build_perceptual(colors: &[Rgb], n: usize) -> Palette {
+        Self::from_histogram_perceptual(&histogram(colors), n)
+    }
+
+    fn from_histogram_perceptual(hist: &[(Rgb, u64)], n: usize) -> Palette {
+        let seeds: Vec<Lab> = median_cut_histogram(hist, n.max(1))
             .into_iter()
             .map(perceptual::lab)
             .collect();
@@ -312,6 +322,15 @@ impl Palette {
 
     /// Thread index of the box mean nearest to `c` (ties to the lower index).
     pub fn classify(&self, c: Rgb) -> usize {
+        self.thread_of
+            .get(self.nearest_mean(c))
+            .copied()
+            .unwrap_or(0)
+    }
+
+    /// Index of the box mean nearest to `c` (ties to the lower index): by CIEDE2000 in
+    /// OpenStitch mode, by RGB distance otherwise.
+    pub fn nearest_mean(&self, c: Rgb) -> usize {
         if self.perceptual {
             let l = perceptual::lab(c);
             let mut best = (f64::INFINITY, 0);
@@ -321,7 +340,7 @@ impl Palette {
                     best = (d, i);
                 }
             }
-            return self.thread_of.get(best.1).copied().unwrap_or(0);
+            return best.1;
         }
         let t = thread(c);
         let mut best = (i64::MAX, 0);
@@ -331,7 +350,7 @@ impl Palette {
                 best = (d, i);
             }
         }
-        self.thread_of.get(best.1).copied().unwrap_or(0)
+        best.1
     }
 }
 
@@ -435,6 +454,35 @@ pub fn dither(
     h: usize,
     targets: &[[f64; 3]],
 ) -> Vec<Option<usize>> {
+    diffuse(cells, w, h, targets, |c| c.map(|v| v.clamp(0.0, 255.0)))
+}
+
+/// OpenStitch mode's [`dither`]: the cells and targets (sRGB) are taken to CIELAB, and both the
+/// nearest target and the diffused error are measured there, so neighbouring threads mix by
+/// how they look rather than by RGB.
+pub fn dither_perceptual(
+    cells: &[Option<[f64; 3]>],
+    w: usize,
+    h: usize,
+    targets: &[[f64; 3]],
+) -> Vec<Option<usize>> {
+    let to_lab = |c: [f64; 3]| perceptual::lab(c.map(|v| v.round().clamp(0.0, 255.0) as u8));
+    let cells: Vec<Option<[f64; 3]>> = cells.iter().map(|c| c.map(to_lab)).collect();
+    let targets: Vec<[f64; 3]> = targets.iter().map(|&t| to_lab(t)).collect();
+    diffuse(&cells, w, h, &targets, |c| {
+        [c[0].clamp(0.0, 100.0), c[1], c[2]]
+    })
+}
+
+/// Serpentine Floyd–Steinberg over `cells` in whatever space they and `targets` share;
+/// `clamp` keeps a cell's accumulated colour in range before it is matched.
+fn diffuse(
+    cells: &[Option<[f64; 3]>],
+    w: usize,
+    h: usize,
+    targets: &[[f64; 3]],
+    clamp: impl Fn([f64; 3]) -> [f64; 3],
+) -> Vec<Option<usize>> {
     let mut work: Vec<[f64; 3]> = cells.iter().map(|c| c.unwrap_or([0.0; 3])).collect();
     let mut out = vec![None; cells.len()];
     if targets.is_empty() {
@@ -448,7 +496,7 @@ pub fn dither(
             if cells[i].is_none() {
                 continue;
             }
-            let c = work[i].map(|v| v.clamp(0.0, 255.0));
+            let c = clamp(work[i]);
             let mut best = (f64::INFINITY, 0);
             for (t, tc) in targets.iter().enumerate() {
                 let d = weighted(c, *tc);

@@ -205,16 +205,25 @@ below is pinned by a test in `tests/pes11.rs`.
   header strings; the hoop, page and thread-table fields in between are not all mapped.
 - **Header** (after the five metadata strings; `o-page-200x200`, `o-hoop-*`, `o-machine-single-100x100`,
   r27 against r01): u16 0; u16 **page mode**: 1 Custom Size page, 0 Hoop Size page (r27,
-  o-hoop-*; PE-DESIGN's default page for a new design); u16 hoop: 255, 15 (100 × 100 mm
+  o-hoop-*; PE-DESIGN's default page for a new design); u16 hoop, PE-DESIGN's id of the hoop
+  (round 6, `pe11/hoops`: single-needle 100 × 100 0, 130 × 180 1, 160 × 260 Color LCD 2,
+  180 × 300 4, 200 × 300 6, 150 × 150 Quilt 0x1A, 240 × 360 0x1C, 100 × 180 0x28 (saved only as
+  `#PES0113`); multi-needle 100 × 100 15, ø100 Round 0x16, 180 × 100 Border 0x21, an nv880e
+  hoop 255): 255, 15 (100 × 100 mm
   `nv880e-S` in r27), 1 single-needle; the hoop
   width and height in mm (150, 150) and in 0.1 inch (59, 59; 100 mm gives 39); a u8-length
   hoop/machine string (`nv880e-M` for the 150 × 150 multi-needle hoop, `nv880e-S` for 100 × 100);
   u16 0; two optional u16 values, each a u16 presence flag then the value when the flag is 1
   (1800 once in the 200 × 200 page file, 1300 twice in the single-needle 100 × 100 file; meaning
-  unknown); u32 0; the **Design Page width and height in mm**; then u16 7 (0 single-needle), 100, 7,
+  unknown); u16 0; u16 **Rotate 90 Degrees** (1 turned; PE-DESIGN then also turns the PEC's
+  stitches 90° clockwise, `s-130x180-rot90`); the **Design Page width and height in mm** (100 ×
+  100 on every Hoop Size page, whatever the hoop); then u16 7 (0 single-needle), 100, 7,
   19, 1, 0, 1, 10, 1, 0, 0, 0, 1, 10, a u8-length image file name (empty), u32 0, the identity
   transform (6 × f32), 16 bytes whose fifth u16 is 4, and the thread count. The two-character code
-  after `01 00` is `10` in the multi-needle files and `01` in the single-needle ones.
+  after `01 00` is `10` in the multi-needle files and `01` in the single-needle ones (`02` for
+  the single-needle 150 × 150 Quilt, 180 × 300 and 200 × 300 hoops). On a Custom Size page or an
+  nv880e hoop the hoop size and name fields hold the last nv880e hoop chosen (100, 100, 39, 39
+  `nv880e-S`; 150, 150, 59, 59 `nv880e-M`; 260, 160, 102, 62 `nv880e-L`).
 - **Thread table** (right before the object list): u16 count, then per thread the catalogue
   number, RGB and a pad byte, a u32 colour type (10), the PEC chart index as a string ("16" for
   005 SILVER, "5" for 800 RED, matching the PEC colour blocks), the brand ("EMBROIDERY") and the
@@ -246,6 +255,18 @@ below is pinned by a test in `tests/pes11.rs`.
   files). The thread table's fifth string is the thread's name: PE-DESIGN writes its own
   colours' PEC chart index there, and keeps a name it read from another file (pes-default-v6:
   `Red`, `Black`).
+- **Pattern lists:** the header's last fields, from byte 104 (106 with the optional hoop field
+  of o-page-200x200) to the thread table, are three lists, each a u16 count and its patterns:
+  the programmable fill patterns the design uses, the motif patterns, and a third that is empty
+  in every owner file. A pattern is a u16 size in 0.01 mm and a u16 polyline count, then each
+  polyline as in the pattern block (six zero bytes, u16 1, u16 point count, i16 x, y points in
+  a 1024-unit cell, y down): obj-progfill-owner-v lists the owner's V from Programmable Stitch
+  Creator, size 750 and (0, 0) (512, 768) (1024, 0), exactly its `.pas` source
+  (`@TILELINE 0 3 0 0 512 768 1024 0`, Default Size 7.5 mm); obj-motif-line-owner-v lists the
+  motif V, 500 and (0, 512) (512, 768) (1024, 512). A file without patterns has three zero
+  counts. The programmable fill object itself is a `CEmbLine` with region type 2 and nothing
+  else changed (its pattern block keeps PE-DESIGN's default pattern); with one pattern per
+  owner file, which object field picks a pattern from the list is not mapped.
 - Classes seen: `CEmbLine` (Shape tools: rectangle, ellipse, open and closed lines), `CEmbNText`
   with one `CTTFLetter` per letter (text), `CEmbSpecialShape` (Shapes gallery presets),
   `CEmbOne` with `CSewSeg` runs (stitch groups).
@@ -269,7 +290,7 @@ below is pinned by a test in `tests/pes11.rs`.
 | 122 | 1 on the cutting line, 5 on every other object (meaning not mapped) | a02-applique-cutting |
 | 8 (cont.) | the extent of a running or unsewn line equals the bounds; a zigzag adds half its width; the circle's is one unit wider still (589..711) and an open zigzag line's grows only across the line (r11: y ± 10, x unchanged) | r19, r07, r21, r10, r11 |
 | 132 | region sewn 1, Not Sewn 0 (every Round 3 file whose region is Not Sewn has 0; r11's open line keeps 1 with its unused Fill) | o-arc, o-rounded-rect, o-group-two-rects, r11 |
-| 134 | region sew type: 0 Satin, 1 Fill, 2 Programmable fill, 11 Not Sewn (open lines, outlines with the region off, the inner copy of a hole-sewing pair); the Round 3 region types have their own codes (not mapped: `RegionSewType::Other`) | r04, programmable-fill-45, o-group-two-rects, o-arc, hole-sewing-pentagon-star |
+| 134 | region sew type: 0 Satin, 1 Fill, 2 Programmable fill, 3 Motif, 4 Cross Stitch, 5 Concentric Circle, 6 Radial, 7 Spiral, 8 Piping, 9 Stippling, 10 Net Fill, 11 Not Sewn (open lines, outlines with the region off, the inner copy of a hole-sewing pair), 12 Zigzag Net Fill, 13 Decorative Fill, 14 Flexible Spiral. Each o-region-* file, made at the type's defaults, differs from a fill only here; the types' own attribute fields are not mapped (motif fill also changes +68, +236 and +332) | r04, programmable-fill-45, o-group-two-rects, o-arc, hole-sewing-pentagon-star |
 | 136 | region density, 0.1 line/mm | r09 (4.5 → 6.0) |
 | 138 | gradation 0 off, 1 on | region-travel-u-gradation |
 | 162 | a thread-table index for an attribute not identified yet: it points at 800 RED (PE's default colour) in every file, even when nothing sews red | r17, r18, round-1 references |
@@ -283,7 +304,7 @@ below is pinned by a test in `tests/pes11.rs`.
 | 186 | Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline | region-travel-u-* |
 | 204, 262, 286, 354, 378 | i32 x, y: the bounds' top-left corner, five times (reference points of attributes not identified) | r02, r03, o-closed-curve |
 | 298, 310 | i32 x, y: the bounds' centre (x0 + x1 and y0 + y1 halved, truncated) | r02, r03, o-open-freehand |
-| 386 | the pattern block: u16 size (10000; 750 and no polylines on the Applique Wizard's covering line), u16 polyline count, then the polylines, each six zero bytes, u16 1, u16 n and n × (i16 x, i16 y) in a 1024-unit cell: PE-DESIGN's current programmable fill pattern, as long as the pattern it holds. 53 polylines, byte-identical, in the files made with PE-DESIGN's default pattern (Brother content); one 2-point polyline in the round-4 Manual Punch files (m01 …, 22 bytes), so a body is 386 + the block + 72 bytes | all; m01 |
+| 386 | the pattern block: u16 size (10000; 750 and no polylines on the Applique Wizard's covering line), u16 polyline count, then the polylines, each six zero bytes, u16 1, u16 n and n × (i16 x, i16 y) in a 1024-unit cell: PE-DESIGN's current decorative fill pattern, as long as the pattern it holds. On a Decorative Fill it is the region's pattern: deco-fill-1line-100mm holds its `.plf` exactly (size 10000 for 100 mm, the line (128, 128)-(896, 896)); every other object gets the last decorative pattern used in the session: 53 polylines, byte-identical, in the files made with PE-DESIGN's default (Brother content), and the same one-line pattern in the round-4 Manual Punch files made after it (m01 …, 22 bytes). A body is 386 + the block + 72 bytes | all; m01 |
 | 4360 | u16 1000, 1000, then fields not mapped (u16 1, 0, 20, 0, 650, 0, 650, 0, 20, 20, 0, 1 …) | all |
 | 4372, 4388 | i32 x, y: the bounds' centre again | r02, r03 |
 | 4414, 4426 | u16: the index of the outline's last segment (vertices − 1 closed, vertices − 2 open), followed by f32 1.0 | r10 (3), r11 (0), o-open-freehand (16), o-rounded-rect (6) |
@@ -358,9 +379,15 @@ no tack-down, a 4 mm cover, Replace) writes ordinary `CEmbLine` objects in one g
 four lines, then the square; Replace drops the square):
 
 - The material line (Running, or Cutting: line type 7), the position line (Running) and the
-  tack-down (V, width 2.0 mm in the E/V field +90) on the pattern's outline offset by the
-  distance (a curved outline of 53–56 vertices), then the covering zigzag (width 3.0 mm) on the
-  pattern's own outline or that offset.
+  tack-down (V, width 2.0 mm in the E/V field +90), each an outline of 53–56 vertices with
+  rounded corners, then the covering zigzag (width 3.0 mm, smooth curve points). Where each
+  sits, outward from the pattern's outline, with w the covering width and d the distance: the
+  covering's centre line on the outline (Replace, a05) or d + w / 2 + 0.3 mm out (Add: 4.8 mm
+  at d 3, w 3 in a01–a03; 5.3 mm at w 4 in a04); the position line w / 2 − 1 mm outside the
+  covering's centre (0.5 mm; a04 0.9 mm); the material line and the tack-down 0.5 mm further.
+  In Add the square sews first and the group holds all five objects; OpenStitch's wizard
+  places its lines and groups them so since 2026-10-31 (a04's position and material lines are
+  0.1 mm inside its rule).
 - The stage colours are thread-table entries of colour type 2: catalogue number `100` (Applique
   Material, PEC 62), `101` (Applique Position, 63) and `102` (Applique, 64), RGB 0, and no chart
   index, brand or chart. The tack-down and the cover share 102. A cutting line is sewn in PEC
@@ -386,13 +413,12 @@ A rectangle starts in the middle of its bottom edge and runs round the corners; 
 four smooth vertices whose handles lie 0.5523 × the radius along the tangent. The record ends
 after its last vertex.
 
-Every owner file with a group has one group of all its objects (the Applique Wizard's output with
-the original shape, vector imports, Convert to Blocks, o-group-two-rects, the machine-* files),
-and PE-DESIGN 11.50 refused ("Unexpected file format") a file whose one group left an object out:
-OpenStitch's appliqué export of 2026-10-30 grouped its four lines without the square, while the
-same file with all five grouped, or with no group, opens (2026-10-31). The writer's export
-therefore writes a group only when one group holds every object; how PE-DESIGN stores a group of
-some of the objects, or several groups, is not mapped (captures requested).
+Until 2026-10-31 OpenStitch wrote the `CGroupObject` class's archive number there (the objects'
+count + 2), which equals PE-DESIGN's number only when the group holds the last object: PE-DESIGN
+11.50 refused ("Unexpected file format") the appliqué export, whose group held the four lines
+without the square (7 written, 6 due); the same file with all five grouped, or none, opened.
+PE-DESIGN's group-two (two groups of two) writes the second group differently (`06 80 08 00 …`);
+that layout is not mapped, and the reader reads no group from it.
 
 After the list: 10 zero bytes, or with a **hole sewing pair** 16 bytes, u16 0, 3, 3, the
 outer and inner objects' list positions and 6 zero bytes (Modify Overlap > Set hole sewing on a
@@ -402,8 +428,10 @@ turns the user's own inner shape Not Sewn; the vector import adds a Not Sewn cop
 after the pentagon and keeps the star sewn. All three files hold one pair and no groups, so
 where the group list goes after a pair, and how two pairs are listed, are not mapped (the
 writer refuses both). Then the **group list**, a u16 count then per group its MFC tag
-(`FFFF 0000 0C00 CGroupObject` the first time), a u16 with the `CGroupObject` class's archive
-number (the objects' count + 2: 1 is `CEmbLine`, 2.. the objects, then the class), the u16
+(`FFFF 0000 0C00 CGroupObject` the first time), a u16 one more than the archive number of the
+group's last-archived member (a01-rect-applique's group of all five objects, numbers 2 … 6: 7;
+o-group-two-rects: 4; group-partial, the first two of three rectangles: 4, where the
+`CGroupObject` class itself is 5), the u16
 member count and the members' object indexes as u16 (o-group-two-rects, machine-rbr …
 machine-trim-bound); 12 zero bytes; then the **sewing-order list**: u32 1 and, for every object in
 sewing order, (object index, part, 1) triples, part 2 the region, 1 the line and 0 the connection
@@ -508,7 +536,7 @@ Fit Text to Outline option changed per file.
 | +118 | u16 the outline's MFC archive number (2: the circle, the list's first object; the outline is written before the text), then u16 1 |
 
 Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
-segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
+segment and parameter fields, the attribute fields of the Round 3 region types and motif fill, the text tail's Text Attributes
 (kerning, rotation, right alignment; character spacing on plain text), the letter's line width
 and pitch fields, the
 fit's fifth alignment (stretched), which way PE-DESIGN rounds a Curve Block's handles (OpenStitch's
@@ -527,8 +555,8 @@ OpenStitch's Brother PEC chart gets the BROTHER EMBROIDERY catalogue number and 
 catalogue number, brand and chart), one `CEmbLine` per visible shape with every mapped field set,
 one `CEmbOne` per stitch pattern (its needle points in runs cut as version 6 cuts them, a jump
 run where the pattern jumps or trims, each colour block's thread added to the table), the
-groups (a design's one group of every object; other grouping is left out, see the group list
-above), the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
+groups (one group, of any of the objects; a design with several groups keeps none in the file:
+PE-DESIGN's group-two writes two groups in a layout not mapped yet), the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
 as `CEmbNText` (letters at the text's size, Satin or Fill, an optional running, triple or
 zigzag line at PE's defaults, line breaks, the line spacing %, left or centre alignment and the
 click point at the alignment point), and fitted to an outline as `CEmbAText` (the fit settings, the
@@ -538,11 +566,19 @@ the default level's strength and, for the arches, the circle measured on OpenSti
 layout; zeros where PE-DESIGN leaves stale numbers), and a Manual Punch column (`shape.column`) as a
 Straight or Curve Block object (its direction lines' ends as the outline and the lists, the
 Curve Block's handles, bounds and marks by the rules above; a Curve Block written from a design
-has handles within one unit of PE-DESIGN's, not byte-identical), and a hole sewing pair as above:
+has handles within one unit of PE-DESIGN's, not byte-identical), a hole sewing pair as above:
 the inner shape paired itself when it is not sewn, else a Not Sewn copy of it after the outer
-object. What it
+object, a programmable fill as region type 2 with its pattern in the header's first list
+(OpenStitch's own tile or a user's imported `.pas`, the tile's lines scaled to the 1024-unit
+cell, the tile width as the size), the Cross Stitch, Concentric Circle, Radial, Spiral, Piping,
+Stippling, Net Fill, Zigzag Net Fill and Flexible Spiral types by their codes at PE-DESIGN's
+default attributes (OpenStitch's own settings of these types are not carried), and a Decorative
+Fill with its pattern in the object's pattern block (free lines in the 1024-unit cell, the tile
+width as the size). What it
 cannot hold fails with the object named: a second hole sewing pair, a hole sewing pair in a
-design with groups, several outlines in one object, programmable, motif and the other region types, motif, stem,
+design with groups, several outlines in one object, a second programmable fill pattern, a
+programmable fill tile that is not square or has embossed or engraved areas, motif fill, a
+decorative pattern chained in rows or not square, contour fill (OpenStitch's own), motif, stem,
 candlewicking, chain and cutting lines; text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character
@@ -570,8 +606,14 @@ byte-identical to PE-DESIGN's outside these documented differences
   custom pages have 10); any other page as a Custom Size page with r01's hoop fields (150 × 150
   mm, `nv880e-M`, multi-needle) and the page size. PE-DESIGN shows a Custom Size page with a
   Hoop Settings tab, 290 × 190 mm section outlines and no stitch count in the status bar until
-  something is selected; its own Hoop Size page file (r27) shows none of them. The machine type
-  and hoop of the design's machine settings are not mapped yet.
+  something is selected; its own Hoop Size page file (r27) shows none of them. Since
+  2026-10-31 the design's machine type and hoop are written as PE-DESIGN writes a Hoop Size
+  page for them (`pes11::HoopPage`: the hoop id, the code, the machine-type field and Rotate 90
+  Degrees, with the PEC's stitches turned 90° clockwise for a turned hoop), for the hoops whose
+  PE id is known: single-needle 100 × 100, 130 × 180, 160 × 260, 200 × 300, 240 × 360 and
+  multi-needle 100 × 100 (`hoop_size_pages_are_written_as_pe_design_writes_each_hoop` against
+  PE's file for each). Other hoops are still a Custom Size page of their size, with r01's
+  multi-needle fields.
 - **Header strings:** the metadata strings are written in Windows-1252 with CR LF, as
   PE-DESIGN shows them; pes-design-properties holds OpenStitch's former UTF-8 bytes, which
   PE-DESIGN kept when it re-saved the file, so its strings (and the offsets after them) differ.
@@ -1313,18 +1355,23 @@ OpenStitch's own embroidery font format, written by `fonts.save` and read by `fo
 - `.osd` files carry the same font objects under `design.fonts`, next to TrueType fonts, which
   are stored as `{"trueType": {"face": 0, "bytes": "<base64>"}}`.
 
-## Thread chart CSV (OpenStitch)
+## Thread chart CSV
 
-OpenStitch's own format for user thread charts (`threads.importCsv`, `threads.exportCsv`;
-editor: Edit ▸ User Thread Charts… ▸ Import CSV… / Export CSV…). PE-DESIGN 11.50 has no
-thread-chart CSV: its user charts are binary `.btc2` files in its program folder (`MyChart\`),
-made and imported only through Options ▸ Edit User Thread Chart, so charts cannot be exchanged
-with PE-DESIGN through files (round-4 check, issue #136). The `.btc2` format is not decoded.
+User thread charts as CSV (`threads.importCsv`, `threads.exportCsv`; editor: Edit ▸ User Thread
+Charts… ▸ Import CSV… / Export CSV…), in the layout PE-DESIGN 11.50's Import Chart reads
+(Option ▸ Options… ▸ Edit User Thread Chart ▸ Import Chart…, file type "CSV File(*.csv)";
+round-6 checks, 2026-10-31, owner's notes `round6/charts`, issue #136): PE-DESIGN imports such
+a file as a user chart named after the file, without hyphens (`v2-bare-3.csv` became "v2bare3").
+OpenStitch's own exports of the Brother chart (64 rows), the sew palette (90 rows) and a user
+chart all imported ("Importing of the chart is completed."), codes and colours as written. PE-DESIGN has no CSV export; it keeps its charts as binary
+`.btc2` files, which OpenStitch does not read.
 
 - UTF-8; a leading BOM is ignored. Lines end in CR LF when written; LF is read too.
-- Lines starting with `#` are comments. The writer puts `# OpenStitch thread chart: <name>` first.
-- An optional column row `code,brand,description,R,G,B` (any case) is skipped; the writer
-  always writes it.
+- The writer writes one record per colour and nothing else. PE-DESIGN refuses a file with a
+  `#` line ("Failed to import the CSV file. CSV must be in the order of the Code, Brand,
+  Description, R, G, B.") and imports a column row as a black colour named "description".
+  OpenStitch's reader still skips `#` comment lines and a column row
+  `code,brand,description,R,G,B` (any case), as earlier OpenStitch versions wrote them.
 - One colour per line, six fields in this order:
 
 | Field | Content |
@@ -1334,20 +1381,25 @@ with PE-DESIGN through files (round-4 check, issue #136). The `.btc2` format is 
 | `description` | colour name, may be empty; at most 100 characters kept |
 | `R`, `G`, `B` | 0–255 |
 
-- A field in double quotes may hold commas; `""` in it is one quote (RFC 4180). The writer
-  quotes a field only when it holds a comma, a quote or leading or trailing spaces. A record
-  stays on one line: control characters are dropped. Spaces around fields are ignored.
-- At most 2,000 colours per chart and 100 charts; files over 4 MiB are refused.
-
-Earlier OpenStitch versions read the same six columns without quoting or a column row, so
-their files still import. The built-in charts (`threads.builtinCharts`: `brother` = the
+- PE-DESIGN splits a record at every comma and reads no quoting (`"Brand, Inc"` came in as
+  brand `"Brand`, description `Inc"`), so the writer writes a comma in a field as `;` and a
+  double quote as `'`. The reader still takes a field in double quotes holding commas, with
+  `""` as one quote (RFC 4180), from files of earlier OpenStitch versions. A record stays on
+  one line: control characters are dropped. Spaces around fields are ignored.
+- PE-DESIGN shows a code with a letter (`A12`) as `000` and an empty code as `0`; OpenStitch's
+  codes are digits only. It drops punctuation from the brand and description (`Acme; Inc.`
+  came in as `Acme Inc`, `Say 'hi'` as `Say hi`).
+- At most 2,000 colours per chart and 100 charts; files over 4 MiB are refused. PE-DESIGN
+  imported all 1,500 rows of a 1,500-row file (with the message "Importing the CSV file was
+  stopped at line 1500."), so the issue's 1,499-colour cap is not PE's; its own limit is not
+  known. The built-in charts (`threads.builtinCharts`: `brother` = the
 64-entry PEC chart, entries 1–61 marked `basic` as the ones PE-DESIGN matches to;
 `sewPalette` = the 94-entry sew palette below; `janomeJef`, `janomeSew`, `husqvarnaHus`,
 `husqvarnaShv`) export in the same schema
 (`threads.exportCsv {builtin}`), so any of them can be copied into a user chart and edited.
-Not adopted from #136, for want of any PE-DESIGN reference: the `#userchart` header with a
-chart code, the `id,R,G,B,attr,code,description` column order, the 6-character code and the
-1,499-colour cap.
+Not adopted from #136, against PE-DESIGN's Import Chart: the `#userchart` header with a chart
+code and the `id,R,G,B,attr,code,description` column order (PE refused that file), the
+1,499-colour cap (PE took 1,500 rows) and a 6-character code field (not seen in PE).
 
 The sew palette (`openstitch_core::sew_palette`, #136): 94 ids, 1-based. Ids 1–61 are the
 BROTHER EMBROIDERY chart (PEC entries 1–61, with their codes), 62–65 reserved (PE-DESIGN shows

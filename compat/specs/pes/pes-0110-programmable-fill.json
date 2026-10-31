@@ -1,0 +1,127 @@
+{
+  "schema": "openstitch-compat/1",
+  "id": "pes-0110-programmable-fill",
+  "area": "pes",
+  "title": "PES 0110 writes a programmable fill with its pattern listed in the header",
+  "description": "design.export with pesVersion 11 writes a programmable fill region as region type 2 and lists its pattern before the thread table, as PE-DESIGN 11.50 does for the owner's V drawn in Programmable Stitch Creator (crates/openstitch-formats/tests/fixtures/pe11/obj-progfill-owner-v.pes; pattern compat/reference/pes/owner-v.pas, Default Size 7.5 mm): u16 size in 0.01 mm, the polylines in a 1024-unit cell. The design is that file's: a 30 x 20 mm rectangle at (20,20) mm, region programmable fill with owner-v at 7.5 mm, density 4.5, direction 45 degrees, no under sewing, 007 PRUSSIAN BLUE, line running in red.",
+  "covers": {
+    "audit": [
+      5
+    ],
+    "featureMatrix": [
+      {
+        "area": "Files",
+        "feature": "PES 0110 (PE-DESIGN 11) editable shapes write"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "kind": "audit",
+      "note": "docs/COMPATIBILITY_AUDIT.md item 5"
+    },
+    {
+      "kind": "measured",
+      "note": "docs/FILE_FORMATS.md, PES 0110 header: the pattern lists, read from obj-progfill-owner-v and obj-motif-line-owner-v (pes11.rs, programmable_fill_and_motif_patterns_read_from_the_header); engine programmable_fill_writes_its_pattern_into_the_header_list"
+    }
+  ],
+  "inputs": [
+    {
+      "from": "compat/reference/pes/owner-v.pas",
+      "name": "owner-v.pas"
+    }
+  ],
+  "script": [
+    {
+      "command": "design.new",
+      "params": {
+        "name": "progfill",
+        "width": 100,
+        "height": 100
+      }
+    },
+    {
+      "command": "pattern.import",
+      "params": {
+        "path": "owner-v.pas",
+        "id": "owner-v"
+      }
+    },
+    {
+      "command": "shape.rectangle",
+      "params": {
+        "x": 20,
+        "y": 20,
+        "width": 30,
+        "height": 20,
+        "fill": 1,
+        "outline": 5
+      }
+    },
+    {
+      "command": "object.setLine",
+      "params": {
+        "ids": [
+          1
+        ],
+        "type": "running",
+        "color": 5
+      }
+    },
+    {
+      "command": "object.setRegion",
+      "params": {
+        "id": 1,
+        "type": "programmableFill",
+        "pattern": "owner-v",
+        "patternWidth": 7.5,
+        "patternHeight": 7.5,
+        "angle": 45,
+        "density": 4.5,
+        "color": 1,
+        "underlay": false
+      }
+    }
+  ],
+  "exports": [
+    {
+      "path": "a.pes",
+      "pesVersion": "11"
+    }
+  ],
+  "references": [
+    {
+      "id": "pe-design",
+      "file": "pes/pes-0110-programmable-fill.pes",
+      "make": "Run `stitchtool compat --only pes-0110-programmable-fill` and open target/compat/work/pes-0110-programmable-fill/a.pes in PE-DESIGN 11 (App menu > Open). Expected: a 30 x 20 mm rectangle at (20,20) mm with region Prog. Fill Stitch using the owner's V pattern (the one drawn in Programmable Stitch Creator as owner-v.pas), 7.5 x 7.5 mm, density 4.5, direction 45, under sewing off, 007 PRUSSIAN BLUE, line Running Stitch in red, as the owner's obj-progfill-owner-v.pes. Record in the MANIFEST notes: whether the file opens and with what warning, which pattern the region shows in Sewing Attributes (the V, or another), its size and direction fields, and the status-bar size and stitch count against obj-progfill-owner-v's (30,00 x 20,00 mm, 641 stitches). Then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, under the file name given, and record the PE-DESIGN version, the date, the operating system and every setting in compat/reference/MANIFEST.json (see docs/COMPATIBILITY_TESTS.md). If PE-DESIGN refuses the file or opens it blank, do not add a file: write what you saw in the notes of docs/COMPATIBILITY_TESTS.md instead."
+    }
+  ],
+  "measurements": [
+    {
+      "id": "version",
+      "measure": {
+        "kind": "pesVersion"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": "0110",
+      "evidence": "PE-DESIGN 11's Layout & Editing Ver.11.0 file signature",
+      "reference": {}
+    },
+    {
+      "id": "classes",
+      "measure": {
+        "kind": "pesClasses"
+      },
+      "source": {
+        "export": "a.pes"
+      },
+      "expected": [
+        "CEmbLine"
+      ],
+      "evidence": "obj-progfill-owner-v.pes: one CEmbLine; the reader parses the whole list",
+      "reference": {}
+    }
+  ]
+}

@@ -70,11 +70,9 @@ Reading it:
   dark-green trees, the mosaic's greens and browns, the robot's teal.
 - **The lettering (g08) and folk bird (g15) lose 0.3–0.7 ΔE.** k-means moves a small accent
   colour towards its larger neighbours, and the anti-aliased letter edges merge.
-- **The mandala (g11), thin line art, loses its lines in OpenStitch mode.** The light-grey
-  line pixels match the white thread, which is the background. When cleanup leaves nothing,
-  the mode falls back to PE-DESIGN's cleanup. Line art belongs in Design Center's line image
-  anyway. The note for the next step: keep a centre that is distinct from the background off
-  the background's thread.
+- **The mandala (g11), thin line art, lost its lines in the first version.** The light-grey
+  line pixels matched the white thread, which is the background, and the 3 mm² cleanup
+  merged the line pieces. Fixed 2026-10-31 (section 2.2).
 
 Ablation:
 - **Perceptual matching of the median-cut colours alone:** robot 5.2 → 4.2, watercolour
@@ -86,6 +84,68 @@ Ablation:
   a cost of 0.3–0.7 ΔE when used alone.
 - **6 mm² with two passes:** costs more colour (storybook 12.1) for few further trims, so
   3 mm² was kept.
+
+## 2.2 Line art (2026-10-31)
+
+The mandala sewed 211 stitches in OpenStitch mode, against PE-DESIGN mode's 2,590. Three
+changes, each measured, bring it back to 2,195 stitches at ΔE 4.6 (PE-DESIGN mode 4.5):
+
+- **Background by colour, not by thread.** OpenStitch mode leaves out the background
+  colour's own pixels, not every colour that shares its thread. The mandala's light-grey
+  edge shades (centre 214, 9.7 ΔE00 from white) share the white thread with the background.
+  They were left out with it, and now stay.
+- **Thin pieces stay on line art.** When the left-out background covers at least 75 % of the
+  image, a region under the minimum area stays if its mean width (area over its longest side)
+  is at most 0.5 mm and it is at least twice as long. Lines and their dots stay; compact
+  specks still merge.
+  - Applying the rule to every image undid the speck cleanup on photos: the storybook went
+    back to 603 trims and 345 specks, because paintings are full of thin edge slivers. So it
+    applies to line art only.
+- **No majority pass.** The pass erased 1 px lines and cost the lettering 0.6 ΔE (8.1 →
+  7.6). Without it, OpenStitch mode is the perceptual palette and the 3 mm² cleanup.
+
+The nine other images, against the first version:
+
+| Version | Mean ΔE | Stitches vs PE mode | Trims vs PE mode | Specks |
+|---|---|---|---|---|
+| First version | 8.7 | −20 % | −52 % | 0 |
+| With these changes | 8.6 | −14 % | −48 % | 10 |
+
+The ten specks are the lettering's edge slivers (its cream background is over 75 %). The
+added stitches come from dropping the majority pass.
+
+## 2.3 Photo Stitch 1 (2026-10-31)
+
+OpenStitch mode reaches Photo Stitch 1 in colour (method 3.6):
+- the threads are the perceptual palette of 3.1 (CIELAB k-means, CIEDE2000 thread matching);
+- the cells are error-diffused in CIELAB, so both the nearest thread and the carried error
+  are measured by appearance (`palette::dither_perceptual`).
+
+Mono and Photo Stitch 2's line screen stay as PE-DESIGN's.
+
+Nine photos and soft images at defaults:
+
+| Image | ΔE | Stitches | Trims |
+|---|---|---|---|
+| p01 portrait | 10.7 → 8.6 | 12,512 → 12,983 | 385 → 451 |
+| p03 storybook | 11.0 → 8.7 | 16,018 → 16,911 | 789 → 1,003 |
+| p04 cat | 8.9 → 6.6 | 21,077 → 21,280 | 839 → 843 |
+| p05 dog | 10.9 → 8.8 | 17,910 → 17,852 | 733 → 843 |
+| p06 sunset | 10.4 → 7.0 | 11,038 → 11,352 | 370 → 474 |
+| p07 fruit | 9.6 → 9.1 | 22,162 → 21,349 | 1,332 → 1,266 |
+| p10 night street | 9.9 → 7.6 | 11,343 → 11,687 | 464 → 688 |
+| p11 high key | 5.2 → 4.0 | 18,985 → 19,460 | 489 → 567 |
+| g09 gradient | 13.3 → 13.1 | 9,105 → 8,686 | 103 → 63 |
+
+Each cell reads PE-DESIGN mode → OpenStitch mode.
+
+Across the nine images:
+- **Colour:** the mean ΔE falls 18 %, from 10.0 to 8.2.
+- **Stitches:** about the same (+1 %).
+- **Trims:** 13 % more. Dithering by appearance alternates threads more finely in mid-tones.
+
+The test `perceptual_dither_mixes_by_lightness` pins the difference: a grey of lightness 50
+between black and white threads mixes 50 % white in OpenStitch mode, against 47 % by RGB.
 
 ## 3. Methods
 
@@ -186,20 +246,21 @@ one.
   is unaffected.
 - **OpenStitch mode changes three things:**
   - the colour reduction (3.1);
-  - the default small-region area, 3 mm² instead of 1;
-  - one majority pass on the labels (3.2).
+  - the default small-region area, 3 mm² instead of 1, merging compact specks only on line
+    art;
+  - the background left out by colour rather than by thread (2.2).
 
   Settings the user changes still win.
-- **Other wizards:** Cross Stitch and the Photo Stitches stay PE-only until a method beats
+- **Photo Stitch 1 in colour** gets the perceptual palette and CIELAB dithering (2.3).
+- **Other wizards:** Cross Stitch, Mono and Photo Stitch 2 stay PE-only until a method beats
   PE-DESIGN mode on their test images.
 
 ## 5. Next steps
 
 1. **Auto Punch's OpenStitch mode**, as measured here. Then the gallery shows both modes side
    by side (`tools/gallery.py`).
-2. **Keep line art's lines:** a centre distinct from the background keeps its own thread (the
-   g11 failure).
-3. **Photo Stitch 1's perceptual palette and error diffusion (3.6)**, measured on the photos
-   (p01, p04, p07) with the same harness.
+2. **Keep line art's lines:** done 2026-10-31 (2.2).
+3. **Photo Stitch 1's perceptual palette and error diffusion (3.6):** done 2026-10-31 (2.3).
+   Next for it: fewer trims, by joining runs of one thread through the dither.
 4. **SLIC before Auto Punch on photos (3.3)**, if 1 and 3 leave the painted images ragged.
 5. **Other brands' thread charts** for the colour floor (with B13).

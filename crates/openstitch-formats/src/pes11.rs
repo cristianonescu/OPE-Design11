@@ -78,15 +78,130 @@ pub const TOOL_SETTINGS: [u16; 13] = [1, 123, 123, 50, 123, 123, 117, 117, 50, 1
 /// [`SETTINGS_FIELDS`] on the Applique Wizard's covering line and vector-imported shapes.
 pub const PLAIN_SETTINGS: [u16; 13] = [0, 50, 50, 100, 50, 50, 50, 50, 100, 50, 50, 100, 0];
 
+/// A programmable fill or motif pattern as the header lists it: u16 size (0.01 mm: 750 for the
+/// owner's 7.5 mm V), u16 polyline count, then each polyline as a pattern block's (six zero
+/// bytes, u16 1, u16 point count, i16 x, y points in a 1024-unit cell, y down).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct PesPattern {
+    pub size: u16,
+    pub polylines: Vec<Vec<(i16, i16)>>,
+}
+
+/// The header's three pattern lists (programmable fill, motif, a third always empty so far),
+/// from the end of its fixed fields (104 bytes; 106 with the optional hoop field of
+/// o-page-200x200) to the thread table. `None` when they don't parse to its end.
+fn read_pattern_lists(header: &[u8]) -> Option<[Vec<PesPattern>; 3]> {
+    [104, 106].into_iter().find_map(|start| {
+        let mut r = ByteReader::new(header);
+        r.offset = start;
+        let mut lists: [Vec<PesPattern>; 3] = Default::default();
+        for list in &mut lists {
+            let count = r.u16le().ok()?;
+            for _ in 0..count {
+                let size = r.u16le().ok()? as u16;
+                let polylines = r.u16le().ok()?;
+                let mut pattern = PesPattern {
+                    size,
+                    polylines: Vec::new(),
+                };
+                for _ in 0..polylines {
+                    r.skip(6).ok()?;
+                    if r.u16le().ok()? != 1 {
+                        return None;
+                    }
+                    let n = r.u16le().ok()?;
+                    let mut line = Vec::with_capacity(usize::from(n as u16));
+                    for _ in 0..n {
+                        line.push((r.u16le().ok()? as i16, r.u16le().ok()? as i16));
+                    }
+                    pattern.polylines.push(line);
+                }
+                list.push(pattern);
+            }
+        }
+        (r.offset == header.len()).then_some(lists)
+    })
+}
+
+/// The header's three pattern lists as [`read_pattern_lists`] reads them.
+fn write_pattern_lists(w: &mut ByteWriter, lists: [&[PesPattern]; 3]) {
+    for list in lists {
+        w.u16le(list.len() as i64);
+        for p in list {
+            write_pattern(w, p);
+        }
+    }
+}
+
+/// One pattern: u16 size, u16 polyline count, the polylines (also the layout of a
+/// `CEmbLine`'s pattern block).
+fn write_pattern(w: &mut ByteWriter, p: &PesPattern) {
+    w.u16le(i64::from(p.size));
+    w.u16le(p.polylines.len() as i64);
+    for line in &p.polylines {
+        w.fill(0, 6);
+        w.u16le(1);
+        w.u16le(line.len() as i64);
+        for &(x, y) in line {
+            w.u16le(i64::from(x as u16));
+            w.u16le(i64::from(y as u16));
+        }
+    }
+}
+
+/// A pattern block as [`write_pattern`] writes it, filling `bytes` exactly.
+fn read_pattern(bytes: &[u8]) -> Option<PesPattern> {
+    let mut r = ByteReader::new(bytes);
+    let size = r.u16le().ok()? as u16;
+    let count = r.u16le().ok()?;
+    let mut polylines = Vec::new();
+    for _ in 0..count {
+        r.skip(6).ok()?;
+        if r.u16le().ok()? != 1 {
+            return None;
+        }
+        let n = r.u16le().ok()?;
+        let mut line = Vec::new();
+        for _ in 0..n {
+            line.push((r.u16le().ok()? as i16, r.u16le().ok()? as i16));
+        }
+        polylines.push(line);
+    }
+    (r.offset == bytes.len()).then_some(PesPattern { size, polylines })
+}
+
 /// Region sew type (`CEmbLine` body +134).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RegionSewType {
     Satin,
     Fill,
     ProgrammableFill,
+    /// Motif Stitch (3: obj-motif-fill-owner-v).
+    Motif,
+    /// Cross Stitch (4: o-region-cross).
+    Cross,
+    /// Concentric Circle (5: o-region-concentric).
+    Concentric,
+    /// Radial (6: o-region-radial).
+    Radial,
+    /// Spiral (7: o-region-spiral).
+    Spiral,
+    /// Piping (8: o-region-piping).
+    Piping,
+    /// Stippling (9: o-region-stippling).
+    Stippling,
+    /// Net Fill (10: o-region-net-fill).
+    NetFill,
     /// Region "Not Sewn" (code 11): open lines, outlines with the region off, and the inner
     /// copy of a hole-sewing pair.
     NotSewn,
+    /// Zigzag Net Fill (12: o-region-zigzag-net).
+    ZigzagNet,
+    /// Decorative Fill (13: deco-fill-1line-100mm); its pattern is the object's pattern block
+    /// ([`Shape::decorative`]).
+    Decorative,
+    /// Flexible Spiral (14: o-region-flexible-spiral).
+    FlexibleSpiral,
     /// A value not mapped yet.
     Other(u16),
 }
@@ -97,7 +212,18 @@ impl RegionSewType {
             0 => Self::Satin,
             1 => Self::Fill,
             2 => Self::ProgrammableFill,
+            3 => Self::Motif,
+            4 => Self::Cross,
+            5 => Self::Concentric,
+            6 => Self::Radial,
+            7 => Self::Spiral,
+            8 => Self::Piping,
+            9 => Self::Stippling,
+            10 => Self::NetFill,
             11 => Self::NotSewn,
+            12 => Self::ZigzagNet,
+            13 => Self::Decorative,
+            14 => Self::FlexibleSpiral,
             v => Self::Other(v),
         }
     }
@@ -107,7 +233,18 @@ impl RegionSewType {
             Self::Satin => 0,
             Self::Fill => 1,
             Self::ProgrammableFill => 2,
+            Self::Motif => 3,
+            Self::Cross => 4,
+            Self::Concentric => 5,
+            Self::Radial => 6,
+            Self::Spiral => 7,
+            Self::Piping => 8,
+            Self::Stippling => 9,
+            Self::NetFill => 10,
             Self::NotSewn => 11,
+            Self::ZigzagNet => 12,
+            Self::Decorative => 13,
+            Self::FlexibleSpiral => 14,
             Self::Other(v) => v,
         }
     }
@@ -132,6 +269,22 @@ pub struct Vertex {
     pub kind: u32,
 }
 
+/// A Hoop Size page's machine type and hoop as PE-DESIGN 11.50 writes them (round-6 captures,
+/// `tests/fixtures/pe11/hoops`): the hoop's id in PE-DESIGN's own numbering (single-needle
+/// 100 × 100 mm 0, 130 × 180 1, 160 × 260 (Color LCD) 2, 200 × 300 6, 240 × 360 0x1C;
+/// multi-needle 100 × 100 15, an nv880e hoop 0xFF), the two characters after the signature's
+/// `01 00` (`01` single-needle, `02` for some single-needle hoops such as 200 × 300, `10`
+/// multi-needle), Rotate 90 Degrees, and a u16 that is 7 on a multi-needle machine and 0 on a
+/// single-needle one. The page size field keeps 100 × 100 on every Hoop Size page.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HoopPage {
+    pub hoop: u8,
+    pub code: [u8; 2],
+    pub multi_needle: bool,
+    /// The hoop is turned 90°: PE-DESIGN also turns the machine stitches 90° clockwise.
+    pub rotated: bool,
+}
+
 /// What [`read_objects`] found after the header strings, and what [`write`] takes.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Objects {
@@ -148,8 +301,11 @@ pub struct Objects {
     pub header: Option<Vec<u8>>,
     /// The two characters after the signature's `01 00`: `10` in the multi-needle files, `01`
     /// in the single-needle ones (o-machine-single-100x100, PE-DESIGN's re-saves of version 6
-    /// files); `None` writes `10`.
+    /// files); `None` writes [`HoopPage::code`], else `10`.
     pub code: Option<[u8; 2]>,
+    /// The machine type and hoop of a Hoop Size page ([`HoopPage`]); `None` writes PE-DESIGN's
+    /// default New page (multi-needle, hoop 15) on a Hoop Size page.
+    pub hoop: Option<HoopPage>,
     /// The thread table, in its file order (the shapes' colour indexes point into it).
     pub threads: Vec<Thread>,
     pub shapes: Vec<Shape>,
@@ -166,6 +322,12 @@ pub struct Objects {
     /// hole-sewing-pentagon-star, a Not Sewn copy of the star after the pentagon). One pair per
     /// file is mapped.
     pub holes: Vec<[u16; 2]>,
+    /// The programmable fill patterns the header lists before the thread table (the owner's V
+    /// drawn in Programmable Stitch Creator: obj-progfill-owner-v). Read from a file's header;
+    /// written when the header is not kept ([`Objects::header`] `None`).
+    pub fill_patterns: Vec<PesPattern>,
+    /// The motif patterns listed after them (obj-motif-line-owner-v).
+    pub motif_patterns: Vec<PesPattern>,
     /// The first object class that was not read, if any.
     pub unparsed: Option<String>,
 }
@@ -217,8 +379,16 @@ pub struct Shape {
     /// Applique Wizard's covering line (a01-rect-applique) and shapes from a vector import
     /// (hole-sewing-pentagon-star) have them.
     pub plain_settings: bool,
+    /// Body +176: 1 in PE-DESIGN's files but group-partial's rectangles, 0 there (meaning not
+    /// mapped).
+    pub flag_176: u16,
     /// From the Shapes gallery (`CEmbSpecialShape`): the same record, kept under that class.
     pub gallery: bool,
+    /// A Decorative Fill's pattern, held in the object's pattern block (deco-fill-1line-100mm:
+    /// size 10000 for 100 mm, the line (128, 128)-(896, 896) of its `.plf`). PE-DESIGN writes the
+    /// last decorative pattern used into every object's block; other objects get OpenStitch's
+    /// placeholder.
+    pub decorative: Option<PesPattern>,
     /// A Manual Punch block (Straight or Curve Block, and PE-DESIGN's Convert to Blocks):
     /// its sewing-direction lines in order, each as the vertices of its two ends, empty on every
     /// other shape. The Manual Punch tool's blocks join vertex k and 2n − 1 − k (the outline is
@@ -273,7 +443,9 @@ impl Shape {
             under_sewing_type: 2,
             flag_178: 1,
             plain_settings: false,
+            flag_176: 1,
             gallery: false,
+            decorative: None,
             punch: Vec::new(),
             punch_exit: 0,
             no_positions: false,
@@ -582,12 +754,15 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             hoop_page,
             header: header.clone(),
             code: data.get(14..16).map(|c| [c[0], c[1]]),
+            hoop: None,
             threads: threads.clone(),
             shapes,
             texts,
             stitch_groups,
             groups,
             holes: Vec::new(),
+            fill_patterns: Vec::new(),
+            motif_patterns: Vec::new(),
             unparsed,
         })
     };
@@ -665,9 +840,13 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             }
         }
     }
-    let (holes, groups) = read_groups(&mut r, &mut map).unwrap_or_default();
+    let (holes, groups) = read_groups(&mut r, &mut map, &numbers).unwrap_or_default();
     let mut objects: Objects = done(shapes, texts, stitch_groups, groups, None)?;
     objects.holes = holes;
+    if let Some([fill, motif, _]) = objects.header.as_deref().and_then(read_pattern_lists) {
+        objects.fill_patterns = fill;
+        objects.motif_patterns = motif;
+    }
     Ok(objects)
 }
 
@@ -694,13 +873,17 @@ fn read_tag(
     Ok(Err(tag))
 }
 
-/// The group list after the objects: 10 zero bytes, a u16 count, then per group its MFC tag,
-/// a u16 (the `CGroupObject` class's archive number), the u16 member count and the members'
-/// object indexes as u16. Anything else ends the list quietly.
 /// Hole sewing pairs and groups, as read after the object list.
 type HolesAndGroups = (Vec<[u16; 2]>, Vec<Vec<u16>>);
 
-fn read_groups(r: &mut ByteReader<'_>, map: &mut Vec<Option<String>>) -> Result<HolesAndGroups> {
+/// The group list after the objects: 10 zero bytes (16 with a hole sewing pair), a u16 count,
+/// then per group its MFC tag, a u16 one more than its last member's archive number, the u16
+/// member count and the members' object indexes as u16. Anything else ends the list quietly.
+fn read_groups(
+    r: &mut ByteReader<'_>,
+    map: &mut Vec<Option<String>>,
+    numbers: &[(u16, u16)],
+) -> Result<HolesAndGroups> {
     // Before the groups: ten zero bytes, or with a hole sewing pair sixteen bytes, u16 0, 3, 3,
     // the outer and inner positions and six zero bytes (hole-sewing-pentagon-star: 0, 1; the
     // rings: 1, 0; all three without groups).
@@ -719,11 +902,23 @@ fn read_groups(r: &mut ByteReader<'_>, map: &mut Vec<Option<String>>) -> Result<
             _ => return Ok((holes, groups)),
         }
         map.push(None);
-        r.u16le()?; // the class's archive number
+        // One more than the archive number of the group's last-archived member.
+        let field = r.u16le()? as u16;
         let n = r.u16le()? as usize;
         let mut members = Vec::with_capacity(n);
         for _ in 0..n {
             members.push(r.u16le()? as u16);
+        }
+        // A member outside the list, or a number that isn't one past the last member's: a group
+        // layout not mapped yet (group-two, PE-DESIGN's two groups of two), so nothing is read
+        // rather than nonsense.
+        let last = members
+            .iter()
+            .map(|&m| numbers.iter().find(|&&(_, p)| p == m).map(|&(n, _)| n))
+            .collect::<Option<Vec<u16>>>()
+            .and_then(|n| n.into_iter().max());
+        if last.map(|l| l + 1) != Some(field) {
+            return Ok((holes, Vec::new()));
         }
         groups.push(members);
     }
@@ -1021,7 +1216,16 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
             .iter()
             .zip(PLAIN_SETTINGS)
             .all(|(&at, v)| u16_at(body, at) == v),
+        flag_176: u16_at(body, 176),
         gallery: false,
+        decorative: (u16_at(body, 134) == 13)
+            .then(|| {
+                read_pattern(
+                    &body[PATTERN_END - template::PATTERN_BYTES
+                        ..body.len() - template::BODY_TAIL.len()],
+                )
+            })
+            .flatten(),
         punch,
         punch_exit,
         no_positions,
@@ -1188,7 +1392,10 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
             ));
         }
     }
-    let pattern = pec::prepare(pattern);
+    let pattern = match objects.hoop {
+        Some(h) if h.rotated => pec::prepare(&pec::turned_for_hoop(pattern)),
+        _ => pec::prepare(pattern),
+    };
     let mut w = ByteWriter::default();
     w.ascii("#PES0110");
     let pec_placeholder = w.len();
@@ -1201,9 +1408,13 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
         .shapes
         .iter()
         .any(|s| s.line_sewn && s.line_type == Shape::LINE_CUTTING);
-    let code = objects
-        .code
-        .unwrap_or(if cutting { [b'1' | 0x80, b'0'] } else { *b"10" });
+    let code = objects.code.unwrap_or_else(|| {
+        let mut code = objects.hoop.map_or(*b"10", |h| h.code);
+        if cutting {
+            code[0] |= 0x80;
+        }
+        code
+    });
     w.append(&code);
     for key in crate::pes::METADATA_KEYS {
         crate::pes::write_string8(&mut w, pattern.metadata.get(key).map(String::as_str));
@@ -1211,13 +1422,21 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     let page = objects.page_mm.unwrap_or((100, 100));
     if let Some(h) = &objects.header {
         w.append(h);
-    } else if objects.hoop_page && page != (100, 100) {
+    } else if objects.hoop_page && objects.hoop.is_none() && page != (100, 100) {
         return Err(FormatError::ValueOutOfRange(format!(
             "PES 0110: a Hoop Size page of {} x {} mm (only PE-DESIGN's 100 x 100 mm hoop page is mapped)",
             page.0, page.1
         )));
     } else {
-        write_header(&mut w, page, objects.hoop_page);
+        write_header(&mut w, page, objects.hoop_page, objects.hoop);
+        // The templates end with the three empty pattern lists; a design's patterns replace them.
+        if !objects.fill_patterns.is_empty() || !objects.motif_patterns.is_empty() {
+            w.bytes.truncate(w.bytes.len() - 6);
+            write_pattern_lists(
+                &mut w,
+                [&objects.fill_patterns, &objects.motif_patterns, &[]],
+            );
+        }
     }
     write_threads(&mut w, &objects.threads);
     w.u16le(total as i64);
@@ -1253,8 +1472,9 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
     w.patch32le(pec_placeholder, w.len() as i64);
     let pec_start = w.len();
     let list = pec::write_section(&pattern, &mut w)?;
-    patch_pec_header(&mut w.bytes[pec_start..], objects.hoop_page);
-    write_addendum(&mut w, &list, &pattern.threads, objects.hoop_page);
+    let hoop_page = objects.hoop_page || objects.hoop.is_some();
+    patch_pec_header(&mut w.bytes[pec_start..], hoop_page);
+    write_addendum(&mut w, &list, &pattern.threads, hoop_page);
     Ok(w.bytes)
 }
 
@@ -1341,13 +1561,6 @@ impl Archive {
         }
         self.next += 1;
     }
-
-    fn number(&self, class: &str) -> u16 {
-        self.classes
-            .iter()
-            .find(|(c, _)| *c == class)
-            .map_or(0, |&(_, n)| n)
-    }
 }
 
 /// One `CEmbNText`: bounds, the same as its extent, the identity transform, the letters, the
@@ -1432,9 +1645,16 @@ fn write_text(w: &mut ByteWriter, archive: &mut Archive, t: &Text) -> Result<()>
 /// The header fields after the metadata strings up to the thread count: the hoop (150 × 150 mm,
 /// `nv880e-M`, multi-needle), the page size in mm, and fields not mapped yet, as the baseline
 /// file has them.
-fn write_header(w: &mut ByteWriter, page_mm: (u16, u16), hoop_page: bool) {
-    if hoop_page {
-        w.append(&template::HEADER_HOOP_100);
+fn write_header(w: &mut ByteWriter, page_mm: (u16, u16), hoop_page: bool, hoop: Option<HoopPage>) {
+    if hoop_page || hoop.is_some() {
+        let mut h = template::HEADER_HOOP_100;
+        // u16 0, u16 page mode 0, u16 hoop id; u16 rotation at 31; u16 7 or 0 at 37 (round 6).
+        if let Some(hp) = hoop {
+            h[4] = hp.hoop;
+            h[31] = u8::from(hp.rotated);
+            h[37] = if hp.multi_needle { 7 } else { 0 };
+        }
+        w.append(&h);
         return;
     }
     let mut h = template::HEADER;
@@ -1621,6 +1841,7 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     put16(&mut head, 168, s.direction);
     put16(&mut head, 170, s.region_color);
     put16(&mut head, 174, s.frequency);
+    put16(&mut head, 176, s.flag_176);
     put16(&mut head, 178, s.flag_178);
     let settings = if s.plain_settings {
         PLAIN_SETTINGS
@@ -1643,7 +1864,10 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
         put32(&mut head, at + 4, cy);
     }
     w.append(&head);
-    w.append(&pattern_block());
+    match &s.decorative {
+        Some(p) => write_pattern(w, p),
+        None => w.append(&pattern_block()),
+    }
     let mut tail = template::BODY_TAIL;
     let base = PATTERN_END;
     for at in [4372, 4388] {
@@ -1900,7 +2124,7 @@ pub fn outline_extent(vertices: &[Vertex]) -> [f64; 4] {
 }
 
 /// After the object list: 10 zero bytes, the group list (u16 count; per group its MFC tag,
-/// the `CGroupObject` class's archive number, the u16 member count and the members' object
+/// one more than its last member's archive number, the u16 member count and the members' object
 /// positions), 12 zero bytes, then the sewing-order list: u32 1 and (position, part, 1)
 /// triples. A shape lists the connection from the previous object (part 0, every object but
 /// the first), its region (2) and its line (1); a text of n letters lists the connections into
@@ -1926,7 +2150,17 @@ fn write_trailer(
     w.u16le(objects.groups.len() as i64);
     for members in &objects.groups {
         archive.tag(w, GROUP_OBJECT);
-        w.u16le(i64::from(archive.number(GROUP_OBJECT)));
+        // One more than the archive number of the group's last-archived member: a01's group of
+        // all five objects 7, o-group-two-rects' of both 4, group-partial's of the first two of
+        // three 4 (not the class's own number, 5, which OpenStitch wrote until 2026-10-31 and
+        // which PE-DESIGN refused for a group that left the last object out).
+        let last = members
+            .iter()
+            .filter_map(|&m| archive.objects.get(usize::from(m)))
+            .max()
+            .copied()
+            .unwrap_or(0);
+        w.u16le(i64::from(last) + 1);
         w.u16le(members.len() as i64);
         for &m in members {
             w.u16le(i64::from(m));
@@ -2145,9 +2379,18 @@ mod tests {
     }
 
     #[test]
+    fn header_templates_end_with_the_three_empty_pattern_lists() {
+        for h in [&template::HEADER[..], &template::HEADER_HOOP_100[..]] {
+            assert_eq!(h[h.len() - 8..], [4, 0, 0, 0, 0, 0, 0, 0]);
+            let lists = read_pattern_lists(h).expect("lists");
+            assert!(lists.iter().all(Vec::is_empty));
+        }
+    }
+
+    #[test]
     fn page_size_is_patched_into_the_header() {
         let mut w = ByteWriter::default();
-        write_header(&mut w, (130, 180), false);
+        write_header(&mut w, (130, 180), false, None);
         let s = String::from_utf8_lossy(&w.bytes[15..23]).into_owned();
         assert_eq!(s, "nv880e-M");
         assert_eq!(&w.bytes[33..37], &[130, 0, 180, 0]);

@@ -56,6 +56,12 @@ CASES = {
     "p01-ps1": ("p01-portrait.jpg", "digitize.photoStitch", {"style": "fill"}),
     "p04-ps1": ("p04-cat-fur.jpg", "digitize.photoStitch", {"style": "fill"}),
     "p07-ps1": ("p07-fruit.jpg", "digitize.photoStitch", {"style": "fill"}),
+    "p03-ps1": ("p03-storybook.jpg", "digitize.photoStitch", {"style": "fill"}),
+    "p05-ps1": ("p05-dog.jpg", "digitize.photoStitch", {"style": "fill"}),
+    "p06-ps1": ("p06-sunset.jpg", "digitize.photoStitch", {"style": "fill"}),
+    "p10-ps1": ("p10-night-street.jpg", "digitize.photoStitch", {"style": "fill"}),
+    "p11-ps1": ("p11-high-key.jpg", "digitize.photoStitch", {"style": "fill"}),
+    "g09-ps1": ("g09-gradient.jpg", "digitize.photoStitch", {"style": "fill"}),
     "p08-ps2": ("p08-poppies.jpg", "digitize.photoStitch", {"style": "lines"}),
     "g09-ps2": ("g09-gradient.jpg", "digitize.photoStitch", {"style": "lines"}),
 }

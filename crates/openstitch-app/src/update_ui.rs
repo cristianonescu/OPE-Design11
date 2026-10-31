@@ -478,7 +478,9 @@ pub fn window(app: &mut EditorApp, ctx: &egui::Context) {
                     .asset
                     .as_ref()
                     .map_or("the update", |a| a.name.as_str());
-                ui.label(format!("Downloading {name}…"));
+                crate::art::header(ui, crate::art::Art::UpdateDownloading, |ui| {
+                    ui.label(format!("Downloading {name}…"));
+                });
                 let (done, total) = progress.lock().map(|p| *p).unwrap_or((0, None));
                 let bar = match total {
                     Some(t) if t > 0 => egui::ProgressBar::new(done as f32 / t as f32)
@@ -497,8 +499,10 @@ pub fn window(app: &mut EditorApp, ctx: &egui::Context) {
                 }
             }
             Phase::Restarting => {
-                ui.label("Update installed. Restarting OpenStitch…");
-                ui.spinner();
+                crate::art::header(ui, crate::art::Art::UpdateRestarting, |ui| {
+                    ui.label("Update installed. Restarting OpenStitch…");
+                    ui.spinner();
+                });
             }
             Phase::UpToDate => {
                 crate::art::header(ui, crate::art::Art::UpdateCurrent, |ui| {
@@ -509,8 +513,10 @@ pub fn window(app: &mut EditorApp, ctx: &egui::Context) {
                 }
             }
             Phase::Unavailable(why) => {
-                ui.label(RichText::new("Updates are not available for this build.").strong());
-                ui.label(why);
+                crate::art::header(ui, crate::art::Art::UpdateUnavailable, |ui| {
+                    ui.label(RichText::new("Updates are not available for this build.").strong());
+                    ui.label(why);
+                });
                 if ui.button("Close").clicked() {
                     click = Click::Dismiss;
                 }

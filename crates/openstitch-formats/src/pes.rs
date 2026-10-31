@@ -73,6 +73,9 @@ pub struct ObjectSection {
     pub groups: Vec<Vec<u16>>,
     /// PE-DESIGN 11 hole sewing pairs, `[outer, inner]` list positions.
     pub holes: Vec<[u16; 2]>,
+    /// PE-DESIGN 11 programmable fill and motif patterns listed in the header.
+    pub fill_patterns: Vec<crate::pes11::PesPattern>,
+    pub motif_patterns: Vec<crate::pes11::PesPattern>,
     /// PE-DESIGN 11 Design Page size in mm, when the header had the mapped layout.
     pub page_mm: Option<(u16, u16)>,
     /// PE-DESIGN 11 Hoop Size page (header page mode 0) rather than a Custom Size page.
@@ -315,6 +318,8 @@ pub fn read_objects(data: &[u8]) -> Result<ObjectSection> {
             section.stitch_groups = objects.stitch_groups;
             section.groups = objects.groups;
             section.holes = objects.holes;
+            section.fill_patterns = objects.fill_patterns;
+            section.motif_patterns = objects.motif_patterns;
             section.page_mm = objects.page_mm;
             section.hoop_page = objects.hoop_page;
             section.header = objects.header;
@@ -605,7 +610,12 @@ pub fn write_with(input: &StitchPattern, options: &WriteOptions) -> Result<Vec<u
         w.u16le(0);
     }
     w.patch32le(pec_placeholder, w.len() as i64);
-    let list = pec::write_section(&pattern, &mut w)?;
+    // A hoop turned 90°: the machine stitches turned too, as PE-DESIGN writes them.
+    let list = if options.hoop_rotated {
+        pec::write_section(&pec::turned_for_hoop(&pattern), &mut w)?
+    } else {
+        pec::write_section(&pattern, &mut w)?
+    };
     if options.version == Version::V6 {
         if options.truncated {
             write_addendum(&mut w, &[0xFF], &[]);

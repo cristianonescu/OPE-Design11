@@ -15,7 +15,7 @@ use openstitch_design::{
     RegionType, RunningStitchPath, Transform,
 };
 use openstitch_formats::pes11::{
-    Envelope, Fit, KIND_CURVE_AFTER, KIND_CURVE_BEFORE, Letter, Objects, PAGE_ORIGIN,
+    Envelope, Fit, HoopPage, KIND_CURVE_AFTER, KIND_CURVE_BEFORE, Letter, Objects, PAGE_ORIGIN,
     RegionSewType, Shape, StitchGroup, Text, Vertex,
 };
 
@@ -24,9 +24,11 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
     let page = (mm(design.page.width).max(1), mm(design.page.height).max(1));
     // A 100 x 100 mm page is written as PE-DESIGN's own default, a Hoop Size page; other sizes
     // as a Custom Size page, which PE-DESIGN shows with a Hoop Settings tab and sections.
+    let hoop = hoop_page(design);
     let mut out = Objects {
         page_mm: Some(page),
-        hoop_page: page == (100, 100),
+        hoop_page: hoop.is_some() || page == (100, 100),
+        hoop,
         ..Objects::default()
     };
     let mut groups: Vec<(u64, Vec<u16>)> = Vec::new();
@@ -73,6 +75,33 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
                 .push(stitch_group(object, index, &mut out.threads)?);
         } else {
             out.shapes.push(shape(object, &mut out.threads)?);
+            if let Some(r) = object
+                .region
+                .as_ref()
+                .filter(|r| r.kind == RegionType::DecorativeFill)
+            {
+                let pattern = decorative_pattern(object.id, r, design)?;
+                if let Some(s) = out.shapes.last_mut() {
+                    s.decorative = Some(pattern);
+                }
+            }
+            if let Some(r) = object
+                .region
+                .as_ref()
+                .filter(|r| r.kind == RegionType::ProgrammableFill)
+            {
+                let pattern = fill_pattern(object.id, r, design)?;
+                match out.fill_patterns.as_slice() {
+                    [] => out.fill_patterns.push(pattern),
+                    [only] if *only == pattern => {}
+                    _ => {
+                        return Err(format!(
+                            "object {}: a second programmable fill pattern (PES 0110 holds one per file so far: which object field picks a pattern from the header's list is not mapped)",
+                            object.id
+                        ));
+                    }
+                }
+            }
         }
         if let Some(g) = object.group {
             match groups.iter_mut().find(|(id, _)| *id == g) {
@@ -84,15 +113,11 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
     if out.shapes.is_empty() && out.texts.is_empty() && out.stitch_groups.is_empty() {
         return Err("the design has no visible objects".into());
     }
-    // PE-DESIGN 11.50 groups every object of each owner file in one group (the Applique Wizard,
-    // vector imports, Convert to Blocks, o-group-two-rects), and it refused a file whose one group
-    // left an object out ("Unexpected file format": the appliqué export of 2026-10-30 grouped its
-    // four lines without the square; the same file with all five grouped, or none, opens). So
-    // only that layout is written: one group of every object. How PE-DESIGN stores other
-    // grouping is not mapped, and such groups are left out of the file.
-    let total = out.shapes.len() + out.texts.len() + out.stitch_groups.len();
+    // One group is written (any of the objects: group-partial groups two of three); PE-DESIGN
+    // writes several groups in a layout not mapped yet (group-two), so a design with more than one
+    // group keeps none in the file.
     out.groups = match groups.as_slice() {
-        [(_, members)] if members.len() == total => vec![members.clone()],
+        [(_, members)] => vec![members.clone()],
         _ => Vec::new(),
     };
     for (outer, inner) in direct {
@@ -141,6 +166,29 @@ fn hole_copy(
         s.line_color = colour;
     }
     Ok(s)
+}
+
+/// The design's machine type and hoop as PE-DESIGN 11.50 writes a Hoop Size page for them
+/// (round-6 captures, `openstitch-formats` fixtures `pe11/hoops`), for the hoops whose PE id is
+/// known; any other hoop is written as a Custom Size page of its size, as before.
+fn hoop_page(design: &Design) -> Option<HoopPage> {
+    let multi_needle = design.machine.machine == openstitch_design::MachineType::MultiNeedle;
+    let (hoop, code) = match (multi_needle, design.machine.hoop.as_deref()?) {
+        (false, "100x100") => (0x00, *b"01"),
+        (false, "130x180") => (0x01, *b"01"),
+        (false, "160x260") => (0x02, *b"01"),
+        (false, "200x300") => (0x06, *b"02"),
+        (false, "240x360") => (0x1C, *b"01"),
+        // PE-DESIGN's default New page on a multi-needle machine (r27).
+        (true, "100x100") => (0x0F, *b"10"),
+        _ => return None,
+    };
+    Some(HoopPage {
+        hoop,
+        code,
+        multi_needle,
+        rotated: design.machine.rotate90,
+    })
 }
 
 fn mm(units: f64) -> u16 {
@@ -215,6 +263,78 @@ fn applique_thread(t: &Thread) -> Option<Thread> {
     pe.catalog_number = Some(catalog.into());
     pe.kind = Some(openstitch_formats::pes11::APPLIQUE_KIND);
     Some(pe)
+}
+
+/// The decorative fill pattern of region `r` as PE-DESIGN keeps it in the object's pattern block
+/// (deco-fill-1line-100mm): the free lines in a 1024-unit cell (the unit tile, y down, as
+/// `.plf` sources are read) and the tile size in 0.01 mm. Row-chained decorative patterns and
+/// tiles that aren't square are not mapped.
+fn decorative_pattern(
+    id: u64,
+    r: &RegionSewing,
+    design: &Design,
+) -> Result<openstitch_formats::pes11::PesPattern, String> {
+    use openstitch_design::patterns::{PatternKind, resolve};
+    let pattern = resolve(
+        &design.patterns,
+        PatternKind::Decorative,
+        r.pattern.as_deref(),
+    );
+    if !pattern.free_lines {
+        return Err(format!(
+            "object {id}: decorative pattern {} is chained in rows (PES 0110 holds free lines in a tile)",
+            pattern.id
+        ));
+    }
+    let (w, h) = r.pattern_size_mm();
+    if (w - h).abs() > 1e-9 {
+        return Err(format!(
+            "object {id}: a decorative fill tile of {w} x {h} mm (PES 0110 stores one size; square tiles only)"
+        ));
+    }
+    let cell = |v: f64| (v * 1024.0).round().clamp(-32768.0, 32767.0) as i16;
+    Ok(openstitch_formats::pes11::PesPattern {
+        size: (w * 100.0).round().clamp(0.0, 65535.0) as u16,
+        polylines: pattern
+            .paths
+            .iter()
+            .map(|path| path.iter().map(|p| (cell(p.x), cell(p.y))).collect())
+            .collect(),
+    })
+}
+
+/// The programmable fill pattern of region `r` as PE-DESIGN lists it in the header
+/// (obj-progfill-owner-v): its tile's lines in a 1024-unit cell (a fill tile's unit square, y
+/// down, as `.pas` sources are read), and the tile size in 0.01 mm (750 for the owner's
+/// 7.5 mm V). Embossed or engraved areas, and a tile that isn't square, are not mapped.
+fn fill_pattern(
+    id: u64,
+    r: &RegionSewing,
+    design: &Design,
+) -> Result<openstitch_formats::pes11::PesPattern, String> {
+    use openstitch_design::patterns::{PatternKind, resolve};
+    let pattern = resolve(&design.patterns, PatternKind::Fill, r.pattern.as_deref());
+    if !pattern.regions.is_empty() {
+        return Err(format!(
+            "object {id}: programmable fill pattern {} has embossed or engraved areas (not mapped in PES 0110)",
+            pattern.id
+        ));
+    }
+    let (w, h) = r.pattern_size_mm();
+    if (w - h).abs() > 1e-9 {
+        return Err(format!(
+            "object {id}: a programmable fill tile of {w} x {h} mm (PES 0110 stores one size; square tiles only)"
+        ));
+    }
+    let cell = |v: f64| (v * 1024.0).round().clamp(-32768.0, 32767.0) as i16;
+    Ok(openstitch_formats::pes11::PesPattern {
+        size: (w * 100.0).round().clamp(0.0, 65535.0) as u16,
+        polylines: pattern
+            .paths
+            .iter()
+            .map(|path| path.iter().map(|p| (cell(p.x), cell(p.y))).collect())
+            .collect(),
+    })
 }
 
 fn shape(object: &DesignObject, table: &mut Vec<Thread>) -> Result<Shape, String> {
@@ -399,6 +519,19 @@ fn region(id: u64, r: &RegionSewing, s: &mut Shape, table: &mut Vec<Thread>) -> 
     s.region = match r.kind {
         RegionType::Fill => RegionSewType::Fill,
         RegionType::Satin => RegionSewType::Satin,
+        RegionType::ProgrammableFill => RegionSewType::ProgrammableFill,
+        // Written at PE-DESIGN's default attributes: each file of these types at its defaults
+        // differs from a fill only in the code (o-region-*); their own fields are not mapped.
+        RegionType::CrossStitch => RegionSewType::Cross,
+        RegionType::ConcentricCircle => RegionSewType::Concentric,
+        RegionType::Radial => RegionSewType::Radial,
+        RegionType::Spiral => RegionSewType::Spiral,
+        RegionType::Piping => RegionSewType::Piping,
+        RegionType::Stippling => RegionSewType::Stippling,
+        RegionType::NetFill => RegionSewType::NetFill,
+        RegionType::ZigzagNetFill => RegionSewType::ZigzagNet,
+        RegionType::FlexibleSpiral => RegionSewType::FlexibleSpiral,
+        RegionType::DecorativeFill => RegionSewType::Decorative,
         other => {
             return Err(format!(
                 "object {id}: region type {} is not mapped in PES 0110 yet (fill and satin are)",
@@ -1056,7 +1189,7 @@ mod tests {
     }
 
     #[test]
-    fn only_a_group_of_every_object_is_written() {
+    fn one_group_is_written_and_several_are_left_out() {
         let square = |x: f64| {
             DesignObject::shape(
                 vec![Contour::rectangle(x, 100.0, 100.0, 100.0)],
@@ -1075,10 +1208,10 @@ mod tests {
                 }
             }
         };
-        // Two of three grouped: PE-DESIGN refused such a file, so the group is left out.
+        // Two of three grouped: written (group-partial).
         let mut partial = design.clone();
         group(&mut partial, &ids[..2], 1);
-        assert!(objects(&partial).expect("objects").groups.is_empty());
+        assert_eq!(objects(&partial).expect("objects").groups, [vec![0, 1]]);
         // Two groups: not mapped either.
         let mut two = design.clone();
         group(&mut two, &ids[..2], 1);
@@ -1130,6 +1263,86 @@ mod tests {
         grouped.objects[i].group = Some(7);
         let err = objects(&grouped).expect_err("hole pair and group");
         assert!(err.contains("hole sewing"), "{err}");
+    }
+
+    #[test]
+    fn programmable_fill_writes_its_pattern_into_the_header_list() {
+        use openstitch_design::patterns::{PatternKind, resolve};
+        let mut design = Design::new("t", openstitch_design::DesignPage::default());
+        let mut r = RegionSewing::new(RegionType::ProgrammableFill, red());
+        r.pattern_width = Some(7.5);
+        r.pattern_height = Some(7.5);
+        design.add(DesignObject::shape(
+            vec![Contour::rectangle(200.0, 200.0, 300.0, 200.0)],
+            Some(r.clone()),
+            None,
+        ));
+        let o = objects(&design).expect("objects");
+        assert_eq!(o.shapes[0].region, RegionSewType::ProgrammableFill);
+        let [p] = o.fill_patterns.as_slice() else {
+            panic!("one pattern: {:?}", o.fill_patterns)
+        };
+        assert_eq!(p.size, 750);
+        let tile = resolve(&design.patterns, PatternKind::Fill, None);
+        assert_eq!(p.polylines.len(), tile.paths.len());
+        assert!(
+            p.polylines
+                .iter()
+                .flatten()
+                .all(|&(x, y)| (0..=1024).contains(&x) && (0..=1024).contains(&y))
+        );
+        // The same pattern twice is listed once; a non-square tile is refused.
+        design.add(DesignObject::shape(
+            vec![Contour::rectangle(600.0, 200.0, 100.0, 100.0)],
+            Some(r.clone()),
+            None,
+        ));
+        assert_eq!(objects(&design).expect("objects").fill_patterns.len(), 1);
+        let mut oblong = Design::new("t", openstitch_design::DesignPage::default());
+        let mut r2 = r;
+        r2.pattern_height = Some(5.0);
+        oblong.add(DesignObject::shape(
+            vec![Contour::rectangle(200.0, 200.0, 300.0, 200.0)],
+            Some(r2),
+            None,
+        ));
+        let err = objects(&oblong).expect_err("non-square tile");
+        assert!(err.contains("square"), "{err}");
+    }
+
+    #[test]
+    fn region_types_map_to_pe_designs_codes() {
+        for (kind, code) in [
+            (RegionType::CrossStitch, RegionSewType::Cross),
+            (RegionType::ConcentricCircle, RegionSewType::Concentric),
+            (RegionType::Radial, RegionSewType::Radial),
+            (RegionType::Spiral, RegionSewType::Spiral),
+            (RegionType::Piping, RegionSewType::Piping),
+            (RegionType::Stippling, RegionSewType::Stippling),
+            (RegionType::NetFill, RegionSewType::NetFill),
+            (RegionType::ZigzagNetFill, RegionSewType::ZigzagNet),
+            (RegionType::FlexibleSpiral, RegionSewType::FlexibleSpiral),
+        ] {
+            let mut design = Design::new("t", openstitch_design::DesignPage::default());
+            design.add(DesignObject::shape(
+                vec![Contour::rectangle(200.0, 200.0, 300.0, 300.0)],
+                Some(RegionSewing::new(kind, red())),
+                None,
+            ));
+            let o = objects(&design).expect("objects");
+            assert_eq!(o.shapes[0].region, code, "{kind:?}");
+            assert!(o.shapes[0].decorative.is_none());
+        }
+        // Motif fill and contour fill are refused with the reason.
+        for kind in [RegionType::MotifFill, RegionType::Contour] {
+            let mut design = Design::new("t", openstitch_design::DesignPage::default());
+            design.add(DesignObject::shape(
+                vec![Contour::rectangle(200.0, 200.0, 300.0, 300.0)],
+                Some(RegionSewing::new(kind, red())),
+                None,
+            ));
+            assert!(objects(&design).is_err(), "{kind:?}");
+        }
     }
 
     #[test]

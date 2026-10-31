@@ -19,7 +19,8 @@ and is used. See docs/LEGAL_AND_LICENSING.md for where they come from.
 
 `sew_empty` (Color pane with nothing sewn), `no_media` (Send to USB Media with no stick or card),
 `no_image` (Modify Image without a background image), `objects_empty` (the objects list of an
-empty design) and `update_available`, `update_current`, `update_failed` (the update dialog) were
+empty design) and `update_available`, `update_current`, `update_failed` (the update dialog; `update_downloading`, `update_restarting` and
+`update_unavailable` followed on 2026-10-31) were
 added on 2026-10-30 the same way; in `update_available` and `update_current` three fills were
 set to the palette green and blue by hand. Job ids are in `higgsfield-jobs.tsv`.
 

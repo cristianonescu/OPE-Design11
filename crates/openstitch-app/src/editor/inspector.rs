@@ -4,8 +4,8 @@ use super::request::CommandRequest;
 use openstitch_core::{PEC_CHART, Thread, nearest_index, pec_basic_chart};
 use openstitch_design::patterns::{self, Pattern, PatternKind};
 use openstitch_design::{
-    Arrange, ChainShape, Design, Feather, FeatherSide, LineSewing, LineType, RegionSewing,
-    RegionType, RunningStitchPath, UnderlayStyle,
+    Arrange, ChainShape, Design, Feather, FeatherSide, FillStitchType, LineSewing, LineType,
+    RegionSewing, RegionType, RunningStitchPath, UnderlayStyle,
 };
 use serde_json::{Value, json};
 use std::collections::BTreeSet;
@@ -555,6 +555,15 @@ fn region_type_controls(r: &RegionSewing, user: &[Pattern]) -> Vec<Control> {
                     ("regular", "Regular (Frequency)"),
                     ("random", "Random (seeded)"),
                 ],
+            ));
+            v.push(choice(
+                "Stitch type",
+                "stitchType",
+                match r.stitch_type {
+                    FillStitchType::One => "1",
+                    FillStitchType::Two => "2",
+                },
+                &[("1", "1: flat rows"), ("2", "2: sloped rows")],
             ));
         }
         RegionType::Satin => {}
