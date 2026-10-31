@@ -559,15 +559,25 @@ fn line(id: u64, l: &LineSewing, s: &mut Shape, table: &mut Vec<Thread>) -> Resu
         LineType::Running => Shape::LINE_RUNNING,
         LineType::Triple => Shape::LINE_TRIPLE,
         LineType::EStitch | LineType::VStitch => Shape::LINE_E_OR_V,
+        LineType::Stem => Shape::LINE_STEM,
+        LineType::Candlewick => Shape::LINE_CANDLEWICK,
+        LineType::Chain => Shape::LINE_CHAIN,
         LineType::Cutting => Shape::LINE_CUTTING,
         other => {
             return Err(format!(
-                "object {id}: line type {} is not mapped in PES 0110 yet (running, zigzag, triple, E and V are)",
+                "object {id}: line type {} is not mapped in PES 0110 yet (running, zigzag, triple, E, V, stem, candlewick, chain and cutting are)",
                 other.label()
             ));
         }
     };
     s.line_sewn = true;
+    // +86: V rather than E (line-v-default); a chain at its defaults carries 1
+    // (line-chain-default). The start and end options of stem, candlewick and chain lines are
+    // written at PE-DESIGN's defaults.
+    s.line_variant = match l.kind {
+        LineType::VStitch | LineType::Chain => 1,
+        _ => 0,
+    };
     s.line_color = thread_index(table, &l.thread);
     // E and V keep their width in a field of their own; the zigzag width stays PE's default.
     if s.line_type == Shape::LINE_E_OR_V {
@@ -1186,6 +1196,32 @@ mod tests {
         );
         // The V tack-down's width is the E/V width; the zigzag width stays PE's default.
         assert_eq!((o.shapes[2].ev_width, o.shapes[2].zigzag_width), (2.0, 2.0));
+    }
+
+    #[test]
+    fn line_types_map_to_pe_designs_codes_and_variants() {
+        // Codes at +44 and the +86 variant of PE-DESIGN's line-*-default files.
+        for (kind, code, variant) in [
+            (LineType::Running, Shape::LINE_RUNNING, 0),
+            (LineType::Triple, Shape::LINE_TRIPLE, 0),
+            (LineType::EStitch, Shape::LINE_E_OR_V, 0),
+            (LineType::VStitch, Shape::LINE_E_OR_V, 1),
+            (LineType::Stem, Shape::LINE_STEM, 0),
+            (LineType::Candlewick, Shape::LINE_CANDLEWICK, 0),
+            (LineType::Chain, Shape::LINE_CHAIN, 1),
+        ] {
+            let mut design = Design::new("t", openstitch_design::DesignPage::default());
+            design.add(DesignObject::shape(
+                vec![Contour::new(
+                    vec![v2(100.0, 100.0), v2(300.0, 100.0)],
+                    false,
+                )],
+                None,
+                Some(LineSewing::new(kind, red())),
+            ));
+            let s = &objects(&design).expect("objects").shapes[0];
+            assert_eq!((s.line_type, s.line_variant), (code, variant), "{kind:?}");
+        }
     }
 
     #[test]

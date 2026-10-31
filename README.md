@@ -38,7 +38,7 @@ Not affiliated with Brother Industries. No Brother code or assets are included; 
 
 ## Status at a glance
 
-Current release: **v0.1.0-alpha.7** ([notes](docs/releases/v0.1.0-alpha.7.md)).
+Current release: **v0.1.0-alpha.8** ([notes](docs/releases/v0.1.0-alpha.8.md)).
 
 OpenStitch is checked against PE-DESIGN 11.50 itself. Simple test designs made in a licensed copy
 through its normal interface are committed under `compat/reference/`. The compatibility harness
@@ -48,7 +48,7 @@ through its normal interface are committed under `compat/reference/`. The compat
 | | |
 |---|---|
 | Feature matrix rows | 172: 146 implemented (3 of them partially compatible), 2 documented only, 10 blocked, 14 planned beyond PE-DESIGN |
-| Compatibility specs | 442: 442 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
+| Compatibility specs | 443: 443 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
 | Matrix rows covered by specs | 33: 26 at the reference tier, 5 at the internal-regression tier, 2 at the oracle tier |
 | Open audit differences | 11 ([audit](docs/COMPATIBILITY_AUDIT.md#summary)) |
 | Open GitHub issues | 5 ([list](https://github.com/cristianonescu/OpenStitch/issues)) |
@@ -85,26 +85,28 @@ named; `python3 tools/gallery.py` regenerates them.
 <!-- gallery:start -->
 | Image | OpenStitch (Realistic view) | Wizard and result |
 |---|---|---|
-| <img src="examples/images/p01-portrait.jpg" width="200"> | <img src="docs/images/readme/gallery/p01.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>12,512 stitches, 7 colours |
-| <img src="examples/images/p02-mono-portrait.jpg" width="200"> | <img src="docs/images/readme/gallery/p02.png" width="260"> | **Photo Stitch 2, mono, defaults**<br>19,991 stitches, 1 colour |
-| <img src="examples/images/p04-cat-fur.jpg" width="200"> | <img src="docs/images/readme/gallery/p04.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>21,077 stitches, 8 colours |
-| <img src="examples/images/p06-sunset.jpg" width="200"> | <img src="docs/images/readme/gallery/p06.png" width="260"> | **Photo Stitch 2, Auto Select**<br>18,514 stitches, 4 colours |
-| <img src="examples/images/p08-poppies.jpg" width="200"> | <img src="docs/images/readme/gallery/p08.png" width="260"> | **Photo Stitch 2, Color Set CMYK**<br>35,725 stitches, 4 colours |
-| <img src="examples/images/p12-backlit-tree.jpg" width="200"> | <img src="docs/images/readme/gallery/p12.png" width="260"> | **Photo Stitch 1, mono, defaults**<br>3,585 stitches, 1 colour |
-| <img src="examples/images/p03-storybook.jpg" width="200"> | <img src="docs/images/readme/gallery/p03.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>16,018 stitches, 8 colours |
-| <img src="examples/images/g01-emblem.png" width="200"> | <img src="docs/images/readme/gallery/g01.png" width="260"> | **Auto Punch, defaults**<br>8,688 stitches, 3 colours |
-| <img src="examples/images/g02-balloon.png" width="200"> | <img src="docs/images/readme/gallery/g02.png" width="260"> | **Auto Punch, defaults**<br>7,926 stitches, 5 colours |
-| <img src="examples/images/g05-robot-cartoon.png" width="200"> | <img src="docs/images/readme/gallery/g05.png" width="260"> | **Auto Punch, defaults**<br>11,897 stitches, 6 colours |
-| <img src="examples/images/g08-lettering.png" width="200"> | <img src="docs/images/readme/gallery/g08.png" width="260"> | **Auto Punch, defaults**<br>1,982 stitches, 3 colours |
-| <img src="examples/images/g04-butterfly-outline.png" width="200"> | <img src="docs/images/readme/gallery/g04.png" width="260"> | **Design Center, running line**<br>1,271 stitches, 1 colour |
-| <img src="examples/images/g07-pixel-strawberry.png" width="200"> | <img src="docs/images/readme/gallery/g07.png" width="260"> | **Cross Stitch, defaults**<br>3,931 stitches, 6 colours |
-| <img src="examples/images/g15-folk-bird.png" width="200"> | <img src="docs/images/readme/gallery/g15.png" width="260"> | **Cross Stitch, defaults**<br>4,467 stitches, 4 colours |
+| <img src="examples/images/p01-portrait.jpg" width="200"> | <img src="docs/images/readme/gallery/p01.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>12,512 stitches, 385 trims, 7 colours |
+| <img src="examples/images/p02-mono-portrait.jpg" width="200"> | <img src="docs/images/readme/gallery/p02.png" width="260"> | **Photo Stitch 2, mono, defaults**<br>19,991 stitches, 1 trims, 1 colour |
+| <img src="examples/images/p04-cat-fur.jpg" width="200"> | <img src="docs/images/readme/gallery/p04.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>21,077 stitches, 839 trims, 8 colours |
+| <img src="examples/images/p06-sunset.jpg" width="200"> | <img src="docs/images/readme/gallery/p06.png" width="260"> | **Photo Stitch 2, Auto Select**<br>18,514 stitches, 4 trims, 4 colours |
+| <img src="examples/images/p08-poppies.jpg" width="200"> | <img src="docs/images/readme/gallery/p08.png" width="260"> | **Photo Stitch 2, Color Set CMYK**<br>35,725 stitches, 4 trims, 4 colours |
+| <img src="examples/images/p12-backlit-tree.jpg" width="200"> | <img src="docs/images/readme/gallery/p12.png" width="260"> | **Photo Stitch 1, mono, defaults**<br>3,585 stitches, 130 trims, 1 colour |
+| <img src="examples/images/p03-storybook.jpg" width="200"> | <img src="docs/images/readme/gallery/p03.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>16,018 stitches, 789 trims, 8 colours |
+| <img src="examples/images/g01-emblem.png" width="200"> | <img src="docs/images/readme/gallery/g01.png" width="260"> | **Auto Punch, defaults**<br>8,688 stitches, 10 trims, 3 colours |
+| <img src="examples/images/g02-balloon.png" width="200"> | <img src="docs/images/readme/gallery/g02.png" width="260"> | **Auto Punch, defaults**<br>7,926 stitches, 12 trims, 5 colours |
+| <img src="examples/images/g05-robot-cartoon.png" width="200"> | <img src="docs/images/readme/gallery/g05.png" width="260"> | **Auto Punch, defaults**<br>11,897 stitches, 231 trims, 6 colours |
+| <img src="examples/images/g08-lettering.png" width="200"> | <img src="docs/images/readme/gallery/g08.png" width="260"> | **Auto Punch, defaults**<br>1,982 stitches, 16 trims, 3 colours |
+| <img src="examples/images/g04-butterfly-outline.png" width="200"> | <img src="docs/images/readme/gallery/g04.png" width="260"> | **Design Center, running line**<br>1,271 stitches, 92 trims, 1 colour |
+| <img src="examples/images/g07-pixel-strawberry.png" width="200"> | <img src="docs/images/readme/gallery/g07.png" width="260"> | **Cross Stitch, defaults**<br>3,931 stitches, 190 trims, 6 colours |
+| <img src="examples/images/g15-folk-bird.png" width="200"> | <img src="docs/images/readme/gallery/g15.png" width="260"> | **Cross Stitch, defaults**<br>4,467 stitches, 303 trims, 4 colours |
 <!-- gallery:end -->
 
-Auto Punch and Photo Stitch 1 also have an **OpenStitch** mode (➕, the image dialog's Mode
-choice): colours are reduced, matched to threads and mixed by how they look, and Auto Punch
-merges specks under 3 mm². PE-DESIGN mode stays the default
-([research](docs/research/beyond/image-digitizing.md)).
+Auto Punch and Photo Stitch 1 and 2 also have an **OpenStitch** mode (➕, the image dialog's
+Mode choice): colours are reduced, matched to threads and mixed by how they look, and Auto
+Punch merges specks under 3 mm². PE-DESIGN mode stays the default
+([research](docs/research/beyond/image-digitizing.md)). OpenStitch mode is better on average,
+not on every image: try both. For example, the test portrait sews truer in Photo Stitch 2's
+PE-DESIGN mode, whose three threads suit its skin and background.
 
 <!-- gallery-modes:start -->
 | Image | PE-DESIGN mode | OpenStitch mode |
@@ -114,6 +116,8 @@ merges specks under 3 mm². PE-DESIGN mode stays the default
 | <img src="examples/images/p03-storybook.jpg" width="200"><br>Auto Punch | <img src="docs/images/readme/gallery/p03-pe.png" width="260"><br>41,676 stitches, 699 trims, 8 colours | <img src="docs/images/readme/gallery/p03-os.png" width="260"><br>30,627 stitches, 284 trims, 10 colours |
 | <img src="examples/images/p01-portrait.jpg" width="200"><br>Photo Stitch 1 | <img src="docs/images/readme/gallery/p01-pe.png" width="260"><br>12,512 stitches, 385 trims, 7 colours | <img src="docs/images/readme/gallery/p01-os.png" width="260"><br>12,983 stitches, 451 trims, 8 colours |
 | <img src="examples/images/p06-sunset.jpg" width="200"><br>Photo Stitch 1 | <img src="docs/images/readme/gallery/p06-pe.png" width="260"><br>11,038 stitches, 370 trims, 11 colours | <img src="docs/images/readme/gallery/p06-os.png" width="260"><br>11,352 stitches, 474 trims, 11 colours |
+| <img src="examples/images/p08-poppies.jpg" width="200"><br>Photo Stitch 2 | <img src="docs/images/readme/gallery/p08-pe.png" width="260"><br>32,921 stitches, 4 trims, 4 colours | <img src="docs/images/readme/gallery/p08-os.png" width="260"><br>32,394 stitches, 4 trims, 4 colours |
+| <img src="examples/images/p04-cat-fur.jpg" width="200"><br>Photo Stitch 2 | <img src="docs/images/readme/gallery/p04-pe.png" width="260"><br>28,016 stitches, 4 trims, 4 colours | <img src="docs/images/readme/gallery/p04-os.png" width="260"><br>29,653 stitches, 4 trims, 4 colours |
 <!-- gallery-modes:end -->
 
 ## Features
@@ -148,7 +152,8 @@ PE-DESIGN-compatible output stays the default.
 
 PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
 
-- **Regions:** fill (tatami with Frequency, under sewing, gradation and feathered edge), satin
+- **Regions:** fill (tatami with Frequency, PE-DESIGN's two Stitch Types (flat or sloped rows),
+  under sewing, gradation and feathered edge), satin
   (PE-DESIGN's sawtooth and Auto satin), programmable fill, motif fill, concentric circle,
   radial and spiral.
 - **➕ Contour fill:** rows that follow the outline (rings, single or double spiral, echo
@@ -163,7 +168,8 @@ PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
 ### Lettering
 
 - **Text:** multi-line TrueType/OpenType text with PE-DESIGN's text size, character and line
-  spacing, alignment and Satin or Fill sewing. Bundled open-licence fonts (Lato Bold, Pacifico)
+  spacing, alignment and Satin or Fill sewing. Satin letters are sewn stroke by stroke, in
+  PE-DESIGN's block order. Bundled open-licence fonts (Lato Bold, Pacifico)
   or your own fonts, embedded in the design. Complex scripts (Arabic, Indic, right-to-left) are
   shaped.
 - **Fit Text to Outline** and all 26 **Text Transform** presets, checked against PE-DESIGN.
@@ -178,16 +184,18 @@ PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
   regions, cross stitches or photo-style lines. These are independent approximations of
   PE-DESIGN's wizards, compared with its output.
 - **Design Center** pipeline (image → outline → figure → sew settings) and the Stitch Wizard.
-- ➕ **OpenStitch mode for Auto Punch and Photo Stitch 1**: colours reduced, matched to threads
-  and (in Photo Stitch 1) mixed by how they look; Auto Punch also merges specks. PE-DESIGN mode
-  stays the default.
+- ➕ **OpenStitch mode for Auto Punch, Photo Stitch 1 and Photo Stitch 2**: colours reduced,
+  matched to threads and mixed by how they look (CIELAB, CIEDE2000, a linear-light mix in Photo
+  Stitch 2); Auto Punch also merges specks and keeps line art's lines. PE-DESIGN mode stays the
+  default; for some photos it still sews truer, so try both.
 - **Background images** (PNG, JPEG, BMP or the clipboard): place, crop, rotate, adjust and trace
   over.
 
 ### Wizards and tools
 
 - **Appliqué, embroidered patch, cutwork and background fill** wizards (approximations of
-  PE-DESIGN's).
+  PE-DESIGN's). The Applique Wizard's lines sit at PE-DESIGN's distances, in its appliqué
+  colours.
 - **Split designs** for large designs, **multi-position hoops** and the **jumbo frame**.
 - **Design Database:** browse folders as thumbnails, search, organise, convert formats in batch
   and print catalogues.
@@ -202,7 +210,10 @@ PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
 - **Read only:** SHV, PHC (read only in PE-DESIGN too) and CSD.
 - **PE-DESIGN 11 PES (`#PES0110`):** OpenStitch reads the metadata, thread table and shapes. Saved
   as "PE-DESIGN 11", its shapes and Lato Bold text open **editable** in PE-DESIGN 11.50 (text
-  retypable), including Fit Text to Outline and Text Transform. Details in
+  retypable), including Fit Text to Outline and Text Transform, Manual Punch blocks, stitch
+  groups, grouped appliqué, hole sewing, programmable and decorative fill, the other region types
+  and stem, candlewick and chain lines, with the Design Settings' hoop and machine type.
+  `import.pes` opens PE-DESIGN's shapes and blocks as editable objects. Details in
   [docs/FILE_FORMATS.md](docs/FILE_FORMATS.md).
 - **PES versions 1, 6 and 11** on export, with Design Property (category, author, keywords,
   comments). Version 6 with its stitch group is the default.
@@ -210,7 +221,8 @@ PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
 - **Editable `.osd` projects**, and large designs split into several files when a format's limits
   are exceeded.
 - **Thread charts:** Brother's 64-colour PEC chart with its catalogue numbers, PE-DESIGN's
-  colour matching, and your own charts as CSV.
+  colour matching, and your own charts as CSV, exported in the layout PE-DESIGN's Import Chart
+  reads.
 
 ### Machine transfer
 
@@ -246,15 +258,15 @@ PE-DESIGN 11 features OpenStitch does not have yet, from the feature matrix:
 
 Also missing, from the [roadmap](docs/ROADMAP.md#still-to-do):
 
-- **Stroke-wise lettering:** PE-DESIGN splits every letter into strokes, each sewn as a column;
-  OpenStitch sews a whole letter in one direction.
+- **Stroke-wise fill lettering:** satin text is sewn stroke by stroke, as PE-DESIGN does;
+  fill text still sews a whole letter in one direction.
 - **Text details:** per-character colour, multi-character selection, Connection Points, minimum
   font sizes and small-text fonts, kerning that reflows the line.
-- **Satin and fill details:** Half Stitch for Auto satin, Miter limit, Stitch Type (turning
-  ends), gradation per-step editing and Blend.
-- **PES:** opening PE-DESIGN's editable shapes and texts as editable OpenStitch objects (they come
-  in as stitches); the other region and line types, right-aligned and vertical text in the
-  editable PES 11 writer; PES versions 4, 5 and 7–10; CSD and SHV export.
+- **Satin and fill details:** Half Stitch for Auto satin, Miter limit, gradation per-step
+  editing and Blend.
+- **PES:** opening PE-DESIGN's texts and stitch groups as editable OpenStitch objects; motif
+  fill, motif lines, several groups, right-aligned and vertical text in the editable PES 11
+  writer; PES versions 4, 5 and 7–10; CSD and SHV export.
 
 **Not planned, by design:**
 
@@ -324,12 +336,13 @@ _None._
 
 Next, from [docs/ROADMAP.md](docs/ROADMAP.md):
 
-- **Lettering:** stroke-wise sewing of TrueType text, as PE-DESIGN does it.
-- **PES:** PE-DESIGN's shapes and text opened as editable objects; more object types in the PES 11
-  writer; the hoop and Design Page fields.
+- **Lettering:** stroke-wise sewing of fill text, as PE-DESIGN does it.
+- **PES:** PE-DESIGN's text opened as editable objects; motif fill and lines, several groups and
+  the remaining hoops in the PES 11 writer.
 - **Stitches:** the remaining fill, satin and line details listed above, and branching skeletons.
 - **Machine tier:** a first recorded sew-out on a Brother machine.
-- **Image digitizing:** run-to-run travel in Cross Stitch and closer Photo Stitch output.
+- **Image digitizing:** run-to-run travel in Cross Stitch, fewer trims in Photo Stitch 1's
+  OpenStitch mode, and closer Photo Stitch output.
 - **Distribution:** code signing and a Flathub listing.
 
 Open enhancement issues:

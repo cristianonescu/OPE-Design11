@@ -606,6 +606,28 @@ const FULLY_PARSED: &[&str] = &[
     "group-partial",
     "deco-fill-1line-100mm",
     "deco-fill-1line-offcentre",
+    "line-candlewick-default",
+    "line-candlewick-startend-feed",
+    "line-candlewick-startend-run",
+    "line-chain-default",
+    "line-chain-startend-feed",
+    "line-chain-startend-l2side-feed",
+    "line-chain-startend-l2side-run",
+    "line-chain-startend-mid-feed",
+    "line-chain-startend-mid-run",
+    "line-chain-startend-run",
+    "line-e-default",
+    "line-e-rect-default",
+    "line-motif-zigzag-3pt",
+    "line-running-default",
+    "line-stem-default",
+    "line-stem-startend-feed",
+    "line-stem-startend-run",
+    "line-triple-default",
+    "line-v-default",
+    "line-v-rect-default",
+    "line-zigzag-default",
+    "line-zigzag-density-max",
     "a01-rect-applique",
     "a02-applique-cutting",
     "a03-applique-no-tackdown",
@@ -786,6 +808,7 @@ fn owner_file(name: &str) -> Vec<u8> {
         "deco-fill-1line-offcentre",
     ]
     .contains(&name)
+        || name.starts_with("line-")
     {
         let path = format!(
             "{}/../../compat/reference/stitches/{name}.pes",
@@ -1059,6 +1082,30 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
                     || ((marks_differ.contains(&name) || name.starts_with("text-fit"))
                         && gh <= from
                         && to <= r.marks_end)
+                    // The sewing end PE-DESIGN picks on closed stem, candlewick, chain, E and V
+                    // outlines (line-*-startend-*, line-e-rect-default, line-v-rect-default): the
+                    // second outline position (segment, t) and the geometry's matching segment
+                    // fields are not mapped; the writer writes the end of the last segment.
+                    || ((name.contains("-startend-") || name.ends_with("-rect-default"))
+                        && ((b + 4408 <= from && to <= b + 4420)
+                            || [20, 40, 62]
+                                .iter()
+                                .any(|&o| gh + o <= from && to <= gh + o + 4)))
+                    // The unused sew types' fields in the capture session's rectangles and motif
+                    // line: four hold the plain values (70, 72, 218, 220: 50), the rest the tool
+                    // values, a mix [`pes11::Shape::plain_settings`] does not carry.
+                    || ((name.ends_with("-rect-default") || name.starts_with("line-motif"))
+                        && pes11::SETTINGS_FIELDS
+                            .iter()
+                            .any(|&o| b + o <= from && to <= b + o + 2))
+                    // The line-* files' open lines: the open-line marks (as r11-line's), and a
+                    // zigzag's extent across the line only.
+                    || (name.starts_with("line-")
+                        && objects.shapes.get(k).is_some_and(|s| !s.closed)
+                        && ((gh <= from && to <= r.marks_end)
+                            || (objects.shapes[k].line_type == pes11::Shape::LINE_ZIGZAG
+                                && b + 8 <= from
+                                && to <= b + 16)))
                     // Convert to Blocks' running pieces are open lines: their marks follow the
                     // open-line placement the writer doesn't reproduce (the blocks' own marks
                     // are compared byte for byte).

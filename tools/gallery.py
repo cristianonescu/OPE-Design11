@@ -77,6 +77,8 @@ MODES = {
     "p03": ("p03-storybook.jpg", "Auto Punch", "digitize.autoPunch", {}),
     "p01": ("p01-portrait.jpg", "Photo Stitch 1", "digitize.photoStitch", {"style": "fill"}),
     "p06": ("p06-sunset.jpg", "Photo Stitch 1", "digitize.photoStitch", {"style": "fill"}),
+    "p08": ("p08-poppies.jpg", "Photo Stitch 2", "digitize.photoStitch", {"style": "lines"}),
+    "p04": ("p04-cat-fur.jpg", "Photo Stitch 2", "digitize.photoStitch", {"style": "lines"}),
 }
 for _key, (_image, _wizard, _command, _params) in MODES.items():
     GALLERY[f"{_key}-pe"] = (_image, f"{_wizard}, PE-DESIGN mode", _command, _params)

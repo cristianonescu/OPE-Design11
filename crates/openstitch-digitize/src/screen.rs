@@ -68,12 +68,45 @@ impl Shares {
     /// Colour mode: each cell's colour is matched as the fabric plus a non-negative mix of the
     /// threads (shares summing to at most 1), by least squares.
     pub fn colour(image: &Raster, frame: &Frame, threads: &[[f64; 3]], fabric: [f64; 3]) -> Self {
+        Self::colour_in(image, frame, threads, fabric, false)
+    }
+
+    /// [`Shares::colour`], or OpenStitch mode's when `linear`: the mix is solved in linear
+    /// light (thread and fabric seen side by side average their light, not their sRGB values)
+    /// and the shares are not raised to PE-DESIGN's full coverage ([`saturate`]).
+    pub fn colour_in(
+        image: &Raster,
+        frame: &Frame,
+        threads: &[[f64; 3]],
+        fabric: [f64; 3],
+        linear: bool,
+    ) -> Self {
+        let lin = |c: [f64; 3]| -> [f64; 3] {
+            if linear {
+                c.map(|v| {
+                    let v = v / 255.0;
+                    255.0
+                        * if v <= 0.04045 {
+                            v / 12.92
+                        } else {
+                            ((v + 0.055) / 1.055).powf(2.4)
+                        }
+                })
+            } else {
+                c
+            }
+        };
+        let lthreads: Vec<[f64; 3]> = threads.iter().map(|&t| lin(t)).collect();
+        let lfabric = lin(fabric);
         let mut cache: Vec<([u8; 3], Vec<f64>)> = Vec::new();
         Self::build(image, frame, threads.len(), |rgb| {
             if let Some((_, s)) = cache.iter().find(|(c, _)| *c == rgb) {
                 return s.clone();
             }
-            let s = saturate(rgb, mix(rgb.map(f64::from), threads, fabric), threads);
+            let m = mix(lin(rgb.map(f64::from)), &lthreads, lfabric);
+            // PE-DESIGN's full coverage for saturated colours is its own habit; OpenStitch
+            // mode keeps the mix as solved.
+            let s = if linear { m } else { saturate(rgb, m, threads) };
             if cache.len() < 4096 {
                 cache.push((rgb, s.clone()));
             }
