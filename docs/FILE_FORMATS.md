@@ -1318,10 +1318,10 @@ OpenStitch's own embroidery font format, written by `fonts.save` and read by `fo
 User thread charts as CSV (`threads.importCsv`, `threads.exportCsv`; editor: Edit ▸ User Thread
 Charts… ▸ Import CSV… / Export CSV…), in the layout PE-DESIGN 11.50's Import Chart reads
 (Option ▸ Options… ▸ Edit User Thread Chart ▸ Import Chart…, file type "CSV File(*.csv)";
-round-6 check, 2026-10-31, owner's notes `round6/charts`, issue #136, with hand-made files of
-this layout; an export of OpenStitch's own is being checked): PE-DESIGN imports such a file as
-a user chart named after the file (its name without hyphens: `v2-bare-3.csv` became
-"v2bare3"). PE-DESIGN has no CSV export; it keeps its charts as binary
+round-6 checks, 2026-10-31, owner's notes `round6/charts`, issue #136): PE-DESIGN imports such
+a file as a user chart named after the file, without hyphens (`v2-bare-3.csv` became "v2bare3").
+OpenStitch's own exports of the Brother chart (64 rows), the sew palette (90 rows) and a user
+chart all imported ("Importing of the chart is completed."), codes and colours as written. PE-DESIGN has no CSV export; it keeps its charts as binary
 `.btc2` files, which OpenStitch does not read.
 
 - UTF-8; a leading BOM is ignored. Lines end in CR LF when written; LF is read too.
@@ -1344,7 +1344,9 @@ a user chart named after the file (its name without hyphens: `v2-bare-3.csv` bec
   double quote as `'`. The reader still takes a field in double quotes holding commas, with
   `""` as one quote (RFC 4180), from files of earlier OpenStitch versions. A record stays on
   one line: control characters are dropped. Spaces around fields are ignored.
-- PE-DESIGN shows a code with a letter (`A12`) as `000`; OpenStitch's codes are digits only.
+- PE-DESIGN shows a code with a letter (`A12`) as `000` and an empty code as `0`; OpenStitch's
+  codes are digits only. It drops punctuation from the brand and description (`Acme; Inc.`
+  came in as `Acme Inc`, `Say 'hi'` as `Say hi`).
 - At most 2,000 colours per chart and 100 charts; files over 4 MiB are refused. PE-DESIGN
   imported all 1,500 rows of a 1,500-row file (with the message "Importing the CSV file was
   stopped at line 1500."), so the issue's 1,499-colour cap is not PE's; its own limit is not

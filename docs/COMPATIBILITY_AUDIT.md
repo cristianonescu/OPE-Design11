@@ -1740,8 +1740,9 @@ Line references are relative to `crates/`.
   comment line, imported a column row as a black colour, split quoted fields at their commas,
   showed a lettered code as 000, imported all 1,500 rows of a 1,500-row file, and refused the
   issue's `#userchart` layout. `threads.exportCsv` now writes bare records only, with a comma
-  in a field as `;` and a quote as `'`: the layout PE imported (hand-made files; PE opening an
-  OpenStitch export itself, with empty codes and non-ASCII names, is being checked); the
+  in a field as `;` and a quote as `'`, and PE imports OpenStitch's own exports (the Brother
+  chart, the sew palette and a user chart, checked the same day; PE stores an empty code as 0
+  and drops punctuation such as `;`, `.` and `'` from the text fields); the
   reader still takes the earlier comment line, column row and quoting. The earlier finding
   below, that charts cannot be exchanged with PE-DESIGN through files, holds for PE-DESIGN's
   own `.btc2` charts only (there is still no export from PE).
