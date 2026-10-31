@@ -344,6 +344,13 @@ pub struct Shape {
     pub line_type: u16,
     /// Line colour: an index into [`Objects::threads`].
     pub line_color: u16,
+    /// Body +86: on an E or V line 0 for E, 1 for V (line-e-default, line-v-default, and their
+    /// rectangles); on stem, candlewick and chain lines it moves with the start and end options
+    /// together with +84 (line-*-startend-*), meaning not mapped there (1 on a default chain).
+    pub line_variant: u16,
+    /// Body +84: 1 with some start and end options on stem and candlewick lines
+    /// (line-stem-startend-*), 0 otherwise; meaning not mapped.
+    pub line_flag_84: u16,
     /// Zigzag width, mm.
     pub zigzag_width: f32,
     /// Zigzag density, line/mm.
@@ -410,7 +417,11 @@ impl Shape {
     /// Line sew type codes (`line_type`).
     pub const LINE_ZIGZAG: u16 = 0;
     pub const LINE_RUNNING: u16 = 1;
+    pub const LINE_MOTIF: u16 = 2;
     pub const LINE_E_OR_V: u16 = 3;
+    pub const LINE_STEM: u16 = 5;
+    pub const LINE_CANDLEWICK: u16 = 6;
+    pub const LINE_CHAIN: u16 = 8;
     pub const LINE_TRIPLE: u16 = 4;
     pub const LINE_NOT_SEWN: u16 = 9;
     /// The Applique Wizard's cutting line (Applique Material: Cutting, a02-applique-cutting):
@@ -427,6 +438,8 @@ impl Shape {
             line_sewn: true,
             line_type: Self::LINE_ZIGZAG,
             line_color: 0,
+            line_variant: 0,
+            line_flag_84: 0,
             zigzag_width: 2.0,
             zigzag_density: 4.5,
             ev_width: 2.5,
@@ -1197,6 +1210,8 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
         line_sewn: u16_at(body, 42) != 0,
         line_type: u16_at(body, 44),
         line_color: u16_at(body, 46),
+        line_variant: u16_at(body, 86),
+        line_flag_84: u16_at(body, 84),
         zigzag_width: f32::from(u16_at(body, 48)) / 10.0,
         zigzag_density: f32::from(u16_at(body, 50)) / 10.0,
         ev_width: f32::from(u16_at(body, 90)) / 10.0,
@@ -1800,11 +1815,17 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     for (k, v) in s.bounds.iter().enumerate() {
         put16(&mut head, 2 * k, *v as u16);
     }
-    // Sewn extent: the bounds plus half the zigzag width while a zigzag line is sewn, plus
-    // the E or V width while an E or V line is.
+    // Sewn extent: the bounds plus half the zigzag width while a zigzag or stem line is sewn,
+    // the whole zigzag width on a chain, and the E or V width (+90) on E, V, candlewick and
+    // motif lines (line-*-default: 2.0 mm and 2.5 mm, growth 10, 20 and 25; every owner line
+    // file has those two widths, so which field drives the stem, chain, candlewick and motif
+    // growth is inferred from the amounts, not seen varying).
     let half = match (s.line_sewn, s.line_type) {
-        (true, Shape::LINE_ZIGZAG) => (s.zigzag_width * 5.0).round() as i16,
-        (true, Shape::LINE_E_OR_V) => (s.ev_width * 10.0).round() as i16,
+        (true, Shape::LINE_ZIGZAG | Shape::LINE_STEM) => (s.zigzag_width * 5.0).round() as i16,
+        (true, Shape::LINE_CHAIN) => (s.zigzag_width * 10.0).round() as i16,
+        (true, Shape::LINE_E_OR_V | Shape::LINE_CANDLEWICK | Shape::LINE_MOTIF) => {
+            (s.ev_width * 10.0).round() as i16
+        }
         _ => 0,
     };
     for (k, v) in [x0 - half, y0 - half, x1 + half, y1 + half]
@@ -1817,6 +1838,8 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
     put16(&mut head, 42, u16::from(s.line_sewn));
     put16(&mut head, 44, s.line_type);
     put16(&mut head, 46, s.line_color);
+    put16(&mut head, 84, s.line_flag_84);
+    put16(&mut head, 86, s.line_variant);
     put16(&mut head, 48, tenths(s.zigzag_width));
     put16(&mut head, 50, tenths(s.zigzag_density));
     put16(&mut head, 52, tenths(s.run_pitch));

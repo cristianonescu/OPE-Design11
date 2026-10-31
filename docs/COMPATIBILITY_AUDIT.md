@@ -321,14 +321,14 @@ Line references are relative to `crates/`.
 
 - **Status (2026-10-29):** `design.export` with `pesVersion` 11 (editor: File ▸ Export ▸ PES ▸
   PE-DESIGN 11) writes `#PES0110` with one `CEmbLine` per shape in PE-DESIGN 11.50's own layout:
-  fill and satin regions, running, zigzag, triple, E and V lines, colours, under sewing, density,
+  fill and satin regions, running, zigzag, triple, E, V, stem, candlewick and chain lines, colours, under sewing, density,
   direction, Frequency, Running Stitch Path, the gradation flag, Bézier outlines, groups, the page
   size and the sewing-order list (`openstitch-formats/src/pes11.rs`, `openstitch-engine/src/pes11_export.rs`;
   FILE_FORMATS.md "PES 0110 object list", "Writer"). The 37 owner files the reader parses
   completely are rewritten from what it read and read back equal, and their object sections are
   byte-identical to PE-DESIGN's outside the documented differences (the pattern block, the
   geometry marks' parameters, the hoop fields). Text, stitch patterns, several outlines per
-  object and the other region and line types are refused with the object named; version 6 stays
+  object and the other region types and motif lines are refused with the object named; version 6 stays
   the default. **PE-DESIGN's check (2026-10-29, reference tier):** PE-DESIGN 11.50 opens the
   written rectangle with no warning and the shape editable, and re-saves the object section
   unchanged except its own pattern block (spec `pes-0110-editable-shapes`, MANIFEST entry). It
@@ -379,18 +379,21 @@ Line references are relative to `crates/`.
   stitch (the field telling E from V is not mapped), and the appliqué sews 29 x 29 mm where
   PE-DESIGN's wizard sews the same square 32,6 x 32,8 mm, OpenStitch's outline offset);
   Shapes-gallery shapes (`CEmbSpecialShape`, `CEmbLine` records under another class name)
-  round-trip (o-gallery-heart, shape-start-points). Groups: the group's number is one more than its last
-  member's archive number (a01, o-group-two-rects, group-partial); OpenStitch wrote the class's
-  number, which PE-DESIGN 11.50 refused ("Unexpected file format") for the appliqué export's
-  group of four lines without the square (2026-10-31), fixed; several groups (PE-DESIGN's
-  group-two) are not mapped and are left out of the file (open). Refused for
   round-trip (o-gallery-heart, shape-start-points); programmable fill written with its pattern
   in the header's pattern list (spec `pes-0110-programmable-fill`, reference pending; the list
   byte-identical to obj-progfill-owner-v's for the owner's V; one pattern per design); decorative
   fill with its pattern in the object's pattern block (spec `pes-0110-decorative-fill`,
   reference pending; the block byte-identical to deco-fill-1line-100mm's); the other Round 3
-  region types by their codes at PE-DESIGN's default attributes (their own fields not mapped).
-  Refused for
+  region types by their codes at PE-DESIGN's default attributes (their own fields not mapped);
+  stem, candlewick and chain lines by their codes (spec `pes-0110-line-types`, reference
+  pending; the 22 owner line-* files read and rewritten byte for byte outside the documented
+  differences), their Start/End options at PE-DESIGN's defaults (open: the sewing end
+  PE-DESIGN stores for them, +84 and +86 on the line-*-startend-* files, and the field behind
+  their sewn extent). Groups: the group's number is one more than its last
+  member's archive number (a01, o-group-two-rects, group-partial); OpenStitch wrote the class's
+  number, which PE-DESIGN 11.50 refused ("Unexpected file format") for the appliqué export's
+  group of four lines without the square (2026-10-31), fixed; several groups (PE-DESIGN's
+  group-two) are not mapped and are left out of the file (open). Refused for
   now: right-aligned and vertical text, stretched fit, rotation, letter spacing, kerning,
   per-character edits, other fonts.
   **PE-DESIGN's check (reference tier, `pes-0110-editable-text`):** it opens the file as

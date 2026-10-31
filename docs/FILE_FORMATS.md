@@ -280,7 +280,9 @@ below is pinned by a test in `tests/pes11.rs`.
 | 16 | transform, 6 × f32 (identity so far) | all |
 | 40 | 0 closed, 1 open | r11 line |
 | 42 | line sewn 1, not sewn 0 | r07 |
-| 44 | line sew type: 0 Zigzag, 1 Running, 3 E or V stitch, 4 Triple, 7 the Applique Wizard's cutting line, 9 while not sewn | r07, r19, the `line-*-default` references, a02-applique-cutting |
+| 44 | line sew type: 0 Zigzag, 1 Running, 2 Motif, 3 E or V stitch, 4 Triple, 5 Stem, 6 Candlewick, 7 Cutting (the Applique Wizard's cutting line), 8 Chain, 9 while not sewn | r07, r19, the 22 `line-*` references (compat/reference/stitches), a02-applique-cutting |
+| 84 | 1 with some Start/End options on stem and candlewick lines (line-stem-startend-*), 0 otherwise; meaning not mapped | the `line-*-startend-*` references |
+| 86 | on an E or V line 0 for E, 1 for V; on stem, candlewick and chain lines it moves with the Start/End options together with +84 (not mapped there); 1 on a default chain | line-e-default, line-v-default, line-chain-default, the `line-*-startend-*` references |
 | 46 | line colour, a thread-table index | r17 (red 1 → silver 0) |
 | 48 | zigzag width, 0.1 mm | r21 (2.0 → 3.0 mm) |
 | 50 | zigzag density, 0.1 line/mm | r01 (4.5) |
@@ -288,7 +290,7 @@ below is pinned by a test in `tests/pes11.rs`.
 | 60 | line under sewing 1 on, 0 off | r22 |
 | 90 | E or V stitch width, 0.1 mm (2.5 by default, 2.0 on the Applique Wizard's tack-down); an E or V line's sewn extent is the bounds ± this width | line-e-default, line-v-default (25, extent ± 25), a01-rect-applique (20, ± 20) |
 | 122 | 1 on the cutting line, 5 on every other object (meaning not mapped) | a02-applique-cutting |
-| 8 (cont.) | the extent of a running or unsewn line equals the bounds; a zigzag adds half its width; the circle's is one unit wider still (589..711) and an open zigzag line's grows only across the line (r11: y ± 10, x unchanged) | r19, r07, r21, r10, r11 |
+| 8 (cont.) | the extent of a running, triple or unsewn line equals the bounds; a zigzag or stem line adds half the zigzag width (+48), a chain the whole of it, and a candlewick or motif line the E/V width (+90) (line-*-default: ± 10, ± 20, ± 25 with the default 2.0 and 2.5 mm; every owner line file has those widths, so which field drives the stem, chain, candlewick and motif growth is inferred from the amounts); the circle's is one unit wider still (589..711) and an open zigzag line's grows only across the line (r11: y ± 10, x unchanged) | r19, r07, r21, r10, r11 |
 | 132 | region sewn 1, Not Sewn 0 (every Round 3 file whose region is Not Sewn has 0; r11's open line keeps 1 with its unused Fill) | o-arc, o-rounded-rect, o-group-two-rects, r11 |
 | 134 | region sew type: 0 Satin, 1 Fill, 2 Programmable fill, 3 Motif, 4 Cross Stitch, 5 Concentric Circle, 6 Radial, 7 Spiral, 8 Piping, 9 Stippling, 10 Net Fill, 11 Not Sewn (open lines, outlines with the region off, the inner copy of a hole-sewing pair), 12 Zigzag Net Fill, 13 Decorative Fill, 14 Flexible Spiral. Each o-region-* file, made at the type's defaults, differs from a fill only here; the types' own attribute fields are not mapped (motif fill also changes +68, +236 and +332) | r04, programmable-fill-45, o-group-two-rects, o-arc, hole-sewing-pentagon-star |
 | 136 | region density, 0.1 line/mm | r09 (4.5 → 6.0) |
@@ -578,11 +580,13 @@ width as the size). What it
 cannot hold fails with the object named: a second hole sewing pair, a hole sewing pair in a
 design with groups, several outlines in one object, a second programmable fill pattern, a
 programmable fill tile that is not square or has embossed or engraved areas, motif fill, a
-decorative pattern chained in rows or not square, contour fill (OpenStitch's own), motif, stem,
-candlewicking, chain and cutting lines; text in another font, with white space other than
+decorative pattern chained in rows or not square, contour fill (OpenStitch's own), motif lines (stem,
+candlewick and chain lines are written by their codes, their Start/End options at PE-DESIGN's
+defaults: the sewing end PE-DESIGN stores for them, the second outline position and the
+geometry's segment fields, is not mapped); text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character
-edits or under sewing. Checks: the 124 owner files whose list the reader parses completely (59
+edits or under sewing. Checks: the 149 owner files whose list the reader parses completely (84
 with shapes, 3 with a hole sewing pair, 11 of them Manual Punch objects, 2 of Convert to Blocks, 5 Applique Wizard outputs, 19 with plain text, 27 with a Text Transform, 14 with
 text fitted to an outline, 3 with a stitch group; two of them with gallery shapes) are rewritten from what it read and read back equal (`written_files_read_back_to_the_same_objects`), and their object sections are
 byte-identical to PE-DESIGN's outside these documented differences
