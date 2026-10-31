@@ -80,7 +80,7 @@ Specs: 386 · pass 386 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `machine/machine-satin-width-30` | pass | reference | — | — | pass | — |
 | `machine/machine-trim-bound` | pass | reference | pass | — | pass | — |
 | `machine/machine-trim-fine` | pass | reference | pass | — | pass | — |
-| `pes/pes-0110-applique` | pass | internal-regression | pass | — | pending | — |
+| `pes/pes-0110-applique` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-curve-block` | pass | internal-regression | pass | — | pending | — |
 | `pes/pes-0110-editable-shapes` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text-fit` | pass | reference | pass | — | pass | — |

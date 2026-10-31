@@ -356,10 +356,18 @@ Line references are relative to `crates/`.
   byte outside the pattern block; Text > Convert to Blocks' output (stroke-blocks-H, -A) read as
   blocks and running pieces, its blocks' marks equal but for the floats' last bits; a Curve Block written from a design has handles within one
   file unit of PE-DESIGN's, which way PE-DESIGN rounds them not mapped); the Appliqué wizard's stages as PE-DESIGN's appliqué lines and colours (spec
-  `pes-0110-applique`, reference pending; owner files a01–a05 read and rewritten byte for byte
-  outside the documented differences);
+  `pes-0110-applique`, reference tier: PE-DESIGN 11.50 opens the export with no group of a
+  partial set of objects, its lines editable in PE-DESIGN's appliqué colours, and re-saves it
+  unchanged but for its pattern blocks, 2026-10-31; owner files a01–a05 read and rewritten byte
+  for byte outside the documented differences; **open:** the wizard's V tack-down shows as an E
+  stitch (the field telling E from V is not mapped), and the appliqué sews 29 x 29 mm where
+  PE-DESIGN's wizard sews the same square 32,6 x 32,8 mm, OpenStitch's outline offset);
   Shapes-gallery shapes (`CEmbSpecialShape`, `CEmbLine` records under another class name)
-  round-trip (o-gallery-heart, shape-start-points). Refused for
+  round-trip (o-gallery-heart, shape-start-points). Groups: PE-DESIGN 11.50 refuses a file whose
+  one group leaves an object out ("Unexpected file format", the appliqué export of 2026-10-30,
+  2026-10-31); the export writes only a group of every object, the one layout in the owner's
+  files, and leaves other grouping out (open until owner captures show partial and several
+  groups). Refused for
   now: right-aligned and vertical text, stretched fit, rotation, letter spacing, kerning,
   per-character edits, other fonts.
   **PE-DESIGN's check (reference tier, `pes-0110-editable-text`):** it opens the file as

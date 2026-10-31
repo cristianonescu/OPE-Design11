@@ -369,6 +369,13 @@ A rectangle starts in the middle of its bottom edge and runs round the corners; 
 four smooth vertices whose handles lie 0.5523 × the radius along the tangent. The record ends
 after its last vertex.
 
+Every owner file with a group has one group of all its objects (the Applique Wizard's output with
+the original shape, vector imports, Convert to Blocks, o-group-two-rects, the machine-* files),
+and PE-DESIGN 11.50 refused ("Unexpected file format") a file whose one group left an object out:
+OpenStitch's appliqué export of 2026-10-30 grouped its four lines without the square, while the
+same file with all five grouped, or with no group, opens (2026-10-31). The writer's export
+therefore writes a group only when one group holds every object; how PE-DESIGN stores a group of
+some of the objects, or several groups, is not mapped (captures requested).
 After the list: 10 zero bytes; the **group list**, a u16 count then per group its MFC tag
 (`FFFF 0000 0C00 CGroupObject` the first time), a u16 with the `CGroupObject` class's archive
 number (the objects' count + 2: 1 is `CEmbLine`, 2.. the objects, then the class), the u16
@@ -481,7 +488,8 @@ OpenStitch's Brother PEC chart gets the BROTHER EMBROIDERY catalogue number and 
 catalogue number, brand and chart), one `CEmbLine` per visible shape with every mapped field set,
 one `CEmbOne` per stitch pattern (its needle points in runs cut as version 6 cuts them, a jump
 run where the pattern jumps or trims, each colour block's thread added to the table), the
-groups, the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
+groups (a design's one group of every object; other grouping is left out, see the group list
+above), the sewing-order list, the PEC section and the addendum. Texts in Lato Bold are written
 as `CEmbNText` (letters at the text's size, Satin or Fill, an optional running, triple or
 zigzag line at PE's defaults, line breaks, the line spacing %, left or centre alignment and the
 click point at the alignment point), and fitted to an outline as `CEmbAText` (the fit settings, the

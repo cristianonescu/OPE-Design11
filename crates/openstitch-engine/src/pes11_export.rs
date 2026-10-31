@@ -58,7 +58,17 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
     if out.shapes.is_empty() && out.texts.is_empty() && out.stitch_groups.is_empty() {
         return Err("the design has no visible objects".into());
     }
-    out.groups = groups.into_iter().map(|(_, m)| m).collect();
+    // PE-DESIGN 11.50 groups every object of each owner file in one group (the Applique Wizard,
+    // vector imports, Convert to Blocks, o-group-two-rects), and it refused a file whose one group
+    // left an object out ("Unexpected file format": the appliqué export of 2026-10-30 grouped its
+    // four lines without the square; the same file with all five grouped, or none, opens). So
+    // only that layout is written: one group of every object. How PE-DESIGN stores other
+    // grouping is not mapped, and such groups are left out of the file.
+    let total = out.shapes.len() + out.texts.len() + out.stitch_groups.len();
+    out.groups = match groups.as_slice() {
+        [(_, members)] if members.len() == total => vec![members.clone()],
+        _ => Vec::new(),
+    };
     Ok(out)
 }
 
@@ -971,6 +981,41 @@ mod tests {
         );
         // The V tack-down's width is the E/V width; the zigzag width stays PE's default.
         assert_eq!((o.shapes[2].ev_width, o.shapes[2].zigzag_width), (2.0, 2.0));
+    }
+
+    #[test]
+    fn only_a_group_of_every_object_is_written() {
+        let square = |x: f64| {
+            DesignObject::shape(
+                vec![Contour::rectangle(x, 100.0, 100.0, 100.0)],
+                Some(RegionSewing::new(RegionType::Fill, red())),
+                None,
+            )
+        };
+        let mut design = Design::new("t", openstitch_design::DesignPage::default());
+        let ids: Vec<u64> = [100.0, 300.0, 500.0]
+            .map(|x| design.add(square(x)))
+            .to_vec();
+        let group = |design: &mut Design, members: &[u64], g: u64| {
+            for o in &mut design.objects {
+                if members.contains(&o.id) {
+                    o.group = Some(g);
+                }
+            }
+        };
+        // Two of three grouped: PE-DESIGN refused such a file, so the group is left out.
+        let mut partial = design.clone();
+        group(&mut partial, &ids[..2], 1);
+        assert!(objects(&partial).expect("objects").groups.is_empty());
+        // Two groups: not mapped either.
+        let mut two = design.clone();
+        group(&mut two, &ids[..2], 1);
+        group(&mut two, &ids[2..], 2);
+        assert!(objects(&two).expect("objects").groups.is_empty());
+        // Every object in one group: written.
+        let mut all = design.clone();
+        group(&mut all, &ids, 1);
+        assert_eq!(objects(&all).expect("objects").groups, [vec![0, 1, 2]]);
     }
 
     #[test]
