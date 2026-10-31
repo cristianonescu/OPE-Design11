@@ -348,7 +348,7 @@ fn new_text_takes_pe_design_text_sewing_defaults() {
 }
 
 #[test]
-fn convert_to_shapes_keeps_the_stitches() {
+fn convert_to_shapes_keeps_the_outlines_and_sews_them_as_regions() {
     let mut s = Session::new(temp_dir());
     run(
         &mut s,
@@ -379,7 +379,24 @@ fn convert_to_shapes_keeps_the_stitches() {
     assert_eq!(d.objects[0].name.as_deref(), Some("label 'B'"));
     assert_eq!(d.objects[1].contours.len(), 2, "o keeps its counter");
     assert_eq!(d.objects[4].id, 2, "rectangle stays after the glyphs");
-    assert_eq!(Compiler::default().compile(d), before);
+    // Satin text is sewn stroke by stroke; the converted glyphs are ordinary satin regions, as
+    // PE-DESIGN 11.50's Convert to Outline makes them (stroke-outline-H: 255 needle points
+    // against the text's 285). The rectangle and the colours stay.
+    let after = Compiler::default().compile(d);
+    assert_ne!(after, before);
+    assert_eq!(after.threads, before.threads);
+    let needles = |p: &openstitch_core::StitchPattern| {
+        p.stitches
+            .iter()
+            .filter(|s| s.command == openstitch_core::Command::Stitch)
+            .count()
+    };
+    assert!(
+        needles(&after) < needles(&before),
+        "{} {}",
+        needles(&after),
+        needles(&before)
+    );
     // Converted glyphs are ordinary shapes: their points can be edited.
     run(
         &mut s,

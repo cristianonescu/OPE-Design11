@@ -4908,6 +4908,149 @@
       "settings": "Design Page 100 x 100 mm; Home > Import Patterns > from Vector Image... of an SVG with viewBox 0 0 100 100 (100 x 100 mm) holding one polygon (0,0) (30,0) (21.34,15) (17.01,12.5) (21.34,5) (0,5) mm (a 5 mm band bent through 120 degrees, second leg 17.32 mm, square end); the shape imports centred on the page as Fill Stitch, line Not Sewn, colour 800 RED. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch unticked, Pull compensation 0.0 mm, Feathered edge off. Save As PES (#PES0110). Status bar 30,00 x 15,00 mm, Stitches = 165.",
       "sha256": "19084d668da35d809bda6b3436d6a252b34fe486d3b584d6ab8dc286613f5d44",
       "notes": "The imported shape shows Half Stitch unticked; the plain file has it ticked, the -nohalf file unticked. Recorded in round 3 (pe-refs-3, owner's round3\\satin-bend\\log.txt), parked until the Auto satin outer-edge spacing landed."
+    },
+    {
+      "file": "text/stroke-satin-I.pes",
+      "spec": "stroke-satin-i",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "97e31320be11aa04798d715d1ddd82a8e79661a4bc8a4ee0dd4bc474e54f1b1c",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed I, size 20.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-L.pes",
+      "spec": "stroke-satin-l",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "d643e06178621fd45d3ee7695a3332fc647bafbba530e921f9539ffd49334a49",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed L, size 20.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-T.pes",
+      "spec": "stroke-satin-t",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "f153236cc4d84437d7c591f9da51bfbb846070ed88d4076d9fb97312941536ac",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed T, size 20.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-O.pes",
+      "spec": "stroke-satin-o",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "fa3afc33952e0a29fdd620f96b1ffdab83f0985b240e2ec802cdb1f1a5f2f748",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed O, size 20.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-V.pes",
+      "spec": "stroke-satin-v",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "7eac34360a34099d2920cf93a6cf8fb985aca52a39a7e10bc16122a77976d437",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed V, size 20.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-X.pes",
+      "spec": "stroke-satin-x",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "9b00e0f7950659ed7b360decd5a6481a2b0659bc16c893e1f34555eb4b28daad",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed X, size 20.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-A.pes",
+      "spec": "stroke-satin-a",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "9340da8566efe4f01e02bc2cb94081a546cb93a91a52a1a6b095b6e01dd5c501",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed A, size 20.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-S.pes",
+      "spec": "stroke-satin-s",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "6a493b6a586d392247887be78a399153ca4adc3a2107cfb6eb53605543fb62ef",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed S, size 20.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-lower-e.pes",
+      "spec": "stroke-satin-lower-e",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "f0dc519a3af24cbba80f8cf4c3467ba30304302f4981896a45fc7d0f554fb6ba",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed e, size 20.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-lower-i.pes",
+      "spec": "stroke-satin-lower-i",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "dc03d6f7759a5a740a623d72fa2bb70db7916469f1427026b7ce9de884886a1f",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed i, size 20.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-8.pes",
+      "spec": "stroke-satin-8",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "d969738187438b5d0d78fcb90f0935aacfd50cce93b11138bae358ba12add0b4",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed 8, size 20.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-H-10.pes",
+      "spec": "stroke-satin-h-10",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "fbd76f7b75a1fbc5d297d33f4844b80dc78b22e71bd49ab79f6bdc6635cbd9c0",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed H, size 10.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
+    },
+    {
+      "file": "text/stroke-satin-H-40.pes",
+      "spec": "stroke-satin-h-40",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-30",
+      "os": "Windows 11 Pro",
+      "sha256": "f59254b51d127447268efde2e3cca2fcdc7a93495c71dfdf461d5347101e7586",
+      "settings": "Round 5 stroke captures (pe-refs-4). Font Lato Bold installed for the current Windows user as a TrueType font. App menu > New (100 x 100 mm page). Text tool, typed H, size 40.0 mm; region Satin Stitch at PE-DESIGN's text defaults (density 5.0, under sewing off), line Not Sewn. Save As PES (default type). Owner-made with PE-DESIGN's own Text tool; no Brother font or pattern involved."
     }
   ]
 }

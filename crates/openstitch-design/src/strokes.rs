@@ -1038,6 +1038,9 @@ pub struct Block {
     pub rungs: Vec<[Vec2; 2]>,
     /// The junction square: the piece of a column under the stroke that leaves it there.
     pub junction: bool,
+    /// The first block of a piece not joined to the one before (an i's dot, X's second
+    /// chevron): PE-DESIGN trims before it.
+    pub new_run: bool,
 }
 
 /// A stroke's end: `(stroke, 0 or 1)`.
@@ -1102,6 +1105,19 @@ impl GlyphStrokes {
                     }
                 }
             }
+            // A crossing of four arms (X) is two chevrons, the arms on each side one column
+            // turning through it (stroke-satin-X: two runs with a trim between).
+            if at.len() == 4 {
+                let mut arms = at.clone();
+                arms.sort_by(|a, b| self.out_of(a.0, a.1).x.total_cmp(&self.out_of(b.0, b.1).x));
+                if arms[0].0 != arms[1].0 && arms[2].0 != arms[3].0 {
+                    for (a, b) in [(arms[0], arms[1]), (arms[2], arms[3])] {
+                        next[a.0][a.1] = Some((b.0, b.1, usize::MAX));
+                        next[b.0][b.1] = Some((a.0, a.1, usize::MAX));
+                    }
+                    continue;
+                }
+            }
             if let Some((_, a, b)) = best {
                 next[a.0][a.1] = Some((b.0, b.1, j));
                 next[b.0][b.1] = Some((a.0, a.1, j));
@@ -1129,7 +1145,10 @@ impl GlyphStrokes {
                 col.parts.push((s, e == 1));
                 match next[s][1 - e] {
                     Some((t, te, j)) if !used[t] => {
-                        col.through.push(j);
+                        // A crossing joins its chevrons without making them branch there.
+                        if j != usize::MAX {
+                            col.through.push(j);
+                        }
                         (s, e) = (t, te);
                     }
                     _ => break,
@@ -1189,26 +1208,94 @@ impl GlyphStrokes {
             strokes: col_strokes,
             junctions: self.junctions.clone(),
         };
-        let rungs = merged.rungs(contours, spacing);
-        let mut order = Order {
-            g: self,
-            cols: &cols,
-            strokes: &merged.strokes,
-            rungs: &rungs,
-            done: vec![false; cols.len()],
-            out: Vec::new(),
-            at: v2(0.0, 0.0),
-        };
         let Some(b) = Rect::enclosing(merged.strokes.iter().flat_map(|s| s.centre.iter().copied()))
         else {
             return Vec::new();
         };
-        order.at = v2(b.min_x, b.min_y);
-        // Each piece of the letter from the column end nearest where the sewing is.
-        while let Some((c, end)) = order.nearest_end() {
-            order.visit(c, Entry::End(end));
+        let mut rungs = merged.rungs(contours, spacing);
+        let sewn = |rungs: &[Vec<[Vec2; 2]>]| {
+            let mut order = Order {
+                g: self,
+                cols: &cols,
+                strokes: &merged.strokes,
+                rungs,
+                done: vec![false; cols.len()],
+                out: Vec::new(),
+                at: v2(b.min_x, b.min_y),
+                seq: Vec::new(),
+            };
+            // Each piece of the letter from the column end nearest where the sewing is.
+            while let Some((c, end)) = order.nearest_end() {
+                let first = order.out.len();
+                order.visit(c, Entry::End(end));
+                if first > 0
+                    && let Some(block) = order.out.get_mut(first)
+                {
+                    block.new_run = true;
+                }
+            }
+            (order.out, order.seq)
+        };
+        let (_, seq) = sewn(&rungs);
+        // A sharp corner (an A's apex, a V's foot) belongs to the column sewn last there: its
+        // satin runs on into the tip (stroke-blocks-A: the right leg with the apex).
+        let outline: Vec<Vec2> = contours
+            .iter()
+            .filter(|c| c.closed)
+            .flat_map(Contour::outline_points)
+            .collect();
+        let rank = |c: usize| seq.iter().position(|&k| k == c).unwrap_or(usize::MAX);
+        for (c, st) in merged.strokes.iter().enumerate() {
+            for end in 0..2 {
+                if st.ends[end] != StrokeEnd::Corner || st.centre.len() < 2 {
+                    continue;
+                }
+                let along: Vec<Vec2> = if end == 0 {
+                    st.centre.clone()
+                } else {
+                    st.centre.iter().rev().copied().collect()
+                };
+                let p = along[0];
+                let q = point_at(&along, 20.0_f64.min(length(&along)));
+                let partner_later = merged.strokes.iter().enumerate().any(|(k, o)| {
+                    k != c
+                        && rank(k) > rank(c)
+                        && (0..2).any(|e| {
+                            o.ends[e] == StrokeEnd::Corner
+                                && o.centre[if e == 0 { 0 } else { o.centre.len() - 1 }].distance(p)
+                                    < 10.0
+                        })
+                });
+                if partner_later {
+                    continue;
+                }
+                let out = p - q;
+                let len = out.length();
+                if len <= 1e-9 {
+                    continue;
+                }
+                let dir = out * (1.0 / len);
+                let reach = st.widths.iter().copied().fold(0.0, f64::max) * 1.5;
+                let tip = outline
+                    .iter()
+                    .filter(|o| o.distance(p) <= reach)
+                    .max_by(|a, b| {
+                        let along = |o: &Vec2| (o.x - p.x) * dir.x + (o.y - p.y) * dir.y;
+                        along(a).total_cmp(&along(b))
+                    })
+                    .copied();
+                if let Some(tip) = tip.filter(|t| (t.x - p.x) * dir.x + (t.y - p.y) * dir.y > 0.0)
+                    && !rungs[c].is_empty()
+                {
+                    if end == 0 {
+                        rungs[c].insert(0, [tip, tip]);
+                    } else {
+                        rungs[c].push([tip, tip]);
+                    }
+                }
+            }
         }
-        order.out
+        sewn(&rungs).0
     }
 }
 
@@ -1228,6 +1315,8 @@ struct Order<'a> {
     out: Vec<Block>,
     /// Where the needle is.
     at: Vec2,
+    /// The columns in the order they are sewn.
+    seq: Vec<usize>,
 }
 
 impl Order<'_> {
@@ -1351,7 +1440,11 @@ impl Order<'_> {
     fn emit(&mut self, rungs: Vec<[Vec2; 2]>, junction: bool) {
         if let Some(last) = rungs.last() {
             self.at = last[0].lerp(last[1], 0.5);
-            self.out.push(Block { rungs, junction });
+            self.out.push(Block {
+                rungs,
+                junction,
+                new_run: false,
+            });
         }
     }
 
@@ -1360,6 +1453,7 @@ impl Order<'_> {
             return;
         }
         self.done[c] = true;
+        self.seq.push(c);
         // A ring (an O): one block round it.
         if self.strokes[c].closed {
             let ring = self.rungs[c].clone();
@@ -1797,5 +1891,51 @@ mod tests {
             assert_eq!(blocks, g.blocks(&contours, 30.0), "{ch}");
         }
         assert!(GlyphStrokes::default().blocks(&[], 30.0).is_empty());
+    }
+
+    #[test]
+    fn crossings_are_chevrons_and_separate_pieces_start_new_runs() {
+        // stroke-satin-X: two chevrons, each one column turning through the crossing, a trim
+        // between them; stroke-satin-lower-i: the dot and the stem apart.
+        for (ch, blocks_n, runs) in [("X", 2, 2), ("i", 2, 2), ("H", 5, 1), ("A", 5, 1)] {
+            let spec = TextSpec::new(ch, DEFAULT_FONT, 20.0);
+            let contours = layout(&spec, None).expect("layout").contours();
+            let blocks = strokes(&contours).expect("strokes").blocks(&contours, 30.0);
+            assert_eq!(blocks.len(), blocks_n, "{ch}");
+            assert!(!blocks[0].new_run, "{ch}");
+            let n = 1 + blocks.iter().filter(|b| b.new_run).count();
+            assert_eq!(n, runs, "{ch}");
+            assert!(blocks.iter().all(|b| !b.junction) || ch != "X", "{ch}");
+        }
+    }
+
+    #[test]
+    fn the_column_sewn_last_at_a_sharp_corner_runs_into_its_tip() {
+        // stroke-blocks-A: the right leg, sewn after the left, takes the apex in; V's second
+        // arm runs into the foot. The letters keep their full height.
+        for ch in ["A", "V"] {
+            let spec = TextSpec::new(ch, DEFAULT_FONT, 20.0);
+            let contours = layout(&spec, None).expect("layout").contours();
+            let b =
+                Rect::enclosing(contours.iter().flat_map(Contour::outline_points)).expect("box");
+            let blocks = strokes(&contours).expect("strokes").blocks(&contours, 30.0);
+            let ys = blocks
+                .iter()
+                .flat_map(|bl| bl.rungs.iter().flat_map(|r| [r[0].y, r[1].y]));
+            let (top, bottom) = ys.fold((f64::INFINITY, f64::NEG_INFINITY), |(t, m), y| {
+                (t.min(y), m.max(y))
+            });
+            assert!(
+                top - b.min_y < 3.0 && b.max_y - bottom < 3.0,
+                "{ch}: {top} {bottom} {b:?}"
+            );
+        }
+        let spec = TextSpec::new("A", DEFAULT_FONT, 20.0);
+        let contours = layout(&spec, None).expect("layout").contours();
+        let b = Rect::enclosing(contours.iter().flat_map(Contour::outline_points)).expect("box");
+        let blocks = strokes(&contours).expect("strokes").blocks(&contours, 30.0);
+        let first = |bl: &Block| bl.rungs[0][0].y - b.min_y;
+        assert!(first(&blocks[4]) < 3.0, "the right leg starts at the apex");
+        assert!(first(&blocks[0]) > 10.0, "the left leg starts below it");
     }
 }

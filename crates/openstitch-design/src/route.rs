@@ -184,7 +184,7 @@ fn walk(poly: &[Vec2], from: f64, to: f64) -> Vec<Vec2> {
 /// Running stitches along the outline (the closed contour of `outline` nearest `a`) from `a`
 /// to `b`, ends included, at most `pitch` long. Straight when the points are on different
 /// contours.
-fn travel(outline: &[Contour], a: Vec2, b: Vec2, pitch: f64) -> Run {
+pub(crate) fn travel(outline: &[Contour], a: Vec2, b: Vec2, pitch: f64) -> Run {
     let nearest = |p: Vec2| {
         outline
             .iter()
