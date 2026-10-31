@@ -47,7 +47,7 @@ through its normal interface are committed under `compat/reference/`. The compat
 <!-- status:glance -->
 | | |
 |---|---|
-| Feature matrix rows | 171: 143 implemented (2 of them partially compatible), 3 documented only, 10 blocked, 15 planned beyond PE-DESIGN |
+| Feature matrix rows | 171: 144 implemented (2 of them partially compatible), 3 documented only, 10 blocked, 14 planned beyond PE-DESIGN |
 | Compatibility specs | 386: 386 pass, 0 fail ([status](docs/COMPATIBILITY_STATUS.md)) |
 | Matrix rows covered by specs | 32: 25 at the reference tier, 5 at the internal-regression tier, 2 at the oracle tier |
 | Open audit differences | 11 ([audit](docs/COMPATIBILITY_AUDIT.md#summary)) |
@@ -85,21 +85,34 @@ named; `python3 tools/gallery.py` regenerates them.
 <!-- gallery:start -->
 | Image | OpenStitch (Realistic view) | Wizard and result |
 |---|---|---|
-| <img src="examples/images/p01-portrait.jpg" width="200"> | <img src="docs/images/readme/gallery/p01.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>12,512 stitches, 7 colours |
-| <img src="examples/images/p02-mono-portrait.jpg" width="200"> | <img src="docs/images/readme/gallery/p02.png" width="260"> | **Photo Stitch 2, mono, defaults**<br>19,991 stitches, 1 colour |
-| <img src="examples/images/p04-cat-fur.jpg" width="200"> | <img src="docs/images/readme/gallery/p04.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>21,077 stitches, 8 colours |
-| <img src="examples/images/p06-sunset.jpg" width="200"> | <img src="docs/images/readme/gallery/p06.png" width="260"> | **Photo Stitch 2, Auto Select**<br>18,514 stitches, 4 colours |
-| <img src="examples/images/p08-poppies.jpg" width="200"> | <img src="docs/images/readme/gallery/p08.png" width="260"> | **Photo Stitch 2, Color Set CMYK**<br>35,725 stitches, 4 colours |
-| <img src="examples/images/p12-backlit-tree.jpg" width="200"> | <img src="docs/images/readme/gallery/p12.png" width="260"> | **Photo Stitch 1, mono, defaults**<br>3,585 stitches, 1 colour |
-| <img src="examples/images/p03-storybook.jpg" width="200"> | <img src="docs/images/readme/gallery/p03.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>16,018 stitches, 8 colours |
-| <img src="examples/images/g01-emblem.png" width="200"> | <img src="docs/images/readme/gallery/g01.png" width="260"> | **Auto Punch, defaults**<br>8,688 stitches, 3 colours |
-| <img src="examples/images/g02-balloon.png" width="200"> | <img src="docs/images/readme/gallery/g02.png" width="260"> | **Auto Punch, defaults**<br>7,926 stitches, 5 colours |
-| <img src="examples/images/g05-robot-cartoon.png" width="200"> | <img src="docs/images/readme/gallery/g05.png" width="260"> | **Auto Punch, defaults**<br>11,897 stitches, 6 colours |
-| <img src="examples/images/g08-lettering.png" width="200"> | <img src="docs/images/readme/gallery/g08.png" width="260"> | **Auto Punch, defaults**<br>1,982 stitches, 3 colours |
-| <img src="examples/images/g04-butterfly-outline.png" width="200"> | <img src="docs/images/readme/gallery/g04.png" width="260"> | **Design Center, running line**<br>1,271 stitches, 1 colour |
-| <img src="examples/images/g07-pixel-strawberry.png" width="200"> | <img src="docs/images/readme/gallery/g07.png" width="260"> | **Cross Stitch, defaults**<br>3,931 stitches, 6 colours |
-| <img src="examples/images/g15-folk-bird.png" width="200"> | <img src="docs/images/readme/gallery/g15.png" width="260"> | **Cross Stitch, defaults**<br>4,467 stitches, 4 colours |
+| <img src="examples/images/p01-portrait.jpg" width="200"> | <img src="docs/images/readme/gallery/p01.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>12,512 stitches, 385 trims, 7 colours |
+| <img src="examples/images/p02-mono-portrait.jpg" width="200"> | <img src="docs/images/readme/gallery/p02.png" width="260"> | **Photo Stitch 2, mono, defaults**<br>19,991 stitches, 1 trims, 1 colour |
+| <img src="examples/images/p04-cat-fur.jpg" width="200"> | <img src="docs/images/readme/gallery/p04.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>21,077 stitches, 839 trims, 8 colours |
+| <img src="examples/images/p06-sunset.jpg" width="200"> | <img src="docs/images/readme/gallery/p06.png" width="260"> | **Photo Stitch 2, Auto Select**<br>18,514 stitches, 4 trims, 4 colours |
+| <img src="examples/images/p08-poppies.jpg" width="200"> | <img src="docs/images/readme/gallery/p08.png" width="260"> | **Photo Stitch 2, Color Set CMYK**<br>35,725 stitches, 4 trims, 4 colours |
+| <img src="examples/images/p12-backlit-tree.jpg" width="200"> | <img src="docs/images/readme/gallery/p12.png" width="260"> | **Photo Stitch 1, mono, defaults**<br>3,585 stitches, 130 trims, 1 colour |
+| <img src="examples/images/p03-storybook.jpg" width="200"> | <img src="docs/images/readme/gallery/p03.png" width="260"> | **Photo Stitch 1, colour, defaults**<br>16,018 stitches, 789 trims, 8 colours |
+| <img src="examples/images/g01-emblem.png" width="200"> | <img src="docs/images/readme/gallery/g01.png" width="260"> | **Auto Punch, defaults**<br>8,688 stitches, 10 trims, 3 colours |
+| <img src="examples/images/g02-balloon.png" width="200"> | <img src="docs/images/readme/gallery/g02.png" width="260"> | **Auto Punch, defaults**<br>7,926 stitches, 12 trims, 5 colours |
+| <img src="examples/images/g05-robot-cartoon.png" width="200"> | <img src="docs/images/readme/gallery/g05.png" width="260"> | **Auto Punch, defaults**<br>11,897 stitches, 231 trims, 6 colours |
+| <img src="examples/images/g08-lettering.png" width="200"> | <img src="docs/images/readme/gallery/g08.png" width="260"> | **Auto Punch, defaults**<br>1,982 stitches, 16 trims, 3 colours |
+| <img src="examples/images/g04-butterfly-outline.png" width="200"> | <img src="docs/images/readme/gallery/g04.png" width="260"> | **Design Center, running line**<br>1,271 stitches, 92 trims, 1 colour |
+| <img src="examples/images/g07-pixel-strawberry.png" width="200"> | <img src="docs/images/readme/gallery/g07.png" width="260"> | **Cross Stitch, defaults**<br>3,931 stitches, 190 trims, 6 colours |
+| <img src="examples/images/g15-folk-bird.png" width="200"> | <img src="docs/images/readme/gallery/g15.png" width="260"> | **Cross Stitch, defaults**<br>4,467 stitches, 303 trims, 4 colours |
 <!-- gallery:end -->
+
+Auto Punch also has an **OpenStitch** mode (➕, the image dialog's Mode choice): colours are
+reduced and matched to threads by how they look, and regions under 3 mm² merge, for fewer
+trims and no specks. PE-DESIGN mode stays the default
+([research](docs/research/beyond/image-digitizing.md)).
+
+<!-- gallery-modes:start -->
+| Image | PE-DESIGN mode | OpenStitch mode |
+|---|---|---|
+| <img src="examples/images/g05-robot-cartoon.png" width="200"> | <img src="docs/images/readme/gallery/g05-pe.png" width="260"><br>11,897 stitches, 231 trims, 6 colours | <img src="docs/images/readme/gallery/g05-os.png" width="260"><br>8,211 stitches, 163 trims, 4 colours |
+| <img src="examples/images/g06-watercolour-lemons.jpg" width="200"> | <img src="docs/images/readme/gallery/g06-pe.png" width="260"><br>18,278 stitches, 284 trims, 9 colours | <img src="docs/images/readme/gallery/g06-os.png" width="260"><br>12,987 stitches, 109 trims, 7 colours |
+| <img src="examples/images/p03-storybook.jpg" width="200"> | <img src="docs/images/readme/gallery/p03-pe.png" width="260"><br>41,676 stitches, 699 trims, 8 colours | <img src="docs/images/readme/gallery/p03-os.png" width="260"><br>30,096 stitches, 280 trims, 10 colours |
+<!-- gallery-modes:end -->
 
 ## Features
 
@@ -163,6 +176,8 @@ PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
   regions, cross stitches or photo-style lines. These are independent approximations of
   PE-DESIGN's wizards, compared with its output.
 - **Design Center** pipeline (image → outline → figure → sew settings) and the Stitch Wizard.
+- ➕ **OpenStitch mode for Auto Punch**: colours reduced and matched to threads by how they
+  look, small regions merged; fewer trims and no specks. PE-DESIGN mode stays the default.
 - **Background images** (PNG, JPEG, BMP or the clipboard): place, crop, rotate, adjust and trace
   over.
 
@@ -332,7 +347,6 @@ PE-DESIGN 11 does not. Each item is sketched in
 [docs/research/beyond](docs/research/beyond/readiness.md) and will be off unless chosen:
 
 <!-- status:beyond-planned -->
-- Image wizards' "OpenStitch" mode (B16): compatMode: openStitch on Auto Punch, colours reduced by k-means in CIELAB and matched to threads by CIEDE2000, regions under 3 mm² merged with one majority pass; PE-DESIGN mode stays the default; then Photo Stitch 1's perceptual palette and error diffusion, SLIC segmentation
 - Density profiles on fills and satin columns, two-colour blend command, hidden travel for open fills (B6)
 - 3D puff satin mode: density, caps, no underlay or pull compensation, foam stop, ordering (B7)
 - Crosshatch, curved crosshatch and double-zigzag lace as a region type (B8)

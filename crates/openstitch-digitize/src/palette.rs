@@ -3,6 +3,7 @@
 //! median cut to N colours, each mapped to the nearest Brother PEC chart thread (equal-weight
 //! squared-Euclidean distance, `openstitch-core`, #119), plus Floyd–Steinberg dithering.
 
+use crate::perceptual::{self, Lab};
 use crate::raster::Raster;
 use openstitch_core::{PEC_CHART, Thread, color_distance, nearest_index, pec_basic_chart};
 use std::collections::HashMap;
@@ -18,6 +19,13 @@ pub struct Palette {
     pub threads: Vec<Thread>,
     /// PEC chart number (1–64) of each thread.
     pub chart: Vec<usize>,
+    /// OpenStitch mode: pixels are matched to `means` by CIEDE2000 instead of RGB distance.
+    pub perceptual: bool,
+}
+
+fn rgb_of(t: &Thread) -> Rgb {
+    let v = t.rgb_value();
+    [(v >> 16) as u8, (v >> 8) as u8, v as u8]
 }
 
 fn thread(c: Rgb) -> Thread {
@@ -32,6 +40,10 @@ pub fn nearest_pec(c: Rgb) -> (usize, Thread) {
 
 /// Most distinct colours the census tracks; later colours join their nearest tracked one.
 pub const CENSUS_COLORS: usize = 100;
+
+/// OpenStitch mode: two palette colours at least this far apart (CIEDE2000) get different
+/// threads.
+pub const DISTINCT_DE: f64 = 10.0;
 
 /// RGB distance within which a census colour counts under a more frequent tracked colour.
 /// 32 matches PE-DESIGN's automatic colour count on the round-5 images best (g01 4, g13 10,
@@ -225,11 +237,92 @@ impl Palette {
             thread_of,
             threads,
             chart,
+            perceptual: false,
         }
+    }
+
+    /// OpenStitch mode's palette of a colour census (docs/research/beyond/image-digitizing.md):
+    /// the median-cut box colours seed a weighted k-means in CIELAB, and each centre takes the
+    /// PEC thread nearest it by CIEDE2000. A centre clearly distinct from another
+    /// ([`DISTINCT_DE`]) never shares its thread: it takes its nearest thread not yet taken,
+    /// so thin dark lines on white keep a thread of their own instead of joining the white
+    /// background. Pixels are matched to the centres by CIEDE2000.
+    pub fn from_census_perceptual(census: &Census, n: usize) -> Palette {
+        let mut hist = census.colors.clone();
+        hist.sort_by_key(|c| pack(c.0));
+        let seeds: Vec<Lab> = median_cut_histogram(&hist, n.max(1))
+            .into_iter()
+            .map(perceptual::lab)
+            .collect();
+        let colors: Vec<(Lab, f64)> = hist
+            .iter()
+            .map(|&(c, w)| (perceptual::lab(c), w as f64))
+            .collect();
+        let centres = perceptual::kmeans(&colors, &seeds, 20);
+        let chart: Vec<(usize, Lab)> = pec_basic_chart()
+            .iter()
+            .enumerate()
+            .filter_map(|(i, t)| t.as_ref().map(|t| (i, perceptual::lab(rgb_of(t)))))
+            .collect();
+        let mut palette = Palette {
+            means: Vec::new(),
+            thread_of: Vec::new(),
+            threads: Vec::new(),
+            chart: Vec::new(),
+            perceptual: true,
+        };
+        // Which centres took each palette thread, to keep distinct colours apart.
+        let mut takers: Vec<Vec<Lab>> = Vec::new();
+        for c in centres {
+            let mut ranked: Vec<(f64, usize)> = chart
+                .iter()
+                .map(|&(i, t)| (perceptual::de2000(c, t), i))
+                .collect();
+            ranked.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
+            let free = |i: usize| match palette.chart.iter().position(|&x| x == i) {
+                None => true,
+                Some(k) => takers[k]
+                    .iter()
+                    .all(|&o| perceptual::de2000(o, c) < DISTINCT_DE),
+            };
+            let i = ranked
+                .iter()
+                .find(|&&(_, i)| free(i))
+                .map_or(ranked[0].1, |&(_, i)| i);
+            let k = palette
+                .chart
+                .iter()
+                .position(|&x| x == i)
+                .unwrap_or_else(|| {
+                    palette.chart.push(i);
+                    palette.threads.push(
+                        PEC_CHART[i]
+                            .clone()
+                            .unwrap_or_else(|| thread(perceptual::rgb(c))),
+                    );
+                    takers.push(Vec::new());
+                    palette.chart.len() - 1
+                });
+            takers[k].push(c);
+            palette.means.push(perceptual::rgb(c));
+            palette.thread_of.push(k);
+        }
+        palette
     }
 
     /// Thread index of the box mean nearest to `c` (ties to the lower index).
     pub fn classify(&self, c: Rgb) -> usize {
+        if self.perceptual {
+            let l = perceptual::lab(c);
+            let mut best = (f64::INFINITY, 0);
+            for (i, &m) in self.means.iter().enumerate() {
+                let d = perceptual::de2000(l, perceptual::lab(m));
+                if d < best.0 {
+                    best = (d, i);
+                }
+            }
+            return self.thread_of.get(best.1).copied().unwrap_or(0);
+        }
         let t = thread(c);
         let mut best = (i64::MAX, 0);
         for (i, &m) in self.means.iter().enumerate() {

@@ -14,7 +14,7 @@ use openstitch_digitize::cross::{self, CrossStitch, CrossType};
 use openstitch_digitize::photo::{self, ColorSet, PhotoMode, PhotoStitch, PhotoStyle};
 use openstitch_digitize::raster::MAX_FILE_BYTES;
 use openstitch_digitize::regions::TraceOptions;
-use openstitch_digitize::{DigitizeError, Frame, Raster};
+use openstitch_digitize::{DigitizeError, Frame, Mode, Raster};
 use serde_json::json;
 
 const IMAGE: ParamDoc = req(
@@ -67,6 +67,17 @@ fn hexes(threads: &[Thread]) -> Vec<String> {
     threads.iter().map(Thread::hex).collect()
 }
 
+/// The `compatMode` parameter, shared with the region attribute of the same name: PE-DESIGN's
+/// method (`peDesign`, the default) or OpenStitch's improved one (`openStitch`).
+fn mode(p: &Params) -> Result<Mode, CommandError> {
+    Ok(
+        match choice(p, "compatMode", "peDesign", &["peDesign", "openStitch"])? {
+            "openStitch" => Mode::OpenStitch,
+            _ => Mode::PeDesign,
+        },
+    )
+}
+
 fn choice<'a>(
     p: &Params,
     key: &str,
@@ -113,12 +124,12 @@ pub fn commands() -> Vec<CommandSpec> {
                 opt(
                     "minArea",
                     "mm",
-                    "Small-region parameter, mm²: regions of at most max(4, round(minArea / mmPerPx²)) pixels merge into a neighbour (default 1)",
+                    "Small-region parameter, mm²: regions of at most max(4, round(minArea / mmPerPx²)) pixels merge into a neighbour (default 1; 3 in OpenStitch mode)",
                 ),
                 opt(
                     "smooth",
                     "int 0-5",
-                    "Extra majority-filter passes on the labels after the 3×3 modal colour census (default 0)",
+                    "Extra majority-filter passes on the labels after the 3×3 modal colour census (default 0; 1 in OpenStitch mode)",
                 ),
                 opt(
                     "simplify",
@@ -145,18 +156,31 @@ pub fn commands() -> Vec<CommandSpec> {
                     "bool",
                     "Leave out the colour covering most of the border (default true)",
                 ),
+                opt(
+                    "compatMode",
+                    "peDesign|openStitch",
+                    "peDesign: as PE-DESIGN 11.50 (default); openStitch: colours reduced and matched to threads by appearance (CIELAB k-means, CIEDE2000), regions under 3 mm² merged (docs/research/beyond/image-digitizing.md)",
+                ),
             ]),
             |s, p| {
                 let (image, frame) = load(s, p)?;
+                let mode = mode(p)?;
+                // OpenStitch mode also cleans up: regions under 3 mm² merge and the labels get
+                // one majority pass, unless the caller sets them.
+                let (min_area, smooth) = match mode {
+                    Mode::PeDesign => (1.0, 0),
+                    Mode::OpenStitch => (3.0, 1),
+                };
                 let options = AutoPunch {
                     colors: count(p, "colors", AutoPunch::default().colors as i64, 0, 64)?,
                     resolution: count(p, "resolution", 400, 64, 2048)? as u32,
-                    min_area_mm2: p.opt("minArea", 1.0, 0.0, 1000.0)?,
-                    smooth: count(p, "smooth", 0, 0, 5)? as u32,
+                    min_area_mm2: p.opt("minArea", min_area, 0.0, 1000.0)?,
+                    smooth: count(p, "smooth", smooth, 0, 5)? as u32,
                     trace: trace_options(p, 0.7)?,
                     satin_max_mm: p.opt("satinMaxWidth", 6.5, 1.0, 12.0)?,
                     satin_min_mm: p.opt("satinMinWidth", 0.7, 0.0, 6.0)?,
                     skip_background: p.bool("skipBackground", Some(true))?,
+                    mode,
                 };
                 let out = autopunch::convert(&image, &frame, &options).map_err(|e| failed(p, e))?;
                 let regions = out.objects.len();

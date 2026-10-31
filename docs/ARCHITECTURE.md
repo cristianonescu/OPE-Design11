@@ -273,6 +273,18 @@ Verified Compatible).
   modal colour against the box colours. "Skip background" leaves out the thread covering more
   than half of the image border. Colours sew by the reduced colour's R + G + B, highest first
   (PE-DESIGN's order).
+- **Auto Punch's OpenStitch mode** (`compatMode: openStitch`, B16,
+  [research/beyond/image-digitizing.md](research/beyond/image-digitizing.md)). The census is
+  the same, but its colours are reduced in CIELAB (`perceptual.rs`):
+  - the median-cut box colours seed a weighted k-means;
+  - each centre takes the PEC thread nearest it by CIEDE2000, and a centre at least 10 ΔE00
+    from the ones already on a thread takes its next-nearest free thread;
+  - pixels are classified against the centres by CIEDE2000
+    (`Palette::from_census_perceptual`);
+  - the small-region default is 3 mm², with one majority pass. When that cleanup leaves
+    nothing (thin line art), PE-DESIGN's cleanup is used instead.
+
+  PE-DESIGN mode is the default and is unchanged.
 - **Auto Punch.** Optional extra majority smoothing of the labels (3×3, default none),
   4-connected regions, regions of at most the small-region floor
   `max(4, round(minArea / mmPerPx²))` pixels (#127's `max(4, round(param · 100 / mmPerPx²))`
