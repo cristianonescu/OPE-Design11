@@ -157,3 +157,10 @@ Design Page"), so these captures use a 180 × 130 mm page.
 The same measures judge the improved "OpenStitch" mode
 (docs/research/beyond/image-digitizing.md) against PE-DESIGN and against OpenStitch's
 PE-compatible mode.
+
+`tools/image_similarity.py` (B16.1) adds one similarity score per result, as agreed in
+[beyond/image-similarity-plan.md](beyond/image-similarity-plan.md): the stitches drawn as
+thread (flat or with the realistic view's shading), seen at actual size from 40 cm through
+an S-CIELAB eye model, scored 0.4 MS-SSIM + 0.4 colour (CIEDE2000) + 0.2 DISTS, with a
+sewability report beside it (needle points per mm², shortest stitch, trims, colours). It
+runs `image_eval.py`'s cases plus two Design Center cases (g03, g04), in either mode.
