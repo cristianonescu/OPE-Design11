@@ -1731,6 +1731,19 @@ Line references are relative to `crates/`.
     there is no landing stitch to keep, and nothing changes). What is left in every format is
     the two repeats inside the S.
   The "trim before the colour change" the round-4 notes saw does not occur in this sample.
+- **PEC 62–64 at PE-DESIGN's RGB (2026-10-31, #136):** PE-DESIGN's own `#PES0110` files
+  carry each colour block's RGB in the colour list after the PEC section, as R, G, B, on a
+  Hoop Size page and in re-saves of version 6 files (73 files; a Custom Size page leaves it
+  zero, 385 files). The five
+  Applique Wizard files (a01–a05, round 4) give PEC 62 (material) (255, 200, 100), 63 (position)
+  (255, 200, 150) and 64 (appliqué) (255, 200, 200), where pyembroidery's table had (255, 153,
+  0) and (255, 240, 141) for 62 and 63; the chart now has PE's values
+  (`pe_design_applique_colours_match_pec_chart_62_to_64`). Matching still never picks 62–64.
+  PE's cutting line is PEC 65 at (220, 220, 220), outside the 65-slot chart. Not yet as PE does
+  it: OpenStitch's appliqué stages keep the design colour, so its PEC gives them the nearest of
+  1–61 where PE writes 62–64, and its writers put the RGB in that list as B, G, R with `0D` codes
+  for every block (PE: `FA`/`FB`/`FC FF FF` for the appliqué colours, `F9` for a cut, `FE FF FF`
+  for a thread with no number).
 - **Brother catalogue codes (2026-10-29, #119, #136):** pe-refs-4 read PE-DESIGN 11.50's BROTHER
   EMBROIDERY chart from Sewing Attributes ▸ Color: 61 rows, codes 001 WHITE to 900 BLACK, brand
   EMBROIDERY, no row for PEC 62–64 (so the 61-entry match set of #119 is PE's own chart).
