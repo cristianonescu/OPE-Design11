@@ -191,10 +191,10 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    Rotation" flags and a custom page's size since 2026-10-30 (opened in PE-DESIGN 11.50 as the
    hoop and page they describe). Round 4 added owner-drawn Programmable Stitch
    Creator sources (`.pas`, `.pmf`, `.plf`), imported since 2026-10-29 (#131); Font Creator fonts
-   wait for the owner (#134). Left: PE-DESIGN opening a written stitch group
-   (`pes-0110-stitches`), Straight and Curve Block (`pes-0110-manual-punch`,
-   `pes-0110-curve-block`) and appliqué (`pes-0110-applique`; the covering line's fields of unused
-   sew types not mapped); the fitted text's box as PE-DESIGN computes it (PE-DESIGN recomputes it
+   wait for the owner (#134). Left: PE-DESIGN opening a written appliqué
+   (`pes-0110-applique`: refused on 2026-10-31, "Unexpected file format"; the colour addendum is
+   being corrected) — the stitch group, Straight and Curve Block exports open in PE-DESIGN since
+   2026-10-31 (references); the fitted text's box as PE-DESIGN computes it (PE-DESIGN recomputes it
    on opening); PE-DESIGN's confirmation of the Hoop Size page (probe p3); the design's machine
    type and hoop in the header; turn the `#PES0110` shapes and texts the reader parses into
    editable OpenStitch objects; right-aligned and vertical text; the other region and line types,

@@ -4908,6 +4908,42 @@
       "settings": "Design Page 100 x 100 mm; Home > Import Patterns > from Vector Image... of an SVG with viewBox 0 0 100 100 (100 x 100 mm) holding one polygon (0,0) (30,0) (21.34,15) (17.01,12.5) (21.34,5) (0,5) mm (a 5 mm band bent through 120 degrees, second leg 17.32 mm, square end); the shape imports centred on the page as Fill Stitch, line Not Sewn, colour 800 RED. Shape selected: Shapes tab > Sew > region Satin Stitch; Sewing Attributes > Region sew: Under sewing unticked, Density 3.0 line/mm, Direction Auto, Half Stitch unticked, Pull compensation 0.0 mm, Feathered edge off. Save As PES (#PES0110). Status bar 30,00 x 15,00 mm, Stitches = 165.",
       "sha256": "19084d668da35d809bda6b3436d6a252b34fe486d3b584d6ab8dc286613f5d44",
       "notes": "The imported shape shows Half Stitch unticked; the plain file has it ticked, the -nohalf file unticked. Recorded in round 3 (pe-refs-3, owner's round3\\satin-bend\\log.txt), parked until the Auto satin outer-edge spacing landed."
+    },
+    {
+      "file": "pes/pes-0110-stitches.pes",
+      "spec": "pes-0110-stitches",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Made by the pe-refs-4 session (black-box GUI use only) for issue #120. Source: the spec's export from OpenStitch main 36bf250 (SHA-256 06bdf01a40aeda201b3066d25d72e392a0f37b6978baa0112d7bb14236c8c0b6). App menu > Open, then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, right after opening. Page 100 x 100 mm (default).",
+      "sha256": "27f92e743f2c73c70544767d92eead32447d235a58d02399277b167bb63a4535",
+      "notes": "1875 bytes, header #PES0110. Opens with no warning; status bar 40,00 x 40,00 mm, 40 stitches; Sewing Order: one object (the two red lines with the move drawn as a dashed jump); it selects and moves as one object (context tab Stitches); colour 800 EMBROIDERY RED. Drawn at the page's top-left corner (0..40 mm), where OpenStitch's stitches.import places the imported pattern. PES section byte-identical to the export (the CEmbOne record, runs and colour log unchanged); PEC regenerated (41 records)."
+    },
+    {
+      "file": "pes/pes-0110-manual-punch.pes",
+      "spec": "pes-0110-manual-punch",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Made by the pe-refs-4 session (black-box GUI use only) for issue #120. Source: the spec's export from OpenStitch main 36bf250 (SHA-256 37473c8af0c8712ac85e0369302ba604429f2f66ef38b95f7b8b63fcb9a1349b). App menu > Open, then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, right after opening. Page 100 x 100 mm (default).",
+      "sha256": "882b1fde4158a584f4397823f44a3021e9b28eb9fdd20f4c6f8981cc85fc5bb1",
+      "notes": "6688 bytes, header #PES0110. Opens with no warning; 20,00 x 20,00 mm, 208 stitches (as m01-straight-1). Context tab Shapes: line Not Sewn, region Satin Stitch, colour 007 EMBROIDERY PRUSSIAN BLUE; Sewing Attributes: under sewing on (first type, Medium), density 4,5, Direction Manual straight line with its degree field greyed, Half Stitch on. Edit Points shows 4 punch points on two direction lines; dragging one tilts its line and the satin re-fans: a Manual Punch block. The re-save's object section equals the export but for the 3010 bytes of the pattern block, where PE-DESIGN writes its own default pattern; PEC regenerated (208 records against the export's 195)."
+    },
+    {
+      "file": "pes/pes-0110-curve-block.pes",
+      "spec": "pes-0110-curve-block",
+      "reference": "pe-design",
+      "madeBy": "Cristian Onescu",
+      "peDesignVersion": "11.50",
+      "date": "2026-10-31",
+      "os": "Windows 11 Pro 10.0.26300",
+      "settings": "Made by the pe-refs-4 session (black-box GUI use only) for issue #120. Source: the spec's export from OpenStitch main 36bf250 (SHA-256 3145fd1b9fe1209888a99a4a75b8c1658c647f92f475a70a1203cc201d816900). App menu > Open, then Save As PES, default type (Layout & Editing Ver.11.0 File, #PES0110), unchanged, right after opening. Page 100 x 100 mm (default).",
+      "sha256": "eec71097dbbbf0bc19895b740f1e21eeaf80b20712ae478a9f285acc9646b006",
+      "notes": "7284 bytes, header #PES0110. Opens with no warning; 40,00 x 30,00 mm, 421 stitches (as m09-curve-bent), sagging through the middle pair, satin 007. Edit Points shows 6 points on 3 direction lines; dragging the middle top point keeps the side a smooth curve and the satin re-flows: a Curve Block. The re-save's object section equals the export but for the 3010 bytes of the pattern block (PE-DESIGN's own default pattern), so OpenStitch's handles, bounds and marks stand as written; PEC regenerated (421 records against the export's 399)."
     }
   ]
 }

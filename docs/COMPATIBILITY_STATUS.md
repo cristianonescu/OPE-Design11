@@ -81,13 +81,13 @@ Specs: 386 · pass 386 · fail 0 · error 0 · pending reference 0 · skipped 0.
 | `machine/machine-trim-bound` | pass | reference | pass | — | pass | — |
 | `machine/machine-trim-fine` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-applique` | pass | internal-regression | pass | — | pending | — |
-| `pes/pes-0110-curve-block` | pass | internal-regression | pass | — | pending | — |
+| `pes/pes-0110-curve-block` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-shapes` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text-fit` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text-transform` | pass | reference | pass | — | pass | — |
 | `pes/pes-0110-editable-text` | pass | reference | pass | — | pass | — |
-| `pes/pes-0110-manual-punch` | pass | internal-regression | pass | — | pending | — |
-| `pes/pes-0110-stitches` | pass | internal-regression | pass | — | pending | — |
+| `pes/pes-0110-manual-punch` | pass | reference | pass | — | pass | — |
+| `pes/pes-0110-stitches` | pass | reference | pass | — | pass | — |
 | `pes/pes-csewseg-trims` | pass | reference | pass | — | pass | — |
 | `pes/pes-default-v6` | pass | reference | pass | — | pass | pending |
 | `pes/pes-design-properties` | pass | reference | pass | — | pass | — |

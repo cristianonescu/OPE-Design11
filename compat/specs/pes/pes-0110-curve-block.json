@@ -23,6 +23,10 @@
     {
       "kind": "measured",
       "note": "docs/FILE_FORMATS.md, PES 0110 object list, Manual Punch: the Curve Block's handles, bounds and marks mapped from the owner's m07, m09, m10, m11 and o-manual-curve; engine test a_curved_block_has_pe_designs_handles_to_a_unit"
+    },
+    {
+      "kind": "measured",
+      "note": "PE-DESIGN 11.50 re-save of a.pes (MANIFEST pes-0110-curve-block, 2026-10-31): opens with no warning as a Curve Block (the sides stay curves when a point is moved), 40 x 30 mm, 421 st as m09; the object section unchanged but for PE-DESIGN's own pattern block"
     }
   ],
   "script": [
