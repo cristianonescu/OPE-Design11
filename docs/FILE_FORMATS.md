@@ -393,7 +393,7 @@ OpenStitch's appliqué export of 2026-10-30 grouped its four lines without the s
 same file with all five grouped, or with no group, opens (2026-10-31). The writer's export
 therefore writes a group only when one group holds every object; how PE-DESIGN stores a group of
 some of the objects, or several groups, is not mapped (captures requested).
-After the list: 10 zero bytes; the **group list**, a u16 count then per group its MFC tag
+
 After the list: 10 zero bytes, or with a **hole sewing pair** 16 bytes, u16 0, 3, 3, the
 outer and inner objects' list positions and 6 zero bytes (Modify Overlap > Set hole sewing on a
 15 mm circle inside a 40 mm one, concentric- and spiral-ring40-hole15: positions 1, 0; a vector
