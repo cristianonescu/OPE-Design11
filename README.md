@@ -79,8 +79,10 @@ yet). Every feature and its evidence is in [docs/FEATURE_MATRIX.md](docs/FEATURE
 
 Test images from [examples/images](examples/images), generated for OpenStitch (see their
 [provenance](examples/images/PROVENANCE.md)), converted by the image wizards and shown in the
-editor's Realistic view. These are OpenStitch's PE-DESIGN-compatible results at the settings
-named; `python3 tools/gallery.py` regenerates them.
+editor's Realistic view. **Every picture here is OpenStitch's own output, none is
+PE-DESIGN's.** They use OpenStitch's PE-DESIGN-compatible mode (the default): OpenStitch's own
+reimplementation of PE-DESIGN 11's method, at the settings named. `python3 tools/gallery.py`
+regenerates them.
 
 <!-- gallery:start -->
 | Image | OpenStitch (Realistic view) | Wizard and result |
@@ -101,15 +103,21 @@ named; `python3 tools/gallery.py` regenerates them.
 | <img src="examples/images/g15-folk-bird.png" width="200"> | <img src="docs/images/readme/gallery/g15.png" width="260"> | **Cross Stitch, defaults**<br>4,467 stitches, 303 trims, 4 colours |
 <!-- gallery:end -->
 
-Auto Punch and Photo Stitch 1 and 2 also have an **OpenStitch** mode (➕, the image dialog's
-Mode choice): colours are reduced, matched to threads and mixed by how they look, and Auto
-Punch merges specks under 3 mm². PE-DESIGN mode stays the default
-([research](docs/research/beyond/image-digitizing.md)). OpenStitch mode is better on average,
-not on every image: try both. For example, the test portrait sews truer in Photo Stitch 2's
-PE-DESIGN mode, whose three threads suit its skin and background.
+Auto Punch and Photo Stitch 1 and 2 have two modes, both run by OpenStitch (the image
+dialog's Mode choice):
+
+- **PE-DESIGN-compatible** (the default, labelled "PE-DESIGN" in the dialog): OpenStitch's own
+  reimplementation of PE-DESIGN 11's method, so a design converts the way it would in
+  PE-DESIGN. It is not PE-DESIGN's output, and it does not sew PE-DESIGN's exact stitches.
+- **OpenStitch** (➕): colours are reduced, matched to threads and mixed by how they look, and
+  Auto Punch merges specks under 3 mm² ([research](docs/research/beyond/image-digitizing.md)).
+
+The table below shows both modes, both from OpenStitch. OpenStitch mode measures better on
+average, not on every image, so try both. For example, the test portrait sews truer in Photo
+Stitch 2's PE-DESIGN-compatible mode, whose three threads suit its skin and background.
 
 <!-- gallery-modes:start -->
-| Image | PE-DESIGN mode | OpenStitch mode |
+| Image | OpenStitch, PE-DESIGN-compatible mode (default) | OpenStitch, OpenStitch mode ➕ |
 |---|---|---|
 | <img src="examples/images/g05-robot-cartoon.png" width="200"><br>Auto Punch | <img src="docs/images/readme/gallery/g05-pe.png" width="260"><br>11,897 stitches, 231 trims, 6 colours | <img src="docs/images/readme/gallery/g05-os.png" width="260"><br>11,176 stitches, 204 trims, 5 colours |
 | <img src="examples/images/g06-watercolour-lemons.jpg" width="200"><br>Auto Punch | <img src="docs/images/readme/gallery/g06-pe.png" width="260"><br>18,278 stitches, 284 trims, 9 colours | <img src="docs/images/readme/gallery/g06-os.png" width="260"><br>13,662 stitches, 111 trims, 7 colours |
@@ -186,8 +194,9 @@ PE-DESIGN 11.50's defaults, tie-in and lock, measured from its own files.
 - **Design Center** pipeline (image → outline → figure → sew settings) and the Stitch Wizard.
 - ➕ **OpenStitch mode for Auto Punch, Photo Stitch 1 and Photo Stitch 2**: colours reduced,
   matched to threads and mixed by how they look (CIELAB, CIEDE2000, a linear-light mix in Photo
-  Stitch 2); Auto Punch also merges specks and keeps line art's lines. PE-DESIGN mode stays the
-  default; for some photos it still sews truer, so try both.
+  Stitch 2); Auto Punch also merges specks and keeps line art's lines. The PE-DESIGN-compatible
+  mode (OpenStitch's reimplementation of PE-DESIGN's method) stays the default; for some photos
+  it still sews truer, so try both.
 - **Background images** (PNG, JPEG, BMP or the clipboard): place, crop, rotate, adjust and trace
   over.
 

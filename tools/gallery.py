@@ -160,7 +160,7 @@ def table(stats):
 
 
 def modes_table(stats):
-    rows = ["| Image | PE-DESIGN mode | OpenStitch mode |", "|---|---|---|"]
+    rows = ["| Image | OpenStitch, PE-DESIGN-compatible mode (default) | OpenStitch, OpenStitch mode ➕ |", "|---|---|---|"]
     for key, (image, wizard, _, _) in MODES.items():
         rows.append(f"| <img src=\"examples/images/{image}\" width=\"200\"><br>{wizard} "
                     f"| <img src=\"docs/images/readme/gallery/{key}-pe.png\" width=\"260\"><br>"
