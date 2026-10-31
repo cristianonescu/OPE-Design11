@@ -379,7 +379,9 @@ Line references are relative to `crates/`.
   stitch (the field telling E from V is not mapped), and the appliqué sews 29 x 29 mm where
   PE-DESIGN's wizard sews the same square 32,6 x 32,8 mm, OpenStitch's outline offset);
   Shapes-gallery shapes (`CEmbSpecialShape`, `CEmbLine` records under another class name)
-  round-trip (o-gallery-heart, shape-start-points). Groups: PE-DESIGN 11.50 refuses a file whose
+  round-trip (o-gallery-heart, shape-start-points); programmable fill written with its pattern
+  in the header's pattern list (spec `pes-0110-programmable-fill`, reference pending; the list
+  byte-identical to obj-progfill-owner-v's for the owner's V; one pattern per design). Groups: PE-DESIGN 11.50 refuses a file whose
   one group leaves an object out ("Unexpected file format", the appliqué export of 2026-10-30,
   2026-10-31); the export writes only a group of every object, the one layout in the owner's
   files, and leaves other grouping out (open until owner captures show partial and several

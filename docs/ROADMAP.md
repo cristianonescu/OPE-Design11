@@ -207,7 +207,7 @@ Also 2026-10-30: new fill regions start at 45°, as PE-DESIGN 11.50's shape tool
    2026-10-31 (references); the fitted text's box as PE-DESIGN computes it (PE-DESIGN recomputes it
    on opening); PE-DESIGN's confirmation of the Hoop Size page (probe p3); the design's machine
    type and hoop in the header; turn the `#PES0110` shapes and texts the reader parses into
-   editable OpenStitch objects; right-aligned and vertical text; the other region and line types,
+   editable OpenStitch objects; right-aligned and vertical text; several programmable fill patterns in one design (one is written since 2026-10-31), the other region and line types,
    several hole sewing pairs in one file or with groups (one pair without groups is written since
    2026-10-31) and several outlines per object; the hoop in v1 (the public
    description contradicts itself); PES v7–v10 (from the owner's own files only, as

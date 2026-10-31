@@ -246,6 +246,18 @@ below is pinned by a test in `tests/pes11.rs`.
   files). The thread table's fifth string is the thread's name: PE-DESIGN writes its own
   colours' PEC chart index there, and keeps a name it read from another file (pes-default-v6:
   `Red`, `Black`).
+- **Pattern lists:** the header's last fields, from byte 104 (106 with the optional hoop field
+  of o-page-200x200) to the thread table, are three lists, each a u16 count and its patterns:
+  the programmable fill patterns the design uses, the motif patterns, and a third that is empty
+  in every owner file. A pattern is a u16 size in 0.01 mm and a u16 polyline count, then each
+  polyline as in the pattern block (six zero bytes, u16 1, u16 point count, i16 x, y points in
+  a 1024-unit cell, y down): obj-progfill-owner-v lists the owner's V from Programmable Stitch
+  Creator, size 750 and (0, 0) (512, 768) (1024, 0), exactly its `.pas` source
+  (`@TILELINE 0 3 0 0 512 768 1024 0`, Default Size 7.5 mm); obj-motif-line-owner-v lists the
+  motif V, 500 and (0, 512) (512, 768) (1024, 512). A file without patterns has three zero
+  counts. The programmable fill object itself is a `CEmbLine` with region type 2 and nothing
+  else changed (its pattern block keeps PE-DESIGN's default pattern); with one pattern per
+  owner file, which object field picks a pattern from the list is not mapped.
 - Classes seen: `CEmbLine` (Shape tools: rectangle, ellipse, open and closed lines), `CEmbNText`
   with one `CTTFLetter` per letter (text), `CEmbSpecialShape` (Shapes gallery presets),
   `CEmbOne` with `CSewSeg` runs (stitch groups).
@@ -538,11 +550,14 @@ the default level's strength and, for the arches, the circle measured on OpenSti
 layout; zeros where PE-DESIGN leaves stale numbers), and a Manual Punch column (`shape.column`) as a
 Straight or Curve Block object (its direction lines' ends as the outline and the lists, the
 Curve Block's handles, bounds and marks by the rules above; a Curve Block written from a design
-has handles within one unit of PE-DESIGN's, not byte-identical), and a hole sewing pair as above:
+has handles within one unit of PE-DESIGN's, not byte-identical), a hole sewing pair as above:
 the inner shape paired itself when it is not sewn, else a Not Sewn copy of it after the outer
-object. What it
+object, and a programmable fill as region type 2 with its pattern in the header's first list
+(OpenStitch's own tile or a user's imported `.pas`, the tile's lines scaled to the 1024-unit
+cell, the tile width as the size). What it
 cannot hold fails with the object named: a second hole sewing pair, a hole sewing pair in a
-design with groups, several outlines in one object, programmable, motif and the other region types, motif, stem,
+design with groups, several outlines in one object, a second programmable fill pattern, a
+programmable fill tile that is not square or has embossed or engraved areas, motif and the other region types, motif, stem,
 candlewicking, chain and cutting lines; text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character

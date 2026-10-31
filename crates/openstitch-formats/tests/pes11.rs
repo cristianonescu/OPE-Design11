@@ -347,6 +347,37 @@ fn hole_sewing_pairs_read() {
 }
 
 #[test]
+fn programmable_fill_and_motif_patterns_read_from_the_header() {
+    // The owner's V, drawn in Programmable Stitch Creator (compat/reference/pes/owner-v.pas:
+    // `@TILELINE 0 3 0 0 512 768 1024 0`, Default Size 7.5 mm) and as a motif (owner-v.pmf:
+    // `@LINE 3 0 512 512 768 1024 512`, 5 mm), listed in the header before the thread table.
+    let fill = objects_of(&data("pe11/obj-progfill-owner-v.pes"));
+    assert_eq!(
+        fill.fill_patterns,
+        [pes11::PesPattern {
+            size: 750,
+            polylines: vec![vec![(0, 0), (512, 768), (1024, 0)]],
+        }]
+    );
+    assert!(fill.motif_patterns.is_empty());
+    assert_eq!(fill.shapes[0].region, RegionSewType::ProgrammableFill);
+    let motif = objects_of(&data("pe11/obj-motif-line-owner-v.pes"));
+    assert_eq!(
+        motif.motif_patterns,
+        [pes11::PesPattern {
+            size: 500,
+            polylines: vec![vec![(0, 512), (512, 768), (1024, 512)]],
+        }]
+    );
+    // Files without patterns list none.
+    assert!(
+        objects_of(&data("pe11/r01-rect.pes"))
+            .fill_patterns
+            .is_empty()
+    );
+}
+
+#[test]
 fn unmapped_layouts_stop_reading_instead_of_misreading() {
     // Layouts not mapped yet must end the list as "unparsed", with the shapes read before them
     // intact and every vertex inside its bounds. The Manual Punch column of
@@ -673,6 +704,8 @@ fn objects_of(bytes: &[u8]) -> Objects {
         stitch_groups: s.stitch_groups,
         groups: s.groups,
         holes: s.holes,
+        fill_patterns: s.fill_patterns,
+        motif_patterns: s.motif_patterns,
         unparsed: s.unparsed,
     }
 }
@@ -1074,6 +1107,8 @@ fn an_openstitch_shape_with_curves_round_trips() {
         stitch_groups: Vec::new(),
         groups: vec![vec![0], vec![1]],
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let mut pattern = openstitch_core::StitchPattern::new();
@@ -1138,6 +1173,8 @@ fn texts_between_shapes_and_in_groups_round_trip() {
         stitch_groups: Vec::new(),
         groups: vec![vec![1, 2]],
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let pattern = stitches_of(&owner_file("r01-rect"));
@@ -1193,6 +1230,8 @@ fn a_text_built_from_defaults_writes_r12s_object_section() {
         stitch_groups: Vec::new(),
         groups: Vec::new(),
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let written = pes11::write(&objects, &stitches_of(&fixture)).expect("write");
@@ -1390,6 +1429,8 @@ fn a_stitch_group_built_from_stitches_round_trips() {
         stitch_groups: vec![g],
         groups: Vec::new(),
         holes: Vec::new(),
+        fill_patterns: Vec::new(),
+        motif_patterns: Vec::new(),
         unparsed: None,
     };
     let written = pes11::write(&objects, &p).expect("write");

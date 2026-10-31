@@ -78,6 +78,71 @@ pub const TOOL_SETTINGS: [u16; 13] = [1, 123, 123, 50, 123, 123, 117, 117, 50, 1
 /// [`SETTINGS_FIELDS`] on the Applique Wizard's covering line and vector-imported shapes.
 pub const PLAIN_SETTINGS: [u16; 13] = [0, 50, 50, 100, 50, 50, 50, 50, 100, 50, 50, 100, 0];
 
+/// A programmable fill or motif pattern as the header lists it: u16 size (0.01 mm: 750 for the
+/// owner's 7.5 mm V), u16 polyline count, then each polyline as a pattern block's (six zero
+/// bytes, u16 1, u16 point count, i16 x, y points in a 1024-unit cell, y down).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct PesPattern {
+    pub size: u16,
+    pub polylines: Vec<Vec<(i16, i16)>>,
+}
+
+/// The header's three pattern lists (programmable fill, motif, a third always empty so far),
+/// from the end of its fixed fields (104 bytes; 106 with the optional hoop field of
+/// o-page-200x200) to the thread table. `None` when they don't parse to its end.
+fn read_pattern_lists(header: &[u8]) -> Option<[Vec<PesPattern>; 3]> {
+    [104, 106].into_iter().find_map(|start| {
+        let mut r = ByteReader::new(header);
+        r.offset = start;
+        let mut lists: [Vec<PesPattern>; 3] = Default::default();
+        for list in &mut lists {
+            let count = r.u16le().ok()?;
+            for _ in 0..count {
+                let size = r.u16le().ok()? as u16;
+                let polylines = r.u16le().ok()?;
+                let mut pattern = PesPattern {
+                    size,
+                    polylines: Vec::new(),
+                };
+                for _ in 0..polylines {
+                    r.skip(6).ok()?;
+                    if r.u16le().ok()? != 1 {
+                        return None;
+                    }
+                    let n = r.u16le().ok()?;
+                    let mut line = Vec::with_capacity(usize::from(n as u16));
+                    for _ in 0..n {
+                        line.push((r.u16le().ok()? as i16, r.u16le().ok()? as i16));
+                    }
+                    pattern.polylines.push(line);
+                }
+                list.push(pattern);
+            }
+        }
+        (r.offset == header.len()).then_some(lists)
+    })
+}
+
+/// The header's three pattern lists as [`read_pattern_lists`] reads them.
+fn write_pattern_lists(w: &mut ByteWriter, lists: [&[PesPattern]; 3]) {
+    for list in lists {
+        w.u16le(list.len() as i64);
+        for p in list {
+            w.u16le(i64::from(p.size));
+            w.u16le(p.polylines.len() as i64);
+            for line in &p.polylines {
+                w.fill(0, 6);
+                w.u16le(1);
+                w.u16le(line.len() as i64);
+                for &(x, y) in line {
+                    w.u16le(i64::from(x as u16));
+                    w.u16le(i64::from(y as u16));
+                }
+            }
+        }
+    }
+}
+
 /// Region sew type (`CEmbLine` body +134).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RegionSewType {
@@ -166,6 +231,12 @@ pub struct Objects {
     /// hole-sewing-pentagon-star, a Not Sewn copy of the star after the pentagon). One pair per
     /// file is mapped.
     pub holes: Vec<[u16; 2]>,
+    /// The programmable fill patterns the header lists before the thread table (the owner's V
+    /// drawn in Programmable Stitch Creator: obj-progfill-owner-v). Read from a file's header;
+    /// written when the header is not kept ([`Objects::header`] `None`).
+    pub fill_patterns: Vec<PesPattern>,
+    /// The motif patterns listed after them (obj-motif-line-owner-v).
+    pub motif_patterns: Vec<PesPattern>,
     /// The first object class that was not read, if any.
     pub unparsed: Option<String>,
 }
@@ -588,6 +659,8 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
             stitch_groups,
             groups,
             holes: Vec::new(),
+            fill_patterns: Vec::new(),
+            motif_patterns: Vec::new(),
             unparsed,
         })
     };
@@ -668,6 +741,10 @@ pub(crate) fn read_objects(data: &[u8], from: usize, end: usize) -> Result<Objec
     let (holes, groups) = read_groups(&mut r, &mut map).unwrap_or_default();
     let mut objects: Objects = done(shapes, texts, stitch_groups, groups, None)?;
     objects.holes = holes;
+    if let Some([fill, motif, _]) = objects.header.as_deref().and_then(read_pattern_lists) {
+        objects.fill_patterns = fill;
+        objects.motif_patterns = motif;
+    }
     Ok(objects)
 }
 
@@ -1218,6 +1295,14 @@ pub fn write(objects: &Objects, pattern: &StitchPattern) -> Result<Vec<u8>> {
         )));
     } else {
         write_header(&mut w, page, objects.hoop_page);
+        // The templates end with the three empty pattern lists; a design's patterns replace them.
+        if !objects.fill_patterns.is_empty() || !objects.motif_patterns.is_empty() {
+            w.bytes.truncate(w.bytes.len() - 6);
+            write_pattern_lists(
+                &mut w,
+                [&objects.fill_patterns, &objects.motif_patterns, &[]],
+            );
+        }
     }
     write_threads(&mut w, &objects.threads);
     w.u16le(total as i64);
@@ -2142,6 +2227,15 @@ mod tests {
             strings(&other),
             (Some("16".into()), Some("Madeira".into()), None)
         );
+    }
+
+    #[test]
+    fn header_templates_end_with_the_three_empty_pattern_lists() {
+        for h in [&template::HEADER[..], &template::HEADER_HOOP_100[..]] {
+            assert_eq!(h[h.len() - 8..], [4, 0, 0, 0, 0, 0, 0, 0]);
+            let lists = read_pattern_lists(h).expect("lists");
+            assert!(lists.iter().all(Vec::is_empty));
+        }
     }
 
     #[test]

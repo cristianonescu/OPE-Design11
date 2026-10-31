@@ -73,6 +73,23 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
                 .push(stitch_group(object, index, &mut out.threads)?);
         } else {
             out.shapes.push(shape(object, &mut out.threads)?);
+            if let Some(r) = object
+                .region
+                .as_ref()
+                .filter(|r| r.kind == RegionType::ProgrammableFill)
+            {
+                let pattern = fill_pattern(object.id, r, design)?;
+                match out.fill_patterns.as_slice() {
+                    [] => out.fill_patterns.push(pattern),
+                    [only] if *only == pattern => {}
+                    _ => {
+                        return Err(format!(
+                            "object {}: a second programmable fill pattern (PES 0110 holds one per file so far: which object field picks a pattern from the header's list is not mapped)",
+                            object.id
+                        ));
+                    }
+                }
+            }
         }
         if let Some(g) = object.group {
             match groups.iter_mut().find(|(id, _)| *id == g) {
@@ -215,6 +232,40 @@ fn applique_thread(t: &Thread) -> Option<Thread> {
     pe.catalog_number = Some(catalog.into());
     pe.kind = Some(openstitch_formats::pes11::APPLIQUE_KIND);
     Some(pe)
+}
+
+/// The programmable fill pattern of region `r` as PE-DESIGN lists it in the header
+/// (obj-progfill-owner-v): its tile's lines in a 1024-unit cell (a fill tile's unit square, y
+/// down, as `.pas` sources are read), and the tile size in 0.01 mm (750 for the owner's
+/// 7.5 mm V). Embossed or engraved areas, and a tile that isn't square, are not mapped.
+fn fill_pattern(
+    id: u64,
+    r: &RegionSewing,
+    design: &Design,
+) -> Result<openstitch_formats::pes11::PesPattern, String> {
+    use openstitch_design::patterns::{PatternKind, resolve};
+    let pattern = resolve(&design.patterns, PatternKind::Fill, r.pattern.as_deref());
+    if !pattern.regions.is_empty() {
+        return Err(format!(
+            "object {id}: programmable fill pattern {} has embossed or engraved areas (not mapped in PES 0110)",
+            pattern.id
+        ));
+    }
+    let (w, h) = r.pattern_size_mm();
+    if (w - h).abs() > 1e-9 {
+        return Err(format!(
+            "object {id}: a programmable fill tile of {w} x {h} mm (PES 0110 stores one size; square tiles only)"
+        ));
+    }
+    let cell = |v: f64| (v * 1024.0).round().clamp(-32768.0, 32767.0) as i16;
+    Ok(openstitch_formats::pes11::PesPattern {
+        size: (w * 100.0).round().clamp(0.0, 65535.0) as u16,
+        polylines: pattern
+            .paths
+            .iter()
+            .map(|path| path.iter().map(|p| (cell(p.x), cell(p.y))).collect())
+            .collect(),
+    })
 }
 
 fn shape(object: &DesignObject, table: &mut Vec<Thread>) -> Result<Shape, String> {
@@ -399,6 +450,7 @@ fn region(id: u64, r: &RegionSewing, s: &mut Shape, table: &mut Vec<Thread>) -> 
     s.region = match r.kind {
         RegionType::Fill => RegionSewType::Fill,
         RegionType::Satin => RegionSewType::Satin,
+        RegionType::ProgrammableFill => RegionSewType::ProgrammableFill,
         other => {
             return Err(format!(
                 "object {id}: region type {} is not mapped in PES 0110 yet (fill and satin are)",
@@ -1130,6 +1182,51 @@ mod tests {
         grouped.objects[i].group = Some(7);
         let err = objects(&grouped).expect_err("hole pair and group");
         assert!(err.contains("hole sewing"), "{err}");
+    }
+
+    #[test]
+    fn programmable_fill_writes_its_pattern_into_the_header_list() {
+        use openstitch_design::patterns::{PatternKind, resolve};
+        let mut design = Design::new("t", openstitch_design::DesignPage::default());
+        let mut r = RegionSewing::new(RegionType::ProgrammableFill, red());
+        r.pattern_width = Some(7.5);
+        r.pattern_height = Some(7.5);
+        design.add(DesignObject::shape(
+            vec![Contour::rectangle(200.0, 200.0, 300.0, 200.0)],
+            Some(r.clone()),
+            None,
+        ));
+        let o = objects(&design).expect("objects");
+        assert_eq!(o.shapes[0].region, RegionSewType::ProgrammableFill);
+        let [p] = o.fill_patterns.as_slice() else {
+            panic!("one pattern: {:?}", o.fill_patterns)
+        };
+        assert_eq!(p.size, 750);
+        let tile = resolve(&design.patterns, PatternKind::Fill, None);
+        assert_eq!(p.polylines.len(), tile.paths.len());
+        assert!(
+            p.polylines
+                .iter()
+                .flatten()
+                .all(|&(x, y)| (0..=1024).contains(&x) && (0..=1024).contains(&y))
+        );
+        // The same pattern twice is listed once; a non-square tile is refused.
+        design.add(DesignObject::shape(
+            vec![Contour::rectangle(600.0, 200.0, 100.0, 100.0)],
+            Some(r.clone()),
+            None,
+        ));
+        assert_eq!(objects(&design).expect("objects").fill_patterns.len(), 1);
+        let mut oblong = Design::new("t", openstitch_design::DesignPage::default());
+        let mut r2 = r;
+        r2.pattern_height = Some(5.0);
+        oblong.add(DesignObject::shape(
+            vec![Contour::rectangle(200.0, 200.0, 300.0, 200.0)],
+            Some(r2),
+            None,
+        ));
+        let err = objects(&oblong).expect_err("non-square tile");
+        assert!(err.contains("square"), "{err}");
     }
 
     #[test]
