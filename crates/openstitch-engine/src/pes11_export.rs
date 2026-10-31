@@ -76,6 +76,16 @@ pub fn objects(design: &Design) -> Result<Objects, String> {
             if let Some(r) = object
                 .region
                 .as_ref()
+                .filter(|r| r.kind == RegionType::DecorativeFill)
+            {
+                let pattern = decorative_pattern(object.id, r, design)?;
+                if let Some(s) = out.shapes.last_mut() {
+                    s.decorative = Some(pattern);
+                }
+            }
+            if let Some(r) = object
+                .region
+                .as_ref()
                 .filter(|r| r.kind == RegionType::ProgrammableFill)
             {
                 let pattern = fill_pattern(object.id, r, design)?;
@@ -232,6 +242,44 @@ fn applique_thread(t: &Thread) -> Option<Thread> {
     pe.catalog_number = Some(catalog.into());
     pe.kind = Some(openstitch_formats::pes11::APPLIQUE_KIND);
     Some(pe)
+}
+
+/// The decorative fill pattern of region `r` as PE-DESIGN keeps it in the object's pattern block
+/// (deco-fill-1line-100mm): the free lines in a 1024-unit cell (the unit tile, y down, as
+/// `.plf` sources are read) and the tile size in 0.01 mm. Row-chained decorative patterns and
+/// tiles that aren't square are not mapped.
+fn decorative_pattern(
+    id: u64,
+    r: &RegionSewing,
+    design: &Design,
+) -> Result<openstitch_formats::pes11::PesPattern, String> {
+    use openstitch_design::patterns::{PatternKind, resolve};
+    let pattern = resolve(
+        &design.patterns,
+        PatternKind::Decorative,
+        r.pattern.as_deref(),
+    );
+    if !pattern.free_lines {
+        return Err(format!(
+            "object {id}: decorative pattern {} is chained in rows (PES 0110 holds free lines in a tile)",
+            pattern.id
+        ));
+    }
+    let (w, h) = r.pattern_size_mm();
+    if (w - h).abs() > 1e-9 {
+        return Err(format!(
+            "object {id}: a decorative fill tile of {w} x {h} mm (PES 0110 stores one size; square tiles only)"
+        ));
+    }
+    let cell = |v: f64| (v * 1024.0).round().clamp(-32768.0, 32767.0) as i16;
+    Ok(openstitch_formats::pes11::PesPattern {
+        size: (w * 100.0).round().clamp(0.0, 65535.0) as u16,
+        polylines: pattern
+            .paths
+            .iter()
+            .map(|path| path.iter().map(|p| (cell(p.x), cell(p.y))).collect())
+            .collect(),
+    })
 }
 
 /// The programmable fill pattern of region `r` as PE-DESIGN lists it in the header
@@ -451,6 +499,18 @@ fn region(id: u64, r: &RegionSewing, s: &mut Shape, table: &mut Vec<Thread>) -> 
         RegionType::Fill => RegionSewType::Fill,
         RegionType::Satin => RegionSewType::Satin,
         RegionType::ProgrammableFill => RegionSewType::ProgrammableFill,
+        // Written at PE-DESIGN's default attributes: each file of these types at its defaults
+        // differs from a fill only in the code (o-region-*); their own fields are not mapped.
+        RegionType::CrossStitch => RegionSewType::Cross,
+        RegionType::ConcentricCircle => RegionSewType::Concentric,
+        RegionType::Radial => RegionSewType::Radial,
+        RegionType::Spiral => RegionSewType::Spiral,
+        RegionType::Piping => RegionSewType::Piping,
+        RegionType::Stippling => RegionSewType::Stippling,
+        RegionType::NetFill => RegionSewType::NetFill,
+        RegionType::ZigzagNetFill => RegionSewType::ZigzagNet,
+        RegionType::FlexibleSpiral => RegionSewType::FlexibleSpiral,
+        RegionType::DecorativeFill => RegionSewType::Decorative,
         other => {
             return Err(format!(
                 "object {id}: region type {} is not mapped in PES 0110 yet (fill and satin are)",
@@ -1227,6 +1287,41 @@ mod tests {
         ));
         let err = objects(&oblong).expect_err("non-square tile");
         assert!(err.contains("square"), "{err}");
+    }
+
+    #[test]
+    fn region_types_map_to_pe_designs_codes() {
+        for (kind, code) in [
+            (RegionType::CrossStitch, RegionSewType::Cross),
+            (RegionType::ConcentricCircle, RegionSewType::Concentric),
+            (RegionType::Radial, RegionSewType::Radial),
+            (RegionType::Spiral, RegionSewType::Spiral),
+            (RegionType::Piping, RegionSewType::Piping),
+            (RegionType::Stippling, RegionSewType::Stippling),
+            (RegionType::NetFill, RegionSewType::NetFill),
+            (RegionType::ZigzagNetFill, RegionSewType::ZigzagNet),
+            (RegionType::FlexibleSpiral, RegionSewType::FlexibleSpiral),
+        ] {
+            let mut design = Design::new("t", openstitch_design::DesignPage::default());
+            design.add(DesignObject::shape(
+                vec![Contour::rectangle(200.0, 200.0, 300.0, 300.0)],
+                Some(RegionSewing::new(kind, red())),
+                None,
+            ));
+            let o = objects(&design).expect("objects");
+            assert_eq!(o.shapes[0].region, code, "{kind:?}");
+            assert!(o.shapes[0].decorative.is_none());
+        }
+        // Motif fill and contour fill are refused with the reason.
+        for kind in [RegionType::MotifFill, RegionType::Contour] {
+            let mut design = Design::new("t", openstitch_design::DesignPage::default());
+            design.add(DesignObject::shape(
+                vec![Contour::rectangle(200.0, 200.0, 300.0, 300.0)],
+                Some(RegionSewing::new(kind, red())),
+                None,
+            ));
+            assert!(objects(&design).is_err(), "{kind:?}");
+        }
     }
 
     #[test]

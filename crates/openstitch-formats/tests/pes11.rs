@@ -378,6 +378,41 @@ fn programmable_fill_and_motif_patterns_read_from_the_header() {
 }
 
 #[test]
+fn region_types_and_the_decorative_pattern_read() {
+    // Each Round 3 region file at PE-DESIGN's defaults differs from a fill only in its code.
+    for (name, region) in [
+        ("o-region-cross", RegionSewType::Cross),
+        ("o-region-concentric", RegionSewType::Concentric),
+        ("o-region-radial", RegionSewType::Radial),
+        ("o-region-spiral", RegionSewType::Spiral),
+        ("o-region-piping", RegionSewType::Piping),
+        ("o-region-stippling", RegionSewType::Stippling),
+        ("o-region-net-fill", RegionSewType::NetFill),
+        ("o-region-zigzag-net", RegionSewType::ZigzagNet),
+        ("o-region-flexible-spiral", RegionSewType::FlexibleSpiral),
+        ("obj-motif-fill-owner-v", RegionSewType::Motif),
+    ] {
+        assert_eq!(
+            objects_of(&data(&format!("pe11/{name}.pes"))).shapes[0].region,
+            region,
+            "{name}"
+        );
+    }
+    // A Decorative Fill keeps its pattern in the object's pattern block: the owner's one-line
+    // pattern (psc-deco-1line.plf, `@TILELINE 0 2 128 128 896 896`) at 100 mm.
+    let deco = objects_of(&owner_file("deco-fill-1line-100mm"));
+    let s = &deco.shapes[0];
+    assert_eq!(s.region, RegionSewType::Decorative);
+    assert_eq!(
+        s.decorative,
+        Some(pes11::PesPattern {
+            size: 10000,
+            polylines: vec![vec![(128, 128), (896, 896)]],
+        })
+    );
+}
+
+#[test]
 fn unmapped_layouts_stop_reading_instead_of_misreading() {
     // Layouts not mapped yet must end the list as "unparsed", with the shapes read before them
     // intact and every vertex inside its bounds. The Manual Punch column of
@@ -549,6 +584,8 @@ const FULLY_PARSED: &[&str] = &[
     "hole-sewing-pentagon-star",
     "concentric-ring40-hole15",
     "spiral-ring40-hole15",
+    "deco-fill-1line-100mm",
+    "deco-fill-1line-offcentre",
     "a01-rect-applique",
     "a02-applique-cutting",
     "a03-applique-no-tackdown",
@@ -724,6 +761,8 @@ fn owner_file(name: &str) -> Vec<u8> {
         "hole-sewing-pentagon-star",
         "concentric-ring40-hole15",
         "spiral-ring40-hole15",
+        "deco-fill-1line-100mm",
+        "deco-fill-1line-offcentre",
     ]
     .contains(&name)
     {
@@ -910,6 +949,9 @@ fn written_object_sections_match_pe_designs_bytes_outside_the_documented_differe
     let marks_differ = [
         "o-gallery-heart",
         "shape-start-points",
+        // A rectangle whose position fields differ from r01's (the segment of its second
+        // position: the documented geometry-header difference).
+        "deco-fill-1line-offcentre",
         "r10-circle",
         "r11-line",
         // A vector import's pentagon and star: outlines that are not rectangles.

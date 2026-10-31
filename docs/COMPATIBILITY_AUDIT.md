@@ -381,7 +381,11 @@ Line references are relative to `crates/`.
   Shapes-gallery shapes (`CEmbSpecialShape`, `CEmbLine` records under another class name)
   round-trip (o-gallery-heart, shape-start-points); programmable fill written with its pattern
   in the header's pattern list (spec `pes-0110-programmable-fill`, reference pending; the list
-  byte-identical to obj-progfill-owner-v's for the owner's V; one pattern per design). Groups: PE-DESIGN 11.50 refuses a file whose
+  byte-identical to obj-progfill-owner-v's for the owner's V; one pattern per design); decorative
+  fill with its pattern in the object's pattern block (spec `pes-0110-decorative-fill`,
+  reference pending; the block byte-identical to deco-fill-1line-100mm's); the other Round 3
+  region types by their codes at PE-DESIGN's default attributes (their own fields not mapped).
+  Groups: PE-DESIGN 11.50 refuses a file whose
   one group leaves an object out ("Unexpected file format", the appliqué export of 2026-10-30,
   2026-10-31); the export writes only a group of every object, the one layout in the owner's
   files, and leaves other grouping out (open until owner captures show partial and several

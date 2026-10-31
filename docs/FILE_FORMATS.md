@@ -281,7 +281,7 @@ below is pinned by a test in `tests/pes11.rs`.
 | 122 | 1 on the cutting line, 5 on every other object (meaning not mapped) | a02-applique-cutting |
 | 8 (cont.) | the extent of a running or unsewn line equals the bounds; a zigzag adds half its width; the circle's is one unit wider still (589..711) and an open zigzag line's grows only across the line (r11: y ± 10, x unchanged) | r19, r07, r21, r10, r11 |
 | 132 | region sewn 1, Not Sewn 0 (every Round 3 file whose region is Not Sewn has 0; r11's open line keeps 1 with its unused Fill) | o-arc, o-rounded-rect, o-group-two-rects, r11 |
-| 134 | region sew type: 0 Satin, 1 Fill, 2 Programmable fill, 11 Not Sewn (open lines, outlines with the region off, the inner copy of a hole-sewing pair); the Round 3 region types have their own codes (not mapped: `RegionSewType::Other`) | r04, programmable-fill-45, o-group-two-rects, o-arc, hole-sewing-pentagon-star |
+| 134 | region sew type: 0 Satin, 1 Fill, 2 Programmable fill, 3 Motif, 4 Cross Stitch, 5 Concentric Circle, 6 Radial, 7 Spiral, 8 Piping, 9 Stippling, 10 Net Fill, 11 Not Sewn (open lines, outlines with the region off, the inner copy of a hole-sewing pair), 12 Zigzag Net Fill, 13 Decorative Fill, 14 Flexible Spiral. Each o-region-* file, made at the type's defaults, differs from a fill only here; the types' own attribute fields are not mapped (motif fill also changes +68, +236 and +332) | r04, programmable-fill-45, o-group-two-rects, o-arc, hole-sewing-pentagon-star |
 | 136 | region density, 0.1 line/mm | r09 (4.5 → 6.0) |
 | 138 | gradation 0 off, 1 on | region-travel-u-gradation |
 | 162 | a thread-table index for an attribute not identified yet: it points at 800 RED (PE's default colour) in every file, even when nothing sews red | r17, r18, round-1 references |
@@ -295,7 +295,7 @@ below is pinned by a test in `tests/pes11.rs`.
 | 186 | Running Stitch Path: 0 Inside, 1 Along outline, 2 On outline | region-travel-u-* |
 | 204, 262, 286, 354, 378 | i32 x, y: the bounds' top-left corner, five times (reference points of attributes not identified) | r02, r03, o-closed-curve |
 | 298, 310 | i32 x, y: the bounds' centre (x0 + x1 and y0 + y1 halved, truncated) | r02, r03, o-open-freehand |
-| 386 | the pattern block: u16 size (10000; 750 and no polylines on the Applique Wizard's covering line), u16 polyline count, then the polylines, each six zero bytes, u16 1, u16 n and n × (i16 x, i16 y) in a 1024-unit cell: PE-DESIGN's current programmable fill pattern, as long as the pattern it holds. 53 polylines, byte-identical, in the files made with PE-DESIGN's default pattern (Brother content); one 2-point polyline in the round-4 Manual Punch files (m01 …, 22 bytes), so a body is 386 + the block + 72 bytes | all; m01 |
+| 386 | the pattern block: u16 size (10000; 750 and no polylines on the Applique Wizard's covering line), u16 polyline count, then the polylines, each six zero bytes, u16 1, u16 n and n × (i16 x, i16 y) in a 1024-unit cell: PE-DESIGN's current decorative fill pattern, as long as the pattern it holds. On a Decorative Fill it is the region's pattern: deco-fill-1line-100mm holds its `.plf` exactly (size 10000 for 100 mm, the line (128, 128)-(896, 896)); every other object gets the last decorative pattern used in the session: 53 polylines, byte-identical, in the files made with PE-DESIGN's default (Brother content), and the same one-line pattern in the round-4 Manual Punch files made after it (m01 …, 22 bytes). A body is 386 + the block + 72 bytes | all; m01 |
 | 4360 | u16 1000, 1000, then fields not mapped (u16 1, 0, 20, 0, 650, 0, 650, 0, 20, 20, 0, 1 …) | all |
 | 4372, 4388 | i32 x, y: the bounds' centre again | r02, r03 |
 | 4414, 4426 | u16: the index of the outline's last segment (vertices − 1 closed, vertices − 2 open), followed by f32 1.0 | r10 (3), r11 (0), o-open-freehand (16), o-rounded-rect (6) |
@@ -520,7 +520,7 @@ Fit Text to Outline option changed per file.
 | +118 | u16 the outline's MFC archive number (2: the circle, the list's first object; the outline is written before the text), then u16 1 |
 
 Not mapped yet: the fields that differ between E and V, the line's run times, the marks'
-segment and parameter fields, the Round 3 region type codes, the text tail's Text Attributes
+segment and parameter fields, the attribute fields of the Round 3 region types and motif fill, the text tail's Text Attributes
 (kerning, rotation, right alignment; character spacing on plain text), the letter's line width
 and pitch fields, the
 fit's fifth alignment (stretched), which way PE-DESIGN rounds a Curve Block's handles (OpenStitch's
@@ -552,12 +552,17 @@ Straight or Curve Block object (its direction lines' ends as the outline and the
 Curve Block's handles, bounds and marks by the rules above; a Curve Block written from a design
 has handles within one unit of PE-DESIGN's, not byte-identical), a hole sewing pair as above:
 the inner shape paired itself when it is not sewn, else a Not Sewn copy of it after the outer
-object, and a programmable fill as region type 2 with its pattern in the header's first list
+object, a programmable fill as region type 2 with its pattern in the header's first list
 (OpenStitch's own tile or a user's imported `.pas`, the tile's lines scaled to the 1024-unit
-cell, the tile width as the size). What it
+cell, the tile width as the size), the Cross Stitch, Concentric Circle, Radial, Spiral, Piping,
+Stippling, Net Fill, Zigzag Net Fill and Flexible Spiral types by their codes at PE-DESIGN's
+default attributes (OpenStitch's own settings of these types are not carried), and a Decorative
+Fill with its pattern in the object's pattern block (free lines in the 1024-unit cell, the tile
+width as the size). What it
 cannot hold fails with the object named: a second hole sewing pair, a hole sewing pair in a
 design with groups, several outlines in one object, a second programmable fill pattern, a
-programmable fill tile that is not square or has embossed or engraved areas, motif and the other region types, motif, stem,
+programmable fill tile that is not square or has embossed or engraved areas, motif fill, a
+decorative pattern chained in rows or not square, contour fill (OpenStitch's own), motif, stem,
 candlewicking, chain and cutting lines; text in another font, with white space other than
 spaces and line breaks, right-aligned, vertical, on an outline, with a Text Transform on several
 lines, rotated or scaled, with letter spacing, kerning, per-character

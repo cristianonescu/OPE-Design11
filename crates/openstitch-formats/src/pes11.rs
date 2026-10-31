@@ -128,19 +128,46 @@ fn write_pattern_lists(w: &mut ByteWriter, lists: [&[PesPattern]; 3]) {
     for list in lists {
         w.u16le(list.len() as i64);
         for p in list {
-            w.u16le(i64::from(p.size));
-            w.u16le(p.polylines.len() as i64);
-            for line in &p.polylines {
-                w.fill(0, 6);
-                w.u16le(1);
-                w.u16le(line.len() as i64);
-                for &(x, y) in line {
-                    w.u16le(i64::from(x as u16));
-                    w.u16le(i64::from(y as u16));
-                }
-            }
+            write_pattern(w, p);
         }
     }
+}
+
+/// One pattern: u16 size, u16 polyline count, the polylines (also the layout of a
+/// `CEmbLine`'s pattern block).
+fn write_pattern(w: &mut ByteWriter, p: &PesPattern) {
+    w.u16le(i64::from(p.size));
+    w.u16le(p.polylines.len() as i64);
+    for line in &p.polylines {
+        w.fill(0, 6);
+        w.u16le(1);
+        w.u16le(line.len() as i64);
+        for &(x, y) in line {
+            w.u16le(i64::from(x as u16));
+            w.u16le(i64::from(y as u16));
+        }
+    }
+}
+
+/// A pattern block as [`write_pattern`] writes it, filling `bytes` exactly.
+fn read_pattern(bytes: &[u8]) -> Option<PesPattern> {
+    let mut r = ByteReader::new(bytes);
+    let size = r.u16le().ok()? as u16;
+    let count = r.u16le().ok()?;
+    let mut polylines = Vec::new();
+    for _ in 0..count {
+        r.skip(6).ok()?;
+        if r.u16le().ok()? != 1 {
+            return None;
+        }
+        let n = r.u16le().ok()?;
+        let mut line = Vec::new();
+        for _ in 0..n {
+            line.push((r.u16le().ok()? as i16, r.u16le().ok()? as i16));
+        }
+        polylines.push(line);
+    }
+    (r.offset == bytes.len()).then_some(PesPattern { size, polylines })
 }
 
 /// Region sew type (`CEmbLine` body +134).
@@ -149,9 +176,32 @@ pub enum RegionSewType {
     Satin,
     Fill,
     ProgrammableFill,
+    /// Motif Stitch (3: obj-motif-fill-owner-v).
+    Motif,
+    /// Cross Stitch (4: o-region-cross).
+    Cross,
+    /// Concentric Circle (5: o-region-concentric).
+    Concentric,
+    /// Radial (6: o-region-radial).
+    Radial,
+    /// Spiral (7: o-region-spiral).
+    Spiral,
+    /// Piping (8: o-region-piping).
+    Piping,
+    /// Stippling (9: o-region-stippling).
+    Stippling,
+    /// Net Fill (10: o-region-net-fill).
+    NetFill,
     /// Region "Not Sewn" (code 11): open lines, outlines with the region off, and the inner
     /// copy of a hole-sewing pair.
     NotSewn,
+    /// Zigzag Net Fill (12: o-region-zigzag-net).
+    ZigzagNet,
+    /// Decorative Fill (13: deco-fill-1line-100mm); its pattern is the object's pattern block
+    /// ([`Shape::decorative`]).
+    Decorative,
+    /// Flexible Spiral (14: o-region-flexible-spiral).
+    FlexibleSpiral,
     /// A value not mapped yet.
     Other(u16),
 }
@@ -162,7 +212,18 @@ impl RegionSewType {
             0 => Self::Satin,
             1 => Self::Fill,
             2 => Self::ProgrammableFill,
+            3 => Self::Motif,
+            4 => Self::Cross,
+            5 => Self::Concentric,
+            6 => Self::Radial,
+            7 => Self::Spiral,
+            8 => Self::Piping,
+            9 => Self::Stippling,
+            10 => Self::NetFill,
             11 => Self::NotSewn,
+            12 => Self::ZigzagNet,
+            13 => Self::Decorative,
+            14 => Self::FlexibleSpiral,
             v => Self::Other(v),
         }
     }
@@ -172,7 +233,18 @@ impl RegionSewType {
             Self::Satin => 0,
             Self::Fill => 1,
             Self::ProgrammableFill => 2,
+            Self::Motif => 3,
+            Self::Cross => 4,
+            Self::Concentric => 5,
+            Self::Radial => 6,
+            Self::Spiral => 7,
+            Self::Piping => 8,
+            Self::Stippling => 9,
+            Self::NetFill => 10,
             Self::NotSewn => 11,
+            Self::ZigzagNet => 12,
+            Self::Decorative => 13,
+            Self::FlexibleSpiral => 14,
             Self::Other(v) => v,
         }
     }
@@ -290,6 +362,11 @@ pub struct Shape {
     pub plain_settings: bool,
     /// From the Shapes gallery (`CEmbSpecialShape`): the same record, kept under that class.
     pub gallery: bool,
+    /// A Decorative Fill's pattern, held in the object's pattern block (deco-fill-1line-100mm:
+    /// size 10000 for 100 mm, the line (128, 128)-(896, 896) of its `.plf`). PE-DESIGN writes the
+    /// last decorative pattern used into every object's block; other objects get OpenStitch's
+    /// placeholder.
+    pub decorative: Option<PesPattern>,
     /// A Manual Punch block (Straight or Curve Block, and PE-DESIGN's Convert to Blocks):
     /// its sewing-direction lines in order, each as the vertices of its two ends, empty on every
     /// other shape. The Manual Punch tool's blocks join vertex k and 2n − 1 − k (the outline is
@@ -345,6 +422,7 @@ impl Shape {
             flag_178: 1,
             plain_settings: false,
             gallery: false,
+            decorative: None,
             punch: Vec::new(),
             punch_exit: 0,
             no_positions: false,
@@ -1099,6 +1177,14 @@ fn read_line(r: &mut ByteReader<'_>) -> Result<Option<Shape>> {
             .zip(PLAIN_SETTINGS)
             .all(|(&at, v)| u16_at(body, at) == v),
         gallery: false,
+        decorative: (u16_at(body, 134) == 13)
+            .then(|| {
+                read_pattern(
+                    &body[PATTERN_END - template::PATTERN_BYTES
+                        ..body.len() - template::BODY_TAIL.len()],
+                )
+            })
+            .flatten(),
         punch,
         punch_exit,
         no_positions,
@@ -1728,7 +1814,10 @@ fn write_line(w: &mut ByteWriter, s: &Shape) {
         put32(&mut head, at + 4, cy);
     }
     w.append(&head);
-    w.append(&pattern_block());
+    match &s.decorative {
+        Some(p) => write_pattern(w, p),
+        None => w.append(&pattern_block()),
+    }
     let mut tail = template::BODY_TAIL;
     let base = PATTERN_END;
     for at in [4372, 4388] {
