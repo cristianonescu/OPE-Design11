@@ -101,11 +101,15 @@ pub static PEC_CHART: [Option<Thread>; 65] = [
         "Brother",
     )),
     Some(Thread::chart(227, 243, 91, "Fresh Green", "61", "Brother")),
-    Some(Thread::chart(255, 153, 0, "Orange", "62", "Brother")),
+    // 62–64 are the Applique Wizard's material, position and appliqué colours. pyembroidery
+    // has (255, 153, 0) and (255, 240, 141) for 62 and 63; PE-DESIGN 11.50 writes (255, 200,
+    // 100), (255, 200, 150) and (255, 200, 200) for them in the colour list after its PEC
+    // section (tests/fixtures/pe11/a01-a05 applique files, 2026-10-31).
+    Some(Thread::chart(255, 200, 100, "Orange", "62", "Brother")),
     Some(Thread::chart(
         255,
-        240,
-        141,
+        200,
+        150,
         "Cream Yellow",
         "63",
         "Brother",
